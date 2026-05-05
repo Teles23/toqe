@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. USUÁRIOS E AUTENTICAÇÃO (GLOBAL)
+// ==========================================
+
+model Usuario {
+  codigo    Int      @id @default(autoincrement()) @map("TQE_USR_CODIGO")
+  nome      String   @map("TQE_USR_NOME") @db.VarChar(100)
+  email     String   @unique @map("TQE_USR_EMAIL") @db.VarChar(100)
+  senhaHash String   @map("TQE_USR_SENHA_HASH") @db.VarChar(255)
+  telefone  String?  @unique @map("TQE_USR_TELEFONE") @db.VarChar(20)
+  avatarUrl String?  @map("TQE_USR_AVATAR_URL")
+  ativo     Boolean  @default(true) @map("TQE_USR_ATIVO")
+  criadoEm  DateTime @default(now()) @map("TQE_USR_CRIADO_EM") @db.Timestamptz
+
+  refreshTokens  RefreshToken[]
+  membros        MembroBarbearia[]
+  agendamentos   Agendamento[]      @relation("AgendamentosCliente")
+  atendimentos   Agendamento[]      @relation("AgendamentosBarbeiro")
+  bloqueios      BloqueioAgenda[]
+  jornadas       JornadaTrabalho[]
+  servicosProps  BarbeiroServico[]
+  preferencias   NotificacaoPreferencia[]
+
+  @@map("TQE_USUARIO")
+}
+
+model RefreshToken {
+  codigo    Int      @id @default(autoincrement()) @map("TQE_RTK_CODIGO")
+  usrCodigo Int      @map("TQE_RTK_USR_CODIGO")
+  hash      String   @map("TQE_RTK_HASH") @db.VarChar(255)
+  expiraEm  DateTime @map("TQE_RTK_EXPIRA_EM") @db.Timestamptz
+  revogado  Boolean  @default(false) @map("TQE_RTK_REVOGADO")
+  criadoEm  DateTime @default(now()) @map("TQE_RTK_CRIADO_EM") @db.Timestamptz
+
+  usuario   Usuario  @relation(fields: [usrCodigo], references: [codigo])
+
+  @@map("TQE_REFRESH_TOKEN")
+}
+
+// ==========================================
+// 2. TENANTS E CONFIGURAÇÕES
+// ==========================================
+
+model Barbearia {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_BAR_CODIGO")
+  nome        String   @map("TQE_BAR_NOME") @db.VarChar(100)
+  slug        String   @unique @map("TQE_BAR_SLUG") @db.VarChar(60)
+  timezone    String   @default("America/Sao_Paulo") @map("TQE_BAR_TIMEZONE")
+  plano       String   @default("free") @map("TQE_BAR_PLANO")
+  planoStatus String   @default("ativo") @map("TQE_BAR_PLANO_STATUS") // ativo | inadimplente | suspenso | cancelado
+  bloqueadaEm DateTime? @map("TQE_BAR_BLOQUEADA_EM") @db.Timestamptz
+  ativo       Boolean  @default(true) @map("TQE_BAR_ATIVO")
+  criadoEm    DateTime @default(now()) @map("TQE_BAR_CRIADO_EM") @db.Timestamptz
+
+  membros        MembroBarbearia[]
+  servicos       Servico[]
+  agendamentos   Agendamento[]
+  itens          AgendamentoItem[]
+  bloqueios      BloqueioAgenda[]
+  jornadas       JornadaTrabalho[]
+  barbeirosServ  BarbeiroServico[]
+  tema           TemaTenant?
+  preferencias   NotificacaoPreferencia[]
+
+  @@map("TQE_BARBEARIA")
+}
+
+model MembroBarbearia {
+  codigo    Int      @id @default(autoincrement()) @map("TQE_MBR_CODIGO")
+  barCodigo Int      @map("TQE_MBR_BAR_CODIGO")
+  usrCodigo Int      @map("TQE_MBR_USR_CODIGO")
+  perfil    String   @map("TQE_MBR_PERFIL") @db.VarChar(20) // dono | gerente | barbeiro | recepcionista | cliente
+  criadoEm  DateTime @default(now()) @map("TQE_MBR_CRIADO_EM") @db.Timestamptz
+
+  barbearia Barbearia @relation(fields: [barCodigo], references: [codigo])
+  usuario   Usuario   @relation(fields: [usrCodigo], references: [codigo])
+
+  @@unique([barCodigo, usrCodigo])
+  @@map("TQE_MEMBRO_BARBEARIA")
+}
+
+model TemaTenant {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_TEM_CODIGO")
+  barCodigo   Int      @unique @map("TQE_TEM_BAR_CODIGO")
+  corPrimaria String?  @map("TQE_TEM_COR_PRIMARIA") @db.VarChar(7)
+  corFundo    String?  @map("TQE_TEM_COR_FUNDO") @db.VarChar(7)
+  logoUrl     String?  @map("TQE_TEM_LOGO_URL")
+  subdominio  String?  @map("TQE_TEM_SUBDOMINIO") @db.VarChar(60)
+
+  barbearia   Barbearia @relation(fields: [barCodigo], references: [codigo])
+
+  @@map("TQE_TEMA_TENANT")
+}
+
+model PlanoLimite {
+  codigo           Int      @id @default(autoincrement()) @map("TQE_PLI_CODIGO")
+  plano            String   @unique @map("TQE_PLI_PLANO") @db.VarChar(20)
+  maxBarbeiros     Int?     @map("TQE_PLI_MAX_BARBEIROS")
+  maxAgdMes        Int?     @map("TQE_PLI_MAX_AGD_MES")
+  whiteLabel       Boolean  @default(false) @map("TQE_PLI_WHITE_LABEL")
+  apiPublica       Boolean  @default(false) @map("TQE_PLI_API_PUBLICA")
+  relatoriosAdv    Boolean  @default(false) @map("TQE_PLI_RELATORIOS_ADV")
+
+  @@map("TQE_PLANO_LIMITE")
+}
+
+// ==========================================
+// 3. AGENDA E SERVIÇOS (RLS APLICADO AQUI)
+// ==========================================
+
+model Servico {
+  codigo     Int      @id @default(autoincrement()) @map("TQE_SRV_CODIGO")
+  barCodigo  Int      @map("TQE_SRV_BAR_CODIGO")
+  nome       String   @map("TQE_SRV_NOME") @db.VarChar(100)
+  precoBase  Decimal? @map("TQE_SRV_PRECO_BASE") @db.Decimal(10, 2)
+  duracaoBase Int?    @map("TQE_SRV_DURACAO_BASE") // em minutos
+  ativo      Boolean  @default(true) @map("TQE_SRV_ATIVO")
+
+  barbearia  Barbearia         @relation(fields: [barCodigo], references: [codigo])
+  itens      AgendamentoItem[]
+  barbeiros  BarbeiroServico[]
+
+  @@map("TQE_SERVICO")
+}
+
+model BarbeiroServico {
+  codigo        Int      @id @default(autoincrement()) @map("TQE_BSV_CODIGO")
+  barCodigo     Int      @map("TQE_BSV_BAR_CODIGO")
+  barbeiroId    Int      @map("TQE_BSV_BARBEIRO_ID")
+  srvCodigo     Int      @map("TQE_BSV_SRV_CODIGO")
+  duracaoMin    Int      @map("TQE_BSV_DURACAO_MIN")
+  precoProprio  Decimal? @map("TQE_BSV_PRECO_PROPRIO") @db.Decimal(10, 2)
+
+  barbearia Barbearia @relation(fields: [barCodigo], references: [codigo])
+  barbeiro  Usuario   @relation(fields: [barbeiroId], references: [codigo])
+  servico   Servico   @relation(fields: [srvCodigo], references: [codigo])
+
+  @@unique([barbeiroId, srvCodigo])
+  @@map("TQE_BARBEIRO_SERVICO")
+}
+
+model Agendamento {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_AGD_CODIGO")
+  barCodigo   Int      @map("TQE_AGD_BAR_CODIGO")
+  barbeiroId  Int      @map("TQE_AGD_BARBEIRO_ID")
+  clienteId   Int      @map("TQE_AGD_CLIENTE_ID")
+  inicio      DateTime @map("TQE_AGD_INICIO") @db.Timestamptz
+  fim         DateTime @map("TQE_AGD_FIM") @db.Timestamptz
+  status      String   @default("PENDENTE") @map("TQE_AGD_STATUS") @db.VarChar(20) // PENDENTE | CONFIRMADO | CANCELADO | NO_SHOW | CONCLUIDO
+  tipo        String   @default("AGENDADO") @map("TQE_AGD_TIPO") @db.VarChar(20) // AGENDADO | WALK_IN | ENCAIXE
+  observacao  String?  @map("TQE_AGD_OBSERVACAO") @db.Text
+  criadoEm    DateTime @default(now()) @map("TQE_AGD_CRIADO_EM") @db.Timestamptz
+
+  barbearia Barbearia         @relation(fields: [barCodigo], references: [codigo])
+  barbeiro  Usuario           @relation("AgendamentosBarbeiro", fields: [barbeiroId], references: [codigo])
+  cliente   Usuario           @relation("AgendamentosCliente", fields: [clienteId], references: [codigo])
+  itens     AgendamentoItem[]
+
+  @@map("TQE_AGENDAMENTO")
+}
+
+model AgendamentoItem {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_AGI_CODIGO")
+  barCodigo   Int      @map("TQE_AGI_BAR_CODIGO")
+  agdCodigo   Int      @map("TQE_AGI_AGD_CODIGO")
+  srvCodigo   Int      @map("TQE_AGI_SRV_CODIGO")
+  duracaoMin  Int      @map("TQE_AGI_DURACAO_MIN")
+  preco       Decimal  @map("TQE_AGI_PRECO") @db.Decimal(10, 2)
+  ordem       Int      @default(1) @map("TQE_AGI_ORDEM") @db.SmallInt
+
+  barbearia   Barbearia   @relation(fields: [barCodigo], references: [codigo])
+  agendamento Agendamento @relation(fields: [agdCodigo], references: [codigo])
+  servico     Servico     @relation(fields: [srvCodigo], references: [codigo])
+
+  @@map("TQE_AGENDAMENTO_ITEM")
+}
+
+model BloqueioAgenda {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_BLA_CODIGO")
+  barCodigo   Int      @map("TQE_BLA_BAR_CODIGO")
+  barbeiroId  Int      @map("TQE_BLA_BARBEIRO_ID")
+  inicio      DateTime @map("TQE_BLA_INICIO") @db.Timestamptz
+  fim         DateTime @map("TQE_BLA_FIM") @db.Timestamptz
+  motivo      String?  @map("TQE_BLA_MOTIVO") @db.VarChar(100)
+  recorrente  Boolean  @default(false) @map("TQE_BLA_RECORRENTE")
+  criadoEm    DateTime @default(now()) @map("TQE_BLA_CRIADO_EM") @db.Timestamptz
+
+  barbearia   Barbearia @relation(fields: [barCodigo], references: [codigo])
+  barbeiro    Usuario   @relation(fields: [barbeiroId], references: [codigo])
+
+  @@map("TQE_BLOQUEIO_AGENDA")
+}
+
+model JornadaTrabalho {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_JOR_CODIGO")
+  barCodigo   Int      @map("TQE_JOR_BAR_CODIGO")
+  barbeiroId  Int      @map("TQE_JOR_BARBEIRO_ID")
+  diaSemana   Int      @map("TQE_JOR_DIA_SEMANA") @db.SmallInt // 0=Dom, 1=Seg... 6=Sab
+  inicio      String   @map("TQE_JOR_INICIO") // "09:00" em VarChar porque Db.Time não mapeia bem para DateTime no Node sem timezone issues
+  fim         String   @map("TQE_JOR_FIM")
+  almocoIni   String?  @map("TQE_JOR_ALMOCO_INI")
+  almocoFim   String?  @map("TQE_JOR_ALMOCO_FIM")
+  ativo       Boolean  @default(true) @map("TQE_JOR_ATIVO")
+
+  barbearia   Barbearia @relation(fields: [barCodigo], references: [codigo])
+  barbeiro    Usuario   @relation(fields: [barbeiroId], references: [codigo])
+
+  @@map("TQE_JORNADA_TRABALHO")
+}
+
+model NotificacaoPreferencia {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_NPR_CODIGO")
+  barCodigo   Int      @map("TQE_NPR_BAR_CODIGO")
+  usrCodigo   Int      @map("TQE_NPR_USR_CODIGO")
+  canal       String   @map("TQE_NPR_CANAL") @db.VarChar(20) // push | whatsapp | sms | email
+  ativo       Boolean  @default(true) @map("TQE_NPR_ATIVO")
+
+  barbearia   Barbearia @relation(fields: [barCodigo], references: [codigo])
+  usuario     Usuario   @relation(fields: [usrCodigo], references: [codigo])
+
+  @@map("TQE_NOTIFICACAO_PREFERENCIA")
+}

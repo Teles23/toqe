@@ -97,6 +97,7 @@ model Barbearia {
 |---|---|
 | TQE_BARBEARIA | BAR |
 | TQE_USUARIO | USR |
+| TQE_MEMBRO_BARBEARIA | MBR |
 | TQE_SERVICO | SRV |
 | TQE_BARBEIRO_SERVICO | BSV |
 | TQE_AGENDAMENTO | AGD |
@@ -125,9 +126,7 @@ JWT próprio no NestJS, sem Firebase ou qualquer provider externo.
 
 ```typescript
 interface JwtPayload {
-  sub: number;        // TQE_USR_CODIGO
-  barCodigo: number;  // TQE_BAR_CODIGO — tenant
-  perfil: Perfil;     // enum de role
+  sub: number;        // TQE_USR_CODIGO (Conta Global)
   iat: number;
   exp: number;
 }
@@ -148,7 +147,6 @@ enum Perfil {
 CREATE TABLE TQE_REFRESH_TOKEN (
   TQE_RTK_CODIGO      SERIAL PRIMARY KEY,
   TQE_RTK_USR_CODIGO  INT REFERENCES TQE_USUARIO,
-  TQE_RTK_BAR_CODIGO  INT REFERENCES TQE_BARBEARIA,
   TQE_RTK_HASH        VARCHAR(255) NOT NULL,  -- bcrypt do token
   TQE_RTK_EXPIRA_EM   TIMESTAMPTZ NOT NULL,
   TQE_RTK_REVOGADO    BOOLEAN DEFAULT FALSE,
@@ -159,7 +157,7 @@ CREATE TABLE TQE_REFRESH_TOKEN (
 ### Fluxo de autenticação
 
 ```
-[Cliente]  POST /api/v1/auth/login  { email, senha, barSlug }
+[Cliente]  POST /api/v1/auth/login  { email, senha }
               ↓
 [NestJS]   valida credenciais → gera access_token (15min) + refresh_token (30d)
            salva hash do refresh no banco
@@ -180,18 +178,16 @@ CREATE TABLE TQE_REFRESH_TOKEN (
 // tenant.guard.ts
 @Injectable()
 export class TenantGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // injetado pelo JwtGuard
+    const user = request.user; // injetado pelo JwtGuard (tem apenas 'sub' global)
+    const barCodigo = request.params.barCodigo ?? request.body.barCodigo ?? request.headers['x-tenant-id'];
 
-    // super_admin pode acessar qualquer tenant
-    if (user.perfil === Perfil.SUPER_ADMIN) return true;
+    if (!barCodigo) return true; // Rotas globais não precisam de tenant
 
-    // extrai barCodigo da rota ou do token
-    const routeTenant = request.params.barCodigo ?? request.body.barCodigo;
-    if (routeTenant && Number(routeTenant) !== user.barCodigo) {
-      throw new ForbiddenException('Acesso negado ao tenant');
-    }
+    // 1. Consulta no banco se o usuário Global (user.sub) tem vínculo na TQE_MEMBRO_BARBEARIA
+    // 2. Se não tiver, throw new ForbiddenException('Acesso negado ao tenant');
+    // 3. request.user.perfil = membro.perfil; // Injeta o perfil local na request para o RBAC
     return true;
   }
 }
@@ -1083,7 +1079,15 @@ const logger = pino({
 
 ## 16. White-Label
 
-### O que muda na arquitetura
+### A Mágica do "White-Label Contextual" (Deep Linking)
+
+O aplicativo (Toqe) é único nas lojas. O "White-Label" funciona de forma **contextual**, ativado pela porta de entrada (o link que o cliente clica):
+
+1. **Deep Linking:** A Barbearia do Zé divulga o link `app.toqe.com.br/barba-do-ze`. Ao abrir o aplicativo por esse link, o app identifica o parâmetro, busca o tema do Zé via API e **muda as cores e a logo do app inteiro**.
+2. **Login Transparente:** Na tela (agora com tema do Zé), o cliente faz login com sua conta **Global** do Toqe. O sistema o vincula àquela barbearia via tabela `TQE_MEMBRO_BARBEARIA`.
+3. **Sem Duplicação:** Se o mesmo cliente acessar o link de outra barbearia, ele não precisará criar uma conta nova, usa o mesmo login. O dono da barbearia se sente exclusivo (pois o app assumiu a marca dele para o cliente) e você mantém o banco de dados livre de contas duplicadas.
+
+### O que muda na arquitetura (Temas)
 
 ```sql
 CREATE TABLE TQE_TEMA_TENANT (
