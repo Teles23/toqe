@@ -639,7 +639,7 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
+      - "8080:80"
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
@@ -696,7 +696,7 @@ volumes:
   redis_data:
 ```
 
-> **Importante:** PostgreSQL e Redis **não expõem portas externas**. Apenas os serviços internos do Docker se comunicam com eles. Acesso externo ao banco (para inspecionar em dev) via `docker exec` ou SSH tunnel.
+> **Importante:** PostgreSQL e Redis **não expõem portas externas**. Apenas os serviços internos do Docker se comunicam com eles. Acesso externo ao banco (para inspecionar em dev) via `docker exec` ou SSH tunnel. O NGINX foi mapeado para a porta **8080** no host para evitar conflitos no Windows.
 
 ### Nginx — configuração de rotas
 
@@ -704,6 +704,7 @@ volumes:
 # /nginx/conf.d/toqe.conf
 
 server {
+    listen 80; # Mapeado para 8080 no host
     listen 443 ssl;
     server_name api.toqe.app;
 

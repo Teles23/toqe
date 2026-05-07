@@ -76,3 +76,14 @@ Este documento registra os gaps identificados durante a auditoria das Fases 1-3 
 | RBAC nos controllers | 🟡 Médio | ✅ Corrigido |
 | Duração por BarbeiroServico | 🟡 Médio | ✅ Corrigido |
 | FOR UPDATE SKIP LOCKED | 🟡 Médio | ✅ Corrigido |
+
+---
+
+### 🔴 Gap 6 — Ambiente Docker e Porta 80
+**Problema:** O NGINX não subia no Windows devido ao conflito na porta 80. Além disso, o build do monorepo estava lento por falta de `.dockerignore` e falhava por falta do `prisma generate` no Dockerfile.
+
+**Correção:**
+- Alterada porta externa do NGINX para **8080**.
+- Criado `.dockerignore` ignorando `**/node_modules` para reduzir context transfer de 1.5GB para 2MB.
+- Dockerfile atualizado para rodar `prisma generate` no monorepo e corrigir caminhos do `dist`.
+- Corrigidas tipagens do `AuthService` e `Notificacao` para satisfazer `isolatedModules` no build.
