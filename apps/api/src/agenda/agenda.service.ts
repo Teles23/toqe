@@ -8,18 +8,26 @@ import { addMinutes, parse, format, isBefore, isAfter, startOfDay, endOfDay, get
 export class AgendaService {
   constructor(private prisma: PrismaService) {}
 
-  async upsertJornada(barbeiroId: number, dto: ConfigJornadaDto) {
-    return this.prisma.jornadaTrabalho.upsert({
+  async upsertJornada(barbeiroId: number, barCodigo: number, dto: ConfigJornadaDto) {
+    const existing = await this.prisma.jornadaTrabalho.findFirst({
       where: {
-        barbeiroId_diaSemana: {
-          barbeiroId,
-          diaSemana: dto.diaSemana,
-        },
+        barbeiroId,
+        diaSemana: dto.diaSemana,
       },
-      update: dto,
-      create: {
+    });
+
+    if (existing) {
+      return this.prisma.jornadaTrabalho.update({
+        where: { codigo: existing.codigo },
+        data: dto,
+      });
+    }
+
+    return this.prisma.jornadaTrabalho.create({
+      data: {
         ...dto,
         barbeiroId,
+        barCodigo,
       },
     });
   }
@@ -61,8 +69,8 @@ export class AgendaService {
     if (!barbearia) throw new Error('Barbearia not found');
     const interval = barbearia.slotInterval || 30;
 
-    const jornada = await this.prisma.jornadaTrabalho.findUnique({
-      where: { barbeiroId_diaSemana: { barbeiroId, diaSemana: dayOfWeek } },
+    const jornada = await this.prisma.jornadaTrabalho.findFirst({
+      where: { barbeiroId, diaSemana: dayOfWeek },
     });
 
     if (!jornada) return [];
@@ -70,8 +78,9 @@ export class AgendaService {
     const parseTime = (timeStr: string) => parse(timeStr, 'HH:mm', targetDate);
     const startWork = parseTime(jornada.inicio);
     const endWork = parseTime(jornada.fim);
-    const startLunch = parseTime(jornada.almocoIni);
-    const endLunch = parseTime(jornada.almocoFim);
+    
+    const startLunch = jornada.almocoIni ? parseTime(jornada.almocoIni) : null;
+    const endLunch = jornada.almocoFim ? parseTime(jornada.almocoFim) : null;
 
     const appointments = await this.prisma.agendamento.findMany({
       where: {
@@ -92,9 +101,11 @@ export class AgendaService {
 
     const isBusy = (slotStart: Date, slotEnd: Date) => {
       // Almoço
-      if ((isAfter(slotStart, startLunch) || slotStart.getTime() === startLunch.getTime()) && isBefore(slotStart, endLunch)) return true;
-      if (isAfter(slotEnd, startLunch) && (isBefore(slotEnd, endLunch) || slotEnd.getTime() === endLunch.getTime())) return true;
-      if (isBefore(slotStart, startLunch) && isAfter(slotEnd, endLunch)) return true;
+      if (startLunch && endLunch) {
+        if ((isAfter(slotStart, startLunch) || slotStart.getTime() === startLunch.getTime()) && isBefore(slotStart, endLunch)) return true;
+        if (isAfter(slotEnd, startLunch) && (isBefore(slotEnd, endLunch) || slotEnd.getTime() === endLunch.getTime())) return true;
+        if (isBefore(slotStart, startLunch) && isAfter(slotEnd, endLunch)) return true;
+      }
 
       // Agendamentos
       for (const app of appointments) {
@@ -113,7 +124,7 @@ export class AgendaService {
       return false;
     };
 
-    const availableSlots = [];
+    const availableSlots: string[] = [];
     let currentSlot = startWork;
 
     while (isBefore(addMinutes(currentSlot, totalDuration), endWork) || addMinutes(currentSlot, totalDuration).getTime() === endWork.getTime()) {

@@ -12,9 +12,10 @@ export class AgendaController {
   @Post('jornada/:barbeiroId')
   configurarJornada(
     @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
     @Body() dto: ConfigJornadaDto,
   ) {
-    return this.agendaService.upsertJornada(barbeiroId, dto);
+    return this.agendaService.upsertJornada(barbeiroId, Number(barCodigo), dto);
   }
 
   @Get('jornada/:barbeiroId')
