@@ -36,18 +36,23 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
 WORKDIR /app
 
-COPY --from=builder /prod/api/node_modules               ./node_modules
-COPY --from=builder /app/apps/api/dist                   ./dist
-COPY --from=builder /app/apps/api/package.json           ./package.json
-COPY --from=builder /app/apps/api/src/generated/prisma   ./generated/prisma
-COPY --from=builder /app/apps/api/prisma/seed-runner.js  ./seed-runner.js
+COPY --from=builder /prod/api/node_modules                    ./node_modules
+COPY --from=builder /app/apps/api/dist                        ./dist
+COPY --from=builder /app/apps/api/package.json                ./package.json
+COPY --from=builder /app/apps/api/src/generated/prisma        ./generated/prisma
+COPY --from=builder /app/apps/api/prisma/schema.prisma        ./prisma/schema.prisma
+COPY --from=builder /app/apps/api/prisma/migrations           ./prisma/migrations
+COPY --from=builder /app/apps/api/prisma/seed-runner.js       ./seed-runner.js
 
 USER nestjs
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start_period=15s --retries=3 \
   CMD wget -qO- http://localhost:3000/api/v1/health || exit 1
 
-# seed-runner.js é idempotente (upsert) — seguro rodar a cada startup
-CMD ["sh", "-c", "node seed-runner.js && node dist/main.js"]
+# Sequência de boot:
+# 1. migrate deploy — aplica migrations pendentes (idempotente, seguro a cada startup)
+# 2. seed-runner.js — upsert dos planos (idempotente)
+# 3. node dist/main.js — inicia a API
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema ./prisma/schema.prisma && node seed-runner.js && node dist/main.js"]
