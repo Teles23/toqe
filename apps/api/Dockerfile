@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 # 1. migrate deploy — aplica migrations pendentes (idempotente, seguro a cada startup)
 # 2. seed-runner.js — upsert dos planos (idempotente)
 # 3. node dist/main.js — inicia a API
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema ./prisma/schema.prisma && node seed-runner.js && node dist/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema ./prisma/schema.prisma --url \"$DATABASE_URL\" && node seed-runner.js && node dist/main.js"]
