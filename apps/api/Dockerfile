@@ -36,10 +36,11 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
 WORKDIR /app
 
-COPY --from=builder /prod/api/node_modules      ./node_modules
-COPY --from=builder /app/apps/api/dist          ./dist
-COPY --from=builder /app/apps/api/package.json  ./package.json
-COPY --from=builder /app/apps/api/prisma/seed-runner.js ./seed-runner.js
+COPY --from=builder /prod/api/node_modules               ./node_modules
+COPY --from=builder /app/apps/api/dist                   ./dist
+COPY --from=builder /app/apps/api/package.json           ./package.json
+COPY --from=builder /app/apps/api/src/generated/prisma   ./generated/prisma
+COPY --from=builder /app/apps/api/prisma/seed-runner.js  ./seed-runner.js
 
 USER nestjs
 
