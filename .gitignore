@@ -4,6 +4,9 @@
 node_modules
 .pnp
 .pnp.js
+.claude
+.agent
+.agents
 
 # Local env files
 .env
