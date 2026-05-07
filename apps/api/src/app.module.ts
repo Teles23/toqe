@@ -8,9 +8,10 @@ import { UsuarioModule } from './usuario/usuario.module';
 import { BarbeariaModule } from './barbearia/barbearia.module';
 import { ServicoModule } from './servico/servico.module';
 import { AgendaModule } from './agenda/agenda.module';
+import { AgendamentoModule } from './agendamento/agendamento.module';
 
 @Module({
-  imports: [PrismaModule, TenantModule, AuthModule, UsuarioModule, BarbeariaModule, ServicoModule, AgendaModule],
+  imports: [PrismaModule, TenantModule, AuthModule, UsuarioModule, BarbeariaModule, ServicoModule, AgendaModule, AgendamentoModule],
   controllers: [AppController],
   providers: [AppService],
 })
