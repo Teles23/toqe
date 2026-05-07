@@ -54,6 +54,7 @@ model Barbearia {
   nome        String   @map("TQE_BAR_NOME") @db.VarChar(100)
   slug        String   @unique @map("TQE_BAR_SLUG") @db.VarChar(60)
   timezone    String   @default("America/Sao_Paulo") @map("TQE_BAR_TIMEZONE")
+  slotInterval Int      @default(30) @map("TQE_BAR_SLOT_INTERVAL")
   plano       String   @default("free") @map("TQE_BAR_PLANO")
   planoStatus String   @default("ativo") @map("TQE_BAR_PLANO_STATUS") // ativo | inadimplente | suspenso | cancelado
   bloqueadaEm DateTime? @map("TQE_BAR_BLOQUEADA_EM") @db.Timestamptz

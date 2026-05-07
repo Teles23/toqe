@@ -6,9 +6,10 @@ import { TenantModule } from './tenant/tenant.module';
 import { AuthModule } from './auth/auth.module';
 import { UsuarioModule } from './usuario/usuario.module';
 import { BarbeariaModule } from './barbearia/barbearia.module';
+import { ServicoModule } from './servico/servico.module';
 
 @Module({
-  imports: [PrismaModule, TenantModule, AuthModule, UsuarioModule, BarbeariaModule],
+  imports: [PrismaModule, TenantModule, AuthModule, UsuarioModule, BarbeariaModule, ServicoModule],
   controllers: [AppController],
   providers: [AppService],
 })
