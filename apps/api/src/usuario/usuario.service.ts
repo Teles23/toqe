@@ -1,48 +1,67 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import * as bcrypt from 'bcrypt';
+
+const SELECT_PERFIL = {
+  codigo: true,
+  nome: true,
+  email: true,
+  telefone: true,
+  avatarUrl: true,
+  ativo: true,
+  criadoEm: true,
+} as const;
 
 @Injectable()
 export class UsuarioService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.usuario.findUnique({
-      where: { email: dto.email },
-    });
+    const existing = await this.prisma.usuario.findUnique({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Email já cadastrado');
 
-    if (existing) {
-      throw new ConflictException('Email já cadastrado');
-    }
-
-    const salt = await bcrypt.genSalt();
-    const senhaHash = await bcrypt.hash(dto.senha, salt);
+    const senhaHash = await bcrypt.hash(dto.senha, await bcrypt.genSalt());
 
     return this.prisma.usuario.create({
-      data: {
-        nome: dto.nome,
-        email: dto.email,
-        senhaHash: senhaHash,
-      },
-      select: {
-        codigo: true,
-        nome: true,
-        email: true,
-        criadoEm: true,
-      },
+      data: { nome: dto.nome, email: dto.email, senhaHash },
+      select: SELECT_PERFIL,
     });
   }
 
   async findByEmail(email: string) {
-    return this.prisma.usuario.findUnique({
-      where: { email },
-    });
+    return this.prisma.usuario.findUnique({ where: { email } });
   }
 
   async findById(codigo: number) {
-    return this.prisma.usuario.findUnique({
-      where: { codigo },
+    return this.prisma.usuario.findUnique({ where: { codigo } });
+  }
+
+  async me(usrCodigo: number) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { codigo: usrCodigo },
+      select: {
+        ...SELECT_PERFIL,
+        membros: {
+          select: {
+            perfil: true,
+            criadoEm: true,
+            barbearia: { select: { codigo: true, nome: true, slug: true } },
+          },
+        },
+      },
+    });
+    if (!usuario) throw new NotFoundException('Usuário não encontrado');
+    return usuario;
+  }
+
+  async update(usrCodigo: number, dto: UpdateUsuarioDto) {
+    await this.me(usrCodigo);
+    return this.prisma.usuario.update({
+      where: { codigo: usrCodigo },
+      data: dto,
+      select: SELECT_PERFIL,
     });
   }
 }

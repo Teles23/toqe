@@ -1,9 +1,11 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { LogoutDto } from './dto/logout.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -32,5 +34,16 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Refresh token inválido ou revogado.' })
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Revoga o refresh token (logout)' })
+  @ApiResponse({ status: 200, description: 'Logout realizado.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou já revogado.' })
+  logout(@Request() req, @Body() dto: LogoutDto) {
+    return this.authService.logout(req.user.sub, dto);
   }
 }

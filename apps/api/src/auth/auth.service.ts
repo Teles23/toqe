@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogoutDto } from './dto/logout.dto';
 
 @Injectable()
 export class AuthService {
@@ -67,6 +68,25 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
     return this.generateTokens(user.codigo, user.nome, user.email);
+  }
+
+  async logout(usrCodigo: number, dto: LogoutDto) {
+    const tokens = await this.prisma.refreshToken.findMany({
+      where: { usrCodigo, revogado: false, expiraEm: { gt: new Date() } },
+    });
+
+    for (const t of tokens) {
+      const match = await bcrypt.compare(dto.refreshToken, t.hash);
+      if (match) {
+        await this.prisma.refreshToken.update({
+          where: { codigo: t.codigo },
+          data: { revogado: true },
+        });
+        return { message: 'Logout realizado com sucesso' };
+      }
+    }
+
+    throw new UnauthorizedException('Refresh token inválido ou já revogado');
   }
 
   private async generateTokens(codigo: number, nome: string, email: string) {
