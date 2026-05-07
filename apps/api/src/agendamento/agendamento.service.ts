@@ -2,13 +2,17 @@ import { Injectable, BadRequestException, ConflictException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { addMinutes } from 'date-fns';
+import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 
 @Injectable()
 export class AgendamentoService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificacaoProducer: NotificacaoProducer,
+  ) {}
 
   async create(dto: CreateAgendamentoDto, barCodigo: number) {
-    // 1. Busca duração por barbeiro (BarbeiroServico) com fallback para duracaoBase do Servico
+    // 1. Busca duração por barbeiro com fallback para base do serviço
     const servicos = await this.prisma.servico.findMany({
       where: {
         codigo: { in: dto.servicosIds },
@@ -29,7 +33,6 @@ export class AgendamentoService {
 
     let totalDuration = 0;
     const agendamentoItemsData = servicos.map((srv) => {
-      // Usa duração própria do barbeiro se existir, senão usa a base do serviço
       const duracaoMin =
         srv.barbeiros.length > 0 && srv.barbeiros[0].duracaoMin
           ? srv.barbeiros[0].duracaoMin
@@ -42,19 +45,14 @@ export class AgendamentoService {
 
       totalDuration += duracaoMin;
 
-      return {
-        srvCodigo: srv.codigo,
-        duracaoMin,
-        preco,
-        barCodigo,
-      };
+      return { srvCodigo: srv.codigo, duracaoMin, preco, barCodigo };
     });
 
     const inicioDate = new Date(dto.inicio);
     const fimDate = addMinutes(inicioDate, totalDuration);
 
-    return this.prisma.$transaction(async (tx) => {
-      // 2. FOR UPDATE SKIP LOCKED — evita double booking em concorrência
+    // 2. Transação com lock anti-double-booking
+    const agendamento = await this.prisma.$transaction(async (tx) => {
       const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
         SELECT COUNT(1) as count
         FROM "TQE_AGENDAMENTO"
@@ -71,7 +69,7 @@ export class AgendamentoService {
         );
       }
 
-      const agendamento = await tx.agendamento.create({
+      return tx.agendamento.create({
         data: {
           barbeiroId: dto.barbeiroId,
           clienteId: dto.clienteId,
@@ -79,16 +77,29 @@ export class AgendamentoService {
           inicio: inicioDate,
           fim: fimDate,
           status: 'confirmado',
-          itens: {
-            create: agendamentoItemsData,
-          },
+          itens: { create: agendamentoItemsData },
         },
         include: {
           itens: true,
+          cliente: true,
+          barbeiro: true,
+          barbearia: true,
         },
       });
-
-      return agendamento;
     });
+
+    // 3. Emite notificação APÓS a transação (não bloqueia a resposta)
+    await this.notificacaoProducer.agendamentoConfirmado({
+      agendamentoCodigo: agendamento.codigo,
+      clienteNome: agendamento.cliente.nome,
+      clienteEmail: agendamento.cliente.email,
+      barbeiroNome: agendamento.barbeiro.nome,
+      barbeariaNome: agendamento.barbearia.nome,
+      inicio: agendamento.inicio.toISOString(),
+      fim: agendamento.fim.toISOString(),
+      servicos: servicos.map((s) => s.nome),
+    });
+
+    return agendamento;
   }
 }
