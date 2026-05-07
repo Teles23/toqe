@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
     "name": "Toqe API v1",
-    "description": "Collection completa para testar os endpoints da API Toqe.",
+    "description": "Collection completa — Sprints 1, 2 e 3. Inclui autenticação, barbearia, serviços, agenda, agendamentos, usuário, notificações e white-label.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -13,9 +13,7 @@
           "name": "Registrar Usuário",
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Admin Teste\",\n  \"email\": \"admin@toqe.com.br\",\n  \"senha\": \"senha123\"\n}"
@@ -44,9 +42,7 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"admin@toqe.com.br\",\n  \"senha\": \"senha123\"\n}"
@@ -57,11 +53,97 @@
               "path": ["auth", "login"]
             }
           }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"access_token\", jsonData.access_token);",
+                  "pm.environment.set(\"refresh_token\", jsonData.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
         }
       ]
     },
     {
-      "name": "2. Barbearia (Tenant)",
+      "name": "2. Usuário",
+      "item": [
+        {
+          "name": "Meu Perfil",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "me"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Perfil",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Novo Nome\",\n  \"telefone\": \"+5511999999999\",\n  \"avatarUrl\": \"https://example.com/avatar.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Barbearia (Tenant)",
       "item": [
         {
           "name": "Criar Barbearia",
@@ -93,14 +175,111 @@
               "path": ["barbearias"]
             }
           }
+        },
+        {
+          "name": "Listar Membros",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/barbearias/{{tenant_id}}/membros",
+              "host": ["{{baseUrl}}"],
+              "path": ["barbearias", "{{tenant_id}}", "membros"]
+            }
+          }
+        },
+        {
+          "name": "Convidar Membro",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"barbeiro@toqe.com.br\",\n  \"perfil\": \"barbeiro\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/barbearias/{{tenant_id}}/membros",
+              "host": ["{{baseUrl}}"],
+              "path": ["barbearias", "{{tenant_id}}", "membros"]
+            }
+          }
+        },
+        {
+          "name": "Remover Membro",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/barbearias/{{tenant_id}}/membros/{{membro_codigo}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["barbearias", "{{tenant_id}}", "membros", "{{membro_codigo}}"]
+            }
+          }
+        },
+        {
+          "name": "Obter Tema (White-label)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/barbearias/{{tenant_id}}/tema",
+              "host": ["{{baseUrl}}"],
+              "path": ["barbearias", "{{tenant_id}}", "tema"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Tema (White-label)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"corPrimaria\": \"#1A1A2E\",\n  \"corFundo\": \"#16213E\",\n  \"logoUrl\": \"https://example.com/logo.png\",\n  \"subdominio\": \"minha-barbearia\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/barbearias/{{tenant_id}}/tema",
+              "host": ["{{baseUrl}}"],
+              "path": ["barbearias", "{{tenant_id}}", "tema"]
+            }
+          }
         }
       ]
     },
     {
-      "name": "3. Serviços",
+      "name": "4. Serviços",
       "item": [
         {
           "name": "Criar Serviço",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"servico_codigo\", jsonData.codigo);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -133,11 +312,61 @@
               "path": ["servicos"]
             }
           }
+        },
+        {
+          "name": "Buscar Serviço por Código",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servico_codigo}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servico_codigo}}"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Serviço",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Corte + Barba\",\n  \"precoBase\": 65.00,\n  \"duracaoBase\": 45\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servico_codigo}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servico_codigo}}"]
+            }
+          }
+        },
+        {
+          "name": "Remover Serviço (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servico_codigo}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servico_codigo}}"]
+            }
+          }
         }
       ]
     },
     {
-      "name": "4. Agenda",
+      "name": "5. Agenda",
       "item": [
         {
           "name": "Configurar Jornada (Segunda-feira)",
@@ -181,10 +410,22 @@
       ]
     },
     {
-      "name": "5. Agendamentos",
+      "name": "6. Agendamentos",
       "item": [
         {
           "name": "Criar Agendamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set(\"agendamento_codigo\", jsonData.codigo);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -202,14 +443,143 @@
               "path": ["agendamentos"]
             }
           }
+        },
+        {
+          "name": "Listar Agendamentos (com filtros)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos?data=2026-05-10&barbeiroId=1&status=confirmado",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos"],
+              "query": [
+                { "key": "data", "value": "2026-05-10", "description": "Filtrar por data (YYYY-MM-DD)" },
+                { "key": "barbeiroId", "value": "1", "description": "Filtrar por barbeiro" },
+                { "key": "status", "value": "confirmado", "description": "pendente | confirmado | cancelado | concluido" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar Agendamento por Código",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{agendamento_codigo}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos", "{{agendamento_codigo}}"]
+            }
+          }
+        },
+        {
+          "name": "Alterar Status do Agendamento",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmado\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{agendamento_codigo}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos", "{{agendamento_codigo}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Cancelar Agendamento",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "x-tenant-id", "value": "{{tenant_id}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{agendamento_codigo}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos", "{{agendamento_codigo}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Notificações",
+      "item": [
+        {
+          "name": "Listar Preferências",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notificacoes/preferencias",
+              "host": ["{{baseUrl}}"],
+              "path": ["notificacoes", "preferencias"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Preferências",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": true,\n  \"push\": true,\n  \"whatsapp\": false,\n  \"sms\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notificacoes/preferencias",
+              "host": ["{{baseUrl}}"],
+              "path": ["notificacoes", "preferencias"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. WebSocket (Agenda em Tempo Real)",
+      "item": [
+        {
+          "name": "⚙️ Info — Como conectar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Este grupo documenta o WebSocket. Use um cliente Socket.io (ex: Postman WebSocket ou browser).\n\nURL: ws://localhost:8080/agenda\n\nEventos emitidos pelo cliente:\n  • join-barbearia  → { barCodigo: number }\n  • leave-barbearia → { barCodigo: number }\n\nEventos recebidos do servidor:\n  • agendamento:criado → objeto completo do agendamento\n  • agendamento:status → { codigo, status }\n\nExemplo (JavaScript):\n  const socket = io('http://localhost:8080/agenda');\n  socket.emit('join-barbearia', 1);\n  socket.on('agendamento:criado', (agendamento) => console.log(agendamento));\n  socket.on('agendamento:status', ({ codigo, status }) => console.log(codigo, status));",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
         }
       ]
     }
   ],
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080/api/v1"
-    }
+    { "key": "baseUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "tenant_id", "value": "" },
+    { "key": "access_token", "value": "" },
+    { "key": "refresh_token", "value": "" },
+    { "key": "servico_codigo", "value": "" },
+    { "key": "agendamento_codigo", "value": "" },
+    { "key": "membro_codigo", "value": "" }
   ]
 }

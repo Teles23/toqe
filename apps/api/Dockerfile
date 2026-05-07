@@ -36,9 +36,10 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
 WORKDIR /app
 
-COPY --from=builder /prod/api/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist     ./dist
-COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /prod/api/node_modules      ./node_modules
+COPY --from=builder /app/apps/api/dist          ./dist
+COPY --from=builder /app/apps/api/package.json  ./package.json
+COPY --from=builder /app/apps/api/prisma/seed-runner.js ./seed-runner.js
 
 USER nestjs
 
@@ -47,4 +48,5 @@ EXPOSE 3000
 # HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 #   CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["node", "dist/main.js"]
+# seed-runner.js é idempotente (upsert) — seguro rodar a cada startup
+CMD ["sh", "-c", "node seed-runner.js && node dist/main.js"]
