@@ -1,12 +1,26 @@
 FROM node:20-alpine AS base
-RUN npm i -g pnpm
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # ---- Builder ----
 FROM base AS builder
 WORKDIR /app
 
-COPY . .
+# Copia apenas os manifests para aproveitar cache do layer de instalação.
+# O pnpm install só é reexecutado quando package.json ou lockfile mudam.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json         ./apps/api/
+COPY apps/web/package.json         ./apps/web/
+COPY apps/mobile/package.json      ./apps/mobile/
+COPY packages/config/package.json          ./packages/config/
+COPY packages/shared/package.json          ./packages/shared/
+COPY packages/validators/package.json      ./packages/validators/
+COPY packages/eslint-config/package.json   ./packages/eslint-config/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+
 RUN pnpm install --frozen-lockfile
+
+# Copia o source após o install para não invalidar o cache acima
+COPY . .
 
 RUN pnpm --filter api exec prisma generate --schema=./prisma/schema.prisma
 
@@ -23,7 +37,7 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 WORKDIR /app
 
 COPY --from=builder /prod/api/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist       ./dist
+COPY --from=builder /app/apps/api/dist     ./dist
 COPY --from=builder /app/apps/api/package.json ./package.json
 
 USER nestjs

@@ -1,6 +1,40 @@
+# Controle de versão
+.git
+.gitignore
+
+# Dependências locais (reinstaladas no build)
+node_modules
 **/node_modules
-**/.git
-**/.next
+
+# Builds locais
 **/dist
-**/coverage
+**/.next
+**/build
+
+# Prisma client gerado
+**/src/generated
+
+# Ambiente e segredos
 .env
+.env.*
+!.env.example
+
+# Ferramentas de desenvolvimento
+.vscode
+.idea
+**/*.log
+
+# Docs e configs de dev
+docs
+README.md
+*.md
+
+# Testes
+**/coverage
+**/__tests__
+**/*.spec.ts
+**/*.test.ts
+
+# OS
+.DS_Store
+Thumbs.db
