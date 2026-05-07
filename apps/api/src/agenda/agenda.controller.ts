@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Get, UseGuards, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Param, ParseIntPipe, Headers, Query } from '@nestjs/common';
 import { AgendaService } from './agenda.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
+import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('agenda')
@@ -19,5 +20,29 @@ export class AgendaController {
   @Get('jornada/:barbeiroId')
   obterJornada(@Param('barbeiroId', ParseIntPipe) barbeiroId: number) {
     return this.agendaService.getJornada(barbeiroId);
+  }
+
+  @Post('bloqueios/:barbeiroId')
+  criarBloqueio(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Body() dto: CreateBloqueioDto,
+  ) {
+    return this.agendaService.createBloqueio(barbeiroId, Number(barCodigo), dto);
+  }
+
+  @Get('disponibilidade/:barbeiroId')
+  async obterDisponibilidade(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Query('data') data: string,
+    @Query('duracao', ParseIntPipe) duracao: number,
+  ) {
+    return this.agendaService.getAvailableSlots(
+      barbeiroId,
+      Number(barCodigo),
+      data,
+      duracao,
+    );
   }
 }
