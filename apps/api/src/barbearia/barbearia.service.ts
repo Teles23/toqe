@@ -2,6 +2,7 @@ import { Injectable, ConflictException, NotFoundException, BadRequestException }
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
+import { UpdateTemaDto } from './dto/update-tema.dto';
 
 @Injectable()
 export class BarbeariaService {
@@ -44,6 +45,19 @@ export class BarbeariaService {
       include: {
         usuario: { select: { codigo: true, nome: true, email: true } },
       },
+    });
+  }
+
+  async getTema(barCodigo: number) {
+    const tema = await this.prisma.temaTenant.findUnique({ where: { barCodigo } });
+    return tema ?? { barCodigo, corPrimaria: null, corFundo: null, logoUrl: null, subdominio: null };
+  }
+
+  async upsertTema(barCodigo: number, dto: UpdateTemaDto) {
+    return this.prisma.temaTenant.upsert({
+      where: { barCodigo },
+      update: dto,
+      create: { barCodigo, ...dto },
     });
   }
 

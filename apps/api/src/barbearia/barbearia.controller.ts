@@ -1,11 +1,14 @@
-import { Controller, Post, Get, Delete, Body, Param, UseGuards, Request, Headers, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards, Request, Headers, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
 import { BarbeariaService } from './barbearia.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
+import { UpdateTemaDto } from './dto/update-tema.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { FeatureFlagGuard } from '../auth/guards/feature-flag.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Feature } from '../auth/decorators/feature.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
 
 @ApiTags('Barbearias')
@@ -50,6 +53,35 @@ export class BarbeariaController {
     @Headers('x-tenant-id') _tenantId: string,
   ) {
     return this.barbeariaService.convidarMembro(barCodigo, dto);
+  }
+
+  @Get(':barCodigo/tema')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({ summary: 'Retorna o tema (white-label) da barbearia' })
+  @ApiResponse({ status: 200, description: 'Tema retornado.' })
+  getTema(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.getTema(barCodigo);
+  }
+
+  @Put(':barCodigo/tema')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard, FeatureFlagGuard)
+  @Roles('dono', 'gerente')
+  @Feature('whiteLabel')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({ summary: 'Atualiza o tema (white-label) — requer plano com whiteLabel=true' })
+  @ApiResponse({ status: 200, description: 'Tema atualizado.' })
+  @ApiResponse({ status: 403, description: 'Plano não inclui white-label.' })
+  upsertTema(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Body() dto: UpdateTemaDto,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.upsertTema(barCodigo, dto);
   }
 
   @Delete(':barCodigo/membros/:usrCodigo')

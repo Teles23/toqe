@@ -5,6 +5,7 @@ import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
+import { AgendaGateway } from '../agenda/agenda.gateway';
 
 const INCLUDE_COMPLETO = {
   itens: { include: { servico: true } },
@@ -18,6 +19,7 @@ export class AgendamentoService {
   constructor(
     private prisma: PrismaService,
     private notificacaoProducer: NotificacaoProducer,
+    private agendaGateway: AgendaGateway,
   ) {}
 
   async create(dto: CreateAgendamentoDto, barCodigo: number) {
@@ -81,6 +83,8 @@ export class AgendamentoService {
       servicos: servicos.map((s) => s.nome),
     });
 
+    this.agendaGateway.emitAgendamentoCriado(barCodigo, agendamento);
+
     return agendamento;
   }
 
@@ -112,11 +116,13 @@ export class AgendamentoService {
 
   async patchStatus(codigo: number, dto: PatchStatusAgendamentoDto, barCodigo: number) {
     await this.findOne(codigo, barCodigo);
-    return this.prisma.agendamento.update({
+    const atualizado = await this.prisma.agendamento.update({
       where: { codigo },
       data: { status: dto.status },
       include: INCLUDE_COMPLETO,
     });
+    this.agendaGateway.emitStatusAtualizado(barCodigo, { codigo, status: dto.status });
+    return atualizado;
   }
 
   async cancel(codigo: number, barCodigo: number) {
