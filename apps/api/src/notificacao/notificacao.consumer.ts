@@ -1,6 +1,6 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
+import type { Job } from 'bull';
 import { NotificacaoService } from './notificacao.service';
 import { AGENDAMENTO_CONFIRMADO, NOTIFICACAO_QUEUE } from './notificacao.producer';
 import { AgendamentoConfirmadoJob } from './notificacao.types';

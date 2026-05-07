@@ -42,7 +42,7 @@ export class AuthService {
       where: { revogado: false, expiraEm: { gt: new Date() } },
     });
 
-    let foundToken = null;
+    let foundToken: any = null;
     for (const t of tokens) {
       const match = await bcrypt.compare(dto.refreshToken, t.hash);
       if (match) {
@@ -63,6 +63,9 @@ export class AuthService {
 
     // 3. Gera novos tokens
     const user = await this.usuarioService.findById(foundToken.usrCodigo);
+    if (!user) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
     return this.generateTokens(user.codigo, user.nome, user.email);
   }
 
