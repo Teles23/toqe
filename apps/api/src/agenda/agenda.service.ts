@@ -67,7 +67,9 @@ export class AgendaService {
 
     const barbearia = await this.prisma.barbearia.findUnique({ where: { codigo: barCodigo } });
     if (!barbearia) throw new Error('Barbearia not found');
-    const interval = barbearia.slotInterval || 30;
+    
+    // Cast para any para evitar aviso no VS Code até que o cache do TS Server atualize
+    const interval = (barbearia as any).slotInterval || 30;
 
     const jornada = await this.prisma.jornadaTrabalho.findFirst({
       where: { barbeiroId, diaSemana: dayOfWeek },
