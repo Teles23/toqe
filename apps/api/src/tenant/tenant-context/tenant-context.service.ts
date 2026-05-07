@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { PrismaClient } from '../../generated/prisma';
+
+type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
 
 @Injectable()
 export class TenantContextService {
@@ -8,7 +13,7 @@ export class TenantContextService {
 
   async run<T>(
     barCodigo: number,
-    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    fn: (tx: TransactionClient) => Promise<T>,
   ): Promise<T> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$executeRawUnsafe(
