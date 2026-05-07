@@ -43,6 +43,7 @@ COPY --from=builder /app/apps/api/src/generated/prisma        ./generated/prisma
 COPY --from=builder /app/apps/api/prisma/schema.prisma        ./prisma/schema.prisma
 COPY --from=builder /app/apps/api/prisma/migrations           ./prisma/migrations
 COPY --from=builder /app/apps/api/prisma/seed-runner.js       ./seed-runner.js
+COPY --from=builder /app/apps/api/prisma.config.docker.js     ./prisma.config.js
 
 USER nestjs
 
@@ -55,4 +56,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 # 1. migrate deploy — aplica migrations pendentes (idempotente, seguro a cada startup)
 # 2. seed-runner.js — upsert dos planos (idempotente)
 # 3. node dist/main.js — inicia a API
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema ./prisma/schema.prisma --url \"$DATABASE_URL\" && node seed-runner.js && node dist/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --config ./prisma.config.js && node seed-runner.js && node dist/main.js"]
