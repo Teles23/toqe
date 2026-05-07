@@ -11,9 +11,11 @@ import { ServicoModule } from './servico/servico.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { AgendamentoModule } from './agendamento/agendamento.module';
 import { NotificacaoModule } from './notificacao/notificacao.module';
+import { ObservabilidadeModule } from './observabilidade/observabilidade.module';
 
 @Module({
   imports: [
+    ObservabilidadeModule, // primeiro — garante que o logger está pronto para os outros módulos
     BullModule.forRoot({
       redis: {
         host: process.env.REDIS_HOST || 'localhost',
@@ -30,6 +32,7 @@ import { NotificacaoModule } from './notificacao/notificacao.module';
     AgendaModule,
     AgendamentoModule,
     NotificacaoModule,
+    ObservabilidadeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

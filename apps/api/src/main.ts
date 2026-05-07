@@ -1,11 +1,30 @@
 import 'dotenv/config';
+
+// Sentry deve ser inicializado antes de qualquer outro import
+import * as Sentry from '@sentry/node';
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV ?? 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+  });
+}
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
+import { SentryExceptionFilter } from './observabilidade/sentry.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  // Substitui o logger padrão do NestJS pelo Pino
+  app.useLogger(app.get(Logger));
+
+  // Captura global de exceções (Sentry + resposta padronizada)
+  app.useGlobalFilters(new SentryExceptionFilter());
 
   // Prefix global de versão
   app.setGlobalPrefix('api/v1');
@@ -44,14 +63,14 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
+    swaggerOptions: { persistAuthorization: true },
   });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`🚀 API rodando em http://localhost:${port}/api/v1`);
-  console.log(`📚 Swagger disponível em http://localhost:${port}/docs`);
+
+  const logger = app.get(Logger);
+  logger.log(`🚀 API rodando em http://localhost:${port}/api/v1`);
+  logger.log(`📚 Swagger disponível em http://localhost:${port}/docs`);
 }
 bootstrap();
