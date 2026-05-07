@@ -1,30 +1,19 @@
 import 'dotenv/config';
-
-// Sentry deve ser inicializado antes de qualquer outro import
-import * as Sentry from '@sentry/node';
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV ?? 'development',
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
-  });
-}
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
-import { SentryExceptionFilter } from './observabilidade/sentry.filter';
+import { GlobalExceptionFilter } from './observabilidade/sentry.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  // Substitui o logger padrão do NestJS pelo Pino
+  // Substitui o logger padrão do NestJS pelo Pino (JSON em prod, pretty em dev)
   app.useLogger(app.get(Logger));
 
-  // Captura global de exceções (Sentry + resposta padronizada)
-  app.useGlobalFilters(new SentryExceptionFilter());
+  // Filtro global: loga erros 5xx com contexto tenant/usuário + resposta padronizada
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Prefix global de versão
   app.setGlobalPrefix('api/v1');

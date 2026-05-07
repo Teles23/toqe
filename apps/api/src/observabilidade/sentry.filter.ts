@@ -6,18 +6,16 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import * as Sentry from '@sentry/node';
 import { Request, Response } from 'express';
 
 /**
- * Captura todas as exceções não tratadas e:
- * 1. Envia para o Sentry (se SENTRY_DSN configurado)
- * 2. Loga com contexto de tenant/usuário
- * 3. Retorna resposta HTTP padronizada
+ * Filtro global de exceções:
+ * - Loga erros 5xx com contexto de tenant/usuário (via Pino)
+ * - Retorna resposta HTTP padronizada para todos os erros
  */
 @Catch()
-export class SentryExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(SentryExceptionFilter.name);
+export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -32,23 +30,16 @@ export class SentryExceptionFilter implements ExceptionFilter {
     const tenantId = req.headers['x-tenant-id'] ?? null;
     const userId = (req as any).user?.sub ?? null;
 
-    // Só envia erros 5xx para o Sentry (4xx são erros do cliente)
     if (status >= 500) {
-      Sentry.withScope((scope) => {
-        scope.setTag('tenantId', String(tenantId));
-        scope.setTag('userId', String(userId));
-        scope.setContext('request', {
-          method: req.method,
-          url: req.url,
+      this.logger.error(
+        {
           tenantId,
           userId,
-        });
-        Sentry.captureException(exception);
-      });
-
-      this.logger.error(
-        { tenantId, userId, url: req.url, method: req.method },
-        exception instanceof Error ? exception.message : String(exception),
+          method: req.method,
+          url: req.url,
+          err: exception instanceof Error ? exception.stack : String(exception),
+        },
+        exception instanceof Error ? exception.message : 'Erro interno do servidor',
       );
     }
 
