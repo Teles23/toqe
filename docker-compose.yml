@@ -18,10 +18,15 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     environment:
+      - NODE_ENV=production
+      - PORT=3000
       - DATABASE_URL=${DATABASE_URL:-postgresql://toqe_app:senha_forte@postgres:5432/toqe}
-      - JWT_SECRET=${JWT_SECRET:-secret}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-refresh}
-      - REDIS_URL=${REDIS_URL:-redis://:senha_forte@redis:6379}
+      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-change_me_in_production}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-senha_forte}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
     depends_on:
       - postgres
       - redis

@@ -7,10 +7,16 @@ import { ptBR } from 'date-fns/locale';
 @Injectable()
 export class NotificacaoService {
   private readonly logger = new Logger(NotificacaoService.name);
-  private readonly resend: Resend;
+  private readonly resend: Resend | null;
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      this.logger.warn('RESEND_API_KEY não configurada — envio de e-mails desabilitado');
+      this.resend = null;
+    } else {
+      this.resend = new Resend(apiKey);
+    }
   }
 
   async enviarConfirmacaoAgendamento(data: AgendamentoConfirmadoJob) {
@@ -21,6 +27,11 @@ export class NotificacaoService {
     );
 
     const servicosList = data.servicos.map((s) => `• ${s}`).join('\n');
+
+    if (!this.resend) {
+      this.logger.warn(`E-mail para ${data.clienteEmail} ignorado: RESEND_API_KEY não configurada`);
+      return;
+    }
 
     try {
       const result = await this.resend.emails.send({
