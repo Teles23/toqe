@@ -45,8 +45,8 @@ USER nestjs
 
 EXPOSE 3000
 
-# HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-#   CMD wget -qO- http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3000/api/v1/health || exit 1
 
 # seed-runner.js é idempotente (upsert) — seguro rodar a cada startup
 CMD ["sh", "-c", "node seed-runner.js && node dist/main.js"]
