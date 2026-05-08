@@ -34,28 +34,28 @@ services:
       redis:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1" ]
       interval: 30s
       timeout: 5s
       start_period: 15s
       retries: 3
     restart: unless-stopped
 
-#  web:
-#    container_name: toqe-web
-#    build:
-#      context: .
-#      dockerfile: apps/web/Dockerfile
-#    environment:
-#      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-secret}
-#      - API_URL=http://api:3000
-#    restart: unless-stopped
+  #  web:
+  #    container_name: toqe-web
+  #    build:
+  #      context: .
+  #      dockerfile: apps/web/Dockerfile
+  #    environment:
+  #      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-secret}
+  #      - API_URL=http://api:3000
+  #    restart: unless-stopped
 
   postgres:
     container_name: toqe-postgres
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: toqe
       POSTGRES_USER: ${POSTGRES_USER:-toqe_app}
@@ -63,7 +63,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toqe_app} -d toqe"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toqe_app} -d toqe" ]
       interval: 10s
       timeout: 5s
       start_period: 10s

@@ -14,10 +14,11 @@ services:
       dockerfile: apps/api/Dockerfile.dev
     command: >
       sh -c "
-        pnpm --filter api exec prisma migrate deploy --config ./prisma.config.ts &&
-        pnpm --filter api exec prisma generate --schema=./prisma/schema.prisma &&
+        cd /app/apps/api &&
+        pnpm prisma migrate deploy --config ./prisma.config.ts &&
+        pnpm prisma generate --schema=./prisma/schema.prisma &&
         node prisma/seed-runner.js &&
-        pnpm --filter api run start:dev
+        pnpm run start:dev
       "
     ports:
       - "3000:3000"
@@ -33,11 +34,10 @@ services:
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
     volumes:
-      # Source da API — reflete mudanças em tempo real
-      - ./apps/api/src:/app/apps/api/src
       # Packages compartilhados — tipos, validators, config
-      - ./packages:/app/packages
+      #- ./packages:/app/packages
       # Isola node_modules do container (não usa o da máquina host)
+      - .:/app
       - api_dev_node_modules:/app/node_modules
       - api_dev_app_node_modules:/app/apps/api/node_modules
     depends_on:
@@ -59,7 +59,7 @@ services:
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toqe_app} -d toqe"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toqe_app} -d toqe" ]
       interval: 10s
       timeout: 5s
       start_period: 10s
