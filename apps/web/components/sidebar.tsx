@@ -23,13 +23,13 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { href: "/dashboard",      label: "Dashboard",     icon: LayoutDashboard, group: "main" },
-  { href: "/agenda",         label: "Agenda",         icon: Calendar,        group: "main" },
-  { href: "/servicos",       label: "Servi�os",       icon: Briefcase,       group: "main" },
-  { href: "/barbeiros",      label: "Barbeiros",      icon: Users,           group: "main" },
-  { href: "/clientes",       label: "Clientes",       icon: User,            group: "main" },
-  { href: "/relatorios",     label: "Relat�rios",     icon: BarChart3,       group: "insights" },
-  { href: "/configuracoes",  label: "Configura��es",  icon: Settings,        group: "system" },
+  { href: "/dashboard",      label: "Dashboard",      icon: LayoutDashboard, group: "main" },
+  { href: "/agenda",         label: "Agenda",          icon: Calendar,        group: "main" },
+  { href: "/servicos",       label: "Serviços",        icon: Briefcase,       group: "main" },
+  { href: "/barbeiros",      label: "Barbeiros",       icon: Users,           group: "main" },
+  { href: "/clientes",       label: "Clientes",        icon: User,            group: "main" },
+  { href: "/relatorios",     label: "Relatórios",      icon: BarChart3,       group: "insights" },
+  { href: "/configuracoes",  label: "Configurações",   icon: Settings,        group: "system" },
 ];
 
 const groupLabels: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
         transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
         style={{ willChange: "width" }}
         className="relative flex flex-col h-screen overflow-hidden flex-shrink-0"
-        aria-label="Navega��o principal"
+        aria-label="Navegação principal"
       >
         {/* Fundo com borda direita */}
         <div
@@ -75,7 +75,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
           className="relative z-10 flex items-center h-14 px-3 flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
-          {/* �cone da marca */}
+          {/* Ícone da marca */}
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -91,7 +91,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
             <Scissors size={15} color="#0D0D0D" strokeWidth={2.5} />
           </motion.div>
 
-          {/* Wordmark  some ao colapsar */}
+          {/* Wordmark — some ao colapsar */}
           <AnimatePresence initial={false}>
             {isOpen && (
               <motion.div
@@ -191,7 +191,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
         <nav className="relative z-10 flex-1 px-2 py-2 overflow-y-auto overflow-x-hidden space-y-4">
           {Object.entries(groups).map(([group, items]) => (
             <div key={group}>
-              {/* Label do grupo  s� quando aberto */}
+              {/* Label do grupo — só quando aberto */}
               <AnimatePresence initial={false}>
                 {isOpen && (
                   <motion.div
@@ -246,7 +246,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
                           }
                         }}
                       >
-                        {/* Barra de acento �mbar no item ativo */}
+                        {/* Barra de acento âmbar no item ativo */}
                         {active && (
                           <motion.span
                             layoutId="sidebar-active-bar"
@@ -261,7 +261,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
                           />
                         )}
 
-                        {/* �cone */}
+                        {/* Ícone */}
                         <span className="flex-shrink-0">
                           <Icon
                             size={16}
@@ -294,7 +294,7 @@ export default function Sidebar({ isOpen, onToggle }: SidebarProps): React.JSX.E
           ))}
         </nav>
 
-        {/* -- Footer  Toggle -- */}
+        {/* -- Footer / Toggle -- */}
         <div
           className="relative z-10 p-2 flex-shrink-0"
           style={{ borderTop: "1px solid var(--border-subtle)" }}
