@@ -3,9 +3,10 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, LogOut, Search, Menu } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { useAuth } from "@/contexts/auth-context";
 
 interface TopbarProps {
   title?: string;
@@ -30,7 +31,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 
 export default function Topbar({ onMenuToggle, liveStatus, actions }: TopbarProps): React.JSX.Element {
   const pathname = usePathname();
-  const router = useRouter();
+  const { logout } = useAuth();
   const [searchFocused, setSearchFocused] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -225,7 +226,7 @@ export default function Topbar({ onMenuToggle, liveStatus, actions }: TopbarProp
 
       {/* Logout */}
       <button
-        onClick={() => router.push("/login")}
+        onClick={() => logout()}
         className="p-1.5 rounded-lg"
         style={{ color: "var(--text-secondary)" }}
         title="Sair"
