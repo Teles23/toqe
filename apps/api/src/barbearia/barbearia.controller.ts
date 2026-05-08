@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards, Request, Headers, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
 import { BarbeariaService } from './barbearia.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
+import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -24,6 +25,60 @@ export class BarbeariaController {
   @ApiResponse({ status: 409, description: 'Slug já em uso.' })
   create(@Body() dto: CreateBarbeariaDto, @Request() req) {
     return this.barbeariaService.create(dto, req.user.sub);
+  }
+
+  @Get(':barCodigo')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({ summary: 'Retorna os dados da barbearia' })
+  @ApiResponse({ status: 200, description: 'Dados da barbearia.' })
+  findOne(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.findOne(barCodigo);
+  }
+
+  @Put(':barCodigo')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({ summary: 'Atualiza dados básicos da barbearia' })
+  @ApiResponse({ status: 200, description: 'Barbearia atualizada.' })
+  @ApiResponse({ status: 409, description: 'Slug já em uso.' })
+  update(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Body() dto: UpdateBarbeariaDto,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.update(barCodigo, dto);
+  }
+
+  @Get(':barCodigo/barbeiros')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente', 'recepcionista')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({ summary: 'Lista barbeiros da barbearia com stats do mês' })
+  @ApiResponse({ status: 200, description: 'Lista de barbeiros com métricas.' })
+  findBarbeiros(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.findBarbeiros(barCodigo);
+  }
+
+  @Get(':barCodigo/clientes')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente', 'recepcionista', 'barbeiro')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({ summary: 'Lista clientes da barbearia com histórico' })
+  @ApiResponse({ status: 200, description: 'Lista de clientes com histórico.' })
+  findClientes(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.findClientes(barCodigo);
   }
 
   @Get(':barCodigo/membros')

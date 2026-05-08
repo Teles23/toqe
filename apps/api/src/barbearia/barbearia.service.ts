@@ -2,6 +2,7 @@ import { Injectable, ConflictException, NotFoundException, BadRequestException }
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
+import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
 
 @Injectable()
@@ -19,6 +20,127 @@ export class BarbeariaService {
       });
       return barbearia;
     });
+  }
+
+  async findOne(barCodigo: number) {
+    const barbearia = await this.prisma.barbearia.findUnique({
+      where: { codigo: barCodigo },
+      include: { tema: true },
+    });
+    if (!barbearia) throw new NotFoundException('Barbearia não encontrada');
+    return barbearia;
+  }
+
+  async update(barCodigo: number, dto: UpdateBarbeariaDto) {
+    await this.findOne(barCodigo);
+
+    if (dto.slug) {
+      const existing = await this.prisma.barbearia.findFirst({
+        where: { slug: dto.slug, codigo: { not: barCodigo } },
+      });
+      if (existing) throw new ConflictException('Slug já está em uso');
+    }
+
+    return this.prisma.barbearia.update({
+      where: { codigo: barCodigo },
+      data: dto,
+    });
+  }
+
+  async findBarbeiros(barCodigo: number) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const fimHoje = new Date(hoje);
+    fimHoje.setHours(23, 59, 59, 999);
+
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const fimMes    = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const membros = await this.prisma.membroBarbearia.findMany({
+      where: { barCodigo, perfil: 'barbeiro' },
+      include: {
+        usuario: {
+          select: { codigo: true, nome: true, email: true, telefone: true, avatarUrl: true },
+        },
+      },
+    });
+
+    return Promise.all(
+      membros.map(async (m) => {
+        const [atendimentosHoje, agendamentosMes] = await Promise.all([
+          this.prisma.agendamento.count({
+            where: {
+              barCodigo,
+              barbeiroId: m.usrCodigo,
+              status: 'concluido',
+              inicio: { gte: hoje, lte: fimHoje },
+            },
+          }),
+          this.prisma.agendamento.findMany({
+            where: {
+              barCodigo,
+              barbeiroId: m.usrCodigo,
+              status: 'concluido',
+              inicio: { gte: inicioMes, lte: fimMes },
+            },
+            include: { itens: { select: { preco: true } } },
+          }),
+        ]);
+
+        const faturamentoMes = agendamentosMes.reduce((acc, ag) =>
+          acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0), 0);
+
+        return {
+          ...m.usuario,
+          perfil: m.perfil,
+          atendimentosHoje,
+          atendimentosMes: agendamentosMes.length,
+          faturamentoMes,
+          ticketMedio: agendamentosMes.length > 0 ? faturamentoMes / agendamentosMes.length : 0,
+        };
+      }),
+    );
+  }
+
+  async findClientes(barCodigo: number) {
+    const membros = await this.prisma.membroBarbearia.findMany({
+      where: { barCodigo, perfil: 'cliente' },
+      include: {
+        usuario: {
+          select: { codigo: true, nome: true, email: true, telefone: true, avatarUrl: true },
+        },
+      },
+    });
+
+    return Promise.all(
+      membros.map(async (m) => {
+        const agendamentos = await this.prisma.agendamento.findMany({
+          where: { barCodigo, clienteId: m.usrCodigo, status: 'concluido' },
+          include: { itens: { select: { preco: true, servico: { select: { nome: true } } } } },
+          orderBy: { inicio: 'desc' },
+        });
+
+        const totalGasto = agendamentos.reduce((acc, ag) =>
+          acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0), 0);
+
+        // Serviço favorito: o mais frequente nos itens
+        const contagem: Record<string, number> = {};
+        agendamentos.forEach(ag =>
+          ag.itens.forEach(it => { contagem[it.servico.nome] = (contagem[it.servico.nome] ?? 0) + 1; }),
+        );
+        const servicoFav = Object.entries(contagem).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+        return {
+          ...m.usuario,
+          perfil: m.perfil,
+          totalVisitas:  agendamentos.length,
+          totalGasto,
+          ticketMedio:   agendamentos.length > 0 ? totalGasto / agendamentos.length : 0,
+          ultimaVisita:  agendamentos[0]?.inicio ?? null,
+          servicoFav,
+        };
+      }),
+    );
   }
 
   async findMembros(barCodigo: number) {
