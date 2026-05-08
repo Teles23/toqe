@@ -1,33 +1,55 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
+/**
+ * BFF — POST /api/auth/logout
+ *
+ * Le refresh_token e access_token dos cookies, revoga o token na API
+ * e limpa ambos os cookies do browser.
+ */
 
-/** POST /api/auth/logout — revoga refresh token e limpa cookies */
+const INTERNAL_API =
+  process.env.INTERNAL_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:3000/api/v1";
+
+const IS_PROD = process.env.NODE_ENV === "production";
+
 export async function POST(req: NextRequest) {
   const refreshToken = req.cookies.get("refresh_token")?.value;
+  const accessToken = req.cookies.get("access_token")?.value;
 
-  // Tenta revogar no backend (best-effort — não falha se a API estiver offline)
-  if (refreshToken) {
+  if (refreshToken && accessToken) {
     try {
-      const accessToken = req.cookies.get("access_token")?.value;
-      await fetch(`${API}/auth/logout`, {
-        method:  "POST",
+      await fetch(`${INTERNAL_API}/auth/logout`, {
+        method: "POST",
         headers: {
-          "Content-Type":  "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        body: JSON.stringify({ refreshToken }),
       });
     } catch {
-      // Ignora erros de rede — limpa os cookies de qualquer forma
+      // Ignora erros — limpa cookies de qualquer forma
     }
   }
 
-  const res = NextResponse.json({ ok: true }, { status: 200 });
+  const res = NextResponse.json({ ok: true });
 
-  // Expira os cookies imediatamente
-  res.cookies.set("access_token",  "", { maxAge: 0, path: "/" });
-  res.cookies.set("refresh_token", "", { maxAge: 0, path: "/" });
+  const cookieOpts = {
+    httpOnly: false,
+    secure: IS_PROD,
+    sameSite: "strict" as const,
+    maxAge: 0,
+    path: "/",
+  };
+
+  res.cookies.set("access_token", "", { ...cookieOpts, maxAge: 0 });
+  res.cookies.set("refresh_token", "", {
+    ...cookieOpts,
+    httpOnly: true,
+    path: "/api/auth",
+    maxAge: 0,
+  });
 
   return res;
 }

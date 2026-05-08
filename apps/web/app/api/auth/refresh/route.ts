@@ -1,15 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
+/**
+ * BFF — POST /api/auth/refresh
+ *
+ * Le refresh_token do cookie httpOnly, chama a API para rotar os tokens
+ * e atualiza ambos os cookies com os novos valores.
+ */
 
-const COOKIE_OPTS = {
-  httpOnly: true,
-  secure:   process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
-  path:     "/",
-};
+const INTERNAL_API =
+  process.env.INTERNAL_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:3000/api/v1";
 
-/** POST /api/auth/refresh — rotaciona os tokens via cookie httpOnly */
+const IS_PROD = process.env.NODE_ENV === "production";
+
 export async function POST(req: NextRequest) {
   const refreshToken = req.cookies.get("refresh_token")?.value;
 
@@ -17,35 +21,56 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Sem refresh token" }, { status: 401 });
   }
 
-  const upstream = await fetch(`${API}/auth/refresh`, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ refresh_token: refreshToken }),
-  }).catch(() => null);
+  let apiRes: Response;
+  try {
+    apiRes = await fetch(`${INTERNAL_API}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch {
+    return NextResponse.json(
+      { message: "Servico indisponivel." },
+      { status: 503 }
+    );
+  }
 
-  if (!upstream?.ok) {
-    // Refresh falhou — limpa cookies e força novo login
-    const res = NextResponse.json({ message: "Sessão expirada" }, { status: 401 });
-    res.cookies.set("access_token",  "", { maxAge: 0, path: "/" });
-    res.cookies.set("refresh_token", "", { maxAge: 0, path: "/" });
+  if (!apiRes.ok) {
+    // Refresh invalido — limpa cookies
+    const res = NextResponse.json(
+      { message: "Sessao expirada" },
+      { status: 401 }
+    );
+    res.cookies.set("access_token", "", { maxAge: 0, path: "/" });
+    res.cookies.set("refresh_token", "", {
+      httpOnly: true,
+      maxAge: 0,
+      path: "/api/auth",
+    });
     return res;
   }
 
-  const data = await upstream.json() as {
-    access_token:  string;
+  const { access_token, refresh_token } = (await apiRes.json()) as {
+    access_token: string;
     refresh_token: string;
   };
 
-  const res = NextResponse.json({ ok: true }, { status: 200 });
+  const res = NextResponse.json({ ok: true });
 
-  res.cookies.set("access_token", data.access_token, {
-    ...COOKIE_OPTS,
-    maxAge: 60 * 15,
+  res.cookies.set("access_token", access_token, {
+    httpOnly: false,
+    secure: IS_PROD,
+    sameSite: "strict",
+    maxAge: 900,
+    path: "/",
   });
 
-  res.cookies.set("refresh_token", data.refresh_token, {
-    ...COOKIE_OPTS,
+  res.cookies.set("refresh_token", refresh_token, {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: "strict",
     maxAge: 60 * 60 * 24 * 30,
+    path: "/api/auth",
   });
 
   return res;
