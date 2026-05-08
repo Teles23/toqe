@@ -19,6 +19,34 @@ import {
 /* ── Tipos ── */
 type SlotStatus = "active" | "confirmed" | "pending" | "late" | "blocked" | "available";
 
+/**
+ * Mapeamento entre status da API (português) e status de exibição (inglês).
+ * Usado ao converter respostas reais da API para o estado local do componente.
+ *
+ * API → Frontend:
+ *   confirmado → confirmed
+ *   concluido  → active    (em andamento)
+ *   cancelado  → blocked
+ *   no_show    → late
+ */
+export const API_STATUS_TO_SLOT: Record<string, SlotStatus> = {
+  confirmado: "confirmed",
+  concluido:  "active",
+  cancelado:  "blocked",
+  no_show:    "late",
+} as const;
+
+/**
+ * Mapeamento inverso: estado local → status da API.
+ * Usado ao enviar PATCH /agendamentos/:codigo/status.
+ */
+export const SLOT_TO_API_STATUS: Partial<Record<SlotStatus, string>> = {
+  confirmed: "confirmado",
+  active:    "concluido",
+  blocked:   "cancelado",
+  late:      "no_show",
+} as const;
+
 interface Slot {
   id: number;
   time: string;
