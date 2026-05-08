@@ -46,14 +46,24 @@ export class UsuarioService {
         membros: {
           select: {
             perfil: true,
-            criadoEm: true,
             barbearia: { select: { codigo: true, nome: true, slug: true } },
           },
         },
       },
     });
     if (!usuario) throw new NotFoundException('Usuário não encontrado');
-    return usuario;
+
+    // Transforma membros → barbearias para corresponder ao contrato do frontend (UsuarioMe)
+    const { membros, ...rest } = usuario;
+    return {
+      ...rest,
+      barbearias: membros.map(m => ({
+        codigo: m.barbearia.codigo,
+        nome:   m.barbearia.nome,
+        slug:   m.barbearia.slug,
+        perfil: m.perfil,
+      })),
+    };
   }
 
   async update(usrCodigo: number, dto: UpdateUsuarioDto) {
