@@ -1,8 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/auth-context";
+import { loginSchema, registerSchema } from "@toqe/validators";
+import type { LoginInput, RegisterInput } from "@toqe/validators";
 import {
   Scissors, Eye, EyeOff, ArrowRight,
   AlertCircle, Loader2, CheckCircle,
@@ -13,32 +17,53 @@ type Mode = "login" | "forgot";
 export default function Login(): React.JSX.Element {
   const { login } = useAuth();
   const [mode, setMode]         = useState<Mode>("login");
-  const [email, setEmail]       = useState("");
-  const [senha, setSenha]       = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
+  const [apiError, setApiError] = useState("");
   const [success, setSuccess]   = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+  // ── react-hook-form com validação Zod (@toqe/validators) ──────────────────
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    mode: "onBlur",
+  });
+
+  // Form separado para recuperação de senha (só precisa de email)
+  const {
+    register: registerForgot,
+    handleSubmit: handleSubmitForgot,
+    formState: { errors: forgotErrors },
+  } = useForm<Pick<RegisterInput, "email">>({
+    resolver: zodResolver(loginSchema.pick({ email: true })),
+    mode: "onBlur",
+  });
+
+  async function onLoginSubmit(data: LoginInput) {
+    setApiError("");
     setLoading(true);
-
     try {
-      if (mode === "forgot") {
-        // TODO: conectar endpoint de recuperação de senha quando disponível na API
-        await new Promise(r => setTimeout(r, 1000));
-        setSuccess(true);
-        return;
-      }
-
-      await login(email, senha);
-      // Após login bem-sucedido, o auth-context redireciona para /dashboard
+      await login(data.email, data.senha);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Erro ao entrar. Tente novamente.";
-      setError(message);
+      setApiError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onForgotSubmit(_data: Pick<RegisterInput, "email">) {
+    setApiError("");
+    setLoading(true);
+    try {
+      // TODO: conectar endpoint de recuperação de senha quando disponível na API
+      await new Promise(r => setTimeout(r, 1000));
+      setSuccess(true);
     } finally {
       setLoading(false);
     }
@@ -46,8 +71,9 @@ export default function Login(): React.JSX.Element {
 
   function switchMode(m: Mode) {
     setMode(m);
-    setError("");
+    setApiError("");
     setSuccess(false);
+    reset();
   }
 
   const TITLES: Record<Mode, { heading: string; sub: string }> = {
@@ -314,14 +340,73 @@ export default function Login(): React.JSX.Element {
                   Voltar para o login
                 </button>
               </motion.div>
-            ) : (
+            ) : mode === "forgot" ? (
+              /* ── Formulário recuperação de senha ── */
               <motion.form
-                key={mode}
+                key="forgot"
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.18 }}
-                onSubmit={handleSubmit}
+                onSubmit={handleSubmitForgot(onForgotSubmit)}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="tqe-label">E-mail</label>
+                  <input
+                    type="email"
+                    {...registerForgot("email")}
+                    placeholder="seu@email.com"
+                    className="tqe-input"
+                    autoComplete="email"
+                  />
+                  {forgotErrors.email && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--status-error)" }}>
+                      {forgotErrors.email.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Erro de API */}
+                <AnimatePresence>
+                  {apiError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -6, height: 0 }}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
+                      style={{ background: "rgba(255,77,79,0.08)", border: "1px solid rgba(255,77,79,0.2)" }}
+                    >
+                      <AlertCircle size={14} style={{ color: "var(--status-error)", flexShrink: 0 }} />
+                      <span className="text-[12px]" style={{ color: "var(--status-error)" }}>{apiError}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.button
+                  whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+                  type="submit" disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl font-semibold text-[14px]"
+                  style={{ height: 44, background: loading ? "rgba(244,180,0,0.6)" : "var(--primary)", color: "#0D0D0D", cursor: loading ? "not-allowed" : "pointer", boxShadow: loading ? "none" : "0 0 20px rgba(244,180,0,0.2)", transition: "all 200ms" }}
+                >
+                  {loading ? <><Loader2 size={16} className="animate-spin" />Enviando...</> : <>Enviar link de recuperação<ArrowRight size={15} strokeWidth={2.5} /></>}
+                </motion.button>
+
+                <div className="text-center">
+                  <button type="button" onClick={() => switchMode("login")} className="text-[13px] font-medium" style={{ color: "var(--text-secondary)" }}>
+                    ← Voltar para o login
+                  </button>
+                </div>
+              </motion.form>
+            ) : (
+              /* ── Formulário de login ── */
+              <motion.form
+                key="login"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.18 }}
+                onSubmit={handleSubmit(onLoginSubmit)}
                 className="space-y-4"
               >
                 {/* E-mail */}
@@ -329,55 +414,58 @@ export default function Login(): React.JSX.Element {
                   <label className="tqe-label">E-mail</label>
                   <input
                     type="email"
-                    value={email}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    {...register("email")}
                     placeholder="seu@email.com"
                     className="tqe-input"
-                    required
+                    autoComplete="email"
                   />
+                  {errors.email && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--status-error)" }}>
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
 
-                {/* Senha — só no login */}
-                {mode !== "forgot" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="tqe-label" style={{ margin: 0 }}>Senha</label>
-                      {mode === "login" && (
-                        <button
-                          type="button"
-                          onClick={() => switchMode("forgot")}
-                          className="text-[11px]"
-                          style={{ color: "var(--status-info)" }}
-                        >
-                          Esqueci minha senha
-                        </button>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showPass ? "text" : "password"}
-                        value={senha}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSenha(e.target.value)}
-                        placeholder="••••••••"
-                        className="tqe-input pr-10"
-                        required
-                        minLength={8}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPass(!showPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    </div>
+                {/* Senha */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="tqe-label" style={{ margin: 0 }}>Senha</label>
+                    <button
+                      type="button"
+                      onClick={() => switchMode("forgot")}
+                      className="text-[11px]"
+                      style={{ color: "var(--status-info)" }}
+                    >
+                      Esqueci minha senha
+                    </button>
                   </div>
-                )}
+                  <div className="relative">
+                    <input
+                      type={showPass ? "text" : "password"}
+                      {...register("senha")}
+                      placeholder="••••••••"
+                      className="tqe-input pr-10"
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(!showPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                  {errors.senha && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--status-error)" }}>
+                      {errors.senha.message}
+                    </p>
+                  )}
+                </div>
 
-                {/* Erro */}
+                {/* Erro de API */}
                 <AnimatePresence>
-                  {error && (
+                  {apiError && (
                     <motion.div
                       initial={{ opacity: 0, y: -6, height: 0 }}
                       animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -389,7 +477,7 @@ export default function Login(): React.JSX.Element {
                       }}
                     >
                       <AlertCircle size={14} style={{ color: "var(--status-error)", flexShrink: 0 }} />
-                      <span className="text-[12px]" style={{ color: "var(--status-error)" }}>{error}</span>
+                      <span className="text-[12px]" style={{ color: "var(--status-error)" }}>{apiError}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -410,17 +498,10 @@ export default function Login(): React.JSX.Element {
                     transition: "all 200ms",
                   }}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      {mode === "forgot" ? "Enviando..." : "Entrando..."}
-                    </>
-                  ) : (
-                    <>
-                      {mode === "forgot" ? "Enviar link de recuperação" : "Entrar"}
-                      {!loading && <ArrowRight size={15} strokeWidth={2.5} />}
-                    </>
-                  )}
+                  {loading
+                    ? <><Loader2 size={16} className="animate-spin" />Entrando...</>
+                    : <>Entrar<ArrowRight size={15} strokeWidth={2.5} /></>
+                  }
                 </motion.button>
 
                 {/* Divisor */}
@@ -430,30 +511,19 @@ export default function Login(): React.JSX.Element {
                   <div className="flex-1 h-px" style={{ background: "var(--border-subtle)" }} />
                 </div>
 
-                {/* Switch de modo */}
+                {/* Criar conta */}
                 <div className="text-center">
-                  {mode === "login" ? (
-                    <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
-                      Não tem conta?{" "}
-                      <button
-                        type="button"
-                        onClick={() => window.location.href = "/onboarding"}
-                        className="font-semibold"
-                        style={{ color: "var(--primary)" }}
-                      >
-                        Criar conta grátis
-                      </button>
-                    </span>
-                  ) : (
+                  <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
+                    Não tem conta?{" "}
                     <button
                       type="button"
-                      onClick={() => switchMode("login")}
-                      className="text-[13px] font-medium"
-                      style={{ color: "var(--text-secondary)" }}
+                      onClick={() => { window.location.href = "/onboarding"; }}
+                      className="font-semibold"
+                      style={{ color: "var(--primary)" }}
                     >
-                      ← Voltar para o login
+                      Criar conta grátis
                     </button>
-                  )}
+                  </span>
                 </div>
               </motion.form>
             )}
