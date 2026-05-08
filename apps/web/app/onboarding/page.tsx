@@ -1,9 +1,16 @@
 "use client";
 
+import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, Check, ChevronRight, Scissors, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  createBarbeariaSchema,
+  createServicoSchema,
+  convidarMembroSchema,
+  registerSchema,
+} from "@toqe/validators";
 
 interface BarbeariaData {
   nome: string;
@@ -540,7 +547,8 @@ function Passo6({
 
 export default function Onboarding() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const [step, setStep]           = useState(1);
+  const [stepErrors, setStepErrors] = useState<string[]>([]);
   const [barbearia, setBarbearia] = useState<BarbeariaData>({
     nome: "Barbearia Urban",
     slug: "urban",
@@ -589,6 +597,53 @@ export default function Onboarding() {
   }
 
   function handleNext() {
+    setStepErrors([]);
+
+    // Validação Zod por step antes de avançar
+    if (step === 1) {
+      const result = createBarbeariaSchema.safeParse({
+        nome: barbearia.nome,
+        slug: barbearia.slug,
+      });
+      if (!result.success) {
+        setStepErrors(result.error.issues.map(i => i.message));
+        return;
+      }
+    }
+
+    if (step === 4) {
+      // Valida cada serviço customizado
+      const erros: string[] = [];
+      servicos.forEach((s, idx) => {
+        const r = createServicoSchema.safeParse({
+          nome:        s.nome,
+          precoBase:   s.preco,
+          duracaoBase: s.duracao,
+        });
+        if (!r.success) {
+          r.error.issues.forEach(i =>
+            erros.push(`Serviço ${idx + 1}: ${i.message}`),
+          );
+        }
+      });
+      if (erros.length > 0) { setStepErrors(erros); return; }
+    }
+
+    if (step === 5) {
+      // Valida e-mails dos barbeiros convidados
+      const erros: string[] = [];
+      barbeiros.forEach((b, idx) => {
+        if (!b.email) return; // campo opcional
+        const r = convidarMembroSchema.safeParse({ email: b.email, perfil: "barbeiro" });
+        if (!r.success) {
+          r.error.issues.forEach(i =>
+            erros.push(`Barbeiro ${idx + 1}: ${i.message}`),
+          );
+        }
+      });
+      if (erros.length > 0) { setStepErrors(erros); return; }
+    }
+
     if (step < STEPS.length) {
       go(step + 1);
       return;
@@ -691,6 +746,12 @@ export default function Onboarding() {
             ← Voltar
           </button>
           <div className="ob-nav-right">
+            {/* Erros de validação Zod do step atual */}
+            {stepErrors.length > 0 && (
+              <div style={{ color: "var(--status-error)", fontSize: 12, maxWidth: 300, textAlign: "right" }}>
+                {stepErrors.map((e, i) => <div key={i}>{e}</div>)}
+              </div>
+            )}
             <span className="tqe-ob-check-row"><span>●</span> Salvo automaticamente</span>
             <button type="button" className="tqe-ob-btn tqe-ob-btn-primary" onClick={handleNext}>
               {step === STEPS.length ? "Publicar barbearia" : "Continuar →"}
