@@ -2,6 +2,7 @@ import React from "react";
 import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
 import { ThemeProvider } from "@/contexts/theme-context";
+import { AuthProvider } from "@/contexts/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -29,8 +30,10 @@ export default function RootLayout({
     <html lang="pt-BR" className="dark">
       <body className={`${inter.variable} ${sora.variable}`}>
         <ThemeProvider defaultTheme="dark">
-          <Toaster />
-          {children}
+          <AuthProvider>
+            <Toaster />
+            {children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
