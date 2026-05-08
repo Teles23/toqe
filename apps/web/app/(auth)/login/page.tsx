@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/auth-context";
 import {
   Scissors, Eye, EyeOff, ArrowRight,
   AlertCircle, Loader2, CheckCircle,
@@ -12,7 +11,7 @@ import {
 type Mode = "login" | "forgot";
 
 export default function Login(): React.JSX.Element {
-  const router = useRouter();
+  const { login } = useAuth();
   const [mode, setMode]         = useState<Mode>("login");
   const [email, setEmail]       = useState("");
   const [senha, setSenha]       = useState("");
@@ -26,19 +25,21 @@ export default function Login(): React.JSX.Element {
     setError("");
     setLoading(true);
 
-    await new Promise(r => setTimeout(r, 1200));
+    try {
+      if (mode === "forgot") {
+        // TODO: conectar endpoint de recuperação de senha quando disponível na API
+        await new Promise(r => setTimeout(r, 1000));
+        setSuccess(true);
+        return;
+      }
 
-    if (mode === "forgot") {
-      setSuccess(true);
-      setLoading(false);
-      return;
-    }
-
-    if (email && senha) {
-      setLoading(false);
-      router.push("/dashboard");
-    } else {
-      setError("Preencha todos os campos.");
+      await login(email, senha);
+      // Após login bem-sucedido, o auth-context redireciona para /dashboard
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Erro ao entrar. Tente novamente.";
+      setError(message);
+    } finally {
       setLoading(false);
     }
   }
@@ -61,7 +62,7 @@ export default function Login(): React.JSX.Element {
       className="min-h-screen flex overflow-hidden"
       style={{ background: "var(--bg-base)" }}
     >
-      {/* -- Painel esquerdo  branding -- */}
+      {/* ── Painel esquerdo — branding ── */}
       <div
         className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
         style={{
@@ -81,7 +82,7 @@ export default function Login(): React.JSX.Element {
           }}
         />
 
-        {/* Glow �mbar */}
+        {/* Glow âmbar */}
         <div
           className="absolute pointer-events-none"
           style={{
@@ -116,7 +117,7 @@ export default function Login(): React.JSX.Element {
           </span>
         </motion.div>
 
-        {/* Conte�do central */}
+        {/* Conteúdo central */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -133,7 +134,7 @@ export default function Login(): React.JSX.Element {
               color: "var(--text-primary)",
             }}
           >
-            "A opera��o da barbearia em tempo real, no seu controle."
+            "A operação da barbearia em tempo real, no seu controle."
           </blockquote>
 
           {/* Live status mockado */}
@@ -166,11 +167,11 @@ export default function Login(): React.JSX.Element {
               </span>
             </div>
 
-            {/* M�tricas */}
+            {/* Métricas */}
             <div className="grid grid-cols-2 divide-x" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
               {[
                 { label: "Barbeiros ativos", value: "3",     color: "var(--status-success)" },
-                { label: "Pr�ximo hor�rio",  value: "10:30", color: "var(--text-primary)"   },
+                { label: "Próximo horário",  value: "10:30", color: "var(--text-primary)"   },
               ].map(s => (
                 <div key={s.label} className="px-4 py-3" style={{ borderColor: "var(--border-subtle)" }}>
                   <span className="block font-bold text-[16px]" style={{ fontFamily: "var(--font-heading)", color: s.color, letterSpacing: "-0.03em" }}>
@@ -184,9 +185,9 @@ export default function Login(): React.JSX.Element {
             {/* Barbeiros */}
             <div className="p-3 space-y-2">
               {[
-                { n: "Carlos", estado: "active" as const, cliente: "Jo�o � Corte", pct: 68 },
-                { n: "Lucas",  estado: "idle"   as const, cliente: null,            pct: 0  },
-                { n: "Felipe", estado: "active" as const, cliente: "Ana � Sobranc.", pct: 40 },
+                { n: "Carlos", estado: "active" as const, cliente: "João · Corte",      pct: 68 },
+                { n: "Lucas",  estado: "idle"   as const, cliente: null,                pct: 0  },
+                { n: "Felipe", estado: "active" as const, cliente: "Ana · Sobrancelha", pct: 40 },
               ].map(b => {
                 const color = b.estado === "active" ? "var(--status-success)" : "var(--text-muted)";
                 return (
@@ -217,7 +218,7 @@ export default function Login(): React.JSX.Element {
                           </div>
                         </>
                       ) : (
-                        <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Dispon�vel</span>
+                        <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>Disponível</span>
                       )}
                     </div>
                   </div>
@@ -227,7 +228,7 @@ export default function Login(): React.JSX.Element {
           </div>
         </motion.div>
 
-        {/* Rodap� do painel */}
+        {/* Rodapé do painel */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -235,12 +236,12 @@ export default function Login(): React.JSX.Element {
           className="relative z-10 flex items-center gap-2"
         >
           <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-            � 2025 Toqe � Urban Flow System
+            © 2025 Toqe · Urban Flow System
           </span>
         </motion.div>
       </div>
 
-      {/* -- Painel direito  formul�rio -- */}
+      {/* ── Painel direito — formulário ── */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -282,7 +283,7 @@ export default function Login(): React.JSX.Element {
             </motion.div>
           </AnimatePresence>
 
-          {/* Formul�rio */}
+          {/* Formulário */}
           <AnimatePresence mode="wait">
             {success && mode === "forgot" ? (
               <motion.div
@@ -302,7 +303,7 @@ export default function Login(): React.JSX.Element {
                     E-mail enviado!
                   </span>
                   <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
-                    Verifique sua caixa de entrada e siga as instru��es.
+                    Verifique sua caixa de entrada e siga as instruções.
                   </span>
                 </div>
                 <button
@@ -336,7 +337,7 @@ export default function Login(): React.JSX.Element {
                   />
                 </div>
 
-                {/* Senha  s� no login */}
+                {/* Senha — só no login */}
                 {mode !== "forgot" && (
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -416,7 +417,7 @@ export default function Login(): React.JSX.Element {
                     </>
                   ) : (
                     <>
-                      {mode === "forgot" ? "Enviar link de recupera��o" : "Entrar"}
+                      {mode === "forgot" ? "Enviar link de recuperação" : "Entrar"}
                       {!loading && <ArrowRight size={15} strokeWidth={2.5} />}
                     </>
                   )}
@@ -433,14 +434,14 @@ export default function Login(): React.JSX.Element {
                 <div className="text-center">
                   {mode === "login" ? (
                     <span className="text-[13px]" style={{ color: "var(--text-secondary)" }}>
-                      N�o tem conta?{" "}
+                      Não tem conta?{" "}
                       <button
                         type="button"
-                        onClick={() => router.push("/onboarding")}
+                        onClick={() => window.location.href = "/onboarding"}
                         className="font-semibold"
                         style={{ color: "var(--primary)" }}
                       >
-                        Criar conta gr�tis
+                        Criar conta grátis
                       </button>
                     </span>
                   ) : (
@@ -450,7 +451,7 @@ export default function Login(): React.JSX.Element {
                       className="text-[13px] font-medium"
                       style={{ color: "var(--text-secondary)" }}
                     >
-                      � Voltar para o login
+                      ← Voltar para o login
                     </button>
                   )}
                 </div>
