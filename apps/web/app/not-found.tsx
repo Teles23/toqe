@@ -25,7 +25,7 @@ export default function NotFound() {
         }}
       />
 
-      {/* Glow �mbar central */}
+      {/* Glow âmbar central */}
       <div
         className="absolute pointer-events-none"
         style={{
@@ -39,7 +39,7 @@ export default function NotFound() {
         }}
       />
 
-      {/* Conte�do */}
+      {/* Conteúdo */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -86,18 +86,18 @@ export default function NotFound() {
             color: "var(--text-primary)",
           }}
         >
-          P�gina n�o encontrada
+          Página não encontrada
         </h1>
 
         <p
           className="mb-8 leading-relaxed"
           style={{ color: "var(--text-secondary)", fontSize: 14 }}
         >
-          A rota que voc� acessou n�o existe ou foi movida. Volte para o
+          A rota que você acessou não existe ou foi movida. Volte para o
           dashboard e continue de onde parou.
         </p>
 
-        {/* A��es */}
+        {/* Ações */}
         <div className="flex items-center gap-3">
           <motion.button
             whileHover={{ scale: 1.03 }}
@@ -132,12 +132,12 @@ export default function NotFound() {
           </motion.button>
         </div>
 
-        {/* Rodap� */}
+        {/* Rodapé */}
         <span
           className="mt-12 text-[11px]"
           style={{ color: "var(--text-muted)" }}
         >
-          Toqe � Urban Flow System
+          Toqe — Urban Flow System
         </span>
       </motion.div>
     </div>
