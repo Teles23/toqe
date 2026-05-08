@@ -25,8 +25,11 @@ async function bootstrap() {
     transform: true,
   }));
 
-  // CORS
-  app.enableCors();
+  // CORS — credentials obrigatório para cookies httpOnly do frontend
+  app.enableCors({
+    origin: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3001'],
+    credentials: true,
+  });
 
   // Swagger
   const config = new DocumentBuilder()
