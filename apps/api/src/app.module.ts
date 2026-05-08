@@ -11,6 +11,8 @@ import { ServicoModule } from './servico/servico.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { AgendamentoModule } from './agendamento/agendamento.module';
 import { NotificacaoModule } from './notificacao/notificacao.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { RelatorioModule } from './relatorio/relatorio.module';
 import { ObservabilidadeModule } from './observabilidade/observabilidade.module';
 
 @Module({
@@ -32,6 +34,8 @@ import { ObservabilidadeModule } from './observabilidade/observabilidade.module'
     AgendaModule,
     AgendamentoModule,
     NotificacaoModule,
+    DashboardModule,
+    RelatorioModule,
     ObservabilidadeModule,
   ],
   controllers: [AppController],
