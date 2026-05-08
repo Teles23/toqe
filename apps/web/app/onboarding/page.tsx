@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, Check, ChevronRight, Scissors, Trash2, X } from "lucide-react";
+import { Camera, Check, ChevronRight, Eye, EyeOff, Loader2, Scissors, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -11,6 +11,14 @@ import {
   convidarMembroSchema,
   registerSchema,
 } from "@toqe/validators";
+import { api, tenantApi } from "@/lib/api-client";
+
+interface AccountData {
+  nome:           string;
+  email:          string;
+  senha:          string;
+  confirmarSenha: string;
+}
 
 interface BarbeariaData {
   nome: string;
@@ -83,12 +91,13 @@ const PRESETS_SERVICOS: Record<ServicoPreset, ServicoData[]> = {
 };
 
 const STEPS = [
-  { num: 1, lbl: "Sua barbearia", hint: "Nome, slug, contato", time: "~ 1 min" },
-  { num: 2, lbl: "Identidade visual", hint: "Cor de marca", time: "~ 30 seg" },
-  { num: 3, lbl: "Horário de funcionamento", hint: "Dias e horas", time: "~ 1 min" },
-  { num: 4, lbl: "Serviços", hint: "Preço e duração", time: "~ 2 min" },
-  { num: 5, lbl: "Equipe", hint: "Convide barbeiros", time: "~ 1 min" },
-  { num: 6, lbl: "Tudo pronto", hint: "Revisar e publicar", time: "~ 30 seg" },
+  { num: 1, lbl: "Criar conta",             hint: "Nome, e-mail e senha", time: "~ 1 min"  },
+  { num: 2, lbl: "Sua barbearia",           hint: "Nome, slug, contato", time: "~ 1 min"   },
+  { num: 3, lbl: "Identidade visual",       hint: "Cor de marca",        time: "~ 30 seg"  },
+  { num: 4, lbl: "Horário de funcionamento",hint: "Dias e horas",        time: "~ 1 min"   },
+  { num: 5, lbl: "Serviços",               hint: "Preço e duração",     time: "~ 2 min"   },
+  { num: 6, lbl: "Equipe",                 hint: "Convide barbeiros",   time: "~ 1 min"   },
+  { num: 7, lbl: "Tudo pronto",            hint: "Revisar e publicar",  time: "~ 30 seg"  },
 ];
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -113,6 +122,103 @@ function ColorSwatch({ color, selected, onClick }: { color: string; selected: bo
     >
       {selected && <Check size={18} strokeWidth={3} />}
     </button>
+  );
+}
+
+function Passo1Conta({
+  data,
+  onChange,
+}: {
+  data: AccountData;
+  onChange: (key: keyof AccountData, value: string) => void;
+}) {
+  const [showPass,    setShowPass]    = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  return (
+    <>
+      <h1 className="ob-h1">Primeiro, cria sua conta.</h1>
+      <p className="ob-h1-sub">
+        É rápido. Em seguida você configura tudo da barbearia.
+      </p>
+
+      <div className="ob-form">
+        <div className="ob-field">
+          <label>Seu nome completo</label>
+          <input
+            type="text"
+            value={data.nome}
+            onChange={(e) => onChange("nome", e.target.value)}
+            placeholder="João Silva"
+            autoComplete="name"
+          />
+        </div>
+
+        <div className="ob-field">
+          <label>E-mail</label>
+          <input
+            type="email"
+            value={data.email}
+            onChange={(e) => onChange("email", e.target.value)}
+            placeholder="joao@barbearia.com"
+            autoComplete="email"
+          />
+        </div>
+
+        <div className="ob-row cols-2">
+          <div className="ob-field">
+            <label>Senha</label>
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                value={data.senha}
+                onChange={(e) => onChange("senha", e.target.value)}
+                placeholder="Mín. 6 caracteres"
+                autoComplete="new-password"
+                style={{ paddingRight: 36 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="ob-field">
+            <label>Confirmar senha</label>
+            <div className="relative">
+              <input
+                type={showConfirm ? "text" : "password"}
+                value={data.confirmarSenha}
+                onChange={(e) => onChange("confirmarSenha", e.target.value)}
+                placeholder="Repita a senha"
+                autoComplete="new-password"
+                style={{ paddingRight: 36 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="help">
+          Ao criar sua conta, você concorda com os{" "}
+          <a href="#" style={{ color: "var(--status-info)" }}>Termos de Uso</a>{" "}
+          e{" "}
+          <a href="#" style={{ color: "var(--status-info)" }}>Política de Privacidade</a>.
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -547,8 +653,13 @@ function Passo6({
 
 export default function Onboarding() {
   const router = useRouter();
-  const [step, setStep]           = useState(1);
+  const [step, setStep]             = useState(1);
   const [stepErrors, setStepErrors] = useState<string[]>([]);
+  const [publishing,  setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
+  const [account, setAccount] = useState<AccountData>({
+    nome: "", email: "", senha: "", confirmarSenha: "",
+  });
   const [barbearia, setBarbearia] = useState<BarbeariaData>({
     nome: "Barbearia Urban",
     slug: "urban",
@@ -596,11 +707,31 @@ export default function Onboarding() {
     setBarbeiros((prev) => prev.map((barbeiro, itemIndex) => (itemIndex === index ? { ...barbeiro, [key]: value } : barbeiro)));
   }
 
-  function handleNext() {
+  async function handleNext() {
     setStepErrors([]);
+    setPublishError("");
 
-    // Validação Zod por step antes de avançar
+    // ── Validação por step ──────────────────────────────────────────────────
+
+    // Step 1 — Criar conta
     if (step === 1) {
+      const result = registerSchema.safeParse({
+        nome:  account.nome,
+        email: account.email,
+        senha: account.senha,
+      });
+      if (!result.success) {
+        setStepErrors(result.error.issues.map(i => i.message));
+        return;
+      }
+      if (account.senha !== account.confirmarSenha) {
+        setStepErrors(["As senhas não conferem"]);
+        return;
+      }
+    }
+
+    // Step 2 — Barbearia
+    if (step === 2) {
       const result = createBarbeariaSchema.safeParse({
         nome: barbearia.nome,
         slug: barbearia.slug,
@@ -611,8 +742,8 @@ export default function Onboarding() {
       }
     }
 
-    if (step === 4) {
-      // Valida cada serviço customizado
+    // Step 5 — Serviços
+    if (step === 5) {
       const erros: string[] = [];
       servicos.forEach((s, idx) => {
         const r = createServicoSchema.safeParse({
@@ -620,36 +751,92 @@ export default function Onboarding() {
           precoBase:   s.preco,
           duracaoBase: s.duracao,
         });
-        if (!r.success) {
-          r.error.issues.forEach(i =>
-            erros.push(`Serviço ${idx + 1}: ${i.message}`),
-          );
-        }
+        if (!r.success) r.error.issues.forEach(i => erros.push(`Serviço ${idx + 1}: ${i.message}`));
       });
       if (erros.length > 0) { setStepErrors(erros); return; }
     }
 
-    if (step === 5) {
-      // Valida e-mails dos barbeiros convidados
+    // Step 6 — Equipe
+    if (step === 6) {
       const erros: string[] = [];
       barbeiros.forEach((b, idx) => {
-        if (!b.email) return; // campo opcional
+        if (!b.email) return;
         const r = convidarMembroSchema.safeParse({ email: b.email, perfil: "barbeiro" });
-        if (!r.success) {
-          r.error.issues.forEach(i =>
-            erros.push(`Barbeiro ${idx + 1}: ${i.message}`),
-          );
-        }
+        if (!r.success) r.error.issues.forEach(i => erros.push(`Barbeiro ${idx + 1}: ${i.message}`));
       });
       if (erros.length > 0) { setStepErrors(erros); return; }
     }
 
+    // Avança para o próximo step
     if (step < STEPS.length) {
       go(step + 1);
       return;
     }
 
-    router.push("/dashboard");
+    // ── Step 7 — Publicar ──────────────────────────────────────────────────
+    setPublishing(true);
+    try {
+      // 1. Criar conta na API
+      await api.post("/auth/register", {
+        nome:  account.nome,
+        email: account.email,
+        senha: account.senha,
+      }, { auth: false });
+
+      // 2. Login via BFF → seta cookies httpOnly
+      const loginRes = await fetch("/api/auth/login", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email: account.email, senha: account.senha }),
+      });
+      if (!loginRes.ok) {
+        const e = await loginRes.json().catch(() => ({}));
+        throw new Error((e as { message?: string }).message ?? "Erro ao autenticar");
+      }
+
+      // Aguarda o cookie ser setado antes da próxima requisição
+      await new Promise(r => setTimeout(r, 80));
+
+      // 3. Criar barbearia
+      const bar = await api.post<{ codigo: number }>("/barbearias", {
+        nome: barbearia.nome,
+        slug: barbearia.slug,
+      });
+
+      const t = tenantApi(bar.codigo);
+
+      // 4. Branding — cor de marca
+      await api.put(`/barbearias/${bar.codigo}/tema`, { corPrimaria: branding.cor });
+
+      // 5. Serviços (em paralelo)
+      await Promise.all(
+        servicos
+          .filter(s => s.nome.trim().length > 0)
+          .map(s => t.post("/servicos", {
+            nome:        s.nome,
+            precoBase:   s.preco,
+            duracaoBase: s.duracao,
+          })),
+      );
+
+      // 6. Convites de equipe (opcional — erros individuais não bloqueiam)
+      await Promise.allSettled(
+        barbeiros
+          .filter(b => b.email.trim().length > 0)
+          .map(b => api.post(`/barbearias/${bar.codigo}/membros`, {
+            email:  b.email,
+            perfil: "barbeiro",
+          })),
+      );
+
+      router.push("/dashboard");
+    } catch (err) {
+      setPublishError(
+        err instanceof Error ? err.message : "Erro ao publicar. Tente novamente.",
+      );
+    } finally {
+      setPublishing(false);
+    }
   }
 
   const currentStep = STEPS[step - 1] ?? { num: 1, lbl: "Sua barbearia", hint: "Nome, slug, contato", time: "~ 1 min" };
@@ -707,10 +894,16 @@ export default function Onboarding() {
               <span className="tqe-ob-time">{currentStep.time}</span>
             </div>
 
-            {step === 1 && <Passo1 data={barbearia} onChange={updateBarbearia} />}
-            {step === 2 && <Passo2 barbearia={barbearia} data={branding} onChange={updateBranding} />}
-            {step === 3 && <Passo3 horarios={horarios} onChange={updateHorario} />}
-            {step === 4 && (
+            {step === 1 && (
+              <Passo1Conta
+                data={account}
+                onChange={(k, v) => setAccount((prev) => ({ ...prev, [k]: v }))}
+              />
+            )}
+            {step === 2 && <Passo1 data={barbearia} onChange={updateBarbearia} />}
+            {step === 3 && <Passo2 barbearia={barbearia} data={branding} onChange={updateBranding} />}
+            {step === 4 && <Passo3 horarios={horarios} onChange={updateHorario} />}
+            {step === 5 && (
               <Passo4
                 servicos={servicos}
                 preset={servicosPreset}
@@ -720,7 +913,7 @@ export default function Onboarding() {
                 onRemoveServico={(index) => setServicos((prev) => prev.filter((_, itemIndex) => itemIndex !== index))}
               />
             )}
-            {step === 5 && (
+            {step === 6 && (
               <Passo5
                 barbeiros={barbeiros}
                 onAddBarbeiro={() => setBarbeiros((prev) => [...prev, { nome: "", email: "" }])}
@@ -728,7 +921,7 @@ export default function Onboarding() {
                 onRemoveBarbeiro={(index) => setBarbeiros((prev) => prev.filter((_, itemIndex) => itemIndex !== index))}
               />
             )}
-            {step === 6 && (
+            {step === 7 && (
               <Passo6
                 barbearia={barbearia}
                 branding={branding}
@@ -746,15 +939,35 @@ export default function Onboarding() {
             ← Voltar
           </button>
           <div className="ob-nav-right">
+            {/* Erro de publicação */}
+            {publishError && (
+              <div style={{ color: "var(--status-error)", fontSize: 12, maxWidth: 300, textAlign: "right" }}>
+                {publishError}
+              </div>
+            )}
             {/* Erros de validação Zod do step atual */}
             {stepErrors.length > 0 && (
               <div style={{ color: "var(--status-error)", fontSize: 12, maxWidth: 300, textAlign: "right" }}>
                 {stepErrors.map((e, i) => <div key={i}>{e}</div>)}
               </div>
             )}
-            <span className="tqe-ob-check-row"><span>●</span> Salvo automaticamente</span>
-            <button type="button" className="tqe-ob-btn tqe-ob-btn-primary" onClick={handleNext}>
-              {step === STEPS.length ? "Publicar barbearia" : "Continuar →"}
+            {step !== STEPS.length && (
+              <span className="tqe-ob-check-row"><span>●</span> Salvo automaticamente</span>
+            )}
+            <button
+              type="button"
+              className="tqe-ob-btn tqe-ob-btn-primary"
+              onClick={handleNext}
+              disabled={publishing}
+              style={{ opacity: publishing ? 0.7 : 1, cursor: publishing ? "not-allowed" : "pointer" }}
+            >
+              {publishing ? (
+                <><Loader2 size={14} className="animate-spin" /> Publicando...</>
+              ) : step === STEPS.length ? (
+                "Publicar barbearia"
+              ) : (
+                "Continuar →"
+              )}
             </button>
           </div>
         </div>
