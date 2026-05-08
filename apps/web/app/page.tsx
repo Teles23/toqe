@@ -1,12 +1,14 @@
 "use client";
 
+import React from "react";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import {
   type LucideIcon,
   ArrowRight,
   BarChart3,
   Calendar,
-  CheckCircle, ChevronDown,
+  CheckCircle,
+  ChevronDown,
   Menu,
   Scissors,
   Shield,
@@ -14,13 +16,13 @@ import {
   Star,
   Users,
   X,
-  Zap
+  Zap,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-/* -- Contador animado -- */
-function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
+/* ── Contador animado ── */
+function CountUp({ to, suffix = "" }: { to: number; suffix?: string }): React.JSX.Element {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
@@ -43,15 +45,15 @@ function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
   return <span ref={ref}>{count.toLocaleString("pt-BR")}{suffix}</span>;
 }
 
-function FeatureCard({ icon: Icon, title, desc, color, delay }: { icon: LucideIcon; title: string; desc: string; color: string; delay: number }) {
+function FeatureCard({ icon: Icon, title, desc, color, delay }: { icon: LucideIcon; title: string; desc: string; color: string; delay: number }): React.JSX.Element {
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }} whileHover={{ y: -4 }}
       className="relative rounded-2xl p-6"
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", transition: "border-color 200ms, box-shadow 200ms" }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${color}40`; (e.currentTarget as HTMLElement).style.boxShadow = `0 0 32px ${color}12`; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-default)"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}
+      onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => { (e.currentTarget as HTMLElement).style.borderColor = `${color}40`; (e.currentTarget as HTMLElement).style.boxShadow = `0 0 32px ${color}12`; }}
+      onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border-default)"; (e.currentTarget as HTMLElement).style.boxShadow = "none"; }}
     >
       <div className="absolute top-0 left-6 right-6 rounded-b" style={{ height: 2, background: color, opacity: 0.45 }} />
       <div className="flex items-center justify-center rounded-xl mb-4" style={{ width: 44, height: 44, background: `${color}12`, color }}>
@@ -63,7 +65,7 @@ function FeatureCard({ icon: Icon, title, desc, color, delay }: { icon: LucideIc
   );
 }
 
-function PlanCard({ nome, preco, features, destaque, delay }: { nome: string; preco: number; features: string[]; destaque?: boolean; delay: number }) {
+function PlanCard({ nome, preco, features, destaque, delay }: { nome: string; preco: number; features: string[]; destaque?: boolean; delay: number }): React.JSX.Element {
   const router = useRouter();
   return (
     <motion.div
@@ -77,7 +79,7 @@ function PlanCard({ nome, preco, features, destaque, delay }: { nome: string; pr
       <span className="block font-bold text-[13px] mb-1 uppercase tracking-wider" style={{ color: destaque ? "var(--primary)" : "var(--text-secondary)" }}>{nome}</span>
       <div className="flex items-baseline gap-1 mb-5">
         <span className="font-bold" style={{ fontFamily: "var(--font-heading)", fontSize: "2rem", letterSpacing: "-0.04em", color: "var(--text-primary)" }}>R${preco}</span>
-        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>/m�s</span>
+        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>/mês</span>
       </div>
       <ul className="space-y-2.5 mb-6">
         {features.map(f => (
@@ -91,13 +93,13 @@ function PlanCard({ nome, preco, features, destaque, delay }: { nome: string; pr
         onClick={() => router.push("/onboarding")}
         className="w-full py-2.5 rounded-xl text-[13px] font-semibold"
         style={{ background: destaque ? "var(--primary)" : "transparent", color: destaque ? "#0D0D0D" : "var(--text-primary)", border: destaque ? "none" : "1px solid var(--border-strong)" }}>
-        Come�ar gr�tis 14 dias
+        Começar grátis 14 dias
       </motion.button>
     </motion.div>
   );
 }
 
-function Depoimento({ nome, barbearia, texto, avaliacao, delay }: { nome: string; barbearia: string; texto: string; avaliacao: number; delay: number }) {
+function Depoimento({ nome, barbearia, texto, avaliacao, delay }: { nome: string; barbearia: string; texto: string; avaliacao: number; delay: number }): React.JSX.Element {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay, duration: 0.4 }}
       className="rounded-2xl p-6" style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
@@ -114,7 +116,7 @@ function Depoimento({ nome, barbearia, texto, avaliacao, delay }: { nome: string
   );
 }
 
-export default function Landing() {
+export default function Landing(): React.JSX.Element {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -125,30 +127,30 @@ export default function Landing() {
   useEffect(() => scrollY.on("change", v => setScrolled(v > 30)), [scrollY]);
 
   const FEATURES = [
-    { icon: Calendar,   color: "var(--status-info)",    title: "Agenda em tempo real",    desc: "Veja todos os hor�rios, quem est� atendendo e o que est� livre  tudo atualizado na hora, sem precisar perguntar para ningu�m." },
-    { icon: Zap,        color: "var(--status-warning)", title: "Painel ao vivo",           desc: "Equipe ativa, fila de espera e tempo m�dio do dia vis�veis de uma vez. Como ter c�meras em cima de cada cadeira." },
-    { icon: Smartphone, color: "var(--status-success)", title: "App para seu cliente",     desc: "O cliente agenda sozinho em menos de 20 segundos. Escolhe hor�rio, barbeiro e servi�o  sem liga��o, sem mensagem no WhatsApp." },
-    { icon: BarChart3,  color: "#C084FC",               title: "Relat�rios que importam", desc: "Quanto entrou hoje, qual servi�o mais pediu, qual barbeiro mais faturou. N�meros reais para decis�es reais." },
-    { icon: Users,      color: "var(--status-error)",   title: "Sua equipe organizada",   desc: "Cada barbeiro com seu hist�rico, hor�rios e desempenho. Voc� sabe quem est� rendendo e quem precisa de aten��o." },
-    { icon: Shield,     color: "var(--status-info)",    title: "Dados sempre seguros",    desc: "Informa��es de cada barbearia completamente isoladas. Seus dados s�o s� seus  ponto." },
+    { icon: Calendar,   color: "var(--status-info)",    title: "Agenda em tempo real",    desc: "Veja todos os horários, quem está atendendo e o que está livre — tudo atualizado na hora, sem precisar perguntar para ninguém." },
+    { icon: Zap,        color: "var(--status-warning)", title: "Painel ao vivo",           desc: "Equipe ativa, fila de espera e tempo médio do dia visíveis de uma vez. Como ter câmeras em cima de cada cadeira." },
+    { icon: Smartphone, color: "var(--status-success)", title: "App para seu cliente",     desc: "O cliente agenda sozinho em menos de 20 segundos. Escolhe horário, barbeiro e serviço — sem ligação, sem mensagem no WhatsApp." },
+    { icon: BarChart3,  color: "#C084FC",               title: "Relatórios que importam", desc: "Quanto entrou hoje, qual serviço mais pediu, qual barbeiro mais faturou. Números reais para decisões reais." },
+    { icon: Users,      color: "var(--status-error)",   title: "Sua equipe organizada",   desc: "Cada barbeiro com seu histórico, horários e desempenho. Você sabe quem está rendendo e quem precisa de atenção." },
+    { icon: Shield,     color: "var(--status-info)",    title: "Dados sempre seguros",    desc: "Informações de cada barbearia completamente isoladas. Seus dados são só seus — ponto." },
   ];
 
   const PLANOS = [
-    { nome: "B�sico", preco: 49,  features: ["1 barbearia", "At� 2 barbeiros", "50 agendamentos/m�s", "App para clientes", "Suporte por e-mail"] },
-    { nome: "Pro",    preco: 99,  destaque: true, features: ["1 barbearia", "At� 10 barbeiros", "Agendamentos ilimitados", "Avisos por WhatsApp e SMS", "Relat�rios completos", "Suporte priorit�rio"] },
-    { nome: "Rede",   preco: 249, features: ["V�rias unidades", "Equipe ilimitada", "Marca pr�pria no app", "Suporte com gerente dedicado", "Disponibilidade garantida 99,9%"] },
+    { nome: "Básico", preco: 49,  features: ["1 barbearia", "Até 2 barbeiros", "50 agendamentos/mês", "App para clientes", "Suporte por e-mail"] },
+    { nome: "Pro",    preco: 99,  destaque: true, features: ["1 barbearia", "Até 10 barbeiros", "Agendamentos ilimitados", "Avisos por WhatsApp e SMS", "Relatórios completos", "Suporte prioritário"] },
+    { nome: "Rede",   preco: 249, features: ["Várias unidades", "Equipe ilimitada", "Marca própria no app", "Suporte com gerente dedicado", "Disponibilidade garantida 99,9%"] },
   ];
 
   const DEPOIMENTOS = [
-    { nome: "Marcus Almeida", barbearia: "Barbearia Urban � Salvador", texto: "Antes controlava tudo no papel. Hoje vejo em tempo real quantos est�o na cadeira, quanto faturei e quem � meu melhor barbeiro.", avaliacao: 5 },
-    { nome: "Rafael Mendes",  barbearia: "Corte Fino � Fortaleza",     texto: "Meus clientes adoraram o app. Agendam sozinhos, recebem lembrete e ainda avaliam. O no-show caiu mais da metade.", avaliacao: 5 },
-    { nome: "Diego Costa",    barbearia: "Navalha & Estilo � Recife",  texto: "A tela da agenda � outra coisa. Cada barbeiro com seu status, o progresso do atendimento, o pr�ximo cliente. Nunca vi nada igual.", avaliacao: 5 },
+    { nome: "Marcus Almeida", barbearia: "Barbearia Urban · Salvador", texto: "Antes controlava tudo no papel. Hoje vejo em tempo real quantos estão na cadeira, quanto faturei e quem é meu melhor barbeiro.", avaliacao: 5 },
+    { nome: "Rafael Mendes",  barbearia: "Corte Fino · Fortaleza",     texto: "Meus clientes adoraram o app. Agendam sozinhos, recebem lembrete e ainda avaliam. O no-show caiu mais da metade.", avaliacao: 5 },
+    { nome: "Diego Costa",    barbearia: "Navalha & Estilo · Recife",  texto: "A tela da agenda é outra coisa. Cada barbeiro com seu status, o progresso do atendimento, o próximo cliente. Nunca vi nada igual.", avaliacao: 5 },
   ];
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}>
 
-      {/* -- Navbar -- */}
+      {/* ── Navbar ── */}
       <motion.nav
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10"
@@ -160,7 +162,7 @@ export default function Landing() {
           transition: "background 300ms, border-color 300ms",
         }}
       >
-        {/* Logo  clica e vai pra home */}
+        {/* Logo */}
         <motion.button onClick={() => router.push("/")} className="flex items-center gap-2.5" whileTap={{ scale: 0.95 }}>
           <motion.div whileHover={{ scale: 1.08 }} className="flex items-center justify-center rounded-lg"
             style={{ width: 30, height: 30, background: "var(--primary)", boxShadow: "0 0 14px rgba(244,180,0,0.25)" }}>
@@ -169,14 +171,14 @@ export default function Landing() {
           <span className="font-bold text-[17px]" style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em", color: "var(--text-primary)" }}>Toqe</span>
         </motion.button>
 
-        {/* Links desktop  mais vis�veis */}
+        {/* Links desktop */}
         <div className="hidden md:flex items-center gap-1">
           {[{ label: "Como funciona", href: "#funcionalidades" }, { label: "Planos", href: "#planos" }, { label: "Depoimentos", href: "#depoimentos" }].map(link => (
             <a key={link.label} href={link.href}
               className="px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all"
               style={{ color: "var(--text-primary)", opacity: 0.7 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = "0.7"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+              onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLElement).style.opacity = "1"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLElement).style.opacity = "0.7"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
               {link.label}
             </a>
           ))}
@@ -186,15 +188,15 @@ export default function Landing() {
           <button onClick={() => router.push("/login")}
             className="hidden sm:block text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all"
             style={{ color: "var(--text-primary)", opacity: 0.8 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = "0.8"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
+            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { (e.currentTarget as HTMLElement).style.opacity = "1"; (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { (e.currentTarget as HTMLElement).style.opacity = "0.8"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
             Entrar
           </button>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/onboarding")}
             className="flex items-center gap-1.5 px-4 rounded-lg text-[13px] font-semibold"
             style={{ height: 34, background: "var(--primary)", color: "#0D0D0D", boxShadow: "0 0 14px rgba(244,180,0,0.2)" }}>
-            Come�ar gr�tis
+            Começar grátis
           </motion.button>
           <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-1.5 rounded-lg ml-1" style={{ color: "var(--text-primary)" }}>
             {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
@@ -224,7 +226,7 @@ export default function Landing() {
         )}
       </AnimatePresence>
 
-      {/* -- Hero -- */}
+      {/* ── Hero ── */}
       <section className="relative flex flex-col items-center justify-center text-center overflow-hidden"
         style={{ minHeight: "100vh", paddingTop: 100, paddingBottom: 80, paddingLeft: 24, paddingRight: 24 }}>
         <div className="absolute inset-0 pointer-events-none" style={{
@@ -240,7 +242,7 @@ export default function Landing() {
             style={{ background: "rgba(29,185,84,0.08)", border: "1px solid rgba(29,185,84,0.2)" }}>
             <span className="rounded-full" style={{ width: 6, height: 6, background: "var(--status-success)", animation: "tqe-pulse-green 1.5s ease-in-out infinite" }} />
             <span className="text-[12px] font-medium" style={{ color: "var(--status-success)" }}>
-              Mais de 1.200 barbearias j� usam o Toqe
+              Mais de 1.200 barbearias já usam o Toqe
             </span>
           </motion.div>
 
@@ -254,8 +256,8 @@ export default function Landing() {
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}
             className="mx-auto mb-10"
             style={{ maxWidth: 540, fontSize: "clamp(1rem, 2vw, 1.1rem)", color: "var(--text-secondary)", lineHeight: 1.75 }}>
-            Agenda, equipe e faturamento em um lugar s�. Seu cliente agenda sozinho,
-            voc� acompanha tudo em tempo real e n�o perde mais nada.
+            Agenda, equipe e faturamento em um lugar só. Seu cliente agenda sozinho,
+            você acompanha tudo em tempo real e não perde mais nada.
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}
@@ -264,19 +266,19 @@ export default function Landing() {
               onClick={() => router.push("/onboarding")}
               className="flex items-center gap-2 px-7 rounded-xl font-bold text-[15px]"
               style={{ height: 50, background: "var(--primary)", color: "#0D0D0D", boxShadow: "0 0 20px rgba(244,180,0,0.2)" }}>
-              Come�ar gr�tis por 14 dias
+              Começar grátis por 14 dias
               <ArrowRight size={16} strokeWidth={2.5} />
             </motion.button>
             <button onClick={() => router.push("/dashboard")}
               className="flex items-center gap-2 px-6 rounded-xl font-medium text-[14px]"
               style={{ height: 50, background: "transparent", border: "1px solid var(--border-strong)", color: "var(--text-secondary)" }}>
-              Ver demonstra��o
+              Ver demonstração
             </button>
           </motion.div>
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
             className="flex items-center justify-center gap-6 mt-10 flex-wrap">
-            {[{ v: "Sem cart�o", l: "para come�ar" }, { v: "14 dias", l: "gratuitos" }, { v: "Cancela", l: "quando quiser" }].map(item => (
+            {[{ v: "Sem cartão", l: "para começar" }, { v: "14 dias", l: "gratuitos" }, { v: "Cancela", l: "quando quiser" }].map(item => (
               <div key={item.l} className="flex items-center gap-1.5">
                 <CheckCircle size={13} style={{ color: "var(--status-success)" }} />
                 <span className="text-[12px]" style={{ color: "var(--text-secondary)" }}>
@@ -294,14 +296,14 @@ export default function Landing() {
         </motion.div>
       </section>
 
-      {/* -- N�meros -- */}
+      {/* ── Números ── */}
       <section className="py-16 px-6" style={{ borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
             { value: 1200,  suffix: "+",   label: "Barbearias ativas"    },
-            { value: 48000, suffix: "+",   label: "Agendamentos por m�s" },
+            { value: 48000, suffix: "+",   label: "Agendamentos por mês" },
             { value: 98,    suffix: "%",   label: "Clientes satisfeitos" },
-            { value: 4,     suffix: ".9", label: "Avalia��o m�dia"      },
+            { value: 4,     suffix: ".9★", label: "Avaliação média"      },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.4 }}>
               <div className="font-bold mb-1" style={{ fontFamily: "var(--font-heading)", fontSize: "2rem", letterSpacing: "-0.04em", color: "var(--primary)" }}>
@@ -313,7 +315,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* -- Como funciona -- */}
+      {/* ── Como funciona ── */}
       <section id="funcionalidades" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
@@ -324,7 +326,7 @@ export default function Landing() {
               Tudo o que sua barbearia precisa
             </h2>
             <p style={{ color: "var(--text-secondary)", maxWidth: 440, margin: "0 auto", fontSize: 15, lineHeight: 1.7 }}>
-              Feito do zero para o dia a dia de uma barbearia. N�o � um sistema gen�rico adaptado.
+              Feito do zero para o dia a dia de uma barbearia. Não é um sistema genérico adaptado.
             </p>
           </motion.div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -333,14 +335,14 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* -- Preview -- */}
+      {/* ── Preview ── */}
       <section className="py-20 px-6" style={{ background: "var(--bg-secondary)", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
             <h2 className="font-bold mb-3" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.4rem, 3vw, 2rem)", letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
-              O painel que voc� sempre quis ter
+              O painel que você sempre quis ter
             </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>Veja o que est� acontecendo na sua barbearia agora.</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>Veja o que está acontecendo na sua barbearia agora.</p>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 24, scale: 0.98 }} whileInView={{ opacity: 1, y: 0, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-default)", boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}>
@@ -354,7 +356,7 @@ export default function Landing() {
             </div>
             <div className="p-5" style={{ background: "var(--bg-base)" }}>
               <div className="grid grid-cols-4 gap-3 mb-4">
-                {[{ label: "Hoje", value: "R$890", color: "var(--status-success)" }, { label: "Agendamentos", value: "14", color: "var(--status-info)" }, { label: "Ticket m�dio", value: "R$63", color: "var(--status-warning)" }, { label: "Avalia��o", value: "4.8", color: "var(--status-success)" }].map(m => (
+                {[{ label: "Hoje", value: "R$890", color: "var(--status-success)" }, { label: "Agendamentos", value: "14", color: "var(--status-info)" }, { label: "Ticket médio", value: "R$63", color: "var(--status-warning)" }, { label: "Avaliação", value: "4.8★", color: "var(--status-success)" }].map(m => (
                   <div key={m.label} className="rounded-xl px-3 py-2.5 relative overflow-hidden" style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
                     <div className="absolute top-0 left-3 right-3 rounded-b" style={{ height: 2, background: m.color, opacity: 0.5 }} />
                     <span className="block font-bold text-base" style={{ fontFamily: "var(--font-heading)", color: m.color, letterSpacing: "-0.03em" }}>{m.value}</span>
@@ -368,7 +370,7 @@ export default function Landing() {
                   <span className="text-[11px] font-semibold" style={{ color: "var(--text-primary)" }}>Ao vivo agora</span>
                 </div>
                 <div className="flex divide-x" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                  {[{ label: "Atendendo", value: "3", color: "var(--status-success)" }, { label: "Pr�ximo", value: "10:30", color: "var(--text-primary)" }, { label: "Esperando", value: "2", color: "var(--status-warning)" }, { label: "Tempo m�dio", value: "38min", color: "var(--status-info)" }].map(s => (
+                  {[{ label: "Atendendo", value: "3", color: "var(--status-success)" }, { label: "Próximo", value: "10:30", color: "var(--text-primary)" }, { label: "Esperando", value: "2", color: "var(--status-warning)" }, { label: "Tempo médio", value: "38min", color: "var(--status-info)" }].map(s => (
                     <div key={s.label} className="flex-1 px-3 py-2" style={{ borderColor: "var(--border-subtle)" }}>
                       <span className="block font-bold text-sm" style={{ fontFamily: "var(--font-heading)", color: s.color, letterSpacing: "-0.02em" }}>{s.value}</span>
                       <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.label}</span>
@@ -376,12 +378,12 @@ export default function Landing() {
                   ))}
                 </div>
                 <div className="grid grid-cols-3 gap-2 p-3">
-                  {[{ n: "Carlos", st: "active", c: "Jo�o � Corte" }, { n: "Lucas", st: "idle", c: null }, { n: "Felipe", st: "active", c: "Ana � Sobrancelha" }].map(b => (
+                  {[{ n: "Carlos", st: "active", c: "João · Corte" }, { n: "Lucas", st: "idle", c: null }, { n: "Felipe", st: "active", c: "Ana · Sobrancelha" }].map(b => (
                     <div key={b.n} className="rounded-lg px-3 py-2 relative overflow-hidden"
                       style={{ background: b.st === "active" ? "rgba(29,185,84,0.04)" : "var(--bg-secondary)", border: `1px solid ${b.st === "active" ? "rgba(29,185,84,0.2)" : "var(--border-subtle)"}` }}>
                       {b.st === "active" && <div className="absolute left-0 top-2 bottom-2 rounded-r" style={{ width: 2, background: "var(--status-success)", animation: "tqe-sidebar-pulse 2s ease-in-out infinite" }} />}
                       <span className="block text-[11px] font-semibold pl-1" style={{ color: "var(--text-primary)" }}>{b.n}</span>
-                      <span className="block text-[10px] pl-1" style={{ color: b.st === "active" ? "var(--text-secondary)" : "var(--text-muted)" }}>{b.c ?? "Dispon�vel"}</span>
+                      <span className="block text-[10px] pl-1" style={{ color: b.st === "active" ? "var(--text-secondary)" : "var(--text-muted)" }}>{b.c ?? "Disponível"}</span>
                     </div>
                   ))}
                 </div>
@@ -391,7 +393,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* -- Planos -- */}
+      {/* ── Planos ── */}
       <section id="planos" className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
@@ -399,7 +401,7 @@ export default function Landing() {
             <h2 className="font-bold mb-3" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.6rem, 4vw, 2.2rem)", letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
               Simples, transparente, sem surpresas
             </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>14 dias gratuitos. Sem cart�o de cr�dito para come�ar.</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>14 dias gratuitos. Sem cartão de crédito para começar.</p>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {PLANOS.map((p, i) => <PlanCard key={p.nome} {...p} delay={i * 0.08} />)}
@@ -407,13 +409,13 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* -- Depoimentos -- */}
+      {/* ── Depoimentos ── */}
       <section id="depoimentos" className="py-20 px-6" style={{ background: "var(--bg-secondary)", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-12">
             <span className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full" style={{ background: "rgba(29,185,84,0.1)", color: "var(--status-success)" }}>Depoimentos</span>
             <h2 className="font-bold" style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.6rem, 4vw, 2.2rem)", letterSpacing: "-0.03em", color: "var(--text-primary)" }}>
-              Quem usa n�o volta atr�s
+              Quem usa não volta atrás
             </h2>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -422,7 +424,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* -- CTA final -- */}
+      {/* ── CTA final ── */}
       <section className="py-24 px-6 text-center relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(244,180,0,0.05) 0%, transparent 70%)" }} />
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="relative max-w-xl mx-auto">
@@ -430,18 +432,18 @@ export default function Landing() {
             Pronto para mudar como sua barbearia funciona?
           </h2>
           <p className="mb-8 text-[15px]" style={{ color: "var(--text-secondary)", lineHeight: 1.7 }}>
-            Configure em menos de 5 minutos e veja a diferen�a no primeiro dia.
+            Configure em menos de 5 minutos e veja a diferença no primeiro dia.
           </p>
           <motion.button whileHover={{ scale: 1.04, boxShadow: "0 0 40px rgba(244,180,0,0.3)" }} whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/onboarding")}
             className="inline-flex items-center gap-2 px-8 rounded-xl font-bold text-[15px]"
             style={{ height: 52, background: "var(--primary)", color: "#0D0D0D", boxShadow: "0 0 24px rgba(244,180,0,0.2)" }}>
-            Come�ar gr�tis agora <ArrowRight size={17} strokeWidth={2.5} />
+            Começar grátis agora <ArrowRight size={17} strokeWidth={2.5} />
           </motion.button>
         </motion.div>
       </section>
 
-      {/* -- Footer -- */}
+      {/* ── Footer ── */}
       <footer className="flex items-center justify-between px-8 py-5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
         <button onClick={() => router.push("/")} className="flex items-center gap-2">
           <div className="flex items-center justify-center rounded" style={{ width: 22, height: 22, background: "var(--primary)" }}>
@@ -449,7 +451,7 @@ export default function Landing() {
           </div>
           <span className="font-bold text-[14px]" style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.02em", color: "var(--text-primary)" }}>Toqe</span>
         </button>
-        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>� 2026 Toqe. Todos os direitos reservados.</span>
+        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>© 2026 Toqe. Todos os direitos reservados.</span>
       </footer>
     </div>
   );
