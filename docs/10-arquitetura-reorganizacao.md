@@ -159,12 +159,12 @@ Tarefas:
 
 ## 8. Status
 
-| Fase | Estado                                               | PR  | Doc                                                            |
-| ---- | ---------------------------------------------------- | --- | -------------------------------------------------------------- |
-| 1    | concluída                                            | #1  | [11-fase-1-tooling-ci.md](./11-fase-1-tooling-ci.md)           |
-| 2    | concluída                                            | #2  | [12-fase-2-contracts.md](./12-fase-2-contracts.md)             |
-| 3    | em execução (3a #3 OK; 3b entregue; 3c-3e pendentes) | —   | [13-fase-3-frontend-piloto.md](./13-fase-3-frontend-piloto.md) |
-| 4    | pendente                                             | —   | —                                                              |
-| 5    | pendente                                             | —   | —                                                              |
+| Fase | Estado                                                         | PR  | Doc                                                            |
+| ---- | -------------------------------------------------------------- | --- | -------------------------------------------------------------- |
+| 1    | concluída                                                      | #1  | [11-fase-1-tooling-ci.md](./11-fase-1-tooling-ci.md)           |
+| 2    | concluída                                                      | #2  | [12-fase-2-contracts.md](./12-fase-2-contracts.md)             |
+| 3    | em execução (3a #3 OK; 3b #4 OK; 3c entregue; 3d-3e pendentes) | —   | [13-fase-3-frontend-piloto.md](./13-fase-3-frontend-piloto.md) |
+| 4    | pendente                                                       | —   | —                                                              |
+| 5    | pendente                                                       | —   | —                                                              |
 
 Última atualização: 2026-05-11.
