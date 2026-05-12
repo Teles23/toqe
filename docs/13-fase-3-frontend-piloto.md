@@ -12,9 +12,72 @@ Devido ao tamanho, dividimos a Fase 3 em **sub-PRs sequenciais**, cada um em uma
 | ------ | --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------ |
 | 3a     | `arch/fase-3-frontend-piloto`     | Reestruturação para `src/` + TanStack Query + `shared/config` + `useAuth` separado + ESLint hygiene  | concluída #3 |
 | 3b     | `arch/fase-3b-auth-feature`       | Feature piloto `auth`: `src/features/auth/{components,hooks,services,schemas}`                       | concluída #4 |
-| **3c** | `arch/fase-3c-rbac-sentry`        | `proxy.ts` consumindo `shared/config` + componente `<RequireRole>` + Sentry SDK FE                   | **entregue** |
-| 3d     | `arch/fase-3d-design-tokens`      | Design tokens consolidados em `tokens.css` + banimento de `style={{}}` via ESLint custom             | pendente     |
+| 3c     | `arch/fase-3c-rbac-sentry`        | `proxy.ts` consumindo `shared/config` + componente `<RequireRole>` + Sentry SDK FE                   | concluída #5 |
+| **3d** | `arch/fase-3d-design-tokens`      | Design tokens centralizados em `tokens.css` + ESLint custom proibindo `style={{}}` (legacy excluída) | **entregue** |
 | 3e     | `arch/fase-3e-dashboard-refactor` | Refactor do `dashboard/page.tsx` em componentes pequenos + `useDashboardOverview()` (TanStack Query) | pendente     |
+
+## Entregue na sub-PR 3d — design tokens centralizados + ESLint contra `style={{}}`
+
+### 1. `tokens.css` agora é a source of truth
+
+- Bloco `:root` com todos os tokens (`--bg-base`, `--text-primary`, `--status-success`, `--font-heading`, `--shadow-lg`, `--ease-snappy`, mapeamento shadcn/Radix etc.) foi movido de `src/app/globals.css` para `apps/web/src/shared/ui/tokens.css`.
+- `src/app/globals.css` passa a importar via `@import "../shared/ui/tokens.css";` logo após `@import "tailwindcss"`. Variáveis ficam disponíveis para o bloco `@theme inline` e para todos os componentes.
+- Cabeçalho do `tokens.css` documenta as regras: nada hardcoded; novos tokens vão lá; mudar a paleta = mudar só esse arquivo.
+
+### 2. Regra ESLint `no-restricted-syntax` banindo `style={{}}` em código novo
+
+Adicionada em `apps/web/eslint.config.js`:
+
+```js
+{
+  selector: "JSXAttribute[name.name='style']",
+  message: "Evite style={{ ... }} inline. Use classes Tailwind ou CVA. Tokens em src/shared/ui/tokens.css."
+}
+```
+
+Aplicada como **error** em `src/**/*.tsx`. Para não bloquear o build enquanto a migração acontece, há um override `"off"` para arquivos **legados**:
+
+```
+src/app/page.tsx
+src/app/not-found.tsx
+src/app/(auth)/login/page.tsx
+src/app/(dashboard)/**/*.tsx
+src/app/onboarding/page.tsx
+src/shared/components/{page-layout,sidebar,stat-card,topbar}.tsx
+src/shared/ui/**/*.tsx                            # shadcn primitives — permitidos
+src/features/auth/components/**/*.tsx             # criados na 3b com inline styles
+```
+
+**Plano de pagamento da dívida:**
+
+- Sub-PR **3e** vai remover `src/app/(dashboard)/dashboard/page.tsx` da lista (refactor + migração para classes).
+- **Fase 4** vai remover as demais pages do dashboard e os components em `src/shared/components/`.
+- `src/shared/ui/**` provavelmente permanece (shadcn precisa de `style` para variantes dinâmicas como chart/progress/slider).
+- `src/features/auth/components/**` será migrado quando estabilizar.
+
+### 3. Verificação da regra
+
+Teste manual confirmou: criar `<div style={{ color: "red" }}>` em `src/features/_test/Sample.tsx` (fora dos overrides) faz o `pnpm --filter web lint` falhar com a mensagem documentada. Removido após o teste.
+
+### Validações da sub-PR 3d
+
+| Checagem                              | Resultado                                                            |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| `pnpm --filter web exec tsc --noEmit` | ✅                                                                   |
+| `pnpm --filter web lint`              | ✅ (0 warnings com `--max-warnings 0`)                               |
+| `pnpm --filter web build`             | ✅ (14 rotas, CSS resolvido via `@import "../shared/ui/tokens.css"`) |
+| Smoke test da regra ESLint            | ✅ (dispara em código novo fora da lista de overrides)               |
+
+### Critérios de aceite (sub-PR 3d)
+
+- [x] `tokens.css` contém o bloco `:root` completo (source of truth).
+- [x] `globals.css` importa `tokens.css` e mantém só `@theme inline` + `@layer base/components` + keyframes.
+- [x] Regra ESLint contra `style={{}}` ativa para código novo.
+- [x] Lista de legados documentada com TODO de pagamento.
+- [x] Build/lint/types verdes.
+- [ ] PR aberto e mergeado.
+
+---
 
 ## Entregue na sub-PR 3c — RBAC + Sentry FE
 
