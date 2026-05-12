@@ -170,12 +170,27 @@ O status do cliente (`ativo | inativo | novo`) é derivado no frontend a partir 
 - `ativo` → `ultimaVisita` nos últimos 30 dias
 - `inativo` → demais casos
 
+### Shared components extraídos (refactor pós-revisão SOLID)
+
+Após revisão de qualidade, 3 componentes reutilizáveis foram extraídos para `src/shared/components/`:
+
+| Arquivo                  | Responsabilidade                                                           | Usado por                           |
+| ------------------------ | -------------------------------------------------------------------------- | ----------------------------------- |
+| `chart-utils.tsx`        | `ClientOnlyChart` (SSR guard) + `ChartTooltip` (tooltip recharts genérico) | 5 charts de relatórios              |
+| `detail-panel.tsx`       | Motion wrapper do painel lateral: animação, header com X, slot de footer   | `BarbeiroDetalhe`, `ClienteDetalhe` |
+| `detail-metric-grid.tsx` | Grid 2×2 de métricas com label/value/suffix padronizado                    | `BarbeiroDetalhe`, `ClienteDetalhe` |
+
+`RelatoriosView` (~400 linhas) dividido em 5 componentes SRP:
+`FaturamentoChart`, `AgendamentosChart`, `ServicosMixChart`, `HorariosPicoChart`, `BarbeirosRanking` — `RelatoriosView` vira orquestrador de ~120 linhas.
+
+Outras correções: `Users2` SVG inline → `Users` do lucide-react; `crescimento = 12` hardcoded removido.
+
 ### Validações
 
-| Checagem                                                                                       | Resultado |
-| ---------------------------------------------------------------------------------------------- | --------- |
-| `pnpm --filter web exec tsc --noEmit`                                                          | ✅        |
-| `pnpm --filter web exec eslint src/features/clientes src/features/relatorios --max-warnings 0` | ✅        |
+| Checagem                                                                                                             | Resultado |
+| -------------------------------------------------------------------------------------------------------------------- | --------- |
+| `pnpm --filter web exec tsc --noEmit`                                                                                | ✅        |
+| `pnpm --filter web exec eslint src/features/clientes src/features/relatorios src/shared/components --max-warnings 0` | ✅        |
 
 ## Sub-PR fix-lint-ci — CI verde (mergeado)
 
