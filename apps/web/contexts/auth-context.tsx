@@ -77,7 +77,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
     async function loadSession() {
       try {
-        const me = await api.get<UsuarioMe>("/usuarios/me");
+        const me = await api.get<UsuarioMe>("/usuarios/me", { redirectOn401: false });
         if (cancelled) return;
 
         const { codigo, nome, email, telefone, avatarUrl, barbearias: bars } = me;

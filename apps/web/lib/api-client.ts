@@ -33,6 +33,11 @@ interface RequestOptions {
   headers?: Record<string, string>;
   /** AbortSignal para cancelamento */
   signal?: AbortSignal;
+  /**
+   * Em 401 sem refresh, redirecionar para /login (padrão: true).
+   * Use `false` em checagens proativas de sessão (ex: AuthProvider em rotas públicas).
+   */
+  redirectOn401?: boolean;
 }
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
@@ -79,7 +84,7 @@ async function request<T>(
   body?: unknown,
   opts: RequestOptions = {},
 ): Promise<T> {
-  const { auth = true, tenantId, headers: extraHeaders = {}, signal } = opts;
+  const { auth = true, tenantId, headers: extraHeaders = {}, signal, redirectOn401 = true } = opts;
 
   const buildHeaders = (token: string | null): HeadersInit => {
     const h: Record<string, string> = {
@@ -111,9 +116,9 @@ async function request<T>(
     }
   }
 
-  // Ainda 401 após retry → redireciona para login
+  // Ainda 401 após retry → redireciona para login (se permitido)
   if (res.status === 401 && auth) {
-    if (typeof window !== 'undefined') {
+    if (redirectOn401 && typeof window !== 'undefined') {
       window.location.href = '/login';
     }
     throw new ApiError(401, null, 'Sessão expirada');
