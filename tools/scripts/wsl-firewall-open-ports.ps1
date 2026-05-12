@@ -80,8 +80,8 @@ Write-Host "IP da LAN para portproxy: $lanIp" -ForegroundColor Cyan
 if ($Remove) {
     Write-Host "Removendo regras..." -ForegroundColor Yellow
     foreach ($p in $Ports) {
-        netsh interface portproxy delete v4tov4 listenaddress=$lanIp listenport=$p 2>&1 | Out-Null
         netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=$p 2>&1 | Out-Null
+        netsh interface portproxy delete v4tov4 listenaddress=$lanIp listenport=$p 2>&1 | Out-Null
     }
     Remove-NetFirewallHyperVRule -Name "$RuleName-inbound" -ErrorAction SilentlyContinue
     Remove-NetFirewallRule -DisplayName "$RuleName (LAN inbound)" -ErrorAction SilentlyContinue
@@ -114,15 +114,21 @@ if ($existingHv) {
     }
 }
 
-# 2. Port-proxy: <IP-LAN>:PORT -> 127.0.0.1:PORT (mirrored faz o resto).
+# 2. Port-proxy: 0.0.0.0:PORT -> 127.0.0.1:PORT.
+#    Bindar em 0.0.0.0 (todas as interfaces) evita conflito com o IP que
+#    o mirrored networking espelha do WSL. Bindar diretamente em
+#    <IP-LAN> falha silenciosamente: a entrada aparece na tabela, mas
+#    nenhum socket TCP fica em LISTEN naquele endereço.
 foreach ($p in $Ports) {
-    # Limpa qualquer entrada antiga primeiro pra evitar conflito.
+    # Limpa entradas antigas (tanto 0.0.0.0 quanto IP especifico) pra evitar conflito.
+    netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=$p 2>&1 | Out-Null
     netsh interface portproxy delete v4tov4 listenaddress=$lanIp listenport=$p 2>&1 | Out-Null
+
     $out = netsh interface portproxy add v4tov4 `
-        listenaddress=$lanIp listenport=$p `
+        listenaddress=0.0.0.0 listenport=$p `
         connectaddress=127.0.0.1 connectport=$p 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "  [OK] portproxy ${lanIp}:$p -> 127.0.0.1:$p" -ForegroundColor Green
+        Write-Host "  [OK] portproxy 0.0.0.0:$p -> 127.0.0.1:$p (alcanca ${lanIp}:$p)" -ForegroundColor Green
     } else {
         Write-Warning "Falha portproxy porta ${p}: $out"
     }
