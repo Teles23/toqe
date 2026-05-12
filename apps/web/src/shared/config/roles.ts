@@ -1,43 +1,53 @@
 /**
- * Perfis (roles) de usuário em uma barbearia.
- * Espelha o enum `Perfil` do backend (apps/api/prisma/schema.prisma).
+ * Perfis (roles) e matriz de autorização.
  *
- * Será usado para RBAC em `proxy.ts` (server-side) e no componente
- * `<RequireRole>` (client-side) — a ser introduzido em sub-PR seguinte
- * desta mesma Fase 3.
+ * Re-exporta o enum `Perfil` do `@toqe/shared` (single source of truth)
+ * e adiciona a matriz `ROUTE_ROLES` específica do frontend para guarda
+ * client-side via `<RequireRole>`.
  */
-export const PERFIL = {
-  ADMIN: "ADMIN",
-  GERENTE: "GERENTE",
-  BARBEIRO: "BARBEIRO",
-  RECEPCAO: "RECEPCAO",
-} as const;
 
-export type Perfil = (typeof PERFIL)[keyof typeof PERFIL];
+import { Perfil } from "@toqe/shared";
+
+export { Perfil };
 
 /**
  * Matriz de permissões: quais perfis podem acessar cada rota privada.
- * Usado pelo `proxy.ts` para RBAC server-side.
+ * Consumida por `<RequireRole>` (client-side guard de UX).
+ *
+ * A autorização "de verdade" continua server-side via `@nestjs/passport`
+ * + `RolesGuard` no backend — esta matriz é só para esconder UIs.
  */
 export const ROUTE_ROLES: Record<string, readonly Perfil[]> = {
   "/dashboard": [
-    PERFIL.ADMIN,
-    PERFIL.GERENTE,
-    PERFIL.BARBEIRO,
-    PERFIL.RECEPCAO,
+    Perfil.SUPER_ADMIN,
+    Perfil.DONO,
+    Perfil.GERENTE,
+    Perfil.BARBEIRO,
+    Perfil.RECEPCIONISTA,
   ],
-  "/agenda": [PERFIL.ADMIN, PERFIL.GERENTE, PERFIL.BARBEIRO, PERFIL.RECEPCAO],
-  "/servicos": [PERFIL.ADMIN, PERFIL.GERENTE],
-  "/barbeiros": [PERFIL.ADMIN, PERFIL.GERENTE],
-  "/clientes": [PERFIL.ADMIN, PERFIL.GERENTE, PERFIL.RECEPCAO],
-  "/relatorios": [PERFIL.ADMIN, PERFIL.GERENTE],
-  "/configuracoes": [PERFIL.ADMIN],
+  "/agenda": [
+    Perfil.SUPER_ADMIN,
+    Perfil.DONO,
+    Perfil.GERENTE,
+    Perfil.BARBEIRO,
+    Perfil.RECEPCIONISTA,
+  ],
+  "/servicos": [Perfil.SUPER_ADMIN, Perfil.DONO, Perfil.GERENTE],
+  "/barbeiros": [Perfil.SUPER_ADMIN, Perfil.DONO, Perfil.GERENTE],
+  "/clientes": [
+    Perfil.SUPER_ADMIN,
+    Perfil.DONO,
+    Perfil.GERENTE,
+    Perfil.RECEPCIONISTA,
+  ],
+  "/relatorios": [Perfil.SUPER_ADMIN, Perfil.DONO, Perfil.GERENTE],
+  "/configuracoes": [Perfil.SUPER_ADMIN, Perfil.DONO],
 };
 
 /**
  * Retorna `true` se algum dos perfis informados pode acessar a rota.
- * Se a rota não está na matriz, retorna `true` (rota pública ou ainda não
- * categorizada — não bloqueia para evitar falsos negativos).
+ * Se a rota não está na matriz, retorna `true` (rota pública ou ainda
+ * não categorizada — não bloqueia para evitar falsos negativos).
  */
 export function canAccessRoute(pathname: string, perfis: Perfil[]): boolean {
   const allowed = ROUTE_ROLES[pathname];

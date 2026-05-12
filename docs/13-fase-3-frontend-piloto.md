@@ -11,10 +11,80 @@ Devido ao tamanho, dividimos a Fase 3 em **sub-PRs sequenciais**, cada um em uma
 | Sub-PR | Branch                            | Escopo                                                                                               | Status       |
 | ------ | --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------ |
 | 3a     | `arch/fase-3-frontend-piloto`     | Reestruturação para `src/` + TanStack Query + `shared/config` + `useAuth` separado + ESLint hygiene  | concluída #3 |
-| **3b** | `arch/fase-3b-auth-feature`       | Feature piloto `auth`: `src/features/auth/{components,hooks,services,schemas}`                       | **entregue** |
-| 3c     | `arch/fase-3c-rbac-sentry`        | RBAC em `proxy.ts` + componente `<RequireRole>` + Sentry SDK FE                                      | pendente     |
+| 3b     | `arch/fase-3b-auth-feature`       | Feature piloto `auth`: `src/features/auth/{components,hooks,services,schemas}`                       | concluída #4 |
+| **3c** | `arch/fase-3c-rbac-sentry`        | `proxy.ts` consumindo `shared/config` + componente `<RequireRole>` + Sentry SDK FE                   | **entregue** |
 | 3d     | `arch/fase-3d-design-tokens`      | Design tokens consolidados em `tokens.css` + banimento de `style={{}}` via ESLint custom             | pendente     |
 | 3e     | `arch/fase-3e-dashboard-refactor` | Refactor do `dashboard/page.tsx` em componentes pequenos + `useDashboardOverview()` (TanStack Query) | pendente     |
+
+## Entregue na sub-PR 3c — RBAC + Sentry FE
+
+### 1. `proxy.ts` consome `shared/config`
+
+`apps/web/proxy.ts` foi refatorado para usar `isPublicRoute()` de `@/shared/config/routes` (em vez de listas duplicadas). Mantém **autenticação** (presença do cookie `access_token`) como única verificação server-side.
+
+**Decisão de design — sem RBAC no proxy:** o `perfil` do usuário é por-barbearia (multi-tenant) e **não está no JWT** (o payload atual é só `{ sub: codigo }`). Em vez de inflar o token com perfis que ficariam stale ao trocar barbearia, fazemos RBAC client-side via `<RequireRole>` lendo `useAuth().perfil` (sempre sincronizado com a barbearia ativa). Comentário detalhado no próprio `proxy.ts`.
+
+### 2. `<RequireRole>` — guarda client-side por perfil
+
+`apps/web/src/shared/components/RequireRole.tsx` — guarda de UX por perfil:
+
+- Lê `useAuth()` (`perfil` + `loading`).
+- Compara contra `roles` (array de `Perfil`).
+- Enquanto `loading`, renderiza `fallback` (default `null`).
+- Autorizado: renderiza `children`.
+- Não autorizado: `router.replace(redirectTo)` em `useEffect` (default `/dashboard`); ou apenas `fallback` se `redirectTo === null`.
+
+Uso:
+
+```tsx
+import { RequireRole } from "@/shared/components/RequireRole";
+import { Perfil } from "@/shared/config/roles";
+
+export default function ConfiguracoesPage() {
+  return (
+    <RequireRole roles={[Perfil.SUPER_ADMIN, Perfil.DONO]}>
+      <ConfiguracoesUI />
+    </RequireRole>
+  );
+}
+```
+
+### 3. `shared/config/roles.ts` alinhado com `@toqe/shared`
+
+`roles.ts` agora **re-exporta** o enum `Perfil` de `@toqe/shared` (single source of truth) em vez de definir um próprio com valores diferentes — corrige incompatibilidade de tipos entre `useAuth().perfil` e `ROUTE_ROLES`. Matriz `ROUTE_ROLES` atualizada com os perfis reais do enum (`SUPER_ADMIN`, `DONO`, `GERENTE`, `BARBEIRO`, `RECEPCIONISTA`, `CLIENTE`).
+
+### 4. Sentry SDK (`@sentry/nextjs`)
+
+- `@sentry/nextjs@^8.x` instalado em `apps/web`.
+- `instrumentation.ts` (Next 16 hook) carrega `sentry.server.config.ts` (runtime nodejs) ou `sentry.edge.config.ts` (runtime edge).
+- `instrumentation-client.ts` inicializa o SDK no browser, com `Sentry.captureRouterTransitionStart` exportado como `onRouterTransitionStart` para instrumentar transições de rota do App Router.
+- Todos os configs são **no-op** se `NEXT_PUBLIC_SENTRY_DSN` não estiver definido — evita ruído em dev sem configuração.
+- `next.config.js` envolto com `withSentryConfig(...)`. Source map upload opt-in via `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` (campos comentados, prontos para descomentar quando o projeto Sentry estiver provisionado).
+
+### 5. Hygiene
+
+- `turbo.json`: `NEXT_RUNTIME` adicionado ao `globalEnv`; `SENTRY_AUTH_TOKEN`/`SENTRY_ORG`/`SENTRY_PROJECT` no `env` do task `build`.
+- `apps/web/eslint.config.js`: bloco específico para arquivos de config/instrumentation (`*.{js,mjs,cjs}`, `instrumentation*.ts`, `sentry.*.config.ts`) com globals do Node.js (`process`, `Buffer`, etc.).
+- `apps/web/README.md`: seção "Proteção de rotas" atualizada com 2 níveis (proxy + RequireRole); seção "Observabilidade" adicionada documentando Sentry.
+
+### Validações da sub-PR 3c
+
+| Checagem                              | Resultado                                    |
+| ------------------------------------- | -------------------------------------------- |
+| `pnpm --filter web exec tsc --noEmit` | ✅                                           |
+| `pnpm --filter web lint`              | ✅ (0 warnings)                              |
+| `pnpm --filter web build`             | ✅ (14 rotas, withSentryConfig sem warnings) |
+
+### Critérios de aceite (sub-PR 3c)
+
+- [x] `proxy.ts` consome `isPublicRoute()` (sem listas duplicadas).
+- [x] `<RequireRole>` disponível e documentado.
+- [x] `Perfil` único entre `useAuth` e `roles.ts`.
+- [x] Sentry SDK instalado e configurado (no-op sem DSN).
+- [x] Build/lint/types verdes.
+- [ ] PR aberto e mergeado.
+
+---
 
 ## Entregue na sub-PR 3b — feature piloto `auth`
 

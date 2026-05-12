@@ -63,7 +63,31 @@ pnpm --filter web check-types  # tsc --noEmit
 
 ## Proteção de rotas
 
-`proxy.ts` (convenção Next 16; equivale ao antigo `middleware.ts`) protege as rotas em `(dashboard)/*` validando o cookie `access_token`. RBAC por `perfil` será adicionado na Fase 3.
+Dois níveis de proteção:
+
+1. **`proxy.ts`** (convenção Next 16; equivalente ao antigo `middleware.ts`) — guarda **server-side** que bloqueia rotas privadas para visitantes anônimos. Apenas verifica a presença do cookie `access_token` e redireciona para `/login`. Usa `isPublicRoute()` de `src/shared/config/routes.ts`.
+2. **`<RequireRole>`** (`src/shared/components/RequireRole.tsx`) — guarda **client-side** por perfil. Lê `useAuth().perfil` e a matriz `ROUTE_ROLES` de `src/shared/config/roles.ts`. Exemplo:
+
+   ```tsx
+   import { RequireRole } from "@/shared/components/RequireRole";
+   import { Perfil } from "@/shared/config/roles";
+
+   export default function ConfiguracoesPage() {
+     return (
+       <RequireRole roles={[Perfil.SUPER_ADMIN, Perfil.DONO]}>
+         <ConfiguracoesUI />
+       </RequireRole>
+     );
+   }
+   ```
+
+A autorização "de verdade" continua no backend (`@nestjs/passport` + `RolesGuard`). Os guards de FE são puramente UX — não confie neles para esconder dados sensíveis.
+
+## Observabilidade
+
+`@sentry/nextjs` configurado via `instrumentation.ts` + `instrumentation-client.ts` + `sentry.server.config.ts` + `sentry.edge.config.ts`. O SDK só se inicializa se `NEXT_PUBLIC_SENTRY_DSN` estiver definido (no-op em dev local sem configuração).
+
+Para habilitar upload de source maps em produção, defina `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` e `SENTRY_PROJECT` no CI e descomente os campos correspondentes em `next.config.js`.
 
 ## Convenções
 
