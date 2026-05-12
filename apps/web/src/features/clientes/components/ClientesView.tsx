@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, Scissors, Star, TrendingUp } from "lucide-react";
+import { Plus, Search, Scissors, Star, TrendingUp, Users } from "lucide-react";
 import StatCard from "@/shared/components/stat-card";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { useClientes } from "../hooks/use-clientes";
@@ -11,26 +11,6 @@ import { ClienteCard } from "./ClienteCard";
 import { ClienteDetalhe } from "./ClienteDetalhe";
 import type { Cliente, ClienteStatus } from "../types/cliente.types";
 import { STATUS_CONFIG, type SortKey } from "../constants/cliente.constants";
-
-function Users2(props: { size?: number; strokeWidth?: number }) {
-  return (
-    <svg
-      width={props.size ?? 18}
-      height={props.size ?? 18}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={props.strokeWidth ?? 1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
 
 export function ClientesView() {
   const { barbearia } = useAuth();
@@ -71,7 +51,7 @@ export function ClientesView() {
             label: "Total de clientes",
             value: clientes.length,
             status: "info" as const,
-            icon: Users2,
+            icon: Users,
           },
           {
             label: "Clientes ativos",
