@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isPublicRoute } from "./src/shared/config/routes";
+import { isPublicRoute } from "@/shared/config/routes";
 
 /**
  * Proxy / middleware (Next.js 16 convention).
