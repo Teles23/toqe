@@ -4,6 +4,7 @@
     "NODE_ENV",
     "CI",
     "NEXT_RUNTIME",
+    "ANALYZE",
     "TURBO_TELEMETRY_DISABLED",
     "NEXT_TELEMETRY_DISABLED"
   ],
