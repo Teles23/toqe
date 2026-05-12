@@ -1,6 +1,8 @@
 # 14. Fase 4 — Replicação e otimização de dev
 
 > **Status:** em execução · **Branch-mãe:** `feature/arquitetura-reorganizacao` · **Documento-mãe:** [`10-arquitetura-reorganizacao.md`](./10-arquitetura-reorganizacao.md).
+>
+> Veja também: [`15-fase-4-ci-lint-fixes.md`](./15-fase-4-ci-lint-fixes.md) — registro completo dos 7 commits de correção do CI/ESLint (`arch/fix-lint-ci`).
 
 ## Objetivo
 
@@ -8,13 +10,14 @@ Replicar o padrão estabelecido na Fase 3 (feature `auth` + feature `dashboard`)
 
 Dividida em sub-PRs sequenciais, cada um em uma branch própria a partir de `feature/arquitetura-reorganizacao`:
 
-| Sub-PR | Branch                             | Escopo                                                                                  | Status       |
-| ------ | ---------------------------------- | --------------------------------------------------------------------------------------- | ------------ |
-| **4a** | `arch/fase-4a-dev-perf`            | Otimizações de dev: `optimizePackageImports`, bundle analyzer, `dev:turbopack`, medição | **entregue** |
-| 4b     | `arch/fase-4b-feature-agenda`      | Feature `agenda` migrada para `src/features/agenda/`                                    | pendente     |
-| 4c     | `arch/fase-4c-features-cadastro`   | Features `servicos`, `barbeiros`, `clientes` (similares — list/form/detail)             | pendente     |
-| 4d     | `arch/fase-4d-features-rel-config` | Features `relatorios` + `configuracoes`                                                 | pendente     |
-| 4e     | `arch/fase-4e-mobile-structure`    | Replicar estrutura `src/{app,features,shared}/` em `apps/mobile/`                       | pendente     |
+| Sub-PR       | Branch                             | Escopo                                                                                  | Status               |
+| ------------ | ---------------------------------- | --------------------------------------------------------------------------------------- | -------------------- |
+| **4a**       | `arch/fase-4a-dev-perf`            | Otimizações de dev: `optimizePackageImports`, bundle analyzer, `dev:turbopack`, medição | **mergeado** ✅      |
+| **fix-lint** | `arch/fix-lint-ci`                 | CI verde: Gitleaks, ESLint web+api, Prisma generate, NestJS spec stubs                  | **mergeado** ✅      |
+| **4b**       | `arch/fase-4b-agenda`              | Feature `agenda` migrada para `src/features/agenda/`                                    | **mergeado** ✅      |
+| **4c**       | `arch/fase-4c-servicos-barbeiros`  | Features `servicos` e `barbeiros` com TanStack Query                                    | **mergeado** ✅      |
+| **4d**       | `arch/fase-4d-clientes-relatorios` | Features `clientes` e `relatorios` com 5 endpoints de relatório                         | **PR #14 aberto** 🔄 |
+| 4e           | `arch/fase-4e-configuracoes`       | Feature `configuracoes` (form de perfil + tema, ~1014 linhas)                           | pendente             |
 
 ## Entregue na sub-PR 4a — otimizações de dev
 
@@ -128,9 +131,67 @@ Após 4a:
 - [x] Build/lint/types verdes.
 - [ ] PR aberto e mergeado.
 
+## Sub-PR 4d — clientes e relatorios (PR #14)
+
+Branch: `arch/fase-4d-clientes-relatorios` → base `feature/arquitetura-reorganizacao`.
+
+### Escopo
+
+| Feature      | Linhas removidas da page | Estrutura criada                                                                 |
+| ------------ | ------------------------ | -------------------------------------------------------------------------------- |
+| `clientes`   | 901 → 4                  | types, constants, service, hook, `ClienteCard`, `ClienteDetalhe`, `ClientesView` |
+| `relatorios` | 755 → 4                  | types, constants, service (5 métodos), 5 hooks, `RelatoriosView`                 |
+
+### API — endpoints de relatórios
+
+Todos em `/barbearias/:barCodigo/relatorios/<endpoint>?periodo=<30d>`:
+
+| Hook                       | Endpoint        | Retorno                                                                        |
+| -------------------------- | --------------- | ------------------------------------------------------------------------------ |
+| `useFaturamento`           | `faturamento`   | `FaturamentoItem[]` `{ data, total }`                                          |
+| `useAgendamentosRelatorio` | `agendamentos`  | `AgendamentosItem[]` `{ data, concluido, cancelado, no_show }`                 |
+| `useServicosRelatorio`     | `servicos`      | `ServicoItem[]` `{ nome, quantidade, total }`                                  |
+| `useBarbeirosRelatorio`    | `barbeiros`     | `BarbeiroItem[]` `{ nome, faturamento, atendimentos, ticketMedio, avaliacao }` |
+| `useHorariosPico`          | `horarios-pico` | `HorarioPicoItem[]` `{ hora, quantidade }`                                     |
+
+### Tipo `Periodo`
+
+```ts
+type Periodo = "7d" | "30d" | "3m" | "6m" | "12m";
+```
+
+Selecionável via toggle no header da `RelatoriosView`. Todas as queries invalidam e refazem quando `periodo` muda.
+
+### `toCliente()` — derivação de status
+
+O status do cliente (`ativo | inativo | novo`) é derivado no frontend a partir dos dados brutos da API:
+
+- `novo` → `totalVisitas === 0`
+- `ativo` → `ultimaVisita` nos últimos 30 dias
+- `inativo` → demais casos
+
+### Validações
+
+| Checagem                                                                                       | Resultado |
+| ---------------------------------------------------------------------------------------------- | --------- |
+| `pnpm --filter web exec tsc --noEmit`                                                          | ✅        |
+| `pnpm --filter web exec eslint src/features/clientes src/features/relatorios --max-warnings 0` | ✅        |
+
+## Sub-PR fix-lint-ci — CI verde (mergeado)
+
+Branch `arch/fix-lint-ci` — 7 commits, PR #13 mergeado. Detalhes completos em [`15-fase-4-ci-lint-fixes.md`](./15-fase-4-ci-lint-fixes.md).
+
+Resumo das correções:
+
+- Gitleaks: `pull-requests: read` em `.github/workflows/gitleaks.yml`
+- `prisma generate` com `DATABASE_URL` dummy em `ci.yml` (Prisma 7 valida env em load time)
+- `src/generated/**` adicionado aos `ignores` do `eslint.config.mjs` da API
+- 12 NestJS spec stubs corrigidos com `useValue: {}` e `.overrideGuard()`
+- `/* eslint-disable no-restricted-syntax */` nos componentes com CSS vars dinâmicos
+- `no-unsafe-*` downgraded para `warn` na API (padrões legítimos do NestJS/Passport)
+
 ## Próximos sub-PRs
 
-- **4b**: migrar `agenda/page.tsx` → `src/features/agenda/`. Inspecionar tamanho da página e arrastar lógica de calendário/horários pra `components/`, dados pra `services/`/`hooks/` (TanStack Query).
-- **4c**: três features de cadastro juntas (similares — list table + modal de form + delete confirm). Padrão CRUD pode ser compartilhado em `shared/components/crud-list-page.tsx` se valer a pena.
-- **4d**: `relatorios` (charts pesados, similar dashboard) + `configuracoes` (form de perfil + tema).
-- **4e**: mobile estrutura — replicar `src/features/`, `src/shared/`, consumir `@toqe/contracts`.
+- **4e** `arch/fase-4e-configuracoes`: migrar `configuracoes/page.tsx` (~1014 linhas) → `src/features/configuracoes/`. Contém form de perfil da barbearia, upload de logo, preferências de tema — provável split em `PefilBarbeariaForm`, `TemaSelector`, `ConfiguracoesView`.
+- **Fase 5**: rate limiting (NestJS throttler), Helmet + CSP, healthchecks `/health`, release pipeline.
+- **Merge final**: `feature/arquitetura-reorganizacao` → `develop` após 4e.
