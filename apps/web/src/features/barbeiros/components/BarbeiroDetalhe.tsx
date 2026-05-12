@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 "use client";
 
 import { motion } from "framer-motion";

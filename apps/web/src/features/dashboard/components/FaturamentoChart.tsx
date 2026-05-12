@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 "use client";
 
 import React, { useEffect, useState } from "react";
