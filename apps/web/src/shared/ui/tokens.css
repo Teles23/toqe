@@ -1,0 +1,31 @@
+/* ============================================================
+   Design Tokens — Toqe
+   ============================================================
+   Os tokens visuais (cores, tipografia, espaçamentos, sombras) vivem
+   atualmente em `src/app/globals.css` dentro do bloco `@theme inline`.
+
+   Este arquivo serve como *ponto canônico* de tokens compartilhados:
+   conforme a Fase 3 avança (sub-PRs seguintes), os tokens serão
+   consolidados aqui e re-exportados em `globals.css` via `@import`.
+
+   Regras adotadas durante a reorganização (Fase 3):
+
+   1. Cores, espaçamentos e tipografia DEVEM vir de variáveis CSS
+      definidas neste arquivo (ou em globals.css enquanto a migração
+      não termina).
+
+   2. NÃO usar `style={{ color: "var(--bg-card)" }}` ou similares.
+      Estilos inline com tokens devem virar:
+        - Classes Tailwind (preferível): `bg-card`, `text-primary`
+        - Ou variantes CVA (`class-variance-authority`) em componentes
+          que precisem de combinações condicionais.
+
+   3. Quando precisar de um valor que ainda não é token, primeiro
+      promover a token aqui — depois usar.
+
+   Status: arquivo introduzido na Fase 3 (sub-PR estrutural). A
+   centralização dos tokens existentes em globals.css será feita no
+   próximo sub-PR (dashboard refactor + design tokens).
+   ============================================================ */
+
+/* Reservado para tokens consolidados — atualmente importado por src/app/globals.css. */
