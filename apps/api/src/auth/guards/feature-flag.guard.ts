@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FEATURE_KEY } from '../decorators/feature.decorator';
@@ -31,7 +37,9 @@ export class FeatureFlagGuard implements CanActivate {
     if (!barbearia) throw new NotFoundException('Barbearia não encontrada');
 
     if (barbearia.planoStatus !== 'ativo') {
-      throw new ForbiddenException(`Barbearia com plano ${barbearia.planoStatus}. Regularize para acessar esta funcionalidade.`);
+      throw new ForbiddenException(
+        `Barbearia com plano ${barbearia.planoStatus}. Regularize para acessar esta funcionalidade.`,
+      );
     }
 
     const planoLimite = await this.prisma.planoLimite.findUnique({
@@ -39,13 +47,17 @@ export class FeatureFlagGuard implements CanActivate {
     });
 
     if (!planoLimite) {
-      throw new ForbiddenException(`Plano '${barbearia.plano}' não reconhecido`);
+      throw new ForbiddenException(
+        `Plano '${barbearia.plano}' não reconhecido`,
+      );
     }
 
     const temAcesso = planoLimite[feature as keyof typeof planoLimite];
 
     if (!temAcesso) {
-      throw new ForbiddenException(`Funcionalidade '${feature}' não disponível no plano '${barbearia.plano}'`);
+      throw new ForbiddenException(
+        `Funcionalidade '${feature}' não disponível no plano '${barbearia.plano}'`,
+      );
     }
 
     return true;

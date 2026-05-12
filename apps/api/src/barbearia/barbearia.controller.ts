@@ -1,4 +1,18 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards, Request, Headers, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+  Headers,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { BarbeariaService } from './barbearia.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
@@ -10,7 +24,13 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { FeatureFlagGuard } from '../auth/guards/feature-flag.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Feature } from '../auth/decorators/feature.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiSecurity,
+} from '@nestjs/swagger';
 
 @ApiTags('Barbearias')
 @ApiBearerAuth('JWT')
@@ -20,7 +40,9 @@ export class BarbeariaController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Cria uma nova barbearia e define o usuário como DONO' })
+  @ApiOperation({
+    summary: 'Cria uma nova barbearia e define o usuário como DONO',
+  })
   @ApiResponse({ status: 201, description: 'Barbearia criada.' })
   @ApiResponse({ status: 409, description: 'Slug já em uso.' })
   create(@Body() dto: CreateBarbeariaDto, @Request() req) {
@@ -98,7 +120,9 @@ export class BarbeariaController {
   @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
   @Roles('dono', 'gerente')
   @ApiSecurity('x-tenant-id')
-  @ApiOperation({ summary: 'Convida um usuário existente para a barbearia pelo e-mail' })
+  @ApiOperation({
+    summary: 'Convida um usuário existente para a barbearia pelo e-mail',
+  })
   @ApiResponse({ status: 201, description: 'Membro adicionado.' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
   @ApiResponse({ status: 409, description: 'Usuário já é membro.' })
@@ -128,7 +152,9 @@ export class BarbeariaController {
   @Roles('dono', 'gerente')
   @Feature('whiteLabel')
   @ApiSecurity('x-tenant-id')
-  @ApiOperation({ summary: 'Atualiza o tema (white-label) — requer plano com whiteLabel=true' })
+  @ApiOperation({
+    summary: 'Atualiza o tema (white-label) — requer plano com whiteLabel=true',
+  })
   @ApiResponse({ status: 200, description: 'Tema atualizado.' })
   @ApiResponse({ status: 403, description: 'Plano não inclui white-label.' })
   upsertTema(
@@ -144,7 +170,9 @@ export class BarbeariaController {
   @Roles('dono', 'gerente')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiSecurity('x-tenant-id')
-  @ApiOperation({ summary: 'Remove um membro da barbearia (não remove o dono)' })
+  @ApiOperation({
+    summary: 'Remove um membro da barbearia (não remove o dono)',
+  })
   @ApiResponse({ status: 204, description: 'Membro removido.' })
   @ApiResponse({ status: 400, description: 'Não é possível remover o dono.' })
   @ApiResponse({ status: 404, description: 'Membro não encontrado.' })

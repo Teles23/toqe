@@ -60,7 +60,7 @@ Mensagens validadas por `commitlint` (hook `commit-msg`). Formato:
 
 **Types permitidos:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
 
-**Scopes sugeridos (não obrigatórios):** `web`, `api`, `mobile`, `contracts`, `validators`, `shared`, `ui`, `config`, `infra`, `docker`, `ci`, `docs`, `arch`, `deps`.
+**Scopes sugeridos (não obrigatórios):** `web`, `api`, `mobile`, `contracts`, `shared`, `ui`, `config`, `infra`, `docker`, `ci`, `docs`, `arch`, `deps`.
 
 Exemplos:
 
@@ -109,7 +109,7 @@ pnpm format         # Prettier
 - **Composition over inheritance**; SRP nas funções/componentes.
 - **Frontend**: hooks por entidade (`useUsuario`, `useAgenda`), services em `features/<feat>/services/`, primitivos em `shared/ui/`. Sem `style={{}}` para cores/spacing — use tokens.
 - **Backend**: cada feature em um módulo NestJS; controller magro; lógica em services; DTOs com `nestjs-zod` (após Fase 2).
-- **Schemas Zod** em `packages/validators` (renomeado para `packages/contracts` na Fase 2) são a fonte da verdade.
+- **Schemas Zod** em `packages/contracts` são a fonte da verdade — backend (via `nestjs-zod`) e frontend importam direto.
 
 ## Reportando bugs
 

@@ -25,7 +25,10 @@ export class DashboardService {
         const itens = await this.prisma.agendamentoItem.findMany({
           where: {
             barCodigo,
-            agendamento: { status: 'concluido', inicio: { gte: dia, lte: fimDia } },
+            agendamento: {
+              status: 'concluido',
+              inicio: { gte: dia, lte: fimDia },
+            },
           },
           select: { preco: true },
         });
@@ -46,7 +49,7 @@ export class DashboardService {
       include: {
         cliente: { select: { nome: true, avatarUrl: true } },
         barbeiro: { select: { nome: true } },
-        itens:    { include: { servico: { select: { nome: true } } } },
+        itens: { include: { servico: { select: { nome: true } } } },
       },
       orderBy: { inicio: 'asc' },
       take: 10,
@@ -62,21 +65,36 @@ export class DashboardService {
 
     // Top 5 serviços do mês
     const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const fimMes    = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+    const fimMes = new Date(
+      hoje.getFullYear(),
+      hoje.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     const itensMes = await this.prisma.agendamentoItem.findMany({
       where: {
         barCodigo,
-        agendamento: { status: 'concluido', inicio: { gte: inicioMes, lte: fimMes } },
+        agendamento: {
+          status: 'concluido',
+          inicio: { gte: inicioMes, lte: fimMes },
+        },
       },
       select: { preco: true, servico: { select: { nome: true } } },
     });
 
-    const servicoMap: Record<string, { nome: string; total: number; quantidade: number }> = {};
+    const servicoMap: Record<
+      string,
+      { nome: string; total: number; quantidade: number }
+    > = {};
     itensMes.forEach((it) => {
       const { nome } = it.servico;
-      if (!servicoMap[nome]) servicoMap[nome] = { nome, total: 0, quantidade: 0 };
-      servicoMap[nome].total      += Number(it.preco);
+      if (!servicoMap[nome])
+        servicoMap[nome] = { nome, total: 0, quantidade: 0 };
+      servicoMap[nome].total += Number(it.preco);
       servicoMap[nome].quantidade += 1;
     });
 
@@ -87,7 +105,7 @@ export class DashboardService {
     return {
       faturamento7d,
       agendamentosHoje,
-      barbeirosAtivos: barbeirosAtivos.map(m => m.usuario),
+      barbeirosAtivos: barbeirosAtivos.map((m) => m.usuario),
       topServicos,
     };
   }

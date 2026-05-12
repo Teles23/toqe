@@ -1,4 +1,17 @@
-import { Controller, Post, Body, Get, Put, Delete, Param, UseGuards, Headers, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Put,
+  Delete,
+  Param,
+  UseGuards,
+  Headers,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ServicoService } from './servico.service';
 import { CreateServicoDto } from './dto/create-servico.dto';
 import { UpdateServicoDto } from './dto/update-servico.dto';
@@ -6,7 +19,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiSecurity,
+} from '@nestjs/swagger';
 
 @ApiTags('Serviços')
 @ApiBearerAuth('JWT')
@@ -21,7 +40,10 @@ export class ServicoController {
   @ApiOperation({ summary: 'Cria um novo serviço para a barbearia' })
   @ApiResponse({ status: 201, description: 'Serviço criado.' })
   @ApiResponse({ status: 403, description: 'Acesso negado.' })
-  create(@Body() dto: CreateServicoDto, @Headers('x-tenant-id') barCodigo: string) {
+  create(
+    @Body() dto: CreateServicoDto,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
     return this.servicoService.create(dto, Number(barCodigo));
   }
 

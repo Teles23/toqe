@@ -2,13 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
-import { addMinutes, parse, format, isBefore, isAfter, startOfDay, endOfDay, getDay } from 'date-fns';
+import {
+  addMinutes,
+  parse,
+  format,
+  isBefore,
+  isAfter,
+  startOfDay,
+  endOfDay,
+  getDay,
+} from 'date-fns';
 
 @Injectable()
 export class AgendaService {
   constructor(private prisma: PrismaService) {}
 
-  async upsertJornada(barbeiroId: number, barCodigo: number, dto: ConfigJornadaDto) {
+  async upsertJornada(
+    barbeiroId: number,
+    barCodigo: number,
+    dto: ConfigJornadaDto,
+  ) {
     const existing = await this.prisma.jornadaTrabalho.findFirst({
       where: {
         barbeiroId,
@@ -39,7 +52,11 @@ export class AgendaService {
     });
   }
 
-  async createBloqueio(barbeiroId: number, barCodigo: number, dto: CreateBloqueioDto) {
+  async createBloqueio(
+    barbeiroId: number,
+    barCodigo: number,
+    dto: CreateBloqueioDto,
+  ) {
     return this.prisma.bloqueioAgenda.create({
       data: {
         ...dto,
@@ -61,13 +78,20 @@ export class AgendaService {
     });
   }
 
-  async getAvailableSlots(barbeiroId: number, barCodigo: number, dateStr: string, totalDuration: number) {
+  async getAvailableSlots(
+    barbeiroId: number,
+    barCodigo: number,
+    dateStr: string,
+    totalDuration: number,
+  ) {
     const targetDate = new Date(dateStr);
     const dayOfWeek = getDay(targetDate);
 
-    const barbearia = await this.prisma.barbearia.findUnique({ where: { codigo: barCodigo } });
+    const barbearia = await this.prisma.barbearia.findUnique({
+      where: { codigo: barCodigo },
+    });
     if (!barbearia) throw new Error('Barbearia not found');
-    
+
     // Cast para any para evitar aviso no VS Code até que o cache do TS Server atualize
     const interval = (barbearia as any).slotInterval || 30;
 
@@ -80,7 +104,7 @@ export class AgendaService {
     const parseTime = (timeStr: string) => parse(timeStr, 'HH:mm', targetDate);
     const startWork = parseTime(jornada.inicio);
     const endWork = parseTime(jornada.fim);
-    
+
     const startLunch = jornada.almocoIni ? parseTime(jornada.almocoIni) : null;
     const endLunch = jornada.almocoFim ? parseTime(jornada.almocoFim) : null;
 
@@ -104,23 +128,56 @@ export class AgendaService {
     const isBusy = (slotStart: Date, slotEnd: Date) => {
       // Almoço
       if (startLunch && endLunch) {
-        if ((isAfter(slotStart, startLunch) || slotStart.getTime() === startLunch.getTime()) && isBefore(slotStart, endLunch)) return true;
-        if (isAfter(slotEnd, startLunch) && (isBefore(slotEnd, endLunch) || slotEnd.getTime() === endLunch.getTime())) return true;
-        if (isBefore(slotStart, startLunch) && isAfter(slotEnd, endLunch)) return true;
+        if (
+          (isAfter(slotStart, startLunch) ||
+            slotStart.getTime() === startLunch.getTime()) &&
+          isBefore(slotStart, endLunch)
+        )
+          return true;
+        if (
+          isAfter(slotEnd, startLunch) &&
+          (isBefore(slotEnd, endLunch) ||
+            slotEnd.getTime() === endLunch.getTime())
+        )
+          return true;
+        if (isBefore(slotStart, startLunch) && isAfter(slotEnd, endLunch))
+          return true;
       }
 
       // Agendamentos
       for (const app of appointments) {
-        if ((isAfter(slotStart, app.inicio) || slotStart.getTime() === app.inicio.getTime()) && isBefore(slotStart, app.fim)) return true;
-        if (isAfter(slotEnd, app.inicio) && (isBefore(slotEnd, app.fim) || slotEnd.getTime() === app.fim.getTime())) return true;
-        if (isBefore(slotStart, app.inicio) && isAfter(slotEnd, app.fim)) return true;
+        if (
+          (isAfter(slotStart, app.inicio) ||
+            slotStart.getTime() === app.inicio.getTime()) &&
+          isBefore(slotStart, app.fim)
+        )
+          return true;
+        if (
+          isAfter(slotEnd, app.inicio) &&
+          (isBefore(slotEnd, app.fim) ||
+            slotEnd.getTime() === app.fim.getTime())
+        )
+          return true;
+        if (isBefore(slotStart, app.inicio) && isAfter(slotEnd, app.fim))
+          return true;
       }
 
       // Bloqueios
       for (const blk of blocks) {
-        if ((isAfter(slotStart, blk.inicio) || slotStart.getTime() === blk.inicio.getTime()) && isBefore(slotStart, blk.fim)) return true;
-        if (isAfter(slotEnd, blk.inicio) && (isBefore(slotEnd, blk.fim) || slotEnd.getTime() === blk.fim.getTime())) return true;
-        if (isBefore(slotStart, blk.inicio) && isAfter(slotEnd, blk.fim)) return true;
+        if (
+          (isAfter(slotStart, blk.inicio) ||
+            slotStart.getTime() === blk.inicio.getTime()) &&
+          isBefore(slotStart, blk.fim)
+        )
+          return true;
+        if (
+          isAfter(slotEnd, blk.inicio) &&
+          (isBefore(slotEnd, blk.fim) ||
+            slotEnd.getTime() === blk.fim.getTime())
+        )
+          return true;
+        if (isBefore(slotStart, blk.inicio) && isAfter(slotEnd, blk.fim))
+          return true;
       }
 
       return false;
@@ -129,7 +186,10 @@ export class AgendaService {
     const availableSlots: string[] = [];
     let currentSlot = startWork;
 
-    while (isBefore(addMinutes(currentSlot, totalDuration), endWork) || addMinutes(currentSlot, totalDuration).getTime() === endWork.getTime()) {
+    while (
+      isBefore(addMinutes(currentSlot, totalDuration), endWork) ||
+      addMinutes(currentSlot, totalDuration).getTime() === endWork.getTime()
+    ) {
       const slotEnd = addMinutes(currentSlot, totalDuration);
 
       if (!isBusy(currentSlot, slotEnd)) {

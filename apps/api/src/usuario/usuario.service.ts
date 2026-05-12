@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
@@ -19,7 +23,9 @@ export class UsuarioService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateUserDto) {
-    const existing = await this.prisma.usuario.findUnique({ where: { email: dto.email } });
+    const existing = await this.prisma.usuario.findUnique({
+      where: { email: dto.email },
+    });
     if (existing) throw new ConflictException('Email já cadastrado');
 
     const senhaHash = await bcrypt.hash(dto.senha, await bcrypt.genSalt());
@@ -57,10 +63,10 @@ export class UsuarioService {
     const { membros, ...rest } = usuario;
     return {
       ...rest,
-      barbearias: membros.map(m => ({
+      barbearias: membros.map((m) => ({
         codigo: m.barbearia.codigo,
-        nome:   m.barbearia.nome,
-        slug:   m.barbearia.slug,
+        nome: m.barbearia.nome,
+        slug: m.barbearia.slug,
         perfil: m.perfil,
       })),
     };

@@ -5,6 +5,6 @@ export interface AgendamentoConfirmadoJob {
   barbeiroNome: string;
   barbeariaNome: string;
   inicio: string; // ISO string
-  fim: string;    // ISO string
+  fim: string; // ISO string
   servicos: string[];
 }

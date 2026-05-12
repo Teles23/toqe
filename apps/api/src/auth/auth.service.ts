@@ -53,7 +53,9 @@ export class AuthService {
     }
 
     if (!foundToken) {
-      throw new UnauthorizedException('Token de atualização inválido ou expirado');
+      throw new UnauthorizedException(
+        'Token de atualização inválido ou expirado',
+      );
     }
 
     // 2. Revoga o token atual (rotação)

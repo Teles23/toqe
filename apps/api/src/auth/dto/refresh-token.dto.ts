@@ -1,7 +1,5 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { refreshTokenSchema } from '@toqe/contracts';
 
-export class RefreshTokenDto {
-  @IsString()
-  @IsNotEmpty({ message: 'Refresh token é obrigatório' })
-  refreshToken: string;
-}
+/** DTO de refresh-token gerado a partir do schema Zod compartilhado. */
+export class RefreshTokenDto extends createZodDto(refreshTokenSchema) {}

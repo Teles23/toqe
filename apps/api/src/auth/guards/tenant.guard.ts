@@ -29,7 +29,9 @@ export class TenantGuard implements CanActivate {
     });
 
     if (!membro) {
-      throw new ForbiddenException('Acesso negado: você não é membro desta barbearia');
+      throw new ForbiddenException(
+        'Acesso negado: você não é membro desta barbearia',
+      );
     }
 
     // Injeta o perfil local no request para uso no RolesGuard

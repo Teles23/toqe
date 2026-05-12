@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class UpdateBarbeariaDto {
   @ApiPropertyOptional({ example: 'Barbearia do Tio João' })
@@ -20,7 +27,10 @@ export class UpdateBarbeariaDto {
   @IsString()
   timezone?: string;
 
-  @ApiPropertyOptional({ example: 30, description: 'Intervalo de slots em minutos (15 | 30 | 60)' })
+  @ApiPropertyOptional({
+    example: 30,
+    description: 'Intervalo de slots em minutos (15 | 30 | 60)',
+  })
   @IsOptional()
   @IsInt()
   @Min(15)

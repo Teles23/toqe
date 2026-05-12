@@ -45,13 +45,13 @@ flowchart LR
 
 ## Packages compartilhados
 
-| Caminho                      | Propósito                                                                                                                                              |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `packages/validators`        | Schemas Zod por domínio (auth, usuario, barbearia, agendamento, agenda, notificacao, servico). **Será renomeado para `packages/contracts` na Fase 2.** |
-| `packages/shared`            | Tipos, DTOs e enums compartilhados (em construção).                                                                                                    |
-| `packages/config`            | Configurações base (env helpers, constants).                                                                                                           |
-| `packages/eslint-config`     | Preset ESLint compartilhado.                                                                                                                           |
-| `packages/typescript-config` | Preset `tsconfig` compartilhado.                                                                                                                       |
+| Caminho                      | Propósito                                                                                                                                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/contracts`         | Schemas Zod por domínio (auth, usuario, barbearia, agendamento, agenda, notificacao, servico) + tipos inferidos + payloads de erro. Source of truth da validação. Backend usa via `nestjs-zod`. |
+| `packages/shared`            | Tipos, DTOs e enums compartilhados (em construção).                                                                                                                                             |
+| `packages/config`            | Configurações base (env helpers, constants).                                                                                                                                                    |
+| `packages/eslint-config`     | Preset ESLint compartilhado.                                                                                                                                                                    |
+| `packages/typescript-config` | Preset `tsconfig` compartilhado.                                                                                                                                                                |
 
 ## Padrão arquitetural
 

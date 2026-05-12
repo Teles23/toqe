@@ -39,12 +39,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           url: req.url,
           err: exception instanceof Error ? exception.stack : String(exception),
         },
-        exception instanceof Error ? exception.message : 'Erro interno do servidor',
+        exception instanceof Error
+          ? exception.message
+          : 'Erro interno do servidor',
       );
     }
 
     const message = isHttp
-      ? (exception.getResponse() as any)?.message ?? exception.message
+      ? ((exception.getResponse() as any)?.message ?? exception.message)
       : 'Erro interno do servidor';
 
     res.status(status).json({

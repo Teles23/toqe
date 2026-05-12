@@ -1,0 +1,27 @@
+# Dependências e builds
+node_modules
+dist
+build
+.next
+out
+coverage
+
+# Lockfiles e outputs gerados (Prettier não deve reformatar)
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Geradores
+apps/api/src/generated
+apps/api/prisma/migrations/**/migration.sql
+
+# Artefatos
+.turbo
+.cache
+*.log
+*.tsbuildinfo
+*.min.js
+*.min.css
+
+# Específicos
+.husky/_

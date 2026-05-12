@@ -7,11 +7,14 @@ import { PreferenciasService } from './preferencias.service';
 import { PreferenciasController } from './preferencias.controller';
 
 @Module({
-  imports: [
-    BullModule.registerQueue({ name: NOTIFICACAO_QUEUE }),
-  ],
+  imports: [BullModule.registerQueue({ name: NOTIFICACAO_QUEUE })],
   controllers: [PreferenciasController],
-  providers: [NotificacaoService, NotificacaoProducer, NotificacaoConsumer, PreferenciasService],
+  providers: [
+    NotificacaoService,
+    NotificacaoProducer,
+    NotificacaoConsumer,
+    PreferenciasService,
+  ],
   exports: [NotificacaoProducer],
 })
 export class NotificacaoModule {}

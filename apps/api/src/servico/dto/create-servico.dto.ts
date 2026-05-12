@@ -7,7 +7,7 @@ export class CreateServicoDto {
   @IsNotEmpty({ message: 'Nome do serviço é obrigatório' })
   nome: string;
 
-  @ApiProperty({ example: 50.00, description: 'Preço base do serviço em reais' })
+  @ApiProperty({ example: 50.0, description: 'Preço base do serviço em reais' })
   @IsNumber()
   @Min(0)
   precoBase: number;
