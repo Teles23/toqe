@@ -1,0 +1,44 @@
+import React from "react";
+import type { Metadata } from "next";
+import { Inter, Sora } from "next/font/google";
+import { ThemeProvider } from "@/shared/providers/theme-provider";
+import { AuthProvider } from "@/shared/providers/auth-provider";
+import { QueryProvider } from "@/shared/providers/query-provider";
+import { Toaster } from "@/shared/ui/sonner";
+import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-sora",
+});
+
+export const metadata: Metadata = {
+  title: "Toqe — Portal",
+  description: "Sistema de gestão para barbearias",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>): React.JSX.Element {
+  return (
+    <html lang="pt-BR" className="dark">
+      <body className={`${inter.variable} ${sora.variable}`}>
+        <ThemeProvider defaultTheme="dark">
+          <QueryProvider>
+            <AuthProvider>
+              <Toaster />
+              {children}
+            </AuthProvider>
+          </QueryProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
