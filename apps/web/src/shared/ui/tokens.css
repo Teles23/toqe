@@ -1,31 +1,88 @@
 /* ============================================================
-   Design Tokens — Toqe
+   Design Tokens — Toqe (Urban Flow System)
    ============================================================
-   Os tokens visuais (cores, tipografia, espaçamentos, sombras) vivem
-   atualmente em `src/app/globals.css` dentro do bloco `@theme inline`.
 
-   Este arquivo serve como *ponto canônico* de tokens compartilhados:
-   conforme a Fase 3 avança (sub-PRs seguintes), os tokens serão
-   consolidados aqui e re-exportados em `globals.css` via `@import`.
+   Source of truth dos tokens visuais. Importado por
+   `src/app/globals.css`. Componentes que precisem de cor, espaçamento
+   ou tipografia DEVEM referenciar as variáveis abaixo (via classes
+   Tailwind ou — quando inevitável — `var(--token)`).
 
-   Regras adotadas durante a reorganização (Fase 3):
+   Regras (Fase 3d):
 
-   1. Cores, espaçamentos e tipografia DEVEM vir de variáveis CSS
-      definidas neste arquivo (ou em globals.css enquanto a migração
-      não termina).
+   1. NÃO usar `style={{ color: "#xxx" }}` ou valores hardcoded para
+      cor/spacing/font. ESLint vai sinalizar.
+   2. Em arquivos novos (em `src/features/<nova>/` ou novos componentes
+      em `src/shared/`), preferir classes Tailwind. Para variantes
+      condicionais, usar `class-variance-authority`.
+   3. Para mudar a paleta: alterar APENAS este arquivo. Componentes
+      seguem automaticamente.
 
-   2. NÃO usar `style={{ color: "var(--bg-card)" }}` ou similares.
-      Estilos inline com tokens devem virar:
-        - Classes Tailwind (preferível): `bg-card`, `text-primary`
-        - Ou variantes CVA (`class-variance-authority`) em componentes
-          que precisem de combinações condicionais.
-
-   3. Quando precisar de um valor que ainda não é token, primeiro
-      promover a token aqui — depois usar.
-
-   Status: arquivo introduzido na Fase 3 (sub-PR estrutural). A
-   centralização dos tokens existentes em globals.css será feita no
-   próximo sub-PR (dashboard refactor + design tokens).
    ============================================================ */
 
-/* Reservado para tokens consolidados — atualmente importado por src/app/globals.css. */
+:root {
+  /* ── Superfícies ────────────────────────────────────────── */
+  --bg-base: #0d0d0d;
+  --bg-secondary: #151515;
+  --bg-card: #1b1b1b;
+  --bg-hover: #232323;
+  --bg-elevated: #202020;
+
+  /* ── Bordas ─────────────────────────────────────────────── */
+  --border-default: #2a2a2a;
+  --border-subtle: #222222;
+  --border-strong: #333333;
+
+  /* ── Status (hierarquia de cor) ─────────────────────────── */
+  --status-success: #1db954;
+  --status-warning: #f4b400;
+  --status-error: #ff4d4f;
+  --status-info: #4da3ff;
+
+  /* ── Glow dos status (para sombras decorativas) ─────────── */
+  --glow-success: rgba(29, 185, 84, 0.12);
+  --glow-warning: rgba(244, 180, 0, 0.12);
+  --glow-error: rgba(255, 77, 79, 0.12);
+  --glow-info: rgba(77, 163, 255, 0.12);
+
+  /* ── Tipografia ─────────────────────────────────────────── */
+  --font-heading: "Sora", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  /* ── Foregrounds ────────────────────────────────────────── */
+  --text-primary: #f0f0f0;
+  --text-secondary: #888888;
+  --text-muted: #555555;
+  --text-disabled: #3a3a3a;
+
+  /* ── Elevação / Sombras ─────────────────────────────────── */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.7);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.8);
+
+  /* ── Transições globais ─────────────────────────────────── */
+  --ease-snappy: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Mapeamento para shadcn/Radix ───────────────────────── */
+  --background: #0d0d0d;
+  --foreground: #f0f0f0;
+  --card: #1b1b1b;
+  --card-foreground: #f0f0f0;
+  --popover: #1b1b1b;
+  --popover-foreground: #f0f0f0;
+  --primary: #f4b400;
+  --primary-foreground: #0d0d0d;
+  --secondary: #1b1b1b;
+  --secondary-foreground: #f0f0f0;
+  --muted: #232323;
+  --muted-foreground: #888888;
+  --accent: #232323;
+  --accent-foreground: #f0f0f0;
+  --destructive: #ff4d4f;
+  --border: #2a2a2a;
+  --input: #1b1b1b;
+  --ring: #4da3ff;
+  --radius: 10px;
+}
