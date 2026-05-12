@@ -13,8 +13,108 @@ Devido ao tamanho, dividimos a Fase 3 em **sub-PRs sequenciais**, cada um em uma
 | 3a     | `arch/fase-3-frontend-piloto`     | Reestruturação para `src/` + TanStack Query + `shared/config` + `useAuth` separado + ESLint hygiene  | concluída #3 |
 | 3b     | `arch/fase-3b-auth-feature`       | Feature piloto `auth`: `src/features/auth/{components,hooks,services,schemas}`                       | concluída #4 |
 | 3c     | `arch/fase-3c-rbac-sentry`        | `proxy.ts` consumindo `shared/config` + componente `<RequireRole>` + Sentry SDK FE                   | concluída #5 |
-| **3d** | `arch/fase-3d-design-tokens`      | Design tokens centralizados em `tokens.css` + ESLint custom proibindo `style={{}}` (legacy excluída) | **entregue** |
-| 3e     | `arch/fase-3e-dashboard-refactor` | Refactor do `dashboard/page.tsx` em componentes pequenos + `useDashboardOverview()` (TanStack Query) | pendente     |
+| 3d     | `arch/fase-3d-design-tokens`      | Design tokens centralizados em `tokens.css` + ESLint custom proibindo `style={{}}` (legacy excluída) | concluída #6 |
+| **3e** | `arch/fase-3e-dashboard-refactor` | Refactor de `dashboard/page.tsx` (824 → 73 linhas) + `useDashboardOverview` (TanStack Query)         | **entregue** |
+
+## Entregue na sub-PR 3e — refactor do dashboard + TanStack Query em produção
+
+Encerra a Fase 3 quebrando o último monolito de página. `src/app/(dashboard)/dashboard/page.tsx` foi de **824 linhas** com dados mockados inline para **73 linhas** que apenas orquestram componentes + estados de loading/erro.
+
+### Nova estrutura `src/features/dashboard/`
+
+```
+types/dashboard.types.ts                       # KpiCard, FaturamentoPonto, ServicoPopular,
+                                               # AtividadeItem, BarbeiroStatus, LiveMetric,
+                                               # DashboardOverview (agregado)
+services/dashboard.service.ts                  # fetchDashboardOverview() — STUB com mock data
+                                               # + setTimeout. TODO: trocar por api.get quando
+                                               # o endpoint /dashboard/overview existir no NestJS.
+hooks/use-dashboard-overview.ts                # useQuery wrapper (TanStack Query)
+components/MetricsGrid.tsx                     # 4 KPIs no topo (consome StatCard)
+components/LiveStatusCard.tsx                  # bloco "Status ao vivo"
+components/BarbeiroLive.tsx                    # card de status de 1 barbeiro
+components/FaturamentoChart.tsx                # recharts AreaChart com toggle semana/mês,
+                                               # CustomTooltip e ClientOnlyChart embutidos
+components/AtividadeFeed.tsx                   # feed de atividade recente
+components/ServicosPopulares.tsx               # ranking com barras de proporção
+components/AcoesRapidas.tsx                    # 4 botões de atalho (consomem ROUTES)
+components/DashboardSkeleton.tsx               # placeholder de loading
+```
+
+### Página refatorada
+
+`src/app/(dashboard)/dashboard/page.tsx` (73 linhas):
+
+```tsx
+const { data, isPending, isError, error, refetch } = useDashboardOverview();
+
+if (isPending) return <DashboardSkeleton />;
+if (isError) return <RetryUI />;
+
+return (
+  <div className="max-w-7xl mx-auto space-y-5">
+    <MetricsGrid kpis={data.kpis} />
+    <LiveStatusCard liveMetrics={data.liveMetrics} barbeiros={data.barbeiros} />
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+      <FaturamentoChart
+        semana={data.faturamento.semana}
+        mes={data.faturamento.mes}
+      />
+      <AtividadeFeed items={data.atividade} />
+    </div>
+    <ServicosPopulares servicos={data.servicos} />
+    <AcoesRapidas />
+  </div>
+);
+```
+
+### Primeira query real do TanStack Query
+
+A `useDashboardOverview` é a **primeira** `useQuery` em produção no app. O `QueryProvider` foi adicionado na 3a, mas até agora ninguém consumia. Agora exercita:
+
+- Loading state → `<DashboardSkeleton />` (placeholders shadcn).
+- Error state → mensagem + botão "Tentar novamente" que chama `refetch()`.
+- Cache automático (staleTime padrão 30s do `makeQueryClient`).
+
+Para inspecionar o cache em dev: abra os Devtools do TanStack Query (botão flutuante no canto inferior direito; já habilitado pela 3a).
+
+### Service como ponte para o backend futuro
+
+O service usa um mock com `setTimeout` (latência simulada de 300ms). Quando o endpoint `/dashboard/overview` existir no NestJS, **a única mudança** será trocar o corpo do `fetchDashboardOverview`:
+
+```diff
+- await new Promise((resolve) => setTimeout(resolve, 300));
+- return MOCK;
++ return api.get<DashboardOverview>("/dashboard/overview");
+```
+
+Componentes, hook, página e estados não mudam. Issue de backend mencionada nas "Observações finais" do `docs/10` continua válida.
+
+### ESLint — divida paga (parcial)
+
+- `src/app/(dashboard)/**/*.tsx` permanece no override (outras pages legadas ainda têm inline styles e serão pagas na Fase 4).
+- A nova feature `src/features/dashboard/components/**/*.tsx` foi **adicionada** ao override (mantém os inline styles extraídos; migração para Tailwind/CVA fica para PR dedicado da Fase 4).
+- O **page.tsx** novo está livre de `style={{}}` — única menção remanescente é o botão "Tentar novamente" do error state (usa `style={{ background: "var(--primary)" }}` por simplicidade; podemos migrar quando o `<Button>` de shared/ui aceitar a variante "primary").
+
+### Validações da sub-PR 3e
+
+| Checagem                              | Resultado                                     |
+| ------------------------------------- | --------------------------------------------- |
+| `pnpm --filter web exec tsc --noEmit` | ✅                                            |
+| `pnpm --filter web lint`              | ✅ (0 warnings)                               |
+| `pnpm --filter web build`             | ✅ (14 rotas, `/dashboard` continua estática) |
+
+### Critérios de aceite (sub-PR 3e)
+
+- [x] `src/features/dashboard/` com `types/`, `services/`, `hooks/`, `components/`.
+- [x] `useDashboardOverview` em uso real.
+- [x] `dashboard/page.tsx` < 80 linhas, apenas composição.
+- [x] Estados de loading (skeleton) e erro (retry) implementados.
+- [x] Mock service com TODO claro para virar `api.get`.
+- [x] Build/lint/types verdes.
+- [ ] PR aberto e mergeado → encerra a Fase 3.
+
+---
 
 ## Entregue na sub-PR 3d — design tokens centralizados + ESLint contra `style={{}}`
 
