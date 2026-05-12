@@ -102,6 +102,10 @@ export default [
       // Feature auth — componentes criados na 3b com inline styles
       // (migrar quando estabilizar; baixa prioridade)
       "src/features/auth/components/**/*.tsx",
+      // Feature dashboard — componentes extraídos na 3e mantendo os
+      // inline styles existentes para limitar o escopo do PR.
+      // Migrar para classes Tailwind / CVA em PR dedicado da Fase 4.
+      "src/features/dashboard/components/**/*.tsx",
     ],
     rules: {
       "no-restricted-syntax": "off",
