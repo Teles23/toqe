@@ -9,12 +9,22 @@ export enum PerfilMembro {
 }
 
 export class ConvidarMembroDto {
-  @ApiProperty({ example: 'joao@email.com', description: 'E-mail do usuário a ser convidado' })
+  @ApiProperty({
+    example: 'joao@email.com',
+    description: 'E-mail do usuário a ser convidado',
+  })
   @IsEmail({}, { message: 'E-mail inválido' })
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ enum: PerfilMembro, example: 'barbeiro', description: 'Perfil do membro na barbearia' })
-  @IsEnum(PerfilMembro, { message: 'Perfil inválido. Use: gerente | barbeiro | recepcionista | cliente' })
+  @ApiProperty({
+    enum: PerfilMembro,
+    example: 'barbeiro',
+    description: 'Perfil do membro na barbearia',
+  })
+  @IsEnum(PerfilMembro, {
+    message:
+      'Perfil inválido. Use: gerente | barbeiro | recepcionista | cliente',
+  })
   perfil: PerfilMembro;
 }

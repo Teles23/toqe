@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
+import { ZodValidationPipe, patchNestJsSwagger } from 'nestjs-zod';
 import { GlobalExceptionFilter } from './observabilidade/sentry.filter';
 
 async function bootstrap() {
@@ -18,12 +19,18 @@ async function bootstrap() {
   // Prefix global de versão
   app.setGlobalPrefix('api/v1');
 
-  // Validação global de DTOs
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  // Validação global de DTOs:
+  // - ZodValidationPipe trata DTOs criados via `createZodDto(...)` em @toqe/contracts.
+  // - ValidationPipe (class-validator) ainda atende DTOs legados que não foram migrados.
+  // Estratégia: migração incremental, módulo a módulo, sem big-bang.
+  app.useGlobalPipes(
+    new ZodValidationPipe(),
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // CORS — credentials obrigatório para cookies httpOnly do frontend
   app.enableCors({
@@ -31,16 +38,20 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Patch necessário para que o @nestjs/swagger leia os schemas Zod expostos
+  // pelos DTOs gerados via `createZodDto`.
+  patchNestJsSwagger();
+
   // Swagger
   const config = new DocumentBuilder()
     .setTitle('Toqe API')
     .setDescription(
       'API REST do sistema Toqe — SaaS multi-tenant para gestão de barbearias.\n\n' +
-      '## Como usar\n' +
-      '1. Use `POST /api/v1/auth/register` para criar um usuário\n' +
-      '2. Use `POST /api/v1/auth/login` para obter o `access_token`\n' +
-      '3. Clique em **Authorize** e cole o token no campo `Bearer`\n' +
-      '4. Passe o header `x-tenant-id` com o código da barbearia nas rotas de tenant'
+        '## Como usar\n' +
+        '1. Use `POST /api/v1/auth/register` para criar um usuário\n' +
+        '2. Use `POST /api/v1/auth/login` para obter o `access_token`\n' +
+        '3. Clique em **Authorize** e cole o token no campo `Bearer`\n' +
+        '4. Passe o header `x-tenant-id` com o código da barbearia nas rotas de tenant',
     )
     .setVersion('1.0')
     .addBearerAuth(

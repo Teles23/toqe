@@ -9,7 +9,14 @@ export enum StatusAgendamento {
 }
 
 export class PatchStatusAgendamentoDto {
-  @ApiProperty({ enum: StatusAgendamento, example: 'concluido', description: 'Novo status do agendamento' })
-  @IsEnum(StatusAgendamento, { message: 'Status inválido. Use: confirmado | cancelado | concluido | no_show' })
+  @ApiProperty({
+    enum: StatusAgendamento,
+    example: 'concluido',
+    description: 'Novo status do agendamento',
+  })
+  @IsEnum(StatusAgendamento, {
+    message:
+      'Status inválido. Use: confirmado | cancelado | concluido | no_show',
+  })
   status: StatusAgendamento;
 }

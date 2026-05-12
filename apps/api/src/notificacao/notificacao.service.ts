@@ -12,7 +12,9 @@ export class NotificacaoService {
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY não configurada — envio de e-mails desabilitado');
+      this.logger.warn(
+        'RESEND_API_KEY não configurada — envio de e-mails desabilitado',
+      );
       this.resend = null;
     } else {
       this.resend = new Resend(apiKey);
@@ -29,7 +31,9 @@ export class NotificacaoService {
     const servicosList = data.servicos.map((s) => `• ${s}`).join('\n');
 
     if (!this.resend) {
-      this.logger.warn(`E-mail para ${data.clienteEmail} ignorado: RESEND_API_KEY não configurada`);
+      this.logger.warn(
+        `E-mail para ${data.clienteEmail} ignorado: RESEND_API_KEY não configurada`,
+      );
       return;
     }
 

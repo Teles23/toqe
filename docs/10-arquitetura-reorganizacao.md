@@ -159,12 +159,12 @@ Tarefas:
 
 ## 8. Status
 
-| Fase | Estado      | PR  | Doc           |
-| ---- | ----------- | --- | ------------- |
-| 1    | em execução | —   | em construção |
-| 2    | pendente    | —   | —             |
-| 3    | pendente    | —   | —             |
-| 4    | pendente    | —   | —             |
-| 5    | pendente    | —   | —             |
+| Fase | Estado      | PR  | Doc                                                  |
+| ---- | ----------- | --- | ---------------------------------------------------- |
+| 1    | concluída   | #1  | [11-fase-1-tooling-ci.md](./11-fase-1-tooling-ci.md) |
+| 2    | em execução | —   | [12-fase-2-contracts.md](./12-fase-2-contracts.md)   |
+| 3    | pendente    | —   | —                                                    |
+| 4    | pendente    | —   | —                                                    |
+| 5    | pendente    | —   | —                                                    |
 
 Última atualização: 2026-05-11.

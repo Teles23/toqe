@@ -27,7 +27,6 @@ module.exports = {
         "api",
         "mobile",
         "contracts",
-        "validators",
         "shared",
         "ui",
         "config",

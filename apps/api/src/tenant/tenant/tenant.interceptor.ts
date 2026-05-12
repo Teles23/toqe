@@ -15,7 +15,7 @@ type TransactionClient = Omit<
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
-  constructor(private readonly tenantCtx: TenantContextService) { }
+  constructor(private readonly tenantCtx: TenantContextService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const req = context.switchToHttp().getRequest();

@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
@@ -29,13 +34,18 @@ export class AgendamentoService {
     });
 
     if (servicos.length !== dto.servicosIds.length) {
-      throw new BadRequestException('Alguns serviços não foram encontrados ou não pertencem a esta barbearia');
+      throw new BadRequestException(
+        'Alguns serviços não foram encontrados ou não pertencem a esta barbearia',
+      );
     }
 
     let totalDuration = 0;
     const agendamentoItemsData = servicos.map((srv) => {
       const duracaoMin = srv.barbeiros[0]?.duracaoMin ?? srv.duracaoBase ?? 30;
-      const preco = srv.barbeiros[0]?.precoProprio != null ? srv.barbeiros[0].precoProprio : srv.precoBase ?? 0;
+      const preco =
+        srv.barbeiros[0]?.precoProprio != null
+          ? srv.barbeiros[0].precoProprio
+          : (srv.precoBase ?? 0);
       totalDuration += duracaoMin;
       return { srvCodigo: srv.codigo, duracaoMin, preco, barCodigo };
     });
@@ -55,7 +65,9 @@ export class AgendamentoService {
       `;
 
       if (Number(conflitos[0].count) > 0) {
-        throw new ConflictException('Horário indisponível: já existe um agendamento neste período para este barbeiro');
+        throw new ConflictException(
+          'Horário indisponível: já existe um agendamento neste período para este barbeiro',
+        );
       }
 
       return tx.agendamento.create({
@@ -114,14 +126,21 @@ export class AgendamentoService {
     return agendamento;
   }
 
-  async patchStatus(codigo: number, dto: PatchStatusAgendamentoDto, barCodigo: number) {
+  async patchStatus(
+    codigo: number,
+    dto: PatchStatusAgendamentoDto,
+    barCodigo: number,
+  ) {
     await this.findOne(codigo, barCodigo);
     const atualizado = await this.prisma.agendamento.update({
       where: { codigo },
       data: { status: dto.status },
       include: INCLUDE_COMPLETO,
     });
-    this.agendaGateway.emitStatusAtualizado(barCodigo, { codigo, status: dto.status });
+    this.agendaGateway.emitStatusAtualizado(barCodigo, {
+      codigo,
+      status: dto.status,
+    });
     return atualizado;
   }
 

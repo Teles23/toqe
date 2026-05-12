@@ -10,7 +10,10 @@ import { Request } from 'express';
         // Em dev usa pretty-print colorido; em prod emite JSON puro
         transport:
           process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty', options: { colorize: true, singleLine: true } }
+            ? {
+                target: 'pino-pretty',
+                options: { colorize: true, singleLine: true },
+              }
             : undefined,
 
         level: process.env.LOG_LEVEL ?? 'info',

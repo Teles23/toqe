@@ -14,13 +14,13 @@ Monorepo gerenciado por **Turborepo** sobre **pnpm 9 workspaces**.
 
 ## Packages
 
-| Caminho                                                      | Propósito                                                      |
-| ------------------------------------------------------------ | -------------------------------------------------------------- |
-| [`packages/validators`](./packages/validators)               | Schemas Zod compartilhados (→ `packages/contracts` na Fase 2). |
-| [`packages/shared`](./packages/shared)                       | Tipos, DTOs e enums compartilhados.                            |
-| [`packages/config`](./packages/config)                       | Configurações base.                                            |
-| [`packages/eslint-config`](./packages/eslint-config)         | Preset ESLint.                                                 |
-| [`packages/typescript-config`](./packages/typescript-config) | Preset `tsconfig`.                                             |
+| Caminho                                                      | Propósito                                                   |
+| ------------------------------------------------------------ | ----------------------------------------------------------- |
+| [`packages/contracts`](./packages/contracts)                 | Schemas Zod, tipos e erros compartilhados. Source of truth. |
+| [`packages/shared`](./packages/shared)                       | Tipos, DTOs e enums compartilhados.                         |
+| [`packages/config`](./packages/config)                       | Configurações base.                                         |
+| [`packages/eslint-config`](./packages/eslint-config)         | Preset ESLint.                                              |
+| [`packages/typescript-config`](./packages/typescript-config) | Preset `tsconfig`.                                          |
 
 ## Quickstart
 

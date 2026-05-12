@@ -11,7 +11,7 @@ Frontend Next.js 16 (App Router, RSC) do `toqe`.
 - **Tailwind CSS 4** + **shadcn/ui** + **Radix UI**
 - **Framer Motion** (animações)
 - **react-hook-form** + **Zod** (forms)
-- **`@toqe/validators`** (schemas compartilhados — será `@toqe/contracts` na Fase 2)
+- **`@toqe/contracts`** (schemas Zod compartilhados — source of truth de validação)
 - TanStack Query (a ser introduzido na Fase 3)
 
 ## Como rodar
@@ -68,7 +68,7 @@ pnpm --filter web check-types  # tsc --noEmit
 ## Convenções
 
 - **Sem `style={{ }}` para cores/spacing** — usar Tailwind classes ou design tokens (Fase 3).
-- **Validação** via schemas Zod compartilhados em `@toqe/validators`.
+- **Validação** via schemas Zod compartilhados em `@toqe/contracts`.
 - **Forms** com `react-hook-form` + `zodResolver`.
 
 Veja [`/CONTRIBUTING.md`](../../CONTRIBUTING.md) para mais detalhes.

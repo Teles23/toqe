@@ -26,7 +26,10 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join-barbearia')
-  handleJoin(@MessageBody() barCodigo: number, @ConnectedSocket() client: Socket) {
+  handleJoin(
+    @MessageBody() barCodigo: number,
+    @ConnectedSocket() client: Socket,
+  ) {
     const room = `barbearia-${barCodigo}`;
     client.join(room);
     this.logger.log(`Cliente ${client.id} entrou na sala ${room}`);
@@ -34,7 +37,10 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('leave-barbearia')
-  handleLeave(@MessageBody() barCodigo: number, @ConnectedSocket() client: Socket) {
+  handleLeave(
+    @MessageBody() barCodigo: number,
+    @ConnectedSocket() client: Socket,
+  ) {
     const room = `barbearia-${barCodigo}`;
     client.leave(room);
     this.logger.log(`Cliente ${client.id} saiu da sala ${room}`);
@@ -42,10 +48,14 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   emitAgendamentoCriado(barCodigo: number, payload: unknown) {
-    this.server.to(`barbearia-${barCodigo}`).emit('agendamento:criado', payload);
+    this.server
+      .to(`barbearia-${barCodigo}`)
+      .emit('agendamento:criado', payload);
   }
 
   emitStatusAtualizado(barCodigo: number, payload: unknown) {
-    this.server.to(`barbearia-${barCodigo}`).emit('agendamento:status', payload);
+    this.server
+      .to(`barbearia-${barCodigo}`)
+      .emit('agendamento:status', payload);
   }
 }

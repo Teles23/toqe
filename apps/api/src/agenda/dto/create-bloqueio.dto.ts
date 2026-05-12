@@ -1,4 +1,9 @@
-import { IsDateString, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import {
+  IsDateString,
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateBloqueioDto {
   @IsDateString()

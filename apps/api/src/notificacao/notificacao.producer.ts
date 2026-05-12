@@ -15,10 +15,10 @@ export class NotificacaoProducer {
 
   async agendamentoConfirmado(data: AgendamentoConfirmadoJob) {
     await this.queue.add(AGENDAMENTO_CONFIRMADO, data, {
-      attempts: 3,        // Tenta até 3 vezes em caso de falha
+      attempts: 3, // Tenta até 3 vezes em caso de falha
       backoff: {
         type: 'exponential',
-        delay: 5000,      // Começa com 5s, depois 10s, 20s
+        delay: 5000, // Começa com 5s, depois 10s, 20s
       },
     });
   }

@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
@@ -10,11 +15,15 @@ export class BarbeariaService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateBarbeariaDto, usrCodigo: number) {
-    const existing = await this.prisma.barbearia.findUnique({ where: { slug: dto.slug } });
+    const existing = await this.prisma.barbearia.findUnique({
+      where: { slug: dto.slug },
+    });
     if (existing) throw new ConflictException('Slug já está em uso');
 
     return this.prisma.$transaction(async (tx) => {
-      const barbearia = await tx.barbearia.create({ data: { nome: dto.nome, slug: dto.slug } });
+      const barbearia = await tx.barbearia.create({
+        data: { nome: dto.nome, slug: dto.slug },
+      });
       await tx.membroBarbearia.create({
         data: { barCodigo: barbearia.codigo, usrCodigo, perfil: 'dono' },
       });
@@ -54,13 +63,27 @@ export class BarbeariaService {
     fimHoje.setHours(23, 59, 59, 999);
 
     const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const fimMes    = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+    const fimMes = new Date(
+      hoje.getFullYear(),
+      hoje.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     const membros = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo, perfil: 'barbeiro' },
       include: {
         usuario: {
-          select: { codigo: true, nome: true, email: true, telefone: true, avatarUrl: true },
+          select: {
+            codigo: true,
+            nome: true,
+            email: true,
+            telefone: true,
+            avatarUrl: true,
+          },
         },
       },
     });
@@ -87,8 +110,11 @@ export class BarbeariaService {
           }),
         ]);
 
-        const faturamentoMes = agendamentosMes.reduce((acc, ag) =>
-          acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0), 0);
+        const faturamentoMes = agendamentosMes.reduce(
+          (acc, ag) =>
+            acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0),
+          0,
+        );
 
         return {
           ...m.usuario,
@@ -96,7 +122,10 @@ export class BarbeariaService {
           atendimentosHoje,
           atendimentosMes: agendamentosMes.length,
           faturamentoMes,
-          ticketMedio: agendamentosMes.length > 0 ? faturamentoMes / agendamentosMes.length : 0,
+          ticketMedio:
+            agendamentosMes.length > 0
+              ? faturamentoMes / agendamentosMes.length
+              : 0,
         };
       }),
     );
@@ -107,7 +136,13 @@ export class BarbeariaService {
       where: { barCodigo, perfil: 'cliente' },
       include: {
         usuario: {
-          select: { codigo: true, nome: true, email: true, telefone: true, avatarUrl: true },
+          select: {
+            codigo: true,
+            nome: true,
+            email: true,
+            telefone: true,
+            avatarUrl: true,
+          },
         },
       },
     });
@@ -116,27 +151,38 @@ export class BarbeariaService {
       membros.map(async (m) => {
         const agendamentos = await this.prisma.agendamento.findMany({
           where: { barCodigo, clienteId: m.usrCodigo, status: 'concluido' },
-          include: { itens: { select: { preco: true, servico: { select: { nome: true } } } } },
+          include: {
+            itens: {
+              select: { preco: true, servico: { select: { nome: true } } },
+            },
+          },
           orderBy: { inicio: 'desc' },
         });
 
-        const totalGasto = agendamentos.reduce((acc, ag) =>
-          acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0), 0);
+        const totalGasto = agendamentos.reduce(
+          (acc, ag) =>
+            acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0),
+          0,
+        );
 
         // Serviço favorito: o mais frequente nos itens
         const contagem: Record<string, number> = {};
-        agendamentos.forEach(ag =>
-          ag.itens.forEach(it => { contagem[it.servico.nome] = (contagem[it.servico.nome] ?? 0) + 1; }),
+        agendamentos.forEach((ag) =>
+          ag.itens.forEach((it) => {
+            contagem[it.servico.nome] = (contagem[it.servico.nome] ?? 0) + 1;
+          }),
         );
-        const servicoFav = Object.entries(contagem).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+        const servicoFav =
+          Object.entries(contagem).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
         return {
           ...m.usuario,
           perfil: m.perfil,
-          totalVisitas:  agendamentos.length,
+          totalVisitas: agendamentos.length,
           totalGasto,
-          ticketMedio:   agendamentos.length > 0 ? totalGasto / agendamentos.length : 0,
-          ultimaVisita:  agendamentos[0]?.inicio ?? null,
+          ticketMedio:
+            agendamentos.length > 0 ? totalGasto / agendamentos.length : 0,
+          ultimaVisita: agendamentos[0]?.inicio ?? null,
           servicoFav,
         };
       }),
@@ -147,20 +193,34 @@ export class BarbeariaService {
     return this.prisma.membroBarbearia.findMany({
       where: { barCodigo },
       include: {
-        usuario: { select: { codigo: true, nome: true, email: true, telefone: true, avatarUrl: true } },
+        usuario: {
+          select: {
+            codigo: true,
+            nome: true,
+            email: true,
+            telefone: true,
+            avatarUrl: true,
+          },
+        },
       },
       orderBy: { perfil: 'asc' },
     });
   }
 
   async convidarMembro(barCodigo: number, dto: ConvidarMembroDto) {
-    const usuario = await this.prisma.usuario.findUnique({ where: { email: dto.email } });
-    if (!usuario) throw new NotFoundException(`Usuário com e-mail '${dto.email}' não encontrado`);
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { email: dto.email },
+    });
+    if (!usuario)
+      throw new NotFoundException(
+        `Usuário com e-mail '${dto.email}' não encontrado`,
+      );
 
     const jaEMembro = await this.prisma.membroBarbearia.findUnique({
       where: { barCodigo_usrCodigo: { barCodigo, usrCodigo: usuario.codigo } },
     });
-    if (jaEMembro) throw new ConflictException('Usuário já é membro desta barbearia');
+    if (jaEMembro)
+      throw new ConflictException('Usuário já é membro desta barbearia');
 
     return this.prisma.membroBarbearia.create({
       data: { barCodigo, usrCodigo: usuario.codigo, perfil: dto.perfil },
@@ -171,8 +231,18 @@ export class BarbeariaService {
   }
 
   async getTema(barCodigo: number) {
-    const tema = await this.prisma.temaTenant.findUnique({ where: { barCodigo } });
-    return tema ?? { barCodigo, corPrimaria: null, corFundo: null, logoUrl: null, subdominio: null };
+    const tema = await this.prisma.temaTenant.findUnique({
+      where: { barCodigo },
+    });
+    return (
+      tema ?? {
+        barCodigo,
+        corPrimaria: null,
+        corFundo: null,
+        logoUrl: null,
+        subdominio: null,
+      }
+    );
   }
 
   async upsertTema(barCodigo: number, dto: UpdateTemaDto) {
@@ -187,8 +257,12 @@ export class BarbeariaService {
     const membro = await this.prisma.membroBarbearia.findUnique({
       where: { barCodigo_usrCodigo: { barCodigo, usrCodigo } },
     });
-    if (!membro) throw new NotFoundException('Membro não encontrado nesta barbearia');
-    if (membro.perfil === 'dono') throw new BadRequestException('Não é possível remover o dono da barbearia');
+    if (!membro)
+      throw new NotFoundException('Membro não encontrado nesta barbearia');
+    if (membro.perfil === 'dono')
+      throw new BadRequestException(
+        'Não é possível remover o dono da barbearia',
+      );
 
     return this.prisma.membroBarbearia.delete({
       where: { barCodigo_usrCodigo: { barCodigo, usrCodigo } },

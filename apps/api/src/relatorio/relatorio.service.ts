@@ -12,7 +12,7 @@ export class RelatorioService {
   constructor(private prisma: PrismaService) {}
 
   private getRange(periodo: Periodo) {
-    const fim   = new Date();
+    const fim = new Date();
     const inicio = new Date();
     inicio.setDate(inicio.getDate() - periodoParaDias(periodo));
     inicio.setHours(0, 0, 0, 0);
@@ -29,7 +29,7 @@ export class RelatorioService {
         agendamento: { status: 'concluido', inicio: { gte: inicio, lte: fim } },
       },
       select: {
-        preco:       true,
+        preco: true,
         agendamento: { select: { inicio: true } },
       },
     });
@@ -37,7 +37,7 @@ export class RelatorioService {
     // Agrupar por dia
     const porDia: Record<string, number> = {};
     itens.forEach((it) => {
-      const dia = (it.agendamento.inicio as Date).toISOString().split('T')[0];
+      const dia = it.agendamento.inicio.toISOString().split('T')[0];
       porDia[dia] = (porDia[dia] ?? 0) + Number(it.preco);
     });
 
@@ -59,10 +59,14 @@ export class RelatorioService {
       select: { inicio: true, status: true },
     });
 
-    const porDia: Record<string, { concluido: number; cancelado: number; no_show: number }> = {};
+    const porDia: Record<
+      string,
+      { concluido: number; cancelado: number; no_show: number }
+    > = {};
     todos.forEach((ag) => {
-      const dia = (ag.inicio as Date).toISOString().split('T')[0];
-      if (!porDia[dia]) porDia[dia] = { concluido: 0, cancelado: 0, no_show: 0 };
+      const dia = ag.inicio.toISOString().split('T')[0];
+      if (!porDia[dia])
+        porDia[dia] = { concluido: 0, cancelado: 0, no_show: 0 };
       porDia[dia][ag.status as 'concluido' | 'cancelado' | 'no_show'] += 1;
     });
 
@@ -83,12 +87,15 @@ export class RelatorioService {
       select: { preco: true, servico: { select: { nome: true } } },
     });
 
-    const mapa: Record<string, { nome: string; quantidade: number; total: number }> = {};
+    const mapa: Record<
+      string,
+      { nome: string; quantidade: number; total: number }
+    > = {};
     itens.forEach((it) => {
       const { nome } = it.servico;
       if (!mapa[nome]) mapa[nome] = { nome, quantidade: 0, total: 0 };
       mapa[nome].quantidade += 1;
-      mapa[nome].total      += Number(it.preco);
+      mapa[nome].total += Number(it.preco);
     });
 
     return Object.values(mapa).sort((a, b) => b.quantidade - a.quantidade);
@@ -100,7 +107,9 @@ export class RelatorioService {
 
     const membros = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo, perfil: 'barbeiro' },
-      include: { usuario: { select: { codigo: true, nome: true, avatarUrl: true } } },
+      include: {
+        usuario: { select: { codigo: true, nome: true, avatarUrl: true } },
+      },
     });
 
     return Promise.all(
@@ -115,17 +124,21 @@ export class RelatorioService {
           include: { itens: { select: { preco: true } } },
         });
 
-        const faturamento = agendamentos.reduce((acc, ag) =>
-          acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0), 0);
+        const faturamento = agendamentos.reduce(
+          (acc, ag) =>
+            acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0),
+          0,
+        );
 
         return {
           ...m.usuario,
           atendimentos: agendamentos.length,
           faturamento,
-          ticketMedio: agendamentos.length > 0 ? faturamento / agendamentos.length : 0,
+          ticketMedio:
+            agendamentos.length > 0 ? faturamento / agendamentos.length : 0,
         };
       }),
-    ).then(lista => lista.sort((a, b) => b.faturamento - a.faturamento));
+    ).then((lista) => lista.sort((a, b) => b.faturamento - a.faturamento));
   }
 
   /** Volume de agendamentos por hora do dia (horários de pico) */
@@ -143,7 +156,7 @@ export class RelatorioService {
 
     const porHora: Record<number, number> = {};
     agendamentos.forEach((ag) => {
-      const hora = (ag.inicio as Date).getHours();
+      const hora = ag.inicio.getHours();
       porHora[hora] = (porHora[hora] ?? 0) + 1;
     });
 

@@ -1,9 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { logoutSchema } from '@toqe/contracts';
 
-export class LogoutDto {
-  @ApiProperty({ description: 'Refresh token a ser revogado' })
-  @IsString()
-  @IsNotEmpty()
-  refreshToken: string;
-}
+/** DTO de logout gerado a partir do schema Zod compartilhado. */
+export class LogoutDto extends createZodDto(logoutSchema) {}

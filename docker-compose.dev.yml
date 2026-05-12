@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 # Compose de desenvolvimento — bind mount do source, hot reload, sem nginx
 # Uso: docker compose -f docker-compose.dev.yml up --build
@@ -34,7 +34,7 @@ services:
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       # Aceita tanto o host quanto o container web como origem CORS
-      - CORS_ORIGINS=http://localhost:3001,http://toqe-web-dev:3001
+      - CORS_ORIGINS=http://localhost:3001,http://127.0.0.1:3001,http://${LAN_HOST_IP:-localhost}:3001,http://toqe-web-dev:3001
     volumes:
       # Packages compartilhados — tipos, validators, config
       #- ./packages:/app/packages
@@ -61,7 +61,7 @@ services:
     environment:
       - NODE_ENV=development
       # URL acessível pelo BROWSER (via porta mapeada no host)
-      - NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+      - NEXT_PUBLIC_API_URL=http://${LAN_HOST_IP:-localhost}:3000/api/v1
       # URL interna Docker — usada pelos BFF route handlers (server-side)
       - INTERNAL_API_URL=http://toqe-api-dev:3000/api/v1
     volumes:
@@ -72,6 +72,17 @@ services:
       - web_dev_next_cache:/app/apps/web/.next
     depends_on:
       - api
+    restart: unless-stopped
+
+  nginx:
+    container_name: toqe-nginx-dev
+    image: nginx:alpine
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx/conf.d/dev-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
     restart: unless-stopped
 
   postgres:
@@ -86,7 +97,7 @@ services:
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toqe_app} -d toqe" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toqe_app} -d toqe"]
       interval: 10s
       timeout: 5s
       start_period: 10s
