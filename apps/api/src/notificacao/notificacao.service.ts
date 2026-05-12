@@ -28,8 +28,6 @@ export class NotificacaoService {
       { locale: ptBR },
     );
 
-    const servicosList = data.servicos.map((s) => `• ${s}`).join('\n');
-
     if (!this.resend) {
       this.logger.warn(
         `E-mail para ${data.clienteEmail} ignorado: RESEND_API_KEY não configurada`,
@@ -53,8 +51,9 @@ export class NotificacaoService {
         `E-mail de confirmação enviado para ${data.clienteEmail} (id: ${result.data?.id})`,
       );
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Falha ao enviar e-mail para ${data.clienteEmail}: ${error.message}`,
+        `Falha ao enviar e-mail para ${data.clienteEmail}: ${msg}`,
       );
       throw error; // Permite que o BullMQ tente novamente (retry)
     }
