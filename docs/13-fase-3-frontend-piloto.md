@@ -6,15 +6,75 @@
 
 Migrar `apps/web` de um layout layer-based plano para **feature-based pragmático** com `src/features/<feat>/` e `src/shared/`, eliminar estilos inline duplicados, introduzir TanStack Query para data fetching, adicionar RBAC em `proxy.ts` e integrar Sentry.
 
-Devido ao tamanho, dividimos a Fase 3 em **sub-PRs sequenciais** dentro de `arch/fase-3-frontend-piloto`:
+Devido ao tamanho, dividimos a Fase 3 em **sub-PRs sequenciais**, cada um em uma branch própria a partir de `feature/arquitetura-reorganizacao`:
 
-| Sub-PR | Escopo                                                                                               | Status                  |
-| ------ | ---------------------------------------------------------------------------------------------------- | ----------------------- |
-| **3a** | Reestruturação para `src/` + TanStack Query + `shared/config` + `useAuth` separado + ESLint hygiene  | **entregue (este doc)** |
-| 3b     | Feature piloto `auth`: criar `src/features/auth/` com components, hooks, services                    | pendente                |
-| 3c     | RBAC em `proxy.ts` + componente `<RequireRole>` + Sentry SDK FE                                      | pendente                |
-| 3d     | Design tokens consolidados em `tokens.css` + banimento de `style={{}}` via ESLint custom             | pendente                |
-| 3e     | Refactor do `dashboard/page.tsx` em componentes pequenos + `useDashboardOverview()` (TanStack Query) | pendente                |
+| Sub-PR | Branch                            | Escopo                                                                                               | Status       |
+| ------ | --------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------ |
+| 3a     | `arch/fase-3-frontend-piloto`     | Reestruturação para `src/` + TanStack Query + `shared/config` + `useAuth` separado + ESLint hygiene  | concluída #3 |
+| **3b** | `arch/fase-3b-auth-feature`       | Feature piloto `auth`: `src/features/auth/{components,hooks,services,schemas}`                       | **entregue** |
+| 3c     | `arch/fase-3c-rbac-sentry`        | RBAC em `proxy.ts` + componente `<RequireRole>` + Sentry SDK FE                                      | pendente     |
+| 3d     | `arch/fase-3d-design-tokens`      | Design tokens consolidados em `tokens.css` + banimento de `style={{}}` via ESLint custom             | pendente     |
+| 3e     | `arch/fase-3e-dashboard-refactor` | Refactor do `dashboard/page.tsx` em componentes pequenos + `useDashboardOverview()` (TanStack Query) | pendente     |
+
+## Entregue na sub-PR 3b — feature piloto `auth`
+
+Cria a primeira feature seguindo o layout `src/features/<feat>/` definido na 3a. Quebra o monolítico `login/page.tsx` (759 linhas) em uma página-shell de 117 linhas + componentes pequenos (~80–280 linhas cada) na feature.
+
+### Arquivos criados em `apps/web/src/features/auth/`
+
+```
+schemas/index.ts                      # re-export de @toqe/contracts (auth)
+services/auth.service.ts              # requestLogin, requestLogout, requestPasswordReset
+                                      # + AuthServiceError (erro tipado)
+hooks/use-login.ts                    # useMutation envolvendo useAuth().login
+hooks/use-logout.ts                   # useMutation + queryClient.clear() no onSettled
+hooks/use-forgot-password.ts          # useMutation chamando o stub do service
+components/AuthBrandingPanel.tsx      # painel esquerdo decorativo (logo + headline + mockup live)
+components/LoginForm.tsx              # form de login com react-hook-form + Zod + useLogin
+components/ForgotPasswordForm.tsx     # form forgot + tela de sucesso embutida (useForgotPassword)
+components/AuthErrorBanner.tsx        # banner de erro reutilizado entre formulários
+```
+
+### Página refatorada
+
+- `src/app/(auth)/login/page.tsx` — agora **117 linhas** (era 759). Apenas:
+  - layout em duas colunas;
+  - alternância de modo (`login` / `forgot`) via `useState`;
+  - heading dinâmico;
+  - composição dos componentes da feature.
+
+### `AuthProvider` mais magro
+
+- `src/shared/providers/auth-provider.tsx` agora delega ao service:
+  - `requestLogin({ email, senha })` em vez de `fetch` inline;
+  - `requestLogout()` em vez de `fetch` inline.
+- Mantém a lógica de estado global (user, barbearia, perfil, roteamento) — service e provider têm responsabilidades claras.
+
+### Decisões de design
+
+- **`useLogin`/`useLogout` não duplicam o AuthContext**: encapsulam `useAuth().login`/`logout` em `useMutation` para a UI consumir `isPending`/`error` ergonomicamente. Estado global continua único.
+- **`useLogout` limpa o cache do TanStack Query** no `onSettled` — evita mostrar dados do usuário anterior se outro logar na mesma aba.
+- **`AuthServiceError`** é uma classe de erro tipada (com `status`) que substitui o `throw new Error` genérico. Componentes podem inspecionar `err instanceof AuthServiceError`.
+- **`schemas/index.ts`** é apenas re-export de `@toqe/contracts` — convenção: features não importam de packages externos diretamente; passam pela própria camada de schemas. Facilita refactor futuro.
+
+### Validações da sub-PR 3b
+
+| Checagem                              | Resultado       |
+| ------------------------------------- | --------------- |
+| `pnpm --filter web exec tsc --noEmit` | ✅              |
+| `pnpm --filter web lint`              | ✅ (0 warnings) |
+| `pnpm --filter web build`             | ✅ (14 rotas)   |
+
+### Critérios de aceite (sub-PR 3b)
+
+- [x] `src/features/auth/` existe com `components/`, `hooks/`, `services/`, `schemas/`.
+- [x] `auth.service.ts` centraliza chamadas BFF; `AuthProvider` não tem mais `fetch` inline.
+- [x] Hooks de mutation TanStack Query (`useLogin`, `useLogout`, `useForgotPassword`) disponíveis.
+- [x] `login/page.tsx` reduzido a shell <120 linhas.
+- [x] Build/lint/types verdes.
+- [ ] PR aberto e mergeado.
+
+---
 
 ## Entregue nesta sub-PR (3a)
 

@@ -10,6 +10,10 @@ import React, {
 import { useRouter } from "next/navigation";
 import type { BarbeariaResumo, Perfil, UsuarioMe } from "@toqe/shared";
 import { api } from "@/shared/api/api-client";
+import {
+  requestLogin,
+  requestLogout,
+} from "@/features/auth/services/auth.service";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -110,19 +114,8 @@ export function AuthProvider({
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(
     async (email: string, senha: string) => {
-      // Chama o BFF que seta os cookies httpOnly e retorna os dados do usuário
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(
-          (data as { message?: string }).message ?? "Credenciais inválidas",
-        );
-      }
+      // O service trata o BFF, parse de erro e seta cookies httpOnly.
+      await requestLogin({ email, senha });
 
       const me: UsuarioMe = await api.get("/usuarios/me");
       const { codigo, nome, telefone, avatarUrl, barbearias: bars } = me;
@@ -146,7 +139,7 @@ export function AuthProvider({
   // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await requestLogout();
     } finally {
       setUser(null);
       setBarbearias([]);
