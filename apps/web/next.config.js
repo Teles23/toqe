@@ -1,6 +1,11 @@
 /* eslint-env node */
 import path from "node:path";
 import { withSentryConfig } from "@sentry/nextjs";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -18,6 +23,41 @@ const nextConfig = {
     // "192.168.0.*",
     // "10.*",
   ],
+  experimental: {
+    // Tree-shake granular de pacotes "barrel-heavy" — Next reescreve
+    // `import { Foo } from "lucide-react"` em import direto do submodulo
+    // (`lucide-react/dist/esm/icons/foo`). Reduz tempo de compile no
+    // dev e tamanho do bundle prod. Doc:
+    // https://nextjs.org/docs/app/api-reference/config/next-config-js/optimizePackageImports
+    optimizePackageImports: [
+      "lucide-react",
+      "framer-motion",
+      "recharts",
+      "date-fns",
+      "@tanstack/react-query",
+      "@tanstack/react-query-devtools",
+      // Radix — lista os usados de fato no app (mais 30+ disponiveis
+      // poderiam estar aqui, mas adicionar individualmente da mais
+      // controle sobre o que e "tree-shake-able").
+      "@radix-ui/react-accordion",
+      "@radix-ui/react-alert-dialog",
+      "@radix-ui/react-avatar",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-collapsible",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-label",
+      "@radix-ui/react-popover",
+      "@radix-ui/react-scroll-area",
+      "@radix-ui/react-select",
+      "@radix-ui/react-separator",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-switch",
+      "@radix-ui/react-tabs",
+      "@radix-ui/react-toast",
+      "@radix-ui/react-tooltip",
+    ],
+  },
 };
 
 /**
@@ -29,7 +69,11 @@ const nextConfig = {
  * — habilitar via env var no CI quando o projeto Sentry estiver
  * provisionado. Sem essas variáveis, o runtime SDK continua funcional.
  */
-export default withSentryConfig(nextConfig, {
+// Pipeline: nextConfig -> withBundleAnalyzer (opt-in via env ANALYZE=true)
+// -> withSentryConfig (sempre). A ordem importa: o analyzer precisa "ver"
+// o config base; o Sentry envolve por ultimo aplicando webpack plugins
+// e a instrumentação.
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   silent: !process.env.CI,
   // Adicionar quando o projeto Sentry estiver provisionado:
   // org: process.env.SENTRY_ORG,
