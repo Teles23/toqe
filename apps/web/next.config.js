@@ -7,6 +7,17 @@ const nextConfig = {
   turbopack: {
     root: path.resolve("../.."),
   },
+  // Permite acesso aos recursos de dev (HMR, _next/webpack-hmr) a partir
+  // de outros hosts da LAN. Em prod isso e ignorado. Lista permite tanto
+  // o IP do Wi-Fi do host quanto o IP da bridge Hyper-V/WSL — adicione
+  // outros conforme necessario.
+  allowedDevOrigins: [
+    "192.168.0.134",
+    "172.31.160.54",
+    // Wildcards LAN privada — descomente se mudar de rede frequentemente:
+    // "192.168.0.*",
+    // "10.*",
+  ],
 };
 
 /**
