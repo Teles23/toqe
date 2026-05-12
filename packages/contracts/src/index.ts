@@ -2,12 +2,11 @@
 // Backend (NestJS) usa via `nestjs-zod` para gerar DTOs + Swagger.
 // Frontend (Next.js / Expo) usa em forms (react-hook-form) e clients HTTP.
 //
-// IMPORTANTE: usar caminhos explícitos para `index` em vez de
-// `./schemas` etc., pois o Node em modo ESM não resolve "directory
-// imports" automaticamente (ERR_UNSUPPORTED_DIR_IMPORT). O TypeScript
-// resolve, mas o runtime NestJS (que usa webpack/CommonJS-style mas
-// preserva ESM em alguns deps) falha sem o sufixo.
+// Nota: o consumo é via bundlers (Next/webpack-do-Nest) que resolvem
+// barrels diretório automaticamente. O webpack do `apps/api` está
+// configurado em `apps/api/webpack.config.js` para bundle-ar @toqe/*
+// (NÃO externalizar), pois esses packages são TS puro sem build próprio.
 
-export * from "./schemas/index";
-export * from "./types/index";
-export * from "./errors/index";
+export * from "./schemas";
+export * from "./types";
+export * from "./errors";
