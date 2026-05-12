@@ -93,24 +93,24 @@ if ($Remove) {
 $portsStr = $Ports -join ","
 Write-Host "Liberando portas TCP: $portsStr" -ForegroundColor Cyan
 
-# 1. Hyper-V firewall (VM do WSL).
-try {
-    New-NetFirewallHyperVRule `
-        -Name "$RuleName-inbound" `
-        -DisplayName "$RuleName (Hyper-V inbound)" `
-        -VMCreatorId $vmCreatorId `
-        -Direction Inbound `
-        -Protocol TCP `
-        -LocalPorts ($Ports | ForEach-Object { [string]$_ }) `
-        -Action Allow `
-        -ErrorAction Stop | Out-Null
-    Write-Host "  [OK] regra Hyper-V criada" -ForegroundColor Green
-} catch {
-    if ($_.Exception.Message -match "já existe|already exists") {
-        Write-Host "  [skip] regra Hyper-V já existe" -ForegroundColor DarkGray
-    } else {
-        Write-Error "Falha ao criar regra Hyper-V: $($_.Exception.Message)"
-        exit 1
+# 1. Hyper-V firewall (VM do WSL) — idempotente.
+$existingHv = Get-NetFirewallHyperVRule -Name "$RuleName-inbound" -ErrorAction SilentlyContinue
+if ($existingHv) {
+    Write-Host "  [skip] regra Hyper-V '$RuleName-inbound' ja existe" -ForegroundColor DarkGray
+} else {
+    try {
+        New-NetFirewallHyperVRule `
+            -Name "$RuleName-inbound" `
+            -DisplayName "$RuleName (Hyper-V inbound)" `
+            -VMCreatorId $vmCreatorId `
+            -Direction Inbound `
+            -Protocol TCP `
+            -LocalPorts ($Ports | ForEach-Object { [string]$_ }) `
+            -Action Allow `
+            -ErrorAction Stop | Out-Null
+        Write-Host "  [OK] regra Hyper-V criada" -ForegroundColor Green
+    } catch {
+        Write-Warning "Falha Hyper-V (seguindo mesmo assim): $($_.Exception.Message)"
     }
 }
 
@@ -128,21 +128,22 @@ foreach ($p in $Ports) {
     }
 }
 
-# 3. Windows Defender Firewall (host).
-try {
-    New-NetFirewallRule `
-        -DisplayName "$RuleName (LAN inbound)" `
-        -Direction Inbound `
-        -Protocol TCP `
-        -LocalPort $Ports `
-        -Action Allow `
-        -Profile Any `
-        -ErrorAction Stop | Out-Null
-    Write-Host "  [OK] regra Windows Firewall criada" -ForegroundColor Green
-} catch {
-    if ($_.Exception.Message -match "já existe|already exists|0x80070571") {
-        Write-Host "  [skip] regra Windows Firewall já existe" -ForegroundColor DarkGray
-    } else {
+# 3. Windows Defender Firewall (host) — idempotente.
+$existingFw = Get-NetFirewallRule -DisplayName "$RuleName (LAN inbound)" -ErrorAction SilentlyContinue
+if ($existingFw) {
+    Write-Host "  [skip] regra Windows Firewall ja existe" -ForegroundColor DarkGray
+} else {
+    try {
+        New-NetFirewallRule `
+            -DisplayName "$RuleName (LAN inbound)" `
+            -Direction Inbound `
+            -Protocol TCP `
+            -LocalPort $Ports `
+            -Action Allow `
+            -Profile Any `
+            -ErrorAction Stop | Out-Null
+        Write-Host "  [OK] regra Windows Firewall criada" -ForegroundColor Green
+    } catch {
         Write-Warning "Falha Windows Firewall: $($_.Exception.Message)"
     }
 }
