@@ -9,7 +9,6 @@ import { useAuth } from "@/shared/hooks/use-auth";
 import { useBarbeiros } from "../hooks/use-barbeiros";
 import { BarbeiroCard } from "./BarbeiroCard";
 import { BarbeiroDetalhe } from "./BarbeiroDetalhe";
-import { ESTADO_CONFIG } from "../constants/barbeiro.constants";
 import type { Barbeiro, BarbeiroEstado } from "../types/barbeiro.types";
 
 export function BarbeirosView() {
