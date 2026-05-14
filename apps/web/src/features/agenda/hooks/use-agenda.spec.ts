@@ -4,7 +4,18 @@ import type { AgendamentoAPI, BarbeiroAPI } from "../types/agenda.types";
 
 // ─── fixtures ────────────────────────────────────────────────────────────────
 
-const barbeiro: BarbeiroAPI = { codigo: 1, nome: "Carlos" };
+const barbeiro: BarbeiroAPI = {
+  codigo: 1,
+  nome: "Carlos",
+  email: "carlos@test.com",
+  telefone: null,
+  avatarUrl: null,
+  perfil: "BARBEIRO",
+  atendimentosHoje: 0,
+  atendimentosMes: 0,
+  faturamentoMes: 0,
+  ticketMedio: 0,
+};
 
 function makeAgendamento(
   overrides: Partial<AgendamentoAPI> = {},
@@ -143,7 +154,7 @@ describe("toBarbeiro", () => {
   });
 
   it("retorna initial como primeira letra maiúscula do nome", () => {
-    const result = toBarbeiro({ codigo: 1, nome: "carlos" }, []);
+    const result = toBarbeiro({ ...barbeiro, nome: "carlos" }, []);
     expect(result.initial).toBe("C");
   });
 

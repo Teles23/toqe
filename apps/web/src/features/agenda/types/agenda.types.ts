@@ -40,7 +40,5 @@ export interface AgendamentoAPI {
   itens: { servico: { nome: string }; duracaoMin: number }[];
 }
 
-export interface BarbeiroAPI {
-  codigo: number;
-  nome: string;
-}
+// BarbeiroAPI importado de barbeiros/types — source of truth único
+export type { BarbeiroAPI } from "../../barbeiros/types/barbeiro.types";

@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { getInitial } from "@/shared/lib/utils";
 import { barbeiroService } from "../services/barbeiro.service";
 import type { BarbeiroAPI, Barbeiro } from "../types/barbeiro.types";
 
 function toBarbeiro(b: BarbeiroAPI): Barbeiro {
   return {
     ...b,
-    initial: b.nome.charAt(0).toUpperCase(),
+    initial: getInitial(b.nome),
     estado: "idle",
     especialidade: "",
     avaliacao: 0,

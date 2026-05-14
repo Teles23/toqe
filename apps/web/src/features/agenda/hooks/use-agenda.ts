@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { agendaService } from "../services/agenda.service";
 import { API_STATUS_TO_SLOT } from "../constants/agenda.constants";
+import { getInitial } from "@/shared/lib/utils";
 import type {
   Slot,
   Barbeiro,
@@ -35,10 +36,10 @@ export function toSlot(a: AgendamentoAPI, now: Date): Slot {
     time: format(inicio, "HH:mm"),
     endTime: format(fim, "HH:mm"),
     client: clienteNome,
-    clientInitial: clienteNome.charAt(0).toUpperCase(),
+    clientInitial: getInitial(clienteNome),
     service: servicoNome,
     barbeiro: barbeiroNome,
-    barbeiroInitial: barbeiroNome.charAt(0).toUpperCase(),
+    barbeiroInitial: getInitial(barbeiroNome),
     duration: duracao,
     status,
     startedAt: status === "active" ? format(inicio, "HH:mm") : undefined,
@@ -62,7 +63,7 @@ export function toBarbeiro(
   return {
     id: b.codigo,
     nome: b.nome,
-    initial: b.nome.charAt(0).toUpperCase(),
+    initial: getInitial(b.nome),
     state: isActive ? "active" : "idle",
     agendamentos: agendamentosBarbeiro.length,
     livres: 0, // Pode ser calculado depois com base na jornada

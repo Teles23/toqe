@@ -22,6 +22,7 @@ import {
   registerSchema,
 } from "@toqe/contracts";
 import { api, tenantApi } from "@/shared/api/api-client";
+import { getInitial } from "@/shared/lib/utils";
 
 interface AccountData {
   nome: string;
@@ -401,7 +402,7 @@ function Passo2({
   data: BrandingData;
   onChange: (key: keyof BrandingData, value: string) => void;
 }) {
-  const initial = (barbearia.nome || "B").trim().charAt(0).toUpperCase();
+  const initial = getInitial(barbearia.nome, "B");
 
   return (
     <>
@@ -721,9 +722,7 @@ function Passo5({
           <div className="barber-list">
             {barbeiros.map((barbeiro, index) => (
               <div key={index} className="barber-row">
-                <div className="barber-avatar">
-                  {(barbeiro.nome || "?").charAt(0).toUpperCase()}
-                </div>
+                <div className="barber-avatar">{getInitial(barbeiro.nome)}</div>
                 <input
                   value={barbeiro.nome}
                   onChange={(event) =>
