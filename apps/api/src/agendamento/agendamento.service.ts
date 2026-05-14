@@ -11,6 +11,7 @@ import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendaGateway } from '../agenda/agenda.gateway';
+import { Prisma } from '@prisma/client';
 
 const INCLUDE_COMPLETO = {
   itens: { include: { servico: true } },
@@ -101,7 +102,7 @@ export class AgendamentoService {
   }
 
   async findAll(barCodigo: number, filtros: ListAgendamentoDto) {
-    const where: any = { barCodigo };
+    const where: Prisma.AgendamentoWhereInput = { barCodigo };
 
     if (filtros.data) {
       const dia = new Date(filtros.data);

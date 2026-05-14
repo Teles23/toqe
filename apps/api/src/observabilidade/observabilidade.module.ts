@@ -19,9 +19,9 @@ import { Request } from 'express';
         level: process.env.LOG_LEVEL ?? 'info',
 
         // Campos base presentes em todo log de request
-        customProps: (req: Request) => ({
+        customProps: (req: Request & { user?: { sub: number } }) => ({
           tenantId: req.headers['x-tenant-id'] ?? null,
-          userId: (req as any).user?.sub ?? null,
+          userId: req.user?.sub ?? null,
         }),
 
         // Não logar a rota de health (muito ruído)
@@ -31,14 +31,14 @@ import { Request } from 'express';
 
         // Serialização segura: nunca vazar senha/token nos logs
         serializers: {
-          req(req) {
+          req(req: { method: string; url: string; remoteAddress: string }) {
             return {
               method: req.method,
               url: req.url,
               remoteAddress: req.remoteAddress,
             };
           },
-          res(res) {
+          res(res: { statusCode: number }) {
             return { statusCode: res.statusCode };
           },
         },

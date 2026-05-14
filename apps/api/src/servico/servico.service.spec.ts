@@ -3,6 +3,8 @@ import { NotFoundException } from '@nestjs/common';
 import { ServicoService } from './servico.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { CreateServicoDto } from './dto/create-servico.dto';
+import { UpdateServicoDto } from './dto/update-servico.dto';
 
 const mockPrisma = createPrismaMock();
 
@@ -25,11 +27,15 @@ describe('ServicoService', () => {
 
   describe('create', () => {
     it('cria serviço com os dados corretos', async () => {
-      const dto = { nome: 'Corte', duracaoBase: 30, precoBase: 25 };
+      const dto: CreateServicoDto = {
+        nome: 'Corte',
+        duracaoBase: 30,
+        precoBase: 25,
+      };
       const created = { codigo: 1, ...dto, barCodigo, ativo: true };
       mockPrisma.servico.create.mockResolvedValue(created);
 
-      const result = await service.create(dto as any, barCodigo);
+      const result = await service.create(dto, barCodigo);
       expect(mockPrisma.servico.create).toHaveBeenCalledWith({
         data: { ...dto, barCodigo },
       });
@@ -72,11 +78,8 @@ describe('ServicoService', () => {
         nome: 'Barba Premium',
       });
 
-      const result = await service.update(
-        5,
-        { nome: 'Barba Premium' } as any,
-        barCodigo,
-      );
+      const updateDto: UpdateServicoDto = { nome: 'Barba Premium' };
+      const result = await service.update(5, updateDto, barCodigo);
       expect(result.nome).toBe('Barba Premium');
     });
   });

@@ -156,7 +156,7 @@ export class RelatorioService {
 
     const porHora: Record<number, number> = {};
     agendamentos.forEach((ag) => {
-      const hora = ag.inicio.getHours();
+      const hora = ag.inicio.getUTCHours();
       porHora[hora] = (porHora[hora] ?? 0) + 1;
     });
 

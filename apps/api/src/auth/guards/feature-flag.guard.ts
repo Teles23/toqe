@@ -8,6 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FEATURE_KEY } from '../decorators/feature.decorator';
+import type { TenantRequest } from '../../common/types/jwt-request';
 
 @Injectable()
 export class FeatureFlagGuard implements CanActivate {
@@ -24,7 +25,7 @@ export class FeatureFlagGuard implements CanActivate {
 
     if (!feature) return true;
 
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<TenantRequest>();
     const barCodigo = Number(req.headers['x-tenant-id']);
 
     if (!barCodigo) return true;

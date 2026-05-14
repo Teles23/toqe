@@ -31,7 +31,7 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const room = `barbearia-${barCodigo}`;
-    client.join(room);
+    void client.join(room);
     this.logger.log(`Cliente ${client.id} entrou na sala ${room}`);
     return { event: 'joined', room };
   }
@@ -42,7 +42,7 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const room = `barbearia-${barCodigo}`;
-    client.leave(room);
+    void client.leave(room);
     this.logger.log(`Cliente ${client.id} saiu da sala ${room}`);
     return { event: 'left', room };
   }

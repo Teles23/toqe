@@ -5,19 +5,20 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { TenantRequest } from '../../common/types/jwt-request';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
   constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user; // injetado pelo JwtAuthGuard — tem apenas 'sub'
+    const request = context.switchToHttp().getRequest<TenantRequest>();
+    const user = request.user;
 
     const barCodigo =
-      request.params.barCodigo ??
-      request.body?.barCodigo ??
-      request.headers['x-tenant-id'];
+      request.params['barCodigo'] ??
+      (request.body['barCodigo'] as string | undefined) ??
+      (request.headers['x-tenant-id'] as string | undefined);
 
     if (!barCodigo) return true; // rota global, sem tenant
 
@@ -37,11 +38,8 @@ export class TenantGuard implements CanActivate {
       );
     }
 
-    if (request.user) {
-      // Injeta o perfil local no request para uso no RolesGuard
-      request.user.perfil = membro.perfil;
-      request.user.barCodigo = membro.barCodigo;
-    }
+    request.user.perfil = membro.perfil;
+    request.user.barCodigo = membro.barCodigo;
 
     return true;
   }
