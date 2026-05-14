@@ -1,4 +1,4 @@
-import { tenantApi } from "@/shared/api/api-client";
+import { barbeariaApi, tenantApi } from "@/shared/api/api-client";
 import type { AgendamentoAPI, BarbeiroAPI } from "../types/agenda.types";
 
 export const agendaService = {
@@ -9,9 +9,7 @@ export const agendaService = {
   },
 
   listBarbeiros(barCodigo: number): Promise<BarbeiroAPI[]> {
-    return tenantApi(barCodigo).get<BarbeiroAPI[]>(
-      `/barbearia/${barCodigo}/barbeiros`,
-    );
+    return barbeariaApi(barCodigo).get<BarbeiroAPI[]>("/barbeiros");
   },
 
   patchStatus(

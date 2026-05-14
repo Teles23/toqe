@@ -18,7 +18,9 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Prefix global de versão
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health/*path'],
+  });
 
   // Validação global de DTOs:
   // - ZodValidationPipe trata DTOs criados via `createZodDto(...)` em @toqe/contracts.

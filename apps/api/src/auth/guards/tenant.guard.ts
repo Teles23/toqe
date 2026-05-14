@@ -16,10 +16,13 @@ export class TenantGuard implements CanActivate {
 
     const barCodigo =
       request.params.barCodigo ??
-      request.body.barCodigo ??
+      request.body?.barCodigo ??
       request.headers['x-tenant-id'];
 
     if (!barCodigo) return true; // rota global, sem tenant
+
+    const barCodigoNum = Number(barCodigo);
+    if (isNaN(barCodigoNum) || barCodigoNum === 0) return true; // valor inválido, deixa passar para o controller tratar
 
     const membro = await this.prisma.membroBarbearia.findFirst({
       where: {
@@ -34,9 +37,11 @@ export class TenantGuard implements CanActivate {
       );
     }
 
-    // Injeta o perfil local no request para uso no RolesGuard
-    request.user.perfil = membro.perfil;
-    request.user.barCodigo = membro.barCodigo;
+    if (request.user) {
+      // Injeta o perfil local no request para uso no RolesGuard
+      request.user.perfil = membro.perfil;
+      request.user.barCodigo = membro.barCodigo;
+    }
 
     return true;
   }

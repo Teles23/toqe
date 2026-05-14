@@ -10,7 +10,6 @@ import { AgendaFilters } from "./AgendaFilters";
 import { AgendaSlot, AgendaSlotEmpty } from "./AgendaSlot";
 import { BarbeiroPanel } from "./BarbeiroPanel";
 import { useAgenda } from "../hooks/use-agenda";
-import { useActiveProgress } from "../hooks/use-active-progress";
 
 export function AgendaView() {
   const { barbearia } = useAuth();
@@ -22,12 +21,10 @@ export function AgendaView() {
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + selectedOffset);
 
-  const {
-    slots: rawSlots,
-    barbeiros,
-    isLoading,
-  } = useAgenda(barbearia?.codigo ?? null, targetDate);
-  const slots = useActiveProgress(rawSlots);
+  const { slots, barbeiros, isLoading } = useAgenda(
+    barbearia?.codigo ?? null,
+    targetDate,
+  );
 
   const filtered = slots.filter((s) => {
     if (filterBarbeiro !== "Todos" && s.barbeiro !== filterBarbeiro)

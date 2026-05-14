@@ -205,3 +205,38 @@ export function tenantApi(barCodigo: number | string) {
     },
   };
 }
+
+/**
+ * Cria um sub-objeto do api com tenantId E base path da barbearia já fixados.
+ * Aplica DRY: a rota base `/barbearias/${barCodigo}` fica em um único lugar.
+ *
+ * Exemplo:
+ *   const b = barbeariaApi(barbearia.codigo)
+ *   const barbeiros = await b.get('/barbeiros')   // → GET /barbearias/1/barbeiros
+ *   const clientes  = await b.get('/clientes')    // → GET /barbearias/1/clientes
+ */
+export function barbeariaApi(barCodigo: number | string) {
+  const base = `/barbearias/${barCodigo}`;
+  const opts = (extra?: RequestOptions): RequestOptions => ({
+    ...extra,
+    tenantId: barCodigo,
+  });
+
+  return {
+    get<T>(path: string, extra?: RequestOptions): Promise<T> {
+      return api.get<T>(`${base}${path}`, opts(extra));
+    },
+    post<T>(path: string, body?: unknown, extra?: RequestOptions): Promise<T> {
+      return api.post<T>(`${base}${path}`, body, opts(extra));
+    },
+    put<T>(path: string, body?: unknown, extra?: RequestOptions): Promise<T> {
+      return api.put<T>(`${base}${path}`, body, opts(extra));
+    },
+    patch<T>(path: string, body?: unknown, extra?: RequestOptions): Promise<T> {
+      return api.patch<T>(`${base}${path}`, body, opts(extra));
+    },
+    delete<T>(path: string, extra?: RequestOptions): Promise<T> {
+      return api.delete<T>(`${base}${path}`, opts(extra));
+    },
+  };
+}
