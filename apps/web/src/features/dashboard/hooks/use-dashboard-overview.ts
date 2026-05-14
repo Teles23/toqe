@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/shared/lib/constants";
 import { fetchDashboardOverview } from "../services/dashboard.service";
 import type { DashboardOverview } from "../types/dashboard.types";
 
@@ -16,7 +17,7 @@ import type { DashboardOverview } from "../types/dashboard.types";
  */
 export function useDashboardOverview() {
   return useQuery<DashboardOverview>({
-    queryKey: ["dashboard", "overview"],
+    queryKey: QUERY_KEYS.dashboard(),
     queryFn: fetchDashboardOverview,
   });
 }

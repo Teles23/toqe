@@ -11,6 +11,7 @@ import { ClienteCard } from "./ClienteCard";
 import { ClienteDetalhe } from "./ClienteDetalhe";
 import type { Cliente, ClienteStatus } from "../types/cliente.types";
 import { STATUS_CONFIG, type SortKey } from "../constants/cliente.constants";
+import { LoadingSpinner } from "@/shared/components/loading-spinner";
 
 export function ClientesView() {
   const { barbearia } = useAuth();
@@ -227,14 +228,7 @@ export function ClientesView() {
           {/* Lista de clientes */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
-              <div className="flex justify-center py-16">
-                <span
-                  className="text-[13px]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Carregando...
-                </span>
-              </div>
+              <LoadingSpinner />
             ) : (
               <AnimatePresence>
                 {filtered.map((c, i) => (
