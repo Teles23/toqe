@@ -97,6 +97,7 @@ jobs:
         run: pnpm --filter api test:integration
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          TESTCONTAINERS_RYUK_DISABLED: true
 
   security:
     name: Security tests (supertest)
@@ -133,6 +134,7 @@ jobs:
         run: pnpm --filter api test:security
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          TESTCONTAINERS_RYUK_DISABLED: true
 
   # Placeholder: E2E web (Playwright) — adicionar quando implementado
   # e2e-web:
