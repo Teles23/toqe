@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { UsuarioService } from './usuario.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 
 const mockPrisma = createPrismaMock();
 
@@ -79,8 +80,8 @@ describe('UsuarioService', () => {
       mockPrisma.usuario.findUnique.mockResolvedValue(user);
       const result = await service.me(1);
       expect(result).toHaveProperty('barbearias');
-      expect((result as any).barbearias).toHaveLength(1);
-      expect((result as any).barbearias[0]).toHaveProperty('perfil', 'dono');
+      expect(result.barbearias).toHaveLength(1);
+      expect(result.barbearias[0]).toHaveProperty('perfil', 'dono');
     });
 
     it('lança NotFoundException se usuário não existe', async () => {
@@ -94,14 +95,15 @@ describe('UsuarioService', () => {
       mockPrisma.usuario.findUnique.mockResolvedValue({
         codigo: 1,
         nome: 'Ana',
-        membros: [] as any[],
+        membros: [],
       });
       mockPrisma.usuario.update.mockResolvedValue({
         codigo: 1,
         nome: 'Ana Nova',
       });
 
-      const result = await service.update(1, { nome: 'Ana Nova' } as any);
+      const updateDto: UpdateUsuarioDto = { nome: 'Ana Nova' };
+      const result = await service.update(1, updateDto);
       expect(result.nome).toBe('Ana Nova');
     });
   });

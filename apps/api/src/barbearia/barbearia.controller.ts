@@ -19,6 +19,7 @@ import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { JwtRequest } from '../common/types/jwt-request';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { FeatureFlagGuard } from '../auth/guards/feature-flag.guard';
@@ -45,7 +46,7 @@ export class BarbeariaController {
   })
   @ApiResponse({ status: 201, description: 'Barbearia criada.' })
   @ApiResponse({ status: 409, description: 'Slug já em uso.' })
-  create(@Body() dto: CreateBarbeariaDto, @Request() req) {
+  create(@Body() dto: CreateBarbeariaDto, @Request() req: JwtRequest) {
     return this.barbeariaService.create(dto, req.user.sub);
   }
 

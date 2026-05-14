@@ -7,6 +7,7 @@ import {
 import { BarbeariaService } from './barbearia.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { PerfilMembro } from './dto/convidar-membro.dto';
 
 const mockPrisma = createPrismaMock();
 
@@ -29,13 +30,15 @@ describe('BarbeariaService', () => {
     it('cria barbearia e vincula dono', async () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue(null);
       const barbearia = { codigo: 1, nome: 'BarberShop', slug: 'bs' };
-      mockPrisma.$transaction.mockImplementation((fn) => {
-        const tx = {
-          barbearia: { create: jest.fn().mockResolvedValue(barbearia) },
-          membroBarbearia: { create: jest.fn().mockResolvedValue({}) },
-        };
-        return fn(tx);
-      });
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: unknown) => unknown) => {
+          const tx = {
+            barbearia: { create: jest.fn().mockResolvedValue(barbearia) },
+            membroBarbearia: { create: jest.fn().mockResolvedValue({}) },
+          };
+          return fn(tx);
+        },
+      );
 
       const result = await service.create(
         { nome: 'BarberShop', slug: 'bs' },
@@ -62,13 +65,13 @@ describe('BarbeariaService', () => {
       mockPrisma.membroBarbearia.create.mockResolvedValue({
         barCodigo: 1,
         usrCodigo: 5,
-        perfil: 'barbeiro',
+        perfil: PerfilMembro.BARBEIRO,
         usuario: { codigo: 5, nome: 'X', email: 'x@x.com' },
       });
 
       const result = await service.convidarMembro(1, {
         email: 'x@x.com',
-        perfil: 'barbeiro',
+        perfil: PerfilMembro.BARBEIRO,
       });
       expect(result).toHaveProperty('perfil', 'barbeiro');
     });
@@ -76,7 +79,10 @@ describe('BarbeariaService', () => {
     it('lança NotFoundException se usuário não existe', async () => {
       mockPrisma.usuario.findUnique.mockResolvedValue(null);
       await expect(
-        service.convidarMembro(1, { email: 'nope@x.com', perfil: 'barbeiro' }),
+        service.convidarMembro(1, {
+          email: 'nope@x.com',
+          perfil: PerfilMembro.BARBEIRO,
+        }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -87,7 +93,10 @@ describe('BarbeariaService', () => {
         usrCodigo: 5,
       });
       await expect(
-        service.convidarMembro(1, { email: 'x@x.com', perfil: 'barbeiro' }),
+        service.convidarMembro(1, {
+          email: 'x@x.com',
+          perfil: PerfilMembro.BARBEIRO,
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -97,7 +106,7 @@ describe('BarbeariaService', () => {
       mockPrisma.membroBarbearia.findUnique.mockResolvedValue({
         barCodigo: 1,
         usrCodigo: 5,
-        perfil: 'barbeiro',
+        perfil: PerfilMembro.BARBEIRO,
       });
       mockPrisma.membroBarbearia.delete.mockResolvedValue({
         barCodigo: 1,

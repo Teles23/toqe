@@ -1,3 +1,4 @@
+import type { Queue } from 'bull';
 import {
   NotificacaoProducer,
   AGENDAMENTO_CONFIRMADO,
@@ -10,7 +11,7 @@ describe('NotificacaoProducer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    producer = new NotificacaoProducer(mockQueue as any);
+    producer = new NotificacaoProducer(mockQueue as unknown as Queue);
   });
 
   it('should call queue.add with correct arguments on agendamentoConfirmado', async () => {
@@ -36,8 +37,8 @@ describe('NotificacaoProducer', () => {
   it('should propagate queue errors', async () => {
     mockQueue.add.mockRejectedValueOnce(new Error('Queue error'));
 
-    await expect(producer.agendamentoConfirmado({} as any)).rejects.toThrow(
-      'Queue error',
-    );
+    await expect(
+      producer.agendamentoConfirmado({} as unknown as AgendamentoConfirmadoJob),
+    ).rejects.toThrow('Queue error');
   });
 });

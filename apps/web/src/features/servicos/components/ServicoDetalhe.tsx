@@ -1,9 +1,8 @@
-/* eslint-disable no-restricted-syntax */
 "use client";
 
 import { motion } from "framer-motion";
 import { X, Scissors, DollarSign, Clock, Edit2, Trash2 } from "lucide-react";
-import { CATEGORIA_CONFIG } from "../constants/servico.constants";
+import { getCategoria } from "../constants/servico.constants";
 import type { ServicoAPI } from "../types/servico.types";
 import { formatBRL } from "@/shared/lib/utils";
 
@@ -14,11 +13,8 @@ interface ServicoDetalheProps {
 }
 
 export function ServicoDetalhe({ s, onClose, onEdit }: ServicoDetalheProps) {
-  const categoria =
-    (s as unknown as { categoria?: string }).categoria ?? "corte";
-  const cfg =
-    CATEGORIA_CONFIG[categoria as keyof typeof CATEGORIA_CONFIG] ??
-    CATEGORIA_CONFIG.corte;
+  const categoria = (s as unknown as { categoria?: string }).categoria;
+  const cfg = getCategoria(categoria);
 
   return (
     <motion.div

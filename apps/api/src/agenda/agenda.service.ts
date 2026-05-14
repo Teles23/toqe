@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
+import { isTimeOverlap } from '../common/utils/date.utils';
 import {
   addMinutes,
   parse,
   format,
   isBefore,
-  isAfter,
   startOfDay,
   endOfDay,
   getDay,
@@ -92,8 +93,7 @@ export class AgendaService {
     });
     if (!barbearia) throw new Error('Barbearia not found');
 
-    // Cast para any para evitar aviso no VS Code até que o cache do TS Server atualize
-    const interval = (barbearia as any).slotInterval || 30;
+    const interval = barbearia.slotInterval;
 
     const jornada = await this.prisma.jornadaTrabalho.findFirst({
       where: { barbeiroId, diaSemana: dayOfWeek },
@@ -113,7 +113,9 @@ export class AgendaService {
         barbeiroId,
         inicio: { gte: startOfDay(targetDate) },
         fim: { lte: endOfDay(targetDate) },
-        status: { notIn: ['cancelado', 'no_show'] },
+        status: {
+          notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.NO_SHOW],
+        },
       },
     });
 
@@ -125,63 +127,14 @@ export class AgendaService {
       },
     });
 
-    const isBusy = (slotStart: Date, slotEnd: Date) => {
-      // Almoço
-      if (startLunch && endLunch) {
-        if (
-          (isAfter(slotStart, startLunch) ||
-            slotStart.getTime() === startLunch.getTime()) &&
-          isBefore(slotStart, endLunch)
-        )
-          return true;
-        if (
-          isAfter(slotEnd, startLunch) &&
-          (isBefore(slotEnd, endLunch) ||
-            slotEnd.getTime() === endLunch.getTime())
-        )
-          return true;
-        if (isBefore(slotStart, startLunch) && isAfter(slotEnd, endLunch))
-          return true;
-      }
-
-      // Agendamentos
-      for (const app of appointments) {
-        if (
-          (isAfter(slotStart, app.inicio) ||
-            slotStart.getTime() === app.inicio.getTime()) &&
-          isBefore(slotStart, app.fim)
-        )
-          return true;
-        if (
-          isAfter(slotEnd, app.inicio) &&
-          (isBefore(slotEnd, app.fim) ||
-            slotEnd.getTime() === app.fim.getTime())
-        )
-          return true;
-        if (isBefore(slotStart, app.inicio) && isAfter(slotEnd, app.fim))
-          return true;
-      }
-
-      // Bloqueios
-      for (const blk of blocks) {
-        if (
-          (isAfter(slotStart, blk.inicio) ||
-            slotStart.getTime() === blk.inicio.getTime()) &&
-          isBefore(slotStart, blk.fim)
-        )
-          return true;
-        if (
-          isAfter(slotEnd, blk.inicio) &&
-          (isBefore(slotEnd, blk.fim) ||
-            slotEnd.getTime() === blk.fim.getTime())
-        )
-          return true;
-        if (isBefore(slotStart, blk.inicio) && isAfter(slotEnd, blk.fim))
-          return true;
-      }
-
-      return false;
-    };
+    const isBusy = (slotStart: Date, slotEnd: Date): boolean =>
+      (startLunch !== null &&
+        endLunch !== null &&
+        isTimeOverlap(slotStart, slotEnd, startLunch, endLunch)) ||
+      appointments.some((a) =>
+        isTimeOverlap(slotStart, slotEnd, a.inicio, a.fim),
+      ) ||
+      blocks.some((b) => isTimeOverlap(slotStart, slotEnd, b.inicio, b.fim));
 
     const availableSlots: string[] = [];
     let currentSlot = startWork;

@@ -1,5 +1,6 @@
 import { RelatorioService } from './relatorio.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import type { PrismaService } from '../prisma/prisma.service';
 
 describe('RelatorioService', () => {
   let service: RelatorioService;
@@ -7,7 +8,7 @@ describe('RelatorioService', () => {
 
   beforeEach(() => {
     prisma = createPrismaMock();
-    service = new RelatorioService(prisma as any);
+    service = new RelatorioService(prisma as unknown as PrismaService);
   });
 
   describe('faturamento', () => {

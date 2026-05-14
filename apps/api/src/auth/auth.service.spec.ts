@@ -11,6 +11,10 @@ const mockUsuario = {
   nome: 'João Silva',
   email: 'joao@example.com',
   senhaHash: 'hashed_password',
+  telefone: null,
+  avatarUrl: null,
+  ativo: true,
+  criadoEm: new Date('2024-01-01'),
 };
 
 const mockRefreshToken = {
@@ -64,8 +68,16 @@ describe('AuthService', () => {
   describe('register', () => {
     it('delega para usuarioService.create', async () => {
       const dto = { nome: 'João', email: 'joao@example.com', senha: '123456' };
-      const expected = { codigo: 1, nome: 'João', email: 'joao@example.com' };
-      usuarioService.create.mockResolvedValue(expected as any);
+      const expected = {
+        codigo: 1,
+        nome: 'João',
+        email: 'joao@example.com',
+        telefone: null,
+        avatarUrl: null,
+        ativo: true,
+        criadoEm: new Date('2024-01-01'),
+      };
+      usuarioService.create.mockResolvedValue(expected);
 
       const result = await service.register(dto);
 
@@ -80,7 +92,7 @@ describe('AuthService', () => {
       const hash = await bcrypt.hash(senha, await bcrypt.genSalt());
       const usuario = { ...mockUsuario, senhaHash: hash };
 
-      usuarioService.findByEmail.mockResolvedValue(usuario as any);
+      usuarioService.findByEmail.mockResolvedValue(usuario);
       (prisma.refreshToken.create as jest.Mock).mockResolvedValue({});
 
       const result = await service.login({ email: usuario.email, senha });
@@ -103,7 +115,7 @@ describe('AuthService', () => {
     });
 
     it('lança UnauthorizedException quando senha está errada', async () => {
-      usuarioService.findByEmail.mockResolvedValue(mockUsuario as any);
+      usuarioService.findByEmail.mockResolvedValue(mockUsuario);
 
       await expect(
         service.login({ email: mockUsuario.email, senha: 'senha_errada' }),
@@ -119,7 +131,7 @@ describe('AuthService', () => {
 
       (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([token]);
       (prisma.refreshToken.update as jest.Mock).mockResolvedValue({});
-      usuarioService.findById.mockResolvedValue(mockUsuario as any);
+      usuarioService.findById.mockResolvedValue(mockUsuario);
       (prisma.refreshToken.create as jest.Mock).mockResolvedValue({});
 
       const result = await service.refresh({ refreshToken: rawToken });

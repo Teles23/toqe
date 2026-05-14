@@ -30,3 +30,7 @@ export const CATEGORIA_CONFIG: Record<
     bg: "rgba(255,77,79,0.1)",
   },
 };
+
+export function getCategoria(categoria: string | undefined) {
+  return CATEGORIA_CONFIG[categoria as Categoria] ?? CATEGORIA_CONFIG.corte;
+}

@@ -9,6 +9,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
+import { ListAgendamentoDto } from './dto/list-agendamento.dto';
+import {
+  PatchStatusAgendamentoDto,
+  StatusAgendamento,
+} from './dto/patch-status-agendamento.dto';
 
 const mockPrisma = createPrismaMock();
 
@@ -55,7 +61,7 @@ describe('AgendamentoService', () => {
 
   describe('create', () => {
     it('cria agendamento com sucesso', async () => {
-      const dto = {
+      const dto: CreateAgendamentoDto = {
         barbeiroId: 10,
         clienteId: 20,
         servicosIds: [1],
@@ -70,22 +76,26 @@ describe('AgendamentoService', () => {
           barbeiros: [],
         },
       ]);
-      mockPrisma.$transaction.mockImplementation((fn) => {
-        const tx = {
-          $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
-          agendamento: { create: jest.fn().mockResolvedValue(mockAgendamento) },
-        };
-        return fn(tx);
-      });
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: unknown) => unknown) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
+            agendamento: {
+              create: jest.fn().mockResolvedValue(mockAgendamento),
+            },
+          };
+          return fn(tx);
+        },
+      );
 
-      const result = await service.create(dto as any, barCodigo);
+      const result = await service.create(dto, barCodigo);
       expect(result).toHaveProperty('codigo', 1);
       expect(mockNotificacaoProducer.agendamentoConfirmado).toHaveBeenCalled();
       expect(mockAgendaGateway.emitAgendamentoCriado).toHaveBeenCalled();
     });
 
     it('lança BadRequestException se serviço não encontrado', async () => {
-      const dto = {
+      const dto: CreateAgendamentoDto = {
         barbeiroId: 10,
         clienteId: 20,
         servicosIds: [999],
@@ -93,13 +103,13 @@ describe('AgendamentoService', () => {
       };
       mockPrisma.servico.findMany.mockResolvedValue([]);
 
-      await expect(service.create(dto as any, barCodigo)).rejects.toThrow(
+      await expect(service.create(dto, barCodigo)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('lança ConflictException se há conflito de horário', async () => {
-      const dto = {
+      const dto: CreateAgendamentoDto = {
         barbeiroId: 10,
         clienteId: 20,
         servicosIds: [1],
@@ -114,15 +124,17 @@ describe('AgendamentoService', () => {
           barbeiros: [],
         },
       ]);
-      mockPrisma.$transaction.mockImplementation((fn) => {
-        const tx = {
-          $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(1) }]),
-          agendamento: { create: jest.fn() },
-        };
-        return fn(tx);
-      });
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: unknown) => unknown) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(1) }]),
+            agendamento: { create: jest.fn() },
+          };
+          return fn(tx);
+        },
+      );
 
-      await expect(service.create(dto as any, barCodigo)).rejects.toThrow(
+      await expect(service.create(dto, barCodigo)).rejects.toThrow(
         ConflictException,
       );
     });
@@ -131,13 +143,17 @@ describe('AgendamentoService', () => {
   describe('findAll', () => {
     it('retorna agendamentos com filtros aplicados', async () => {
       mockPrisma.agendamento.findMany.mockResolvedValue([mockAgendamento]);
-      const result = await service.findAll(barCodigo, {
+      const filtros: ListAgendamentoDto = {
         data: '2024-06-01',
         barbeiroId: 10,
-      } as any);
+      };
+      const result = await service.findAll(barCodigo, filtros);
       expect(mockPrisma.agendamento.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ barCodigo, barbeiroId: 10 }),
+          where: expect.objectContaining({ barCodigo, barbeiroId: 10 }) as {
+            barCodigo: number;
+            barbeiroId: number;
+          },
         }),
       );
       expect(result).toHaveLength(1);
@@ -167,11 +183,10 @@ describe('AgendamentoService', () => {
         status: 'concluido',
       });
 
-      const result = await service.patchStatus(
-        1,
-        { status: 'concluido' } as any,
-        barCodigo,
-      );
+      const patchDto: PatchStatusAgendamentoDto = {
+        status: StatusAgendamento.CONCLUIDO,
+      };
+      const result = await service.patchStatus(1, patchDto, barCodigo);
       expect(result.status).toBe('concluido');
       expect(mockAgendaGateway.emitStatusAtualizado).toHaveBeenCalled();
     });

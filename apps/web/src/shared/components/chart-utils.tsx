@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -22,6 +21,8 @@ interface ChartTooltipProps {
   label?: string;
   prefix?: string;
   suffix?: string;
+  /** Override formatter for the value (e.g. formatBRL for currency charts) */
+  formatter?: (value: number) => string;
 }
 
 export function ChartTooltip({
@@ -30,6 +31,7 @@ export function ChartTooltip({
   label,
   prefix = "",
   suffix = "",
+  formatter,
 }: ChartTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
@@ -49,13 +51,11 @@ export function ChartTooltip({
       {payload.map((p, i) => (
         <div
           key={i}
-          style={{ color: p.color ?? "var(--text-primary)", fontWeight: 600 }}
+          style={{ color: p.color ?? "var(--status-success)", fontWeight: 600 }}
         >
-          {prefix}
-          {typeof p.value === "number"
-            ? p.value.toLocaleString("pt-BR")
-            : p.value}
-          {suffix}
+          {formatter && typeof p.value === "number"
+            ? formatter(p.value)
+            : `${prefix}${typeof p.value === "number" ? p.value.toLocaleString("pt-BR") : p.value}${suffix}`}
         </div>
       ))}
     </div>

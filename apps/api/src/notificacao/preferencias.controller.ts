@@ -10,6 +10,7 @@ import {
 import { PreferenciasService } from './preferencias.service';
 import { UpdatePreferenciasDto } from './dto/update-preferencias.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { JwtRequest } from '../common/types/jwt-request';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import {
   ApiTags,
@@ -33,7 +34,7 @@ export class PreferenciasController {
       'Retorna as preferências de notificação do usuário nesta barbearia',
   })
   @ApiResponse({ status: 200, description: 'Preferências retornadas.' })
-  find(@Request() req, @Headers('x-tenant-id') barCodigo: string) {
+  find(@Request() req: JwtRequest, @Headers('x-tenant-id') barCodigo: string) {
     return this.preferenciasService.find(req.user.sub, Number(barCodigo));
   }
 
@@ -43,7 +44,7 @@ export class PreferenciasController {
   })
   @ApiResponse({ status: 200, description: 'Preferências atualizadas.' })
   update(
-    @Request() req,
+    @Request() req: JwtRequest,
     @Headers('x-tenant-id') barCodigo: string,
     @Body() dto: UpdatePreferenciasDto,
   ) {
