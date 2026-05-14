@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 "use client";
 
 import { Calendar, MessageCircle, Phone, Scissors } from "lucide-react";
