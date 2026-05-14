@@ -1,17 +1,8 @@
-export type BarbeiroEstado = "active" | "idle" | "off";
+import type { BarbeiroAPI } from "@toqe/contracts";
 
-export interface BarbeiroAPI {
-  codigo: number;
-  nome: string;
-  email: string;
-  telefone: string | null;
-  avatarUrl: string | null;
-  perfil: string;
-  atendimentosHoje: number;
-  atendimentosMes: number;
-  faturamentoMes: number;
-  ticketMedio: number;
-}
+export type { BarbeiroAPI } from "@toqe/contracts";
+
+export type BarbeiroEstado = "active" | "idle" | "off";
 
 export interface Barbeiro extends BarbeiroAPI {
   initial: string;

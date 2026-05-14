@@ -1,18 +1,8 @@
-export type ClienteStatus = "ativo" | "inativo" | "novo";
+import type { ClienteAPI } from "@toqe/contracts";
 
-export interface ClienteAPI {
-  codigo: number;
-  nome: string;
-  email: string;
-  telefone: string | null;
-  avatarUrl: string | null;
-  perfil: string;
-  totalVisitas: number;
-  totalGasto: number;
-  ticketMedio: number;
-  ultimaVisita: string | null;
-  servicoFav: string | null;
-}
+export type { ClienteAPI } from "@toqe/contracts";
+
+export type ClienteStatus = "ativo" | "inativo" | "novo";
 
 export interface Cliente extends ClienteAPI {
   initial: string;

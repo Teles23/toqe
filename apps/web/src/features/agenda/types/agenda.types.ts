@@ -1,3 +1,5 @@
+export type { AgendamentoAPI, BarbeiroAPI } from "@toqe/contracts";
+
 export type SlotStatus =
   | "active"
   | "confirmed"
@@ -29,16 +31,3 @@ export interface Barbeiro {
   agendamentos: number;
   livres: number;
 }
-
-export interface AgendamentoAPI {
-  codigo: number;
-  inicio: string;
-  fim: string;
-  status: string;
-  cliente: { codigo: number; nome: string; email: string } | null;
-  barbeiro: { codigo: number; nome: string } | null;
-  itens: { servico: { nome: string }; duracaoMin: number }[];
-}
-
-// BarbeiroAPI importado de barbeiros/types — source of truth único
-export type { BarbeiroAPI } from "../../barbeiros/types/barbeiro.types";
