@@ -99,6 +99,14 @@ export const handlers = [
     ]),
   ),
 
+  http.post(`${BASE}/barbearias/:barCodigo/clientes`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(
+      { codigo: 21, perfil: "cliente", ...(body as object) },
+      { status: 201 },
+    );
+  }),
+
   // ── Serviços ─────────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo/servicos`, () =>
     HttpResponse.json([

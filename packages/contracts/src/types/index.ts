@@ -6,6 +6,7 @@ import {
   // auth
   loginSchema,
   registerSchema,
+  criarClienteRapidoSchema,
   refreshTokenSchema,
   logoutSchema,
   authTokensSchema,
@@ -14,6 +15,7 @@ import {
 // ---- Auth ----
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type CriarClienteRapidoInput = z.infer<typeof criarClienteRapidoSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type LogoutInput = z.infer<typeof logoutSchema>;
 export type AuthTokens = z.infer<typeof authTokensSchema>;

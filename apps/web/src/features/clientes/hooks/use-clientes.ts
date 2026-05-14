@@ -1,9 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getInitial } from "@/shared/lib/utils";
 import { STALE_TIME, QUERY_KEYS } from "@/shared/lib/constants";
 import { clienteService } from "../services/cliente.service";
+import type { CriarClienteRapidoInput } from "@toqe/contracts";
 import type {
   ClienteAPI,
   Cliente,
@@ -39,4 +40,21 @@ export function useClientes(barCodigo: number | null) {
     ...query,
     data: query.data?.map(toCliente) ?? [],
   };
+}
+
+export function useClienteMutations(barCodigo: number | null) {
+  const queryClient = useQueryClient();
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.clientes(barCodigo ?? 0),
+    });
+
+  const criar = useMutation({
+    mutationFn: (data: CriarClienteRapidoInput) =>
+      clienteService.criar(barCodigo!, data),
+    onSuccess: invalidate,
+  });
+
+  return { criar };
 }

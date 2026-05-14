@@ -1,14 +1,16 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { useClientes, toCliente } from "./use-clientes";
+import { useClientes, toCliente, useClienteMutations } from "./use-clientes";
 import { createWrapper } from "@/test/render-helpers";
 import type { ClienteAPI } from "../types/cliente.types";
 
 const mockList = vi.fn();
+const mockCriar = vi.fn();
 
 vi.mock("../services/cliente.service", () => ({
   clienteService: {
     list: (...args: unknown[]) => mockList(...args),
+    criar: (...args: unknown[]) => mockCriar(...args),
   },
 }));
 
@@ -106,5 +108,37 @@ describe("useClientes", () => {
       wrapper: Wrapper,
     });
     expect(result.current.data).toEqual([]);
+  });
+});
+
+describe("useClienteMutations", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("criar envia POST com nome, email e telefone", async () => {
+    const created = makeCliente({
+      codigo: 99,
+      nome: "Novo Cliente",
+      email: "novo@test.com",
+    });
+    mockCriar.mockResolvedValueOnce(created);
+    mockList.mockResolvedValue([created]);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useClienteMutations(1), {
+      wrapper: Wrapper,
+    });
+
+    await act(async () => {
+      result.current.criar.mutate({
+        nome: "Novo Cliente",
+        email: "novo@test.com",
+      });
+    });
+
+    await waitFor(() => expect(result.current.criar.isSuccess).toBe(true));
+    expect(mockCriar).toHaveBeenCalledWith(1, {
+      nome: "Novo Cliente",
+      email: "novo@test.com",
+    });
   });
 });
