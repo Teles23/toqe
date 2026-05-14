@@ -14,6 +14,8 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { BarbeariaService } from './barbearia.service';
+import { MembroBarbeariaService } from './membro-barbearia.service';
+import { TemaTenantService } from './tema-tenant.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
@@ -37,7 +39,11 @@ import {
 @ApiBearerAuth('JWT')
 @Controller('barbearias')
 export class BarbeariaController {
-  constructor(private readonly barbeariaService: BarbeariaService) {}
+  constructor(
+    private readonly barbeariaService: BarbeariaService,
+    private readonly membroService: MembroBarbeariaService,
+    private readonly temaService: TemaTenantService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -88,7 +94,7 @@ export class BarbeariaController {
     @Param('barCodigo', ParseIntPipe) barCodigo: number,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
-    return this.barbeariaService.findBarbeiros(barCodigo);
+    return this.membroService.findBarbeiros(barCodigo);
   }
 
   @Get(':barCodigo/clientes')
@@ -101,7 +107,7 @@ export class BarbeariaController {
     @Param('barCodigo', ParseIntPipe) barCodigo: number,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
-    return this.barbeariaService.findClientes(barCodigo);
+    return this.membroService.findClientes(barCodigo);
   }
 
   @Get(':barCodigo/membros')
@@ -114,7 +120,7 @@ export class BarbeariaController {
     @Param('barCodigo', ParseIntPipe) barCodigo: number,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
-    return this.barbeariaService.findMembros(barCodigo);
+    return this.membroService.findMembros(barCodigo);
   }
 
   @Post(':barCodigo/membros')
@@ -132,7 +138,7 @@ export class BarbeariaController {
     @Body() dto: ConvidarMembroDto,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
-    return this.barbeariaService.convidarMembro(barCodigo, dto);
+    return this.membroService.convidarMembro(barCodigo, dto);
   }
 
   @Get(':barCodigo/tema')
@@ -145,7 +151,7 @@ export class BarbeariaController {
     @Param('barCodigo', ParseIntPipe) barCodigo: number,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
-    return this.barbeariaService.getTema(barCodigo);
+    return this.temaService.getTema(barCodigo);
   }
 
   @Put(':barCodigo/tema')
@@ -163,7 +169,7 @@ export class BarbeariaController {
     @Body() dto: UpdateTemaDto,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
-    return this.barbeariaService.upsertTema(barCodigo, dto);
+    return this.temaService.upsertTema(barCodigo, dto);
   }
 
   @Delete(':barCodigo/membros/:usrCodigo')
@@ -182,6 +188,6 @@ export class BarbeariaController {
     @Param('usrCodigo', ParseIntPipe) usrCodigo: number,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
-    return this.barbeariaService.removerMembro(barCodigo, usrCodigo);
+    return this.membroService.removerMembro(barCodigo, usrCodigo);
   }
 }
