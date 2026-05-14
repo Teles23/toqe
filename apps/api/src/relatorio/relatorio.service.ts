@@ -11,8 +11,7 @@ import {
 } from '../common/constants/prisma-selects';
 import { startOfDay, toDateString } from '../common/utils/date.utils';
 import { somarAgendamentos } from '../common/utils/price.utils';
-
-type Periodo = '7d' | '30d' | '3m' | '6m' | '12m';
+import type { Periodo } from '@toqe/contracts';
 
 function periodoParaDias(periodo: Periodo): number {
   return { '7d': 7, '30d': 30, '3m': 90, '6m': 180, '12m': 365 }[periodo] ?? 30;
@@ -146,6 +145,7 @@ export class RelatorioService {
           faturamento,
           ticketMedio:
             agendamentos.length > 0 ? faturamento / agendamentos.length : 0,
+          avaliacao: 0,
         };
       }),
     ).then((lista) => lista.sort((a, b) => b.faturamento - a.faturamento));
@@ -171,7 +171,7 @@ export class RelatorioService {
     });
 
     return Array.from({ length: 24 }, (_, h) => ({
-      hora: `${String(h).padStart(2, '0')}:00`,
+      hora: h,
       quantidade: porHora[h] ?? 0,
     }));
   }

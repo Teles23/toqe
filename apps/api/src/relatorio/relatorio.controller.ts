@@ -20,8 +20,7 @@ import {
   ApiSecurity,
   ApiQuery,
 } from '@nestjs/swagger';
-
-type Periodo = '7d' | '30d' | '3m' | '6m' | '12m';
+import type { Periodo } from '@toqe/contracts';
 
 @ApiTags('Relatórios')
 @ApiBearerAuth('JWT')

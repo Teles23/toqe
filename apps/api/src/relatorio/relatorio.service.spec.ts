@@ -129,9 +129,9 @@ describe('RelatorioService', () => {
       const result = await service.horariosPico(1, '30d');
 
       expect(result).toHaveLength(24);
-      const h10 = result.find((r) => r.hora === '10:00');
+      const h10 = result.find((r) => r.hora === 10);
       expect(h10?.quantidade).toBe(2);
-      const h14 = result.find((r) => r.hora === '14:00');
+      const h14 = result.find((r) => r.hora === 14);
       expect(h14?.quantidade).toBe(1);
     });
 
