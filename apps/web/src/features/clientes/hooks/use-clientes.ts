@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { getInitial } from "@/shared/lib/utils";
 import { clienteService } from "../services/cliente.service";
 import type {
   ClienteAPI,
@@ -20,7 +21,7 @@ function toCliente(c: ClienteAPI): Cliente {
 
   return {
     ...c,
-    initial: c.nome.charAt(0).toUpperCase(),
+    initial: getInitial(c.nome),
     status,
   };
 }
