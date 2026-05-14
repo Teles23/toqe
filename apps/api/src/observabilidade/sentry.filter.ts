@@ -28,7 +28,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const tenantId = req.headers['x-tenant-id'] ?? null;
-    const userId = (req as any).user?.sub ?? null;
+    const userId =
+      (req as Request & { user?: { sub: number } }).user?.sub ?? null;
 
     // Trata erros conhecidos do Prisma para evitar o crash do formatter interno (bug do t=Object.create)
     let errorMessage =
@@ -37,7 +38,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         : 'Erro interno do servidor';
 
     if (exception && typeof exception === 'object' && 'code' in exception) {
-      const prismaError = exception as { code: string; meta?: any };
+      const prismaError = exception as {
+        code: string;
+        meta?: Record<string, unknown>;
+      };
       if (prismaError.code === 'P2002') {
         errorMessage = `Conflito: Um registro com este ${Object.keys(prismaError.meta?.target || {}).join(', ') || 'campo'} já existe.`;
       }
@@ -52,14 +56,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           url: req.url,
           // Não logamos o stack trace completo se for erro do Prisma que causa crash no dump
           err: exception instanceof Error ? exception.name : String(exception),
-          code: (exception as any)?.code,
+          code: (exception as { code?: string })?.code,
         },
         errorMessage,
       );
     }
 
     const message = isHttp
-      ? ((exception.getResponse() as any)?.message ?? exception.message)
+      ? ((exception.getResponse() as { message?: string })?.message ??
+        exception.message)
       : status >= 500
         ? 'Erro interno do servidor'
         : errorMessage;

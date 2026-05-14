@@ -1,5 +1,7 @@
 import { PreferenciasService } from './preferencias.service';
+import { UpdatePreferenciasDto } from './dto/update-preferencias.dto';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import type { PrismaService } from '../prisma/prisma.service';
 
 describe('PreferenciasService', () => {
   let service: PreferenciasService;
@@ -7,7 +9,7 @@ describe('PreferenciasService', () => {
 
   beforeEach(() => {
     prisma = createPrismaMock();
-    service = new PreferenciasService(prisma as any);
+    service = new PreferenciasService(prisma as unknown as PrismaService);
   });
 
   describe('find', () => {
@@ -51,8 +53,13 @@ describe('PreferenciasService', () => {
         { canal: 'sms', ativo: false },
       ]);
 
-      const dto = { email: true, push: true, whatsapp: false, sms: false };
-      const result = await service.update(1, 1, dto as any);
+      const dto: UpdatePreferenciasDto = {
+        email: true,
+        push: true,
+        whatsapp: false,
+        sms: false,
+      };
+      const result = await service.update(1, 1, dto);
 
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(result).toEqual({

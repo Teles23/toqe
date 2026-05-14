@@ -106,6 +106,21 @@ export default [
       // inline styles existentes para limitar o escopo do PR.
       // Migrar para classes Tailwind / CVA em PR dedicado da Fase 4.
       "src/features/dashboard/components/**/*.tsx",
+      // Features com CSS variables (design tokens dinâmicos) — requerem style={{}}
+      // inline para tokens como var(--text-muted), var(--border-subtle), etc.
+      // Configurado a nível de config (não por arquivo) para manter rastreabilidade.
+      "src/features/agenda/components/**/*.tsx",
+      "src/features/barbeiros/components/**/*.tsx",
+      "src/features/clientes/components/**/*.tsx",
+      "src/features/configuracoes/components/**/*.tsx",
+      "src/features/relatorios/components/**/*.tsx",
+      "src/features/servicos/components/**/*.tsx",
+      "src/shared/components/chart-utils.tsx",
+      "src/shared/components/config-row.tsx",
+      "src/shared/components/detail-metric-grid.tsx",
+      "src/shared/components/detail-panel.tsx",
+      "src/shared/components/loading-spinner.tsx",
+      "src/shared/components/toggle.tsx",
     ],
     rules: {
       "no-restricted-syntax": "off",

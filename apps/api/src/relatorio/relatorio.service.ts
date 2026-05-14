@@ -1,5 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  StatusAgendamento,
+  STATUSES_ENCERRADOS,
+  STATUSES_ATIVOS,
+} from '../common/constants/agendamento-status';
+import {
+  SELECT_USUARIO_COM_AVATAR,
+  INCLUDE_ITENS_PRECO,
+} from '../common/constants/prisma-selects';
+import { startOfDay, toDateString } from '../common/utils/date.utils';
+import { somarAgendamentos } from '../common/utils/price.utils';
 
 type Periodo = '7d' | '30d' | '3m' | '6m' | '12m';
 
@@ -15,8 +26,7 @@ export class RelatorioService {
     const fim = new Date();
     const inicio = new Date();
     inicio.setDate(inicio.getDate() - periodoParaDias(periodo));
-    inicio.setHours(0, 0, 0, 0);
-    return { inicio, fim };
+    return { inicio: startOfDay(inicio), fim };
   }
 
   /** Faturamento diário no período */
@@ -26,7 +36,10 @@ export class RelatorioService {
     const itens = await this.prisma.agendamentoItem.findMany({
       where: {
         barCodigo,
-        agendamento: { status: 'concluido', inicio: { gte: inicio, lte: fim } },
+        agendamento: {
+          status: StatusAgendamento.CONCLUIDO,
+          inicio: { gte: inicio, lte: fim },
+        },
       },
       select: {
         preco: true,
@@ -37,7 +50,7 @@ export class RelatorioService {
     // Agrupar por dia
     const porDia: Record<string, number> = {};
     itens.forEach((it) => {
-      const dia = it.agendamento.inicio.toISOString().split('T')[0];
+      const dia = toDateString(it.agendamento.inicio);
       porDia[dia] = (porDia[dia] ?? 0) + Number(it.preco);
     });
 
@@ -53,7 +66,7 @@ export class RelatorioService {
     const todos = await this.prisma.agendamento.findMany({
       where: {
         barCodigo,
-        status: { in: ['concluido', 'cancelado', 'no_show'] },
+        status: { in: [...STATUSES_ENCERRADOS] },
         inicio: { gte: inicio, lte: fim },
       },
       select: { inicio: true, status: true },
@@ -64,7 +77,7 @@ export class RelatorioService {
       { concluido: number; cancelado: number; no_show: number }
     > = {};
     todos.forEach((ag) => {
-      const dia = ag.inicio.toISOString().split('T')[0];
+      const dia = toDateString(ag.inicio);
       if (!porDia[dia])
         porDia[dia] = { concluido: 0, cancelado: 0, no_show: 0 };
       porDia[dia][ag.status as 'concluido' | 'cancelado' | 'no_show'] += 1;
@@ -82,7 +95,10 @@ export class RelatorioService {
     const itens = await this.prisma.agendamentoItem.findMany({
       where: {
         barCodigo,
-        agendamento: { status: 'concluido', inicio: { gte: inicio, lte: fim } },
+        agendamento: {
+          status: StatusAgendamento.CONCLUIDO,
+          inicio: { gte: inicio, lte: fim },
+        },
       },
       select: { preco: true, servico: { select: { nome: true } } },
     });
@@ -107,9 +123,7 @@ export class RelatorioService {
 
     const membros = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo, perfil: 'barbeiro' },
-      include: {
-        usuario: { select: { codigo: true, nome: true, avatarUrl: true } },
-      },
+      include: { usuario: { select: SELECT_USUARIO_COM_AVATAR } },
     });
 
     return Promise.all(
@@ -118,17 +132,13 @@ export class RelatorioService {
           where: {
             barCodigo,
             barbeiroId: m.usrCodigo,
-            status: 'concluido',
+            status: StatusAgendamento.CONCLUIDO,
             inicio: { gte: inicio, lte: fim },
           },
-          include: { itens: { select: { preco: true } } },
+          include: INCLUDE_ITENS_PRECO,
         });
 
-        const faturamento = agendamentos.reduce(
-          (acc, ag) =>
-            acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0),
-          0,
-        );
+        const faturamento = somarAgendamentos(agendamentos);
 
         return {
           ...m.usuario,
@@ -148,7 +158,7 @@ export class RelatorioService {
     const agendamentos = await this.prisma.agendamento.findMany({
       where: {
         barCodigo,
-        status: { in: ['concluido', 'confirmado'] },
+        status: { in: [...STATUSES_ATIVOS] },
         inicio: { gte: inicio, lte: fim },
       },
       select: { inicio: true },
@@ -156,7 +166,7 @@ export class RelatorioService {
 
     const porHora: Record<number, number> = {};
     agendamentos.forEach((ag) => {
-      const hora = ag.inicio.getHours();
+      const hora = ag.inicio.getUTCHours();
       porHora[hora] = (porHora[hora] ?? 0) + 1;
     });
 

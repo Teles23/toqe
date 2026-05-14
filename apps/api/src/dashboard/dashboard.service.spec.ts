@@ -7,7 +7,9 @@ describe('DashboardService', () => {
 
   beforeEach(() => {
     prisma = createPrismaMock();
-    service = new DashboardService(prisma as any);
+    service = new DashboardService(
+      prisma as unknown as import('../prisma/prisma.service').PrismaService,
+    );
   });
 
   describe('getOverview with data', () => {

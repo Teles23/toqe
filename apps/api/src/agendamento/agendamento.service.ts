@@ -11,6 +11,8 @@ import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendaGateway } from '../agenda/agenda.gateway';
+import { Prisma } from '@prisma/client';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
 
 const INCLUDE_COMPLETO = {
   itens: { include: { servico: true } },
@@ -58,7 +60,7 @@ export class AgendamentoService {
         SELECT COUNT(1) as count
         FROM "TQE_AGENDAMENTO"
         WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.barbeiroId}
-          AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
+          AND "TQE_AGD_STATUS" NOT IN (${StatusAgendamento.CANCELADO}, ${StatusAgendamento.NO_SHOW})
           AND "TQE_AGD_INICIO" < ${fimDate}
           AND "TQE_AGD_FIM"   > ${inicioDate}
         FOR UPDATE SKIP LOCKED
@@ -77,7 +79,7 @@ export class AgendamentoService {
           barCodigo,
           inicio: inicioDate,
           fim: fimDate,
-          status: 'confirmado',
+          status: StatusAgendamento.CONFIRMADO,
           itens: { create: agendamentoItemsData },
         },
         include: INCLUDE_COMPLETO,
@@ -101,7 +103,7 @@ export class AgendamentoService {
   }
 
   async findAll(barCodigo: number, filtros: ListAgendamentoDto) {
-    const where: any = { barCodigo };
+    const where: Prisma.AgendamentoWhereInput = { barCodigo };
 
     if (filtros.data) {
       const dia = new Date(filtros.data);
@@ -147,13 +149,15 @@ export class AgendamentoService {
   async cancel(codigo: number, barCodigo: number) {
     const agendamento = await this.findOne(codigo, barCodigo);
 
-    if (agendamento.status === 'cancelado') {
+    if (
+      (agendamento.status as StatusAgendamento) === StatusAgendamento.CANCELADO
+    ) {
       throw new BadRequestException('Agendamento já está cancelado');
     }
 
     return this.prisma.agendamento.update({
       where: { codigo },
-      data: { status: 'cancelado' },
+      data: { status: StatusAgendamento.CANCELADO },
       include: INCLUDE_COMPLETO,
     });
   }

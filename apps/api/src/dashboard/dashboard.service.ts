@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
+import { SELECT_USUARIO_COM_AVATAR } from '../common/constants/prisma-selects';
+import {
+  startOfDay,
+  endOfDay,
+  toDateString,
+  currentMonthRange,
+} from '../common/utils/date.utils';
+import { somarItens } from '../common/utils/price.utils';
 
 @Injectable()
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async getOverview(barCodigo: number) {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
+    const hoje = startOfDay(new Date());
 
     // Últimos 7 dias
     const dias7 = Array.from({ length: 7 }, (_, i) => {
@@ -19,14 +27,13 @@ export class DashboardService {
     // Faturamento por dia (últimos 7 dias)
     const faturamento7d = await Promise.all(
       dias7.map(async (dia) => {
-        const fimDia = new Date(dia);
-        fimDia.setHours(23, 59, 59, 999);
+        const fimDia = endOfDay(dia);
 
         const itens = await this.prisma.agendamentoItem.findMany({
           where: {
             barCodigo,
             agendamento: {
-              status: 'concluido',
+              status: StatusAgendamento.CONCLUIDO,
               inicio: { gte: dia, lte: fimDia },
             },
           },
@@ -34,15 +41,14 @@ export class DashboardService {
         });
 
         return {
-          data: dia.toISOString().split('T')[0],
-          total: itens.reduce((acc, it) => acc + Number(it.preco), 0),
+          data: toDateString(dia),
+          total: somarItens(itens),
         };
       }),
     );
 
     // Agendamentos de hoje
-    const fimHoje = new Date(hoje);
-    fimHoje.setHours(23, 59, 59, 999);
+    const fimHoje = endOfDay(hoje);
 
     const agendamentosHoje = await this.prisma.agendamento.findMany({
       where: { barCodigo, inicio: { gte: hoje, lte: fimHoje } },
@@ -58,28 +64,17 @@ export class DashboardService {
     // Barbeiros ativos hoje
     const barbeirosAtivos = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo, perfil: 'barbeiro' },
-      include: {
-        usuario: { select: { codigo: true, nome: true, avatarUrl: true } },
-      },
+      include: { usuario: { select: SELECT_USUARIO_COM_AVATAR } },
     });
 
     // Top 5 serviços do mês
-    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const fimMes = new Date(
-      hoje.getFullYear(),
-      hoje.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
-    );
+    const { inicio: inicioMes, fim: fimMes } = currentMonthRange();
 
     const itensMes = await this.prisma.agendamentoItem.findMany({
       where: {
         barCodigo,
         agendamento: {
-          status: 'concluido',
+          status: StatusAgendamento.CONCLUIDO,
           inicio: { gte: inicioMes, lte: fimMes },
         },
       },

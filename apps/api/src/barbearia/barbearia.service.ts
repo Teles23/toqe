@@ -9,6 +9,14 @@ import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
 import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
+import { SELECT_USUARIO_PERFIL } from '../common/constants/prisma-selects';
+import {
+  startOfDay,
+  endOfDay,
+  currentMonthRange,
+} from '../common/utils/date.utils';
+import { somarAgendamentos } from '../common/utils/price.utils';
 
 @Injectable()
 export class BarbeariaService {
@@ -57,35 +65,13 @@ export class BarbeariaService {
   }
 
   async findBarbeiros(barCodigo: number) {
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const fimHoje = new Date(hoje);
-    fimHoje.setHours(23, 59, 59, 999);
-
-    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    const fimMes = new Date(
-      hoje.getFullYear(),
-      hoje.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999,
-    );
+    const hoje = startOfDay(new Date());
+    const fimHoje = endOfDay(hoje);
+    const { inicio: inicioMes, fim: fimMes } = currentMonthRange();
 
     const membros = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo, perfil: 'barbeiro' },
-      include: {
-        usuario: {
-          select: {
-            codigo: true,
-            nome: true,
-            email: true,
-            telefone: true,
-            avatarUrl: true,
-          },
-        },
-      },
+      include: { usuario: { select: SELECT_USUARIO_PERFIL } },
     });
 
     return Promise.all(
@@ -95,7 +81,7 @@ export class BarbeariaService {
             where: {
               barCodigo,
               barbeiroId: m.usrCodigo,
-              status: 'concluido',
+              status: StatusAgendamento.CONCLUIDO,
               inicio: { gte: hoje, lte: fimHoje },
             },
           }),
@@ -103,18 +89,14 @@ export class BarbeariaService {
             where: {
               barCodigo,
               barbeiroId: m.usrCodigo,
-              status: 'concluido',
+              status: StatusAgendamento.CONCLUIDO,
               inicio: { gte: inicioMes, lte: fimMes },
             },
             include: { itens: { select: { preco: true } } },
           }),
         ]);
 
-        const faturamentoMes = agendamentosMes.reduce(
-          (acc, ag) =>
-            acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0),
-          0,
-        );
+        const faturamentoMes = somarAgendamentos(agendamentosMes);
 
         return {
           ...m.usuario,
@@ -134,23 +116,17 @@ export class BarbeariaService {
   async findClientes(barCodigo: number) {
     const membros = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo, perfil: 'cliente' },
-      include: {
-        usuario: {
-          select: {
-            codigo: true,
-            nome: true,
-            email: true,
-            telefone: true,
-            avatarUrl: true,
-          },
-        },
-      },
+      include: { usuario: { select: SELECT_USUARIO_PERFIL } },
     });
 
     return Promise.all(
       membros.map(async (m) => {
         const agendamentos = await this.prisma.agendamento.findMany({
-          where: { barCodigo, clienteId: m.usrCodigo, status: 'concluido' },
+          where: {
+            barCodigo,
+            clienteId: m.usrCodigo,
+            status: StatusAgendamento.CONCLUIDO,
+          },
           include: {
             itens: {
               select: { preco: true, servico: { select: { nome: true } } },
@@ -159,11 +135,7 @@ export class BarbeariaService {
           orderBy: { inicio: 'desc' },
         });
 
-        const totalGasto = agendamentos.reduce(
-          (acc, ag) =>
-            acc + ag.itens.reduce((s, it) => s + Number(it.preco), 0),
-          0,
-        );
+        const totalGasto = somarAgendamentos(agendamentos);
 
         // Serviço favorito: o mais frequente nos itens
         const contagem: Record<string, number> = {};
@@ -192,17 +164,7 @@ export class BarbeariaService {
   async findMembros(barCodigo: number) {
     return this.prisma.membroBarbearia.findMany({
       where: { barCodigo },
-      include: {
-        usuario: {
-          select: {
-            codigo: true,
-            nome: true,
-            email: true,
-            telefone: true,
-            avatarUrl: true,
-          },
-        },
-      },
+      include: { usuario: { select: SELECT_USUARIO_PERFIL } },
       orderBy: { perfil: 'asc' },
     });
   }

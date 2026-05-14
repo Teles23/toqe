@@ -56,7 +56,9 @@ describe('NotificacaoService', () => {
       service = module.get(NotificacaoService);
 
       // Substitui o resend interno pelo mock diretamente
-      (service as any).resend = { emails: { send: mockSend } };
+      (
+        service as unknown as { resend: { emails: { send: jest.Mock } } }
+      ).resend = { emails: { send: mockSend } };
     });
 
     it('chama resend.emails.send com destinatário correto', async () => {
@@ -65,7 +67,7 @@ describe('NotificacaoService', () => {
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'joao@test.com',
-          from: expect.stringContaining('noreply@toqe.com.br'),
+          from: expect.stringContaining('noreply@toqe.com.br') as string,
         }),
       );
     });
@@ -73,7 +75,10 @@ describe('NotificacaoService', () => {
     it('inclui nome do cliente e barbearia no subject ou HTML', async () => {
       mockSend.mockResolvedValue({ data: { id: 'email-123' } });
       await service.enviarConfirmacaoAgendamento(mockJob);
-      const call = mockSend.mock.calls[0][0];
+      const calls = mockSend.mock.calls as Array<
+        [{ subject: string; html: string }]
+      >;
+      const call = calls[0]?.[0];
       expect(call.subject).toContain('BarberShop');
       expect(call.html).toContain('João Silva');
       expect(call.html).toContain('Corte');
@@ -83,7 +88,8 @@ describe('NotificacaoService', () => {
     it('formata a data em português', async () => {
       mockSend.mockResolvedValue({ data: { id: 'email-123' } });
       await service.enviarConfirmacaoAgendamento(mockJob);
-      const call = mockSend.mock.calls[0][0];
+      const calls = mockSend.mock.calls as Array<[{ html: string }]>;
+      const call = calls[0]?.[0];
       // 01 de junho de 2024 às 09:00
       expect(call.html).toMatch(/junho/i);
     });

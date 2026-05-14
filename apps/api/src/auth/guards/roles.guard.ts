@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import type { TenantRequest } from '../../common/types/jwt-request';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -19,12 +20,12 @@ export class RolesGuard implements CanActivate {
 
     if (!requiredRoles || requiredRoles.length === 0) return true;
 
-    const { user } = context.switchToHttp().getRequest();
+    const { user } = context.switchToHttp().getRequest<TenantRequest>();
 
     // super_admin bypassa todas as restrições
     if (user?.perfil === 'super_admin') return true;
 
-    if (!requiredRoles.includes(user?.perfil)) {
+    if (!user?.perfil || !requiredRoles.includes(user.perfil)) {
       throw new ForbiddenException(
         `Acesso negado: perfil '${user?.perfil}' não tem permissão. Necessário: ${requiredRoles.join(' | ')}`,
       );

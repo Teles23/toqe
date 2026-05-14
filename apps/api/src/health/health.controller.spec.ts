@@ -6,7 +6,9 @@ describe('HealthController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new HealthController(mockPrisma as any);
+    controller = new HealthController(
+      mockPrisma as unknown as import('../prisma/prisma.service').PrismaService,
+    );
   });
 
   describe('live', () => {

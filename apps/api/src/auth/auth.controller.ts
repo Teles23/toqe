@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import type { JwtRequest } from '../common/types/jwt-request';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -65,7 +66,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Revoga o refresh token (logout)' })
   @ApiResponse({ status: 200, description: 'Logout realizado.' })
   @ApiResponse({ status: 401, description: 'Token inválido ou já revogado.' })
-  logout(@Request() req, @Body() dto: LogoutDto) {
+  logout(@Request() req: JwtRequest, @Body() dto: LogoutDto) {
     return this.authService.logout(req.user.sub, dto);
   }
 }

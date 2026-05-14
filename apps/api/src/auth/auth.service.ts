@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { RefreshToken } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from '../usuario/usuario.service';
 import { LoginDto } from './dto/login.dto';
@@ -43,7 +44,7 @@ export class AuthService {
       where: { revogado: false, expiraEm: { gt: new Date() } },
     });
 
-    let foundToken: any = null;
+    let foundToken: RefreshToken | null = null;
     for (const t of tokens) {
       const match = await bcrypt.compare(dto.refreshToken, t.hash);
       if (match) {

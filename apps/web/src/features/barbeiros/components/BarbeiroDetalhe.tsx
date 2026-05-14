@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 "use client";
 
 import { Clock, Calendar, Phone } from "lucide-react";

@@ -1,12 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum } from 'class-validator';
+import { StatusAgendamento } from '../../common/constants/agendamento-status';
 
-export enum StatusAgendamento {
-  CONFIRMADO = 'confirmado',
-  CANCELADO = 'cancelado',
-  CONCLUIDO = 'concluido',
-  NO_SHOW = 'no_show',
-}
+export { StatusAgendamento };
 
 export class PatchStatusAgendamentoDto {
   @ApiProperty({
