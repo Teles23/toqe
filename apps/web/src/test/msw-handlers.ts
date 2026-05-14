@@ -160,6 +160,17 @@ export const handlers = [
   // handler legado (relativo) mantido para setup.spec.ts
   http.get("/agendamentos", () => HttpResponse.json([])),
 
+  http.post(
+    `${BASE}/barbearias/:barCodigo/agendamentos`,
+    async ({ request }) => {
+      const body = await request.json();
+      return HttpResponse.json(
+        { codigo: 999, status: "pendente", ...(body as object) },
+        { status: 201 },
+      );
+    },
+  ),
+
   // ── Configurações ─────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo`, () =>
     HttpResponse.json({

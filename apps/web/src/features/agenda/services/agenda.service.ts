@@ -1,4 +1,5 @@
 import { barbeariaApi, tenantApi } from "@/shared/api/api-client";
+import type { CreateAgendamentoInput } from "@toqe/contracts";
 import type { AgendamentoAPI, BarbeiroAPI } from "../types/agenda.types";
 
 export const agendaService = {
@@ -20,5 +21,12 @@ export const agendaService = {
     return tenantApi(barCodigo).patch<void>(`/agendamentos/${codigo}/status`, {
       status,
     });
+  },
+
+  criar(
+    barCodigo: number,
+    data: CreateAgendamentoInput,
+  ): Promise<AgendamentoAPI> {
+    return tenantApi(barCodigo).post<AgendamentoAPI>("/agendamentos", data);
   },
 };

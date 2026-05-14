@@ -167,3 +167,59 @@ describe("toBarbeiro", () => {
     expect(valoresValidos).toContain(toBarbeiro(barbeiro, []).state);
   });
 });
+
+// ─── useAgendaMutations ───────────────────────────────────────────────────────
+
+import { renderHook, waitFor, act } from "@testing-library/react";
+import { vi, beforeEach } from "vitest";
+import { useAgendaMutations } from "./use-agenda";
+import { createWrapper } from "@/test/render-helpers";
+
+const mockCriar = vi.fn();
+
+vi.mock("../services/agenda.service", () => ({
+  agendaService: {
+    listAgendamentos: vi.fn().mockResolvedValue([]),
+    listBarbeiros: vi.fn().mockResolvedValue([]),
+    patchStatus: vi.fn(),
+    criar: (...args: unknown[]) => mockCriar(...args),
+  },
+}));
+
+describe("useAgendaMutations", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("criar envia POST com dados do agendamento", async () => {
+    const agendamento = {
+      codigo: 999,
+      status: "pendente",
+      barbeiroId: 1,
+      clienteId: 2,
+      inicio: "2026-05-15T09:00:00.000Z",
+      servicosIds: [1],
+    };
+    mockCriar.mockResolvedValueOnce(agendamento);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useAgendaMutations(1, "2026-05-15"), {
+      wrapper: Wrapper,
+    });
+
+    await act(async () => {
+      result.current.criar.mutate({
+        barbeiroId: 1,
+        clienteId: 2,
+        inicio: "2026-05-15T09:00:00.000Z",
+        servicosIds: [1],
+      });
+    });
+
+    await waitFor(() => expect(result.current.criar.isSuccess).toBe(true));
+    expect(mockCriar).toHaveBeenCalledWith(1, {
+      barbeiroId: 1,
+      clienteId: 2,
+      inicio: "2026-05-15T09:00:00.000Z",
+      servicosIds: [1],
+    });
+  });
+});

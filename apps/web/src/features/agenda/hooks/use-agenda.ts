@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { CreateAgendamentoInput } from "@toqe/contracts";
 import { format } from "date-fns";
 import { agendaService } from "../services/agenda.service";
 import { API_STATUS_TO_SLOT } from "../constants/agenda.constants";
@@ -111,4 +112,21 @@ export function useAgenda(barCodigo: number | null, date: Date) {
     isError: agendamentosQuery.isError || barbeirosQuery.isError,
     refetch: agendamentosQuery.refetch,
   };
+}
+
+export function useAgendaMutations(barCodigo: number | null, date: string) {
+  const queryClient = useQueryClient();
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.agendamentos(barCodigo ?? 0, date),
+    });
+
+  const criar = useMutation({
+    mutationFn: (data: CreateAgendamentoInput) =>
+      agendaService.criar(barCodigo!, data),
+    onSuccess: invalidate,
+  });
+
+  return { criar };
 }
