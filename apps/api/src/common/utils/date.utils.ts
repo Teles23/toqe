@@ -1,3 +1,20 @@
+/**
+ * Returns true if [slotStart, slotEnd) overlaps with [rangeStart, rangeEnd).
+ * Covers: slot starts inside range, slot ends inside range, slot fully contains range.
+ */
+export function isTimeOverlap(
+  slotStart: Date,
+  slotEnd: Date,
+  rangeStart: Date,
+  rangeEnd: Date,
+): boolean {
+  return (
+    (slotStart >= rangeStart && slotStart < rangeEnd) ||
+    (slotEnd > rangeStart && slotEnd <= rangeEnd) ||
+    (slotStart < rangeStart && slotEnd > rangeEnd)
+  );
+}
+
 export function startOfDay(date: Date): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
