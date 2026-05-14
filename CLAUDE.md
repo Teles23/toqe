@@ -26,7 +26,9 @@
 - **Nunca criar novas branches** sem permissão explícita do usuário
 - Resolver conflitos ao invés de contorná-los
 
-### 5. Sincronização
+### 5. Sincronização total — api + web + testes
 
-- Código + testes + documentação sempre juntos
+- Qualquer mudança na API (novo endpoint, contrato, serviço) → atualizar ou criar testes na API **e** no frontend (MSW handlers, hooks, components)
+- Qualquer mudança no frontend → garantir que mocks MSW e specs de hooks/components refletem o novo comportamento
+- Nunca entregar mudança de código sem os testes acompanhando no mesmo commit
 - Commit e push ao final de cada entrega completa
