@@ -1,22 +1,13 @@
 name: CI Fast
 
 on:
-  push:
-    branches:
-      - "feature/**"
-      - "arch/**"
-      - "fix/**"
-      - "refactor/**"
-      - "chore/**"
-      - "docs/**"
-      - "test/**"
-      - "hotfix/**"
   pull_request:
     branches:
       - develop
+      - main
 
 concurrency:
-  group: ci-fast-${{ github.ref }}
+  group: ci-fast-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:

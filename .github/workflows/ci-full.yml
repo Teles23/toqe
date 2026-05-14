@@ -13,65 +13,19 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-full-${{ github.ref }}
+  group: ci-full-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
   packages: write
 
+# Lint, type-check, unit tests e build já foram validados pelo ci-fast
+# durante a PR. ci-full foca em integration + security (caros, com DB
+# real via Testcontainers) e deploy Docker.
 jobs:
-  quality:
-    name: Lint · Types · Unit tests · Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      TURBO_TELEMETRY_DISABLED: 1
-      NEXT_TELEMETRY_DISABLED: 1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm --filter api exec prisma generate
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Type check
-        run: pnpm check-types
-
-      - name: Test — API
-        run: pnpm --filter api test
-
-      - name: Test — Web
-        run: pnpm --filter web test
-
-      - name: Build
-        run: pnpm build
-
   integration:
     name: Integration tests (Testcontainers)
-    needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -118,7 +72,6 @@ jobs:
 
   security:
     name: Security tests (supertest)
-    needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -165,7 +118,7 @@ jobs:
 
   docker:
     name: Docker build & push — ${{ matrix.app }}
-    needs: [quality, integration, security]
+    needs: [integration, security]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -211,50 +164,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
-
   # Placeholder: E2E web (Playwright) — adicionar quando implementado
-  # e2e-web:
-  #   name: E2E Web (Playwright)
-  #   needs: quality
-  #   runs-on: ubuntu-latest
-
   # Placeholder: E2E mobile (Maestro) — adicionar quando implementado
-  # e2e-mobile:
-  #   name: E2E Mobile (Maestro)
-  #   needs: quality
-  #   runs-on: ubuntu-latest
-
   # Placeholder: Load tests (k6) — adicionar quando implementado
-  # load:
-  #   name: Load tests (k6)
-  #   needs: quality
-  #   runs-on: ubuntu-latest
-
-  commitlint:
-    name: Commitlint (PR)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Validate PR commits
-        run: pnpm exec commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
