@@ -5,13 +5,20 @@ on:
     branches:
       - develop
       - main
+    tags:
+      - "v*"
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: ci-full-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   quality:
@@ -155,6 +162,55 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           TESTCONTAINERS_RYUK_DISABLED: true
+
+  docker:
+    name: Docker build & push — ${{ matrix.app }}
+    needs: [quality, integration, security]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [api, web]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/toqe-${{ matrix.app }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
   # Placeholder: E2E web (Playwright) — adicionar quando implementado
   # e2e-web:
