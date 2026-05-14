@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { X, Scissors, DollarSign, Clock, Edit2, Trash2 } from "lucide-react";
 import { CATEGORIA_CONFIG } from "../constants/servico.constants";
 import type { ServicoAPI } from "../types/servico.types";
+import { formatBRL } from "@/shared/lib/utils";
 
 interface ServicoDetalheProps {
   s: ServicoAPI;
@@ -109,7 +110,7 @@ export function ServicoDetalhe({ s, onClose, onEdit }: ServicoDetalheProps) {
           {[
             {
               label: "Preço",
-              value: `R$ ${Number(s.precoBase ?? 0).toFixed(0)}`,
+              value: formatBRL(Number(s.precoBase ?? 0)),
               icon: DollarSign,
             },
             {

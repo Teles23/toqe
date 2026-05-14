@@ -1,4 +1,5 @@
 import { Store, Clock, Bell, CreditCard, Shield } from "lucide-react";
+import { DIAS_SEMANA_LONGO } from "@/shared/lib/constants";
 import type {
   SecaoId,
   NotificacaoConfig,
@@ -13,22 +14,14 @@ export const SECOES: { id: SecaoId; label: string; icon: typeof Store }[] = [
   { id: "seguranca", label: "Segurança", icon: Shield },
 ];
 
-const DIAS_SEMANA = [
-  "Segunda",
-  "Terça",
-  "Quarta",
-  "Quinta",
-  "Sexta",
-  "Sábado",
-  "Domingo",
-];
-
-export const HORARIOS_DEFAULT: HorarioDia[] = DIAS_SEMANA.map((dia, i) => ({
-  dia,
-  aberto: i < 6,
-  abertura: i < 5 ? "08:00" : "09:00",
-  fechamento: i < 6 ? "18:00" : "16:00",
-}));
+export const HORARIOS_DEFAULT: HorarioDia[] = DIAS_SEMANA_LONGO.map(
+  (dia, i) => ({
+    dia,
+    aberto: i < 6,
+    abertura: i < 5 ? "08:00" : "09:00",
+    fechamento: i < 6 ? "18:00" : "16:00",
+  }),
+);
 
 export const NOTIFICACOES_DEFAULT: NotificacaoConfig = {
   novoAgendamento: true,

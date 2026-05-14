@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Scissors, DollarSign, Clock } from "lucide-react";
 import { CATEGORIA_CONFIG } from "../constants/servico.constants";
 import type { ServicoAPI } from "../types/servico.types";
+import { formatBRL } from "@/shared/lib/utils";
 
 interface ServicoCardProps {
   s: ServicoAPI;
@@ -98,7 +99,7 @@ export function ServicoCard({ s, index, selected, onClick }: ServicoCardProps) {
                 fontFamily: "var(--font-heading)",
               }}
             >
-              R${Number(s.precoBase ?? 0).toFixed(0)}
+              {formatBRL(Number(s.precoBase ?? 0))}
             </span>
           </div>
           <div className="flex items-center gap-1">

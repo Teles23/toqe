@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getInitial } from "@/shared/lib/utils";
+import { DIAS_SEMANA_CURTO } from "@/shared/lib/constants";
 import { barbeiroService } from "../services/barbeiro.service";
 import type { BarbeiroAPI, Barbeiro } from "../types/barbeiro.types";
 
@@ -13,7 +14,7 @@ function toBarbeiro(b: BarbeiroAPI): Barbeiro {
     especialidade: "",
     avaliacao: 0,
     horarioEntrada: "08:00",
-    diasSemana: ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+    diasSemana: [...DIAS_SEMANA_CURTO],
   };
 }
 
