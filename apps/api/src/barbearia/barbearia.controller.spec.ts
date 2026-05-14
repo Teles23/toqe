@@ -54,7 +54,7 @@ describe('BarbeariaController', () => {
       const req = { user: { sub: 10 } } as JwtRequest;
       mockBarbeariaService.create.mockResolvedValue({ codigo: 1 });
 
-      controller.create(dto as never, req);
+      void controller.create(dto as never, req);
 
       expect(mockBarbeariaService.create).toHaveBeenCalledWith(dto, 10);
     });
@@ -64,7 +64,7 @@ describe('BarbeariaController', () => {
     it('delega para barbeariaService.findMembros com barCodigo', () => {
       mockBarbeariaService.findMembros.mockResolvedValue([]);
 
-      controller.findMembros(1, '1');
+      void controller.findMembros(1, '1');
 
       expect(mockBarbeariaService.findMembros).toHaveBeenCalledWith(1);
     });
@@ -75,7 +75,7 @@ describe('BarbeariaController', () => {
       const dto = { email: 'x@x.com', perfil: PerfilMembro.BARBEIRO };
       mockBarbeariaService.convidarMembro.mockResolvedValue({ usrCodigo: 5 });
 
-      controller.convidarMembro(1, dto, '1');
+      void controller.convidarMembro(1, dto, '1');
 
       expect(mockBarbeariaService.convidarMembro).toHaveBeenCalledWith(1, dto);
     });
@@ -85,7 +85,7 @@ describe('BarbeariaController', () => {
     it('delega para barbeariaService.getTema com barCodigo', () => {
       mockBarbeariaService.getTema.mockResolvedValue({ corPrimaria: '#fff' });
 
-      controller.getTema(1, '1');
+      void controller.getTema(1, '1');
 
       expect(mockBarbeariaService.getTema).toHaveBeenCalledWith(1);
     });
@@ -95,7 +95,7 @@ describe('BarbeariaController', () => {
     it('delega para barbeariaService.removerMembro com barCodigo e usrCodigo', () => {
       mockBarbeariaService.removerMembro.mockResolvedValue(undefined);
 
-      controller.removerMembro(1, 5, '1');
+      void controller.removerMembro(1, 5, '1');
 
       expect(mockBarbeariaService.removerMembro).toHaveBeenCalledWith(1, 5);
     });

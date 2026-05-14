@@ -40,7 +40,7 @@ describe('AgendaController', () => {
       const dto = { diaSemana: 1, inicio: '09:00', fim: '18:00' };
       mockAgendaService.upsertJornada.mockResolvedValue({});
 
-      controller.configurarJornada(5, '3', dto as never);
+      void controller.configurarJornada(5, '3', dto as never);
 
       expect(mockAgendaService.upsertJornada).toHaveBeenCalledWith(5, 3, dto);
     });
@@ -50,7 +50,7 @@ describe('AgendaController', () => {
     it('delega para agendaService.getJornada com barbeiroId', () => {
       mockAgendaService.getJornada.mockResolvedValue([]);
 
-      controller.obterJornada(5);
+      void controller.obterJornada(5);
 
       expect(mockAgendaService.getJornada).toHaveBeenCalledWith(5);
     });
@@ -64,7 +64,7 @@ describe('AgendaController', () => {
       };
       mockAgendaService.createBloqueio.mockResolvedValue({ codigo: 1 });
 
-      controller.criarBloqueio(5, '3', dto as never);
+      void controller.criarBloqueio(5, '3', dto as never);
 
       expect(mockAgendaService.createBloqueio).toHaveBeenCalledWith(5, 3, dto);
     });

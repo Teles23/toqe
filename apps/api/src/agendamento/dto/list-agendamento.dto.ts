@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsInt, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { StatusAgendamento } from '../../common/constants/agendamento-status';
 
 export class ListAgendamentoDto {
   @ApiPropertyOptional({
@@ -21,9 +22,9 @@ export class ListAgendamentoDto {
   barbeiroId?: number;
 
   @ApiPropertyOptional({
-    example: 'confirmado',
+    example: StatusAgendamento.CONFIRMADO,
     description: 'Filtrar por status',
-    enum: ['confirmado', 'cancelado', 'concluido', 'no_show'],
+    enum: StatusAgendamento,
   })
   @IsOptional()
   @IsString()

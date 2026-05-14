@@ -36,7 +36,7 @@ describe('AuthController', () => {
       };
       mockAuthService.register.mockResolvedValue({ codigo: 1 });
 
-      controller.register(dto);
+      void controller.register(dto);
 
       expect(mockAuthService.register).toHaveBeenCalledWith(dto);
     });
@@ -47,7 +47,7 @@ describe('AuthController', () => {
       const dto: LoginDto = { email: 'ana@test.com', senha: 'abc123' };
       mockAuthService.login.mockResolvedValue({ accessToken: 'tok' });
 
-      controller.login(dto);
+      void controller.login(dto);
 
       expect(mockAuthService.login).toHaveBeenCalledWith(dto);
     });
@@ -58,7 +58,7 @@ describe('AuthController', () => {
       const dto: RefreshTokenDto = { refreshToken: 'ref-tok' };
       mockAuthService.refresh.mockResolvedValue({ accessToken: 'new-tok' });
 
-      controller.refresh(dto);
+      void controller.refresh(dto);
 
       expect(mockAuthService.refresh).toHaveBeenCalledWith(dto);
     });
@@ -70,7 +70,7 @@ describe('AuthController', () => {
       const dto: LogoutDto = { refreshToken: 'ref-tok' };
       mockAuthService.logout.mockResolvedValue(undefined);
 
-      controller.logout(req, dto);
+      void controller.logout(req, dto);
 
       expect(mockAuthService.logout).toHaveBeenCalledWith(7, dto);
     });

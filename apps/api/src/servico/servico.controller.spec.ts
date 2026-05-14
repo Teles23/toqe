@@ -47,7 +47,7 @@ describe('ServicoController', () => {
       };
       mockServicoService.create.mockResolvedValue({ codigo: 1 });
 
-      controller.create(dto, '3');
+      void controller.create(dto, '3');
 
       expect(mockServicoService.create).toHaveBeenCalledWith(dto, 3);
     });
@@ -57,7 +57,7 @@ describe('ServicoController', () => {
     it('delega para servicoService.findAll com barCodigo convertido', () => {
       mockServicoService.findAll.mockResolvedValue([]);
 
-      controller.findAll('3');
+      void controller.findAll('3');
 
       expect(mockServicoService.findAll).toHaveBeenCalledWith(3);
     });
@@ -67,7 +67,7 @@ describe('ServicoController', () => {
     it('delega para servicoService.findOne com codigo e barCodigo', () => {
       mockServicoService.findOne.mockResolvedValue({ codigo: 5 });
 
-      controller.findOne(5, '3');
+      void controller.findOne(5, '3');
 
       expect(mockServicoService.findOne).toHaveBeenCalledWith(5, 3);
     });
@@ -78,7 +78,7 @@ describe('ServicoController', () => {
       const dto: UpdateServicoDto = { nome: 'Corte Premium' };
       mockServicoService.update.mockResolvedValue({ codigo: 5 });
 
-      controller.update(5, dto, '3');
+      void controller.update(5, dto, '3');
 
       expect(mockServicoService.update).toHaveBeenCalledWith(5, dto, 3);
     });
@@ -88,7 +88,7 @@ describe('ServicoController', () => {
     it('delega para servicoService.remove', () => {
       mockServicoService.remove.mockResolvedValue({ ativo: false });
 
-      controller.remove(5, '3');
+      void controller.remove(5, '3');
 
       expect(mockServicoService.remove).toHaveBeenCalledWith(5, 3);
     });

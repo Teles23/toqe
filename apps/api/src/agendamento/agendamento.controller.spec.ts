@@ -53,7 +53,7 @@ describe('AgendamentoController', () => {
       };
       mockAgendamentoService.create.mockResolvedValue({ codigo: 1 });
 
-      controller.create(dto, '3');
+      void controller.create(dto, '3');
 
       expect(mockAgendamentoService.create).toHaveBeenCalledWith(dto, 3);
     });
@@ -64,7 +64,7 @@ describe('AgendamentoController', () => {
       mockAgendamentoService.findAll.mockResolvedValue([]);
       const filtros = { data: '2024-06-01' };
 
-      controller.findAll(filtros as never, '3');
+      void controller.findAll(filtros as never, '3');
 
       expect(mockAgendamentoService.findAll).toHaveBeenCalledWith(3, filtros);
     });
@@ -74,7 +74,7 @@ describe('AgendamentoController', () => {
     it('delega para service.findOne com codigo e barCodigo', () => {
       mockAgendamentoService.findOne.mockResolvedValue({ codigo: 42 });
 
-      controller.findOne(42, '3');
+      void controller.findOne(42, '3');
 
       expect(mockAgendamentoService.findOne).toHaveBeenCalledWith(42, 3);
     });
@@ -89,7 +89,7 @@ describe('AgendamentoController', () => {
         status: 'concluido',
       });
 
-      controller.patchStatus(42, dto, '3');
+      void controller.patchStatus(42, dto, '3');
 
       expect(mockAgendamentoService.patchStatus).toHaveBeenCalledWith(
         42,
@@ -103,7 +103,7 @@ describe('AgendamentoController', () => {
     it('delega para service.cancel', () => {
       mockAgendamentoService.cancel.mockResolvedValue({ status: 'cancelado' });
 
-      controller.cancel(42, '3');
+      void controller.cancel(42, '3');
 
       expect(mockAgendamentoService.cancel).toHaveBeenCalledWith(42, 3);
     });

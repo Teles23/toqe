@@ -24,7 +24,7 @@ describe('UsuarioController', () => {
       const req = { user: { sub: 7 } } as JwtRequest;
       mockUsuarioService.me.mockResolvedValue({ codigo: 7 });
 
-      controller.me(req);
+      void controller.me(req);
 
       expect(mockUsuarioService.me).toHaveBeenCalledWith(7);
     });
@@ -39,7 +39,7 @@ describe('UsuarioController', () => {
         nome: 'Ana Nova',
       });
 
-      controller.update(req, dto);
+      void controller.update(req, dto);
 
       expect(mockUsuarioService.update).toHaveBeenCalledWith(7, dto);
     });

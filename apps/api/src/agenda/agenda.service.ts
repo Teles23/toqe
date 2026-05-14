@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
 import {
   addMinutes,
   parse,
@@ -112,7 +113,9 @@ export class AgendaService {
         barbeiroId,
         inicio: { gte: startOfDay(targetDate) },
         fim: { lte: endOfDay(targetDate) },
-        status: { notIn: ['cancelado', 'no_show'] },
+        status: {
+          notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.NO_SHOW],
+        },
       },
     });
 
