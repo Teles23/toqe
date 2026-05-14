@@ -1,30 +1,21 @@
-name: CI
+name: CI Full
 
 on:
   push:
     branches:
-      - main
       - develop
-      - "feature/**"
-      - "arch/**"
-      - "fix/**"
-      - "refactor/**"
-      - "chore/**"
-      - "docs/**"
-      - "test/**"
-      - "hotfix/**"
+      - main
   pull_request:
     branches:
       - main
-      - develop
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-full-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   quality:
-    name: Lint, type-check, test, build
+    name: Lint · Types · Unit tests · Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -62,11 +53,32 @@ jobs:
       - name: Type check
         run: pnpm check-types
 
-      - name: Test (api)
-        run: pnpm --filter api run test --passWithNoTests
+      - name: Test — API
+        run: pnpm --filter api test
+
+      - name: Test — Web
+        run: pnpm --filter web test
 
       - name: Build
         run: pnpm build
+
+  # Placeholder: E2E web (Playwright) — adicionar quando implementado
+  # e2e-web:
+  #   name: E2E Web (Playwright)
+  #   needs: quality
+  #   runs-on: ubuntu-latest
+
+  # Placeholder: E2E mobile (Maestro) — adicionar quando implementado
+  # e2e-mobile:
+  #   name: E2E Mobile (Maestro)
+  #   needs: quality
+  #   runs-on: ubuntu-latest
+
+  # Placeholder: Load tests (k6) — adicionar quando implementado
+  # load:
+  #   name: Load tests (k6)
+  #   needs: quality
+  #   runs-on: ubuntu-latest
 
   commitlint:
     name: Commitlint (PR)
