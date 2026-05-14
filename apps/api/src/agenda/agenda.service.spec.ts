@@ -20,7 +20,144 @@ describe('AgendaService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  describe('upsertJornada', () => {
+    it('cria jornada quando nao existe', async () => {
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(null);
+      mockPrisma.jornadaTrabalho.create.mockResolvedValue({
+        codigo: 1,
+        barbeiroId: 5,
+        barCodigo: 1,
+        diaSemana: 1,
+        inicio: '09:00',
+        fim: '18:00',
+      });
+
+      const dto = { diaSemana: 1, inicio: '09:00', fim: '18:00' };
+      const result = await service.upsertJornada(5, 1, dto as never);
+
+      expect(mockPrisma.jornadaTrabalho.findFirst).toHaveBeenCalledWith({
+        where: { barbeiroId: 5, diaSemana: 1 },
+      });
+      expect(mockPrisma.jornadaTrabalho.create).toHaveBeenCalledWith({
+        data: { ...dto, barbeiroId: 5, barCodigo: 1 },
+      });
+      expect(result).toHaveProperty('codigo', 1);
+    });
+
+    it('atualiza jornada quando ja existe', async () => {
+      const existing = { codigo: 7, barbeiroId: 5, diaSemana: 1 };
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(existing);
+      mockPrisma.jornadaTrabalho.update.mockResolvedValue({
+        ...existing,
+        inicio: '10:00',
+        fim: '19:00',
+      });
+
+      const dto = { diaSemana: 1, inicio: '10:00', fim: '19:00' };
+      const result = await service.upsertJornada(5, 1, dto as never);
+
+      expect(mockPrisma.jornadaTrabalho.update).toHaveBeenCalledWith({
+        where: { codigo: 7 },
+        data: dto,
+      });
+      expect(result).toHaveProperty('inicio', '10:00');
+    });
+  });
+
+  describe('getAvailableSlots', () => {
+    it('retorna slots livres sem conflitos', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
+        inicio: '09:00',
+        fim: '10:00',
+        almocoIni: null,
+        almocoFim: null,
+      });
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
+
+      // Use local-time ISO string (no Z) so parse() computes slots in the same timezone
+      const result = await service.getAvailableSlots(
+        5,
+        1,
+        '2025-01-06T15:00:00',
+        30,
+      );
+
+      expect(result).toEqual(['09:00', '09:30']);
+    });
+
+    it('retorna lista vazia quando barbeiro nao tem jornada no dia', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(null);
+
+      const result = await service.getAvailableSlots(
+        5,
+        1,
+        '2025-01-06T15:00:00',
+        30,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('exclui slots ocupados por agendamentos existentes', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
+        inicio: '09:00',
+        fim: '10:00',
+        almocoIni: null,
+        almocoFim: null,
+      });
+      // Use Date constructor (always local time) to match parse() output
+      mockPrisma.agendamento.findMany.mockResolvedValue([
+        {
+          inicio: new Date(2025, 0, 6, 9, 0, 0),
+          fim: new Date(2025, 0, 6, 9, 30, 0),
+        },
+      ]);
+      mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
+
+      const result = await service.getAvailableSlots(
+        5,
+        1,
+        '2025-01-06T15:00:00',
+        30,
+      );
+
+      expect(result).toEqual(['09:30']);
+    });
+
+    it('exclui slots durante horario de almoco', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 60 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
+        inicio: '09:00',
+        fim: '13:00',
+        almocoIni: '12:00',
+        almocoFim: '13:00',
+      });
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
+
+      const result = await service.getAvailableSlots(
+        5,
+        1,
+        '2025-01-06T15:00:00',
+        60,
+      );
+
+      expect(result).toContain('09:00');
+      expect(result).toContain('10:00');
+      expect(result).toContain('11:00');
+      expect(result).not.toContain('12:00');
+    });
+
+    it('lanca erro quando barbearia nao existe', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getAvailableSlots(5, 999, '2025-01-06T15:00:00', 30),
+      ).rejects.toThrow('Barbearia not found');
+    });
   });
 });

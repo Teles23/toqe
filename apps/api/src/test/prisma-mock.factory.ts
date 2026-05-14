@@ -23,8 +23,12 @@ export function createPrismaMock() {
     refreshToken: makeMethods(),
     temaTenant: makeMethods(),
     notificacaoPreferencia: makeMethods(),
+    jornadaTrabalho: makeMethods(),
+    bloqueioAgenda: makeMethods(),
+    planoLimite: makeMethods(),
     $transaction: jest.fn(),
     $queryRaw: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
   };
