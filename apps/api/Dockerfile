@@ -22,7 +22,8 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install
 # Copia o source após o install para não invalidar o cache acima
 COPY . .
 
-RUN pnpm --filter api exec prisma generate --schema=./prisma/schema.prisma
+# prisma generate não conecta ao banco — URL placeholder só para parsear o schema
+RUN DATABASE_URL="postgresql://build:build@localhost/build" pnpm --filter api exec prisma generate --schema=./prisma/schema.prisma
 
 RUN pnpm --filter api run build
 
