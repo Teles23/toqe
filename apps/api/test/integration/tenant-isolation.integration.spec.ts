@@ -45,13 +45,13 @@ describe('Tenant Isolation Integration', () => {
     tokenB = loginB.body.access_token;
 
     const barA = await request(app.getHttpServer())
-      .post('/barbearia')
+      .post('/barbearias')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({ nome: 'Bar A', slug: `bar-a-${ts}` });
     barCodigoA = String(barA.body.codigo);
 
     const barB = await request(app.getHttpServer())
-      .post('/barbearia')
+      .post('/barbearias')
       .set('Authorization', `Bearer ${tokenB}`)
       .send({ nome: 'Bar B', slug: `bar-b-${ts}` });
     barCodigoB = String(barB.body.codigo);

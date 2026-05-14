@@ -38,7 +38,7 @@ describe('Barbearia Integration', () => {
 
   it('cria barbearia', async () => {
     const res = await request(app.getHttpServer())
-      .post('/barbearia')
+      .post('/barbearias')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ nome: 'Barbearia Integração', slug: `slug-bar-${Date.now()}` })
       .expect(201);
@@ -49,7 +49,7 @@ describe('Barbearia Integration', () => {
 
   it('convida membro', async () => {
     const res = await request(app.getHttpServer())
-      .post(`/barbearia/${barCodigo}/membros`)
+      .post(`/barbearias/${barCodigo}/membros`)
       .set('Authorization', `Bearer ${accessToken}`)
       .set('x-tenant-id', barCodigo)
       .send({ email: membroEmail, perfil: 'barbeiro' });
@@ -59,7 +59,7 @@ describe('Barbearia Integration', () => {
 
   it('lista membros da barbearia', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/barbearia/${barCodigo}/membros`)
+      .get(`/barbearias/${barCodigo}/membros`)
       .set('Authorization', `Bearer ${accessToken}`)
       .set('x-tenant-id', barCodigo);
 

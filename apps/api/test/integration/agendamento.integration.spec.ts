@@ -31,7 +31,7 @@ describe('Agendamento Integration', () => {
     barbeiroId = loginRes.body.user.codigo;
 
     const barRes = await request(app.getHttpServer())
-      .post('/barbearia')
+      .post('/barbearias')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ nome: 'Barbearia Test', slug: `slug-agd-${Date.now()}` });
     expect(barRes.status).toBe(201);
