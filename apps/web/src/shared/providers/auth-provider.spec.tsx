@@ -102,12 +102,15 @@ describe("AuthProvider — session load", () => {
 });
 
 describe("AuthProvider — login", () => {
-  it("chama requestLogin e depois /usuarios/me, depois redireciona", async () => {
+  function setupLogin() {
     mockApi.get
       .mockRejectedValueOnce(new Error("sem sessão")) // load inicial
       .mockResolvedValueOnce(mockMe); // após login
-
     mockRequestLogin.mockResolvedValueOnce(undefined);
+  }
+
+  it("chama requestLogin e depois /usuarios/me, depois redireciona", async () => {
+    setupLogin();
 
     const ref = captureContext();
     await waitFor(() => expect(ref.current?.loading).toBe(false));
@@ -122,6 +125,73 @@ describe("AuthProvider — login", () => {
     });
     expect(ref.current?.user?.email).toBe("test@test.com");
     expect(mockPush).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("redireciona para /dashboard quando não há ?redirect na URL", async () => {
+    Object.defineProperty(window, "location", {
+      value: { search: "" },
+      writable: true,
+    });
+    setupLogin();
+
+    const ref = captureContext();
+    await waitFor(() => expect(ref.current?.loading).toBe(false));
+
+    await act(async () => {
+      await ref.current?.login("test@test.com", "senha123");
+    });
+
+    expect(mockPush).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("redireciona para a rota em ?redirect= quando presente", async () => {
+    Object.defineProperty(window, "location", {
+      value: { search: "?redirect=%2Fagenda" },
+      writable: true,
+    });
+    setupLogin();
+
+    const ref = captureContext();
+    await waitFor(() => expect(ref.current?.loading).toBe(false));
+
+    await act(async () => {
+      await ref.current?.login("test@test.com", "senha123");
+    });
+
+    expect(mockPush).toHaveBeenCalledWith("/agenda");
+  });
+
+  it("seta user e barbearia corretamente após login", async () => {
+    setupLogin();
+
+    const ref = captureContext();
+    await waitFor(() => expect(ref.current?.loading).toBe(false));
+
+    await act(async () => {
+      await ref.current?.login("test@test.com", "senha123");
+    });
+
+    expect(ref.current?.user?.nome).toBe("Test User");
+    expect(ref.current?.barbearia?.nome).toBe("BarberShop");
+    expect(ref.current?.perfil).toBe("dono");
+  });
+
+  it("propaga erro quando requestLogin falha", async () => {
+    mockApi.get.mockRejectedValueOnce(new Error("sem sessão"));
+    mockRequestLogin.mockRejectedValueOnce(new Error("Credenciais inválidas"));
+
+    const ref = captureContext();
+    await waitFor(() => expect(ref.current?.loading).toBe(false));
+
+    await expect(
+      act(async () => {
+        await ref.current?.login("test@test.com", "errada");
+      }),
+    ).rejects.toThrow("Credenciais inválidas");
+
+    // estado não deve ter mudado
+    expect(ref.current?.user).toBeNull();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });
 
