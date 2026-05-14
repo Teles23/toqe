@@ -11,7 +11,7 @@ import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendaGateway } from '../agenda/agenda.gateway';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
 
 const INCLUDE_COMPLETO = {
