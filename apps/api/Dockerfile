@@ -17,7 +17,7 @@ COPY packages/contracts/package.json       ./packages/contracts/
 COPY packages/eslint-config/package.json   ./packages/eslint-config/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
 # Copia o source após o install para não invalidar o cache acima
 COPY . .
@@ -50,7 +50,7 @@ USER nestjs
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:3000/api/v1/health || exit 1
+  CMD wget -qO- http://localhost:3000/api/v1/health/ready || exit 1
 
 # Sequência de boot:
 # 1. migrate deploy — aplica migrations pendentes (idempotente, seguro a cada startup)
