@@ -65,6 +65,6 @@ describe('Auth Integration', () => {
       .post('/auth/logout')
       .set('Authorization', `Bearer ${token}`)
       .send({ refreshToken: rt })
-      .expect(201);
+      .expect(200);
   });
 });

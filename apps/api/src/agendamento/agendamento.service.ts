@@ -57,7 +57,6 @@ export class AgendamentoService {
           AND "TQE_AGD_STATUS" NOT IN (${StatusAgendamento.CANCELADO}, ${StatusAgendamento.NO_SHOW})
           AND "TQE_AGD_INICIO" < ${fimDate}
           AND "TQE_AGD_FIM"   > ${inicioDate}
-        FOR UPDATE SKIP LOCKED
       `;
 
       if (Number(conflitos[0].count) > 0) {
