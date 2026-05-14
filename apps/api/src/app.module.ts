@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BullModule } from '@nestjs/bull';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { TenantModule } from './tenant/tenant.module';
 import { AuthModule } from './auth/auth.module';
@@ -14,10 +16,19 @@ import { NotificacaoModule } from './notificacao/notificacao.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { RelatorioModule } from './relatorio/relatorio.module';
 import { ObservabilidadeModule } from './observabilidade/observabilidade.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
     ObservabilidadeModule, // primeiro — garante que o logger está pronto para os outros módulos
+    ThrottlerModule.forRoot([
+      {
+        // Limite global: 60 req / 60s por IP
+        // Rotas de auth usam o decorator @Throttle para limites mais restritivos
+        ttl: 60_000,
+        limit: 60,
+      },
+    ]),
     BullModule.forRoot({
       redis: {
         host: process.env.REDIS_HOST || 'localhost',
@@ -36,9 +47,9 @@ import { ObservabilidadeModule } from './observabilidade/observabilidade.module'
     NotificacaoModule,
     DashboardModule,
     RelatorioModule,
-    ObservabilidadeModule,
+    HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

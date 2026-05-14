@@ -1,0 +1,26 @@
+import { tenantApi } from "@/shared/api/api-client";
+import type { AgendamentoAPI, BarbeiroAPI } from "../types/agenda.types";
+
+export const agendaService = {
+  listAgendamentos(barCodigo: number, data: string): Promise<AgendamentoAPI[]> {
+    return tenantApi(barCodigo).get<AgendamentoAPI[]>(
+      `/agendamentos?data=${data}`,
+    );
+  },
+
+  listBarbeiros(barCodigo: number): Promise<BarbeiroAPI[]> {
+    return tenantApi(barCodigo).get<BarbeiroAPI[]>(
+      `/barbearia/${barCodigo}/barbeiros`,
+    );
+  },
+
+  patchStatus(
+    codigo: number,
+    status: string,
+    barCodigo: number,
+  ): Promise<void> {
+    return tenantApi(barCodigo).patch<void>(`/agendamentos/${codigo}/status`, {
+      status,
+    });
+  },
+};
