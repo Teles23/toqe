@@ -18,6 +18,16 @@ export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type LogoutInput = z.infer<typeof logoutSchema>;
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 
-// Outros tipos podem ser exportados aqui à medida que novos schemas forem
-// adicionados em src/schemas/ — manter ordem alfabética por domínio para
-// facilitar revisão.
+// ---- API Response shapes ----
+export type {
+  Periodo,
+  BarbeiroAPI,
+  ClienteAPI,
+  ServicoAPI,
+  AgendamentoAPI,
+  FaturamentoItem,
+  AgendamentosItem,
+  ServicoRelatorioItem,
+  BarbeiroRelatorioItem,
+  HorarioPicoItem,
+} from "./api-responses";

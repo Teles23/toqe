@@ -1,13 +1,6 @@
-export type Categoria = "corte" | "barba" | "combo" | "estetica" | "tratamento";
+export type { ServicoAPI } from "@toqe/contracts";
 
-export interface ServicoAPI {
-  codigo: number;
-  barCodigo: number;
-  nome: string;
-  precoBase: number | null;
-  duracaoBase: number | null;
-  ativo: boolean;
-}
+export type Categoria = "corte" | "barba" | "combo" | "estetica" | "tratamento";
 
 export interface Servico {
   id: number;
