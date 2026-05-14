@@ -30,6 +30,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const tenantId = req.headers['x-tenant-id'] ?? null;
     const userId = (req as any).user?.sub ?? null;
 
+    // Trata erros conhecidos do Prisma para evitar o crash do formatter interno (bug do t=Object.create)
+    let errorMessage =
+      exception instanceof Error
+        ? exception.message
+        : 'Erro interno do servidor';
+
+    if (exception && typeof exception === 'object' && 'code' in exception) {
+      const prismaError = exception as { code: string; meta?: any };
+      if (prismaError.code === 'P2002') {
+        errorMessage = `Conflito: Um registro com este ${Object.keys(prismaError.meta?.target || {}).join(', ') || 'campo'} já existe.`;
+      }
+    }
+
     if (status >= 500) {
       this.logger.error(
         {
@@ -37,17 +50,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           userId,
           method: req.method,
           url: req.url,
-          err: exception instanceof Error ? exception.stack : String(exception),
+          // Não logamos o stack trace completo se for erro do Prisma que causa crash no dump
+          err: exception instanceof Error ? exception.name : String(exception),
+          code: (exception as any)?.code,
         },
-        exception instanceof Error
-          ? exception.message
-          : 'Erro interno do servidor',
+        errorMessage,
       );
     }
 
     const message = isHttp
       ? ((exception.getResponse() as any)?.message ?? exception.message)
-      : 'Erro interno do servidor';
+      : status >= 500
+        ? 'Erro interno do servidor'
+        : errorMessage;
 
     res.status(status).json({
       statusCode: status,
