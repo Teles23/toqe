@@ -1,59 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { toSlot, toBarbeiro } from "./use-agenda";
 import type { AgendamentoAPI, BarbeiroAPI } from "../types/agenda.types";
-
-// As funções toSlot e toBarbeiro são internas ao módulo. Para testá-las sem
-// expô-las, extraímos via importação do arquivo que as define inline.
-// Como não são exportadas, recriamos a lógica aqui alinhada ao contrato de
-// tipos — qualquer divergência quebrará estes testes.
-import { API_STATUS_TO_SLOT } from "../constants/agenda.constants";
-
-// ─── helpers locais espelhando a lógica de use-agenda.ts ─────────────────────
-
-function toSlot(a: AgendamentoAPI, now: Date) {
-  const inicio = new Date(a.inicio);
-  const fim = new Date(a.fim);
-  const duracao = Math.round((fim.getTime() - inicio.getTime()) / 60_000);
-  const status = API_STATUS_TO_SLOT[a.status] ?? "pending";
-
-  let progressPct: number | undefined = undefined;
-  if (status === "active") {
-    const totalMs = fim.getTime() - inicio.getTime();
-    const elapsedMs = now.getTime() - inicio.getTime();
-    progressPct = Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100));
-  }
-
-  const clienteNome = a.cliente?.nome ?? "—";
-  const barbeiroNome = a.barbeiro?.nome ?? "—";
-  const servicoNome = a.itens.map((i) => i.servico.nome).join(" + ") || "—";
-
-  return {
-    id: a.codigo,
-    client: clienteNome,
-    clientInitial: clienteNome.charAt(0).toUpperCase(),
-    service: servicoNome,
-    barbeiro: barbeiroNome,
-    duration: duracao,
-    status,
-    progressPct,
-  };
-}
-
-function toBarbeiro(b: BarbeiroAPI, agendamentos: AgendamentoAPI[]) {
-  const agendamentosBarbeiro = agendamentos.filter(
-    (a) => a.barbeiro?.codigo === b.codigo,
-  );
-  const isActive = agendamentosBarbeiro.some(
-    (a) => a.status === "EM_ATENDIMENTO",
-  );
-  return {
-    id: b.codigo,
-    nome: b.nome,
-    initial: b.nome.charAt(0).toUpperCase(),
-    state: isActive ? "active" : "idle",
-    agendamentos: agendamentosBarbeiro.length,
-    livres: 0,
-  };
-}
 
 // ─── fixtures ────────────────────────────────────────────────────────────────
 
@@ -112,8 +59,7 @@ describe("toSlot", () => {
     expect(slot.duration).toBe(30);
   });
 
-  it("calcula progressPct quando status é active", () => {
-    // agendamento de 09:00 a 09:30, now = 09:15 → 50%
+  it("calcula progressPct quando status é active (50% no meio do intervalo)", () => {
     const slot = toSlot(makeAgendamento({ status: "concluido" }), now);
     expect(slot.progressPct).toBeCloseTo(50, 0);
   });
@@ -201,10 +147,17 @@ describe("toBarbeiro", () => {
     expect(result.initial).toBe("C");
   });
 
-  it("state nunca retorna 'busy' — valor que não existe no tipo Barbeiro", () => {
-    const agendamentos = [makeAgendamento({ status: "EM_ATENDIMENTO" })];
-    const result = toBarbeiro(barbeiro, agendamentos);
-    expect(result.state).not.toBe("busy");
-    expect(["active", "idle", "late"]).toContain(result.state);
+  it("state respeita o contrato do tipo Barbeiro — nunca retorna valor fora de 'active'|'idle'|'late'", () => {
+    const comAtendimento = [makeAgendamento({ status: "EM_ATENDIMENTO" })];
+    const semAtendimento = [makeAgendamento({ status: "confirmado" })];
+    const valoresValidos = ["active", "idle", "late"];
+
+    expect(valoresValidos).toContain(
+      toBarbeiro(barbeiro, comAtendimento).state,
+    );
+    expect(valoresValidos).toContain(
+      toBarbeiro(barbeiro, semAtendimento).state,
+    );
+    expect(valoresValidos).toContain(toBarbeiro(barbeiro, []).state);
   });
 });

@@ -12,7 +12,7 @@ import type {
   BarbeiroAPI,
 } from "../types/agenda.types";
 
-function toSlot(a: AgendamentoAPI, now: Date): Slot {
+export function toSlot(a: AgendamentoAPI, now: Date): Slot {
   const inicio = new Date(a.inicio);
   const fim = new Date(a.fim);
   const duracao = Math.round((fim.getTime() - inicio.getTime()) / 60_000);
@@ -46,7 +46,10 @@ function toSlot(a: AgendamentoAPI, now: Date): Slot {
   };
 }
 
-function toBarbeiro(b: BarbeiroAPI, agendamentos: AgendamentoAPI[]): Barbeiro {
+export function toBarbeiro(
+  b: BarbeiroAPI,
+  agendamentos: AgendamentoAPI[],
+): Barbeiro {
   const agendamentosBarbeiro = agendamentos.filter(
     (a) => a.barbeiro?.codigo === b.codigo,
   );
