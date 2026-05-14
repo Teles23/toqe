@@ -39,3 +39,10 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Documentos confidenciais
+docs/toqe_proposta_comercial.*
+docs/toqe_prd.*
+docs/toqe_doc_tecnica.*
+docs/toqe_plano_estrategico.md
+docs/toqe-postman-collection.json

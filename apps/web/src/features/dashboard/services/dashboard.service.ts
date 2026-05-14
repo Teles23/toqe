@@ -1,15 +1,3 @@
-/**
- * Dashboard service — busca agregados de operação.
- *
- * STUB: o endpoint `/dashboard/overview` ainda não existe no backend.
- * Esta implementação retorna dados mockados com `setTimeout` para
- * simular latência e exercitar o fluxo TanStack Query (loading,
- * cache, revalidação). Quando o endpoint for criado:
- *   1. Substituir o `return mock` por `return api.get<DashboardOverview>("/dashboard/overview")`.
- *   2. Mover os tipos para `@toqe/contracts/schemas/dashboard` (Zod).
- *   3. Apagar este comentário.
- */
-
 import type { DashboardOverview } from "../types/dashboard.types";
 
 const MOCK: DashboardOverview = {
@@ -140,9 +128,7 @@ const MOCK: DashboardOverview = {
 };
 
 /**
- * Busca o overview do dashboard.
- * TODO(api): substituir por `api.get<DashboardOverview>("/dashboard/overview")`
- * quando o endpoint estiver disponível.
+ * Busca o overview do dashboard (MOCK).
  */
 export async function fetchDashboardOverview(): Promise<DashboardOverview> {
   await new Promise((resolve) => setTimeout(resolve, 300));

@@ -7,6 +7,12 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
+// Extrai a origem da API (ex: "http://localhost:3000") a partir da env var,
+// para adicionar à CSP sem hardcodar localhost. Funciona em dev e prod.
+const apiOrigin = process.env.NEXT_PUBLIC_API_URL
+  ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
+  : "";
+
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
@@ -20,7 +26,9 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
-      "connect-src 'self' https://*.sentry.io",
+      // apiOrigin cobre a URL da API (dev: localhost:3000, prod: domínio real)
+      // ws://* wss://* necessários para o HMR do Next.js em dev
+      `connect-src 'self' ${apiOrigin} ws: wss: https://*.sentry.io`,
       "frame-ancestors 'none'",
     ].join("; "),
   },

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { agendaService } from "../services/agenda.service";
@@ -11,11 +12,20 @@ import type {
   BarbeiroAPI,
 } from "../types/agenda.types";
 
-function toSlot(a: AgendamentoAPI): Slot {
+export function toSlot(a: AgendamentoAPI, now: Date): Slot {
   const inicio = new Date(a.inicio);
   const fim = new Date(a.fim);
   const duracao = Math.round((fim.getTime() - inicio.getTime()) / 60_000);
   const status = API_STATUS_TO_SLOT[a.status] ?? "pending";
+
+  // Cálculo de progresso real se estiver ativo
+  let progressPct: number | undefined = undefined;
+  if (status === "active") {
+    const totalMs = fim.getTime() - inicio.getTime();
+    const elapsedMs = now.getTime() - inicio.getTime();
+    progressPct = Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100));
+  }
+
   const clienteNome = a.cliente?.nome ?? "—";
   const barbeiroNome = a.barbeiro?.nome ?? "—";
   const servicoNome = a.itens.map((i) => i.servico.nome).join(" + ") || "—";
@@ -32,32 +42,51 @@ function toSlot(a: AgendamentoAPI): Slot {
     duration: duracao,
     status,
     startedAt: status === "active" ? format(inicio, "HH:mm") : undefined,
-    progressPct: status === "active" ? 50 : undefined,
+    progressPct,
   };
 }
 
-function toBarbeiro(b: BarbeiroAPI, agendamentos: AgendamentoAPI[]): Barbeiro {
-  const total = agendamentos.filter(
+export function toBarbeiro(
+  b: BarbeiroAPI,
+  agendamentos: AgendamentoAPI[],
+): Barbeiro {
+  const agendamentosBarbeiro = agendamentos.filter(
     (a) => a.barbeiro?.codigo === b.codigo,
-  ).length;
+  );
+
+  // Barbeiro fica "active" se tiver agendamento EM_ATENDIMENTO agora
+  const isActive = agendamentosBarbeiro.some(
+    (a) => a.status === "EM_ATENDIMENTO",
+  );
+
   return {
     id: b.codigo,
     nome: b.nome,
     initial: b.nome.charAt(0).toUpperCase(),
-    state: "idle",
-    agendamentos: total,
-    livres: 0,
+    state: isActive ? "active" : "idle",
+    agendamentos: agendamentosBarbeiro.length,
+    livres: 0, // Pode ser calculado depois com base na jornada
   };
 }
 
 export function useAgenda(barCodigo: number | null, date: Date) {
+  const [now, setNow] = useState(new Date());
   const dateStr = format(date, "yyyy-MM-dd");
+
+  // Loop de atualização local (para mover barras de progresso sem bater na API)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 10000); // Atualiza o "agora" a cada 10 segundos
+    return () => clearInterval(timer);
+  }, []);
 
   const agendamentosQuery = useQuery({
     queryKey: ["agendamentos", barCodigo, dateStr],
     queryFn: () => agendaService.listAgendamentos(barCodigo!, dateStr),
     enabled: !!barCodigo,
-    staleTime: 30_000,
+    staleTime: 10_000,
+    refetchInterval: 60_000, // Atualiza a cada minuto para mover barra de progresso
   });
 
   const barbeirosQuery = useQuery({
@@ -67,11 +96,13 @@ export function useAgenda(barCodigo: number | null, date: Date) {
     staleTime: 60_000,
   });
 
-  const raw = agendamentosQuery.data ?? [];
-  const slots: Slot[] = raw.map(toSlot);
-  const barbeiros: Barbeiro[] = (barbeirosQuery.data ?? []).map((b) =>
-    toBarbeiro(b, raw),
-  );
+  const { slots, barbeiros } = useMemo(() => {
+    const raw = agendamentosQuery.data ?? [];
+    return {
+      slots: raw.map((s) => toSlot(s, now)),
+      barbeiros: (barbeirosQuery.data ?? []).map((b) => toBarbeiro(b, raw)),
+    };
+  }, [agendamentosQuery.data, barbeirosQuery.data, now]);
 
   return {
     slots,

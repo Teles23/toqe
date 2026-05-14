@@ -131,6 +131,7 @@ model Servico {
   itens      AgendamentoItem[]
   barbeiros  BarbeiroServico[]
 
+  @@unique([nome, barCodigo])
   @@map("TQE_SERVICO")
 }
 
@@ -167,6 +168,7 @@ model Agendamento {
   cliente   Usuario           @relation("AgendamentosCliente", fields: [clienteId], references: [codigo])
   itens     AgendamentoItem[]
 
+  @@unique([barbeiroId, inicio])
   @@map("TQE_AGENDAMENTO")
 }
 
@@ -183,6 +185,7 @@ model AgendamentoItem {
   agendamento Agendamento @relation(fields: [agdCodigo], references: [codigo])
   servico     Servico     @relation(fields: [srvCodigo], references: [codigo])
 
+  @@unique([agdCodigo, srvCodigo])
   @@map("TQE_AGENDAMENTO_ITEM")
 }
 

@@ -18,7 +18,9 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Prefix global de versão
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health/*path'],
+  });
 
   // Validação global de DTOs:
   // - ZodValidationPipe trata DTOs criados via `createZodDto(...)` em @toqe/contracts.
@@ -27,8 +29,6 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ZodValidationPipe(),
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
       transform: true,
     }),
   );
@@ -38,7 +38,7 @@ async function bootstrap() {
 
   // CORS — credentials obrigatório para cookies httpOnly do frontend
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3001'],
+    origin: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3002'],
     credentials: true,
   });
 
