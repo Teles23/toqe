@@ -10,6 +10,7 @@ describe('Agendamento Integration', () => {
   let barbeiroId: number;
   let servicoId: number;
   let agendamentoCodigo: number;
+  let inicioISO: string;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,11 +28,13 @@ describe('Agendamento Integration', () => {
       .post('/auth/login')
       .send({ email, senha: 'Senha@123' });
     accessToken = loginRes.body.access_token;
+    barbeiroId = loginRes.body.user.codigo;
 
     const barRes = await request(app.getHttpServer())
       .post('/barbearia')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ nome: 'Barbearia Test', slug: `slug-agd-${Date.now()}` });
+    expect(barRes.status).toBe(201);
     barHeader = String(barRes.body.codigo);
 
     const srvRes = await request(app.getHttpServer())
@@ -39,17 +42,17 @@ describe('Agendamento Integration', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .set('x-tenant-id', barHeader)
       .send({ nome: 'Corte', duracaoBase: 30, precoBase: 25 });
+    expect(srvRes.status).toBe(201);
     servicoId = srvRes.body.codigo;
 
-    barbeiroId = loginRes.body.user.codigo;
+    inicioISO = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('cria agendamento com sucesso', async () => {
-    const inicio = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  it('cria agendamento com sucesso → 201', async () => {
     const res = await request(app.getHttpServer())
       .post('/agendamentos')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -58,18 +61,15 @@ describe('Agendamento Integration', () => {
         barbeiroId,
         clienteId: barbeiroId,
         servicosIds: [servicoId],
-        inicio,
+        inicio: inicioISO,
       });
 
-    expect([201, 200, 400, 409]).toContain(res.status);
-    if (res.status === 201 || res.status === 200) {
-      agendamentoCodigo = res.body.codigo;
-    }
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('codigo');
+    agendamentoCodigo = res.body.codigo;
   });
 
-  it('detecta conflito de horário (segundo agendamento mesmo slot)', async () => {
-    if (!agendamentoCodigo) return;
-    const inicio = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  it('detecta conflito de horário → 409', async () => {
     const res = await request(app.getHttpServer())
       .post('/agendamentos')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -78,9 +78,29 @@ describe('Agendamento Integration', () => {
         barbeiroId,
         clienteId: barbeiroId,
         servicosIds: [servicoId],
-        inicio,
+        inicio: inicioISO,
       });
 
-    expect([409, 400]).toContain(res.status);
+    expect(res.status).toBe(409);
+  });
+
+  it('lista agendamentos da barbearia → retorna o criado', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/agendamentos')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-tenant-id', barHeader);
+
+    expect(res.status).toBe(200);
+    const codigos = (res.body as { codigo: number }[]).map((a) => a.codigo);
+    expect(codigos).toContain(agendamentoCodigo);
+  });
+
+  it('cancela agendamento → status CANCELADO', async () => {
+    const res = await request(app.getHttpServer())
+      .delete(`/agendamentos/${agendamentoCodigo}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('x-tenant-id', barHeader);
+
+    expect([200, 204]).toContain(res.status);
   });
 });
