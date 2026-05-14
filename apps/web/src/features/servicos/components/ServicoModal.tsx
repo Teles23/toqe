@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
-import { CATEGORIA_CONFIG } from "../constants/servico.constants";
-import type { Categoria, ServicoAPI } from "../types/servico.types";
+import { createServicoSchema, type CreateServicoInput } from "@toqe/contracts";
+import { useAuth } from "@/shared/hooks/use-auth";
+import { useServicoMutations } from "../hooks/use-servicos";
+import type { ServicoAPI } from "../types/servico.types";
 
 interface ServicoModalProps {
   servico?: ServicoAPI;
@@ -12,11 +16,42 @@ interface ServicoModalProps {
 }
 
 export function ServicoModal({ servico, onClose }: ServicoModalProps) {
-  const [nome, setNome] = useState(servico?.nome ?? "");
-  const [preco, setPreco] = useState(Number(servico?.precoBase ?? 30));
-  const [duracao, setDuracao] = useState(servico?.duracaoBase ?? 30);
-  const [cat, setCat] = useState<Categoria>("corte");
-  const [desc, setDesc] = useState("");
+  const { barbearia } = useAuth();
+  const { create, update } = useServicoMutations(barbearia?.codigo ?? null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateServicoInput>({
+    resolver: zodResolver(createServicoSchema),
+    defaultValues: {
+      nome: servico?.nome ?? "",
+      precoBase: Number(servico?.precoBase ?? 30),
+      duracaoBase: servico?.duracaoBase ?? 30,
+      descricao: "",
+    },
+  });
+
+  useEffect(() => {
+    reset({
+      nome: servico?.nome ?? "",
+      precoBase: Number(servico?.precoBase ?? 30),
+      duracaoBase: servico?.duracaoBase ?? 30,
+      descricao: "",
+    });
+  }, [servico, reset]);
+
+  function onSubmit(data: CreateServicoInput) {
+    if (servico) {
+      update.mutate({ codigo: servico.codigo, data }, { onSuccess: onClose });
+    } else {
+      create.mutate(data, { onSuccess: onClose });
+    }
+  }
+
+  const isPending = create.isPending || update.isPending;
 
   return (
     <>
@@ -57,6 +92,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
               {servico ? "Editar serviço" : "Novo serviço"}
             </span>
             <button
+              type="button"
               onClick={onClose}
               className="p-1 rounded-lg"
               style={{ color: "var(--text-muted)" }}
@@ -65,112 +101,121 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
             </button>
           </div>
 
-          <div className="px-5 py-4 space-y-4">
-            <div>
-              <label className="tqe-label">Nome do serviço</label>
-              <input
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Ex: Corte Clássico"
-                className="tqe-input"
-              />
-            </div>
-
-            <div>
-              <label className="tqe-label">Categoria</label>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {(
-                  Object.entries(CATEGORIA_CONFIG) as [
-                    Categoria,
-                    (typeof CATEGORIA_CONFIG)[Categoria],
-                  ][]
-                ).map(([key, cfg]) => (
-                  <button
-                    key={key}
-                    onClick={() => setCat(key)}
-                    className="px-3 py-1 rounded-lg text-[11px] font-semibold transition-all"
-                    style={{
-                      background: cat === key ? cfg.bg : "var(--bg-secondary)",
-                      color: cat === key ? cfg.color : "var(--text-muted)",
-                      border: `1px solid ${cat === key ? cfg.color + "40" : "var(--border-default)"}`,
-                    }}
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="px-5 py-4 space-y-4">
+              <div>
+                <label className="tqe-label">Nome do serviço</label>
+                <input
+                  {...register("nome")}
+                  placeholder="Ex: Corte Clássico"
+                  className="tqe-input"
+                />
+                {errors.nome && (
+                  <p
+                    className="text-[11px] mt-1"
+                    style={{ color: "var(--status-error)" }}
                   >
-                    {cfg.label}
-                  </button>
-                ))}
+                    {errors.nome.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="tqe-label">Preço (R$)</label>
+                  <input
+                    type="number"
+                    {...register("precoBase", { valueAsNumber: true })}
+                    className="tqe-input"
+                    min={0}
+                    step={0.01}
+                  />
+                  {errors.precoBase && (
+                    <p
+                      className="text-[11px] mt-1"
+                      style={{ color: "var(--status-error)" }}
+                    >
+                      {errors.precoBase.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="tqe-label">Duração (min)</label>
+                  <input
+                    type="number"
+                    {...register("duracaoBase", { valueAsNumber: true })}
+                    className="tqe-input"
+                    min={5}
+                    step={5}
+                  />
+                  {errors.duracaoBase && (
+                    <p
+                      className="text-[11px] mt-1"
+                      style={{ color: "var(--status-error)" }}
+                    >
+                      {errors.duracaoBase.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="tqe-label">Descrição</label>
+                <textarea
+                  {...register("descricao")}
+                  placeholder="Descreva o serviço..."
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border-default)",
+                    borderRadius: 8,
+                    color: "var(--text-primary)",
+                    fontSize: 13,
+                    fontFamily: "var(--font-body)",
+                    outline: "none",
+                    resize: "vertical",
+                    lineHeight: 1.5,
+                  }}
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="tqe-label">Preço (R$)</label>
-                <input
-                  type="number"
-                  value={preco}
-                  onChange={(e) => setPreco(Number(e.target.value))}
-                  className="tqe-input"
-                  min={0}
-                />
-              </div>
-              <div>
-                <label className="tqe-label">Duração (min)</label>
-                <input
-                  type="number"
-                  value={duracao}
-                  onChange={(e) => setDuracao(Number(e.target.value))}
-                  className="tqe-input"
-                  min={5}
-                  step={5}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="tqe-label">Descrição</label>
-              <textarea
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-                placeholder="Descreva o serviço..."
-                rows={3}
+            <div
+              className="flex gap-2 px-5 py-4"
+              style={{ borderTop: "1px solid var(--border-subtle)" }}
+            >
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-2 rounded-lg text-[13px] font-medium"
                 style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-default)",
-                  borderRadius: 8,
-                  color: "var(--text-primary)",
-                  fontSize: 13,
-                  fontFamily: "var(--font-body)",
-                  outline: "none",
-                  resize: "vertical",
-                  lineHeight: 1.5,
+                  background: "transparent",
+                  border: "1px solid var(--border-strong)",
+                  color: "var(--text-secondary)",
                 }}
-              />
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="flex-1 py-2 rounded-lg text-[13px] font-semibold"
+                style={{
+                  background: "var(--primary)",
+                  color: "#0D0D0D",
+                  opacity: isPending ? 0.6 : 1,
+                }}
+              >
+                {isPending
+                  ? "Salvando..."
+                  : servico
+                    ? "Salvar alterações"
+                    : "Criar serviço"}
+              </button>
             </div>
-          </div>
-
-          <div
-            className="flex gap-2 px-5 py-4"
-            style={{ borderTop: "1px solid var(--border-subtle)" }}
-          >
-            <button
-              onClick={onClose}
-              className="flex-1 py-2 rounded-lg text-[13px] font-medium"
-              style={{
-                background: "transparent",
-                border: "1px solid var(--border-strong)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              Cancelar
-            </button>
-            <button
-              className="flex-1 py-2 rounded-lg text-[13px] font-semibold"
-              style={{ background: "var(--primary)", color: "#0D0D0D" }}
-            >
-              {servico ? "Salvar alterações" : "Criar serviço"}
-            </button>
-          </div>
+          </form>
         </div>
       </motion.div>
     </>

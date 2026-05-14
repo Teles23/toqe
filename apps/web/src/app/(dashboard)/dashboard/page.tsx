@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useAuth } from "@/shared/hooks/use-auth";
 import { useDashboardOverview } from "@/features/dashboard/hooks/use-dashboard-overview";
 import { MetricsGrid } from "@/features/dashboard/components/MetricsGrid";
 import { LiveStatusCard } from "@/features/dashboard/components/LiveStatusCard";
@@ -22,7 +23,10 @@ import { DashboardSkeleton } from "@/features/dashboard/components/DashboardSkel
  * linhas.
  */
 export default function DashboardPage(): React.JSX.Element {
-  const { data, isPending, isError, error, refetch } = useDashboardOverview();
+  const { barbearia } = useAuth();
+  const { data, isPending, isError, error, refetch } = useDashboardOverview(
+    barbearia?.codigo ?? null,
+  );
 
   if (isPending) {
     return <DashboardSkeleton />;

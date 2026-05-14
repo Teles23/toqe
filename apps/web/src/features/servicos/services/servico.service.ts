@@ -1,4 +1,5 @@
 import { tenantApi } from "@/shared/api/api-client";
+import type { CreateServicoInput, UpdateServicoInput } from "@toqe/contracts";
 import type { ServicoAPI } from "../types/servico.types";
 
 export const servicoService = {
@@ -6,14 +7,14 @@ export const servicoService = {
     return tenantApi(barCodigo).get<ServicoAPI[]>("/servicos");
   },
 
-  create(barCodigo: number, data: Partial<ServicoAPI>): Promise<ServicoAPI> {
+  create(barCodigo: number, data: CreateServicoInput): Promise<ServicoAPI> {
     return tenantApi(barCodigo).post<ServicoAPI>("/servicos", data);
   },
 
   update(
     barCodigo: number,
     codigo: number,
-    data: Partial<ServicoAPI>,
+    data: UpdateServicoInput,
   ): Promise<ServicoAPI> {
     return tenantApi(barCodigo).put<ServicoAPI>(`/servicos/${codigo}`, data);
   },

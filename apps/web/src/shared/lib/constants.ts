@@ -15,7 +15,8 @@ export const QUERY_KEYS = {
   barbeiros: (barCodigo: number) => ["barbeiros", barCodigo] as const,
   clientes: (barCodigo: number) => ["clientes", barCodigo] as const,
   servicos: (barCodigo: number) => ["servicos", barCodigo] as const,
-  dashboard: () => ["dashboard", "overview"] as const,
+  dashboard: (barCodigo: number) =>
+    ["dashboard", "overview", barCodigo] as const,
   relatorios: {
     faturamento: (barCodigo: number, periodo: string) =>
       ["relatorios", "faturamento", barCodigo, periodo] as const,

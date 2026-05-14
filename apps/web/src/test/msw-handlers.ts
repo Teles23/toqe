@@ -109,6 +109,32 @@ export const handlers = [
     ]),
   ),
 
+  http.post(`${BASE}/barbearias/:barCodigo/servicos`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(
+      { codigo: 99, barCodigo: 1, ativo: true, ...(body as object) },
+      { status: 201 },
+    );
+  }),
+
+  http.put(
+    `${BASE}/barbearias/:barCodigo/servicos/:codigo`,
+    async ({ request }) => {
+      const body = await request.json();
+      return HttpResponse.json({
+        codigo: 1,
+        barCodigo: 1,
+        ativo: true,
+        ...(body as object),
+      });
+    },
+  ),
+
+  http.delete(
+    `${BASE}/barbearias/:barCodigo/servicos/:codigo`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+
   // ── Agendamentos ─────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo/agendamentos`, () =>
     HttpResponse.json([]),
