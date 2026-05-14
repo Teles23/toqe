@@ -25,75 +25,72 @@ describe('DashboardService', () => {
     prisma.membroBarbearia.findMany.mockResolvedValue([]);
   }
 
-  describe('getOverview with data', () => {
-    it('should return kpis with faturamento and agendamentos count', async () => {
-      // KPIs: itensConcluidos, agendamentosHoje status list, itensMes
+  describe('getOverview — com dados', () => {
+    it('retorna kpis, faturamento, servicos e barbeiros no shape correto', async () => {
+      // ordem real das chamadas agendamentoItem.findMany:
+      // 1-2: getKpis (itensConcluidos, itensMes) — Promise.all simultâneo
+      // 3-9: getFaturamentoDias (7 dias) — Promise.all simultâneo
+      // 10: getServicosPopulares — kick-off síncrono após getFaturamentoDias await
+      // 11-14: getFaturamentoSemanas (4 semanas) — sequential após semana resolve
       prisma.agendamentoItem.findMany
-        .mockResolvedValueOnce([{ preco: d(100) }]) // faturamento hoje (concluídos)
-        .mockResolvedValueOnce([{ preco: d(100) }]) // faturamento mês
-        // faturamento semana (7 dias) — kicked off concurrently via Promise.all
-        .mockResolvedValueOnce([{ preco: d(50) }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ preco: d(100) }])
-        // top servicos — called after getFaturamentoDias awaits (getServicosPopulares starts synchronously before getFaturamentoSemanas)
+        .mockResolvedValueOnce([{ preco: d(100) }]) // #1 itensConcluidos hoje
+        .mockResolvedValueOnce([{ preco: d(100) }]) // #2 itensMes
+        .mockResolvedValueOnce([{ preco: d(100) }]) // #3 semana dia 1
+        .mockResolvedValueOnce([{ preco: d(50) }, { preco: d(50) }]) // #4 semana dia 2
+        .mockResolvedValueOnce([]) // #5
+        .mockResolvedValueOnce([]) // #6
+        .mockResolvedValueOnce([]) // #7
+        .mockResolvedValueOnce([]) // #8
+        .mockResolvedValueOnce([]) // #9 semana dia 7
         .mockResolvedValueOnce([
+          // #10 serviços populares
           { preco: d(100), servico: { nome: 'Corte' } },
           { preco: d(50), servico: { nome: 'Barba' } },
           { preco: d(50), servico: { nome: 'Corte' } },
         ])
-        // faturamento semanas do mês (4 semanas) — sequential, after semana resolves
-        .mockResolvedValueOnce([{ preco: d(300) }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+        .mockResolvedValueOnce([{ preco: d(200) }]) // #11 mês sem 1
+        .mockResolvedValueOnce([]) // #12 mês sem 2
+        .mockResolvedValueOnce([]) // #13 mês sem 3
+        .mockResolvedValueOnce([]); // #14 mês sem 4
 
       prisma.agendamento.findMany
         .mockResolvedValueOnce([
-          { status: 'confirmado', inicio: new Date(), fim: new Date() },
-          { status: 'concluido', inicio: new Date(), fim: new Date() },
-        ]) // agendamentos hoje
-        .mockResolvedValueOnce([
-          { inicio: new Date(), fim: new Date(Date.now() + 3_600_000) },
-        ]) // duracoes concluidos
+          // agendamentosHoje (kpis)
+          { status: 'concluido' },
+          { status: 'confirmado' },
+        ])
+        .mockResolvedValueOnce([]) // duracoes (liveMetrics)
+        // atividade
         .mockResolvedValueOnce([
           {
-            inicio: new Date(),
-            fim: new Date(),
-            cliente: null,
             status: 'confirmado',
+            inicio: new Date(),
+            cliente: { nome: 'João' },
           },
-        ]); // atividade
+        ]);
 
-      prisma.agendamento.findFirst.mockResolvedValue(null); // proximo horario
       prisma.agendamento.count
-        .mockResolvedValueOnce(1) // barbeiros ativos agora
+        .mockResolvedValueOnce(1) // barbeiros ativos (liveMetrics)
         .mockResolvedValueOnce(0); // aguardando
+
+      prisma.agendamento.findFirst.mockResolvedValue(null); // próximo horário
 
       prisma.membroBarbearia.findMany.mockResolvedValueOnce([
         {
-          usrCodigo: 1,
-          usuario: { codigo: 1, nome: 'Pedro', avatarUrl: null },
+          usrCodigo: 10,
+          usuario: { codigo: 10, nome: 'Pedro', avatarUrl: null },
         },
       ]);
+
       // agendamento atual do barbeiro Pedro
       prisma.agendamento.findFirst.mockResolvedValueOnce(null);
 
       const result = await service.getOverview(1);
 
       expect(result.kpis).toHaveLength(4);
-      expect(result.kpis[0].label).toBe('Faturamento hoje');
-      expect(result.kpis[0].value).toBe(100);
-      expect(result.kpis[1].label).toBe('Agendamentos');
-      expect(result.kpis[1].value).toBe(2);
-
-      expect(result.liveMetrics).toHaveLength(4);
-      expect(result.barbeiros).toHaveLength(1);
-      expect(result.barbeiros[0].nome).toBe('Pedro');
-      expect(result.barbeiros[0].estado).toBe('idle');
+      expect(result.kpis[0]).toHaveProperty('label', 'Faturamento hoje');
+      expect(result.kpis[0]).toHaveProperty('value', 100);
+      expect(result.kpis[1]).toHaveProperty('label', 'Agendamentos');
 
       expect(result.faturamento.semana).toHaveLength(7);
       expect(result.faturamento.mes).toHaveLength(4);
@@ -101,30 +98,65 @@ describe('DashboardService', () => {
       expect(result.servicos[0].nome).toBe('Corte');
       expect(result.servicos[0].quantidade).toBe(2);
       expect(result.servicos[0].pct).toBe(100);
+      expect(result.servicos[1].pct).toBe(50);
 
-      expect(result.atividade).toHaveLength(1);
+      expect(result.liveMetrics).toHaveLength(4);
+      expect(result.barbeiros).toHaveLength(1);
+      expect(result.barbeiros[0].nome).toBe('Pedro');
+      expect(result.barbeiros[0].estado).toBe('idle');
     });
   });
 
-  describe('getOverview with no data', () => {
-    it('should return zeros and empty arrays', async () => {
+  describe('getOverview — sem dados', () => {
+    it('retorna zeros e arrays vazios', async () => {
       setupEmptyMocks();
 
       const result = await service.getOverview(1);
 
       expect(result.kpis).toHaveLength(4);
-      expect(result.kpis[0].value).toBe(0); // faturamento hoje
-      expect(result.kpis[1].value).toBe(0); // agendamentos
-
-      expect(result.liveMetrics).toHaveLength(4);
-      expect(result.liveMetrics[0].value).toBe('0'); // barbeiros ativos
-
-      expect(result.barbeiros).toHaveLength(0);
+      expect(result.kpis[0].value).toBe(0);
       expect(result.faturamento.semana).toHaveLength(7);
       result.faturamento.semana.forEach((p) => expect(p.valor).toBe(0));
       expect(result.faturamento.mes).toHaveLength(4);
       expect(result.servicos).toHaveLength(0);
       expect(result.atividade).toHaveLength(0);
+      expect(result.barbeiros).toHaveLength(0);
+    });
+  });
+
+  describe('barbeiros ao vivo', () => {
+    it('retorna estado active quando barbeiro tem agendamento atual', async () => {
+      setupEmptyMocks();
+
+      prisma.membroBarbearia.findMany.mockResolvedValueOnce([
+        {
+          usrCodigo: 10,
+          usuario: { codigo: 10, nome: 'Carlos', avatarUrl: null },
+        },
+      ]);
+
+      const inicio = new Date(Date.now() - 15 * 60_000);
+      const fim = new Date(Date.now() + 15 * 60_000);
+
+      // findFirst call order: (1) getLiveMetrics.proximo → null, (2) getBarbeirosStatus.Carlos → agendamento
+      prisma.agendamento.findFirst
+        .mockResolvedValueOnce(null) // próximo horário (getLiveMetrics)
+        .mockResolvedValueOnce({
+          // agendamento atual de Carlos (getBarbeirosStatus)
+          inicio,
+          fim,
+          cliente: { nome: 'João' },
+          itens: [{ servico: { nome: 'Corte' } }],
+        });
+
+      const result = await service.getOverview(1);
+
+      const carlos = result.barbeiros.find((b) => b.nome === 'Carlos');
+      expect(carlos?.estado).toBe('active');
+      expect(carlos?.cliente).toBe('João');
+      expect(carlos?.servico).toBe('Corte');
+      expect(carlos?.pct).toBeGreaterThan(0);
+      expect(carlos?.pct).toBeLessThanOrEqual(100);
     });
   });
 });
