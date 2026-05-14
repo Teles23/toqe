@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -31,6 +32,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Segurança HTTP: headers de proteção (XSS, Clickjacking, MIME sniffing…)
+  app.use(helmet());
 
   // CORS — credentials obrigatório para cookies httpOnly do frontend
   app.enableCors({

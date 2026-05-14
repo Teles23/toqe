@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../usuario/dto/create-user.dto';
@@ -20,6 +21,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
+// 10 requisições por minuto por IP — proteção contra brute-force
+@Throttle({ default: { ttl: 60_000, limit: 10 } })
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
