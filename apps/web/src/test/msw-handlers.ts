@@ -70,6 +70,16 @@ export const handlers = [
     ]),
   ),
 
+  http.post(`${BASE}/barbearias/:barCodigo/membros`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(body, { status: 201 });
+  }),
+
+  http.delete(
+    `${BASE}/barbearias/:barCodigo/membros/:usrCodigo`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+
   // ── Clientes ─────────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo/clientes`, () =>
     HttpResponse.json([
