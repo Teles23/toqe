@@ -15,6 +15,8 @@ export class TenantGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<TenantRequest>();
     const user = request.user;
 
+    if (!user) return true; // rota pública sem JwtAuthGuard
+
     const barCodigo =
       request.params['barCodigo'] ??
       (request.body['barCodigo'] as string | undefined) ??
