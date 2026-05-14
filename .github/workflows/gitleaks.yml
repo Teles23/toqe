@@ -4,13 +4,19 @@ on:
   push:
     branches:
       - main
+      - develop
       - "feature/**"
       - "arch/**"
       - "fix/**"
+      - "refactor/**"
+      - "chore/**"
+      - "docs/**"
+      - "test/**"
+      - "hotfix/**"
   pull_request:
     branches:
       - main
-      - "feature/**"
+      - develop
 
 permissions:
   contents: read
