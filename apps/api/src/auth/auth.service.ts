@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { RefreshToken } from '@prisma/client';
+import { RefreshToken } from '../generated/prisma';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from '../usuario/usuario.service';
 import { LoginDto } from './dto/login.dto';
