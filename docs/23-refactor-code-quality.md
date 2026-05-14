@@ -101,13 +101,85 @@ Auditoria e correção sistemática do projeto para conformidade com DRY, SOLID 
 
 ---
 
-## Próximas fases
+---
 
-| Fase       | Escopo                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------------- |
-| Fase 2 Web | Corrigir `setup.spec.ts` trivial no Web                                                     |
-| Fase 3     | DRY API: `date.utils`, `price.utils`, `aggregation.utils`, constantes centralizadas         |
-| Fase 4     | DRY Web: unificar BarbeiroCard, remover `ClientOnlyChart` duplicado, extrair `getCategoria` |
-| Fase 5     | SOLID API: `BarberMetricsService`, `SlotAvailabilityChecker`, DIP em `NotificacaoService`   |
-| Fase 6     | SOLID Web: separar fetch/render em Views, Context para `barCodigo`                          |
-| Fase 7     | Validação final: lint + types + testes 100% nos dois apps                                   |
+## Fase 3 — DRY API: utilitários centralizados
+
+### Arquivos criados
+
+| Arquivo                                               | Conteúdo                                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `apps/api/src/common/constants/agendamento-status.ts` | `StatusAgendamento` enum + `STATUSES_ENCERRADOS`, `STATUSES_ATIVOS`, `STATUSES_BLOQUEANTES` |
+| `apps/api/src/common/utils/date.utils.ts`             | `startOfDay`, `endOfDay`, `toDateString`, `currentMonthRange`                               |
+| `apps/api/src/common/utils/price.utils.ts`            | `somarItens`, `somarAgendamentos`                                                           |
+| `apps/api/src/common/constants/prisma-selects.ts`     | `SELECT_USUARIO_COM_AVATAR`, `SELECT_USUARIO_PERFIL`, `INCLUDE_ITENS_PRECO`                 |
+
+### Resultado
+
+- 26 string literals de status → enum tipado
+- 5 padrões `setHours(0,0,0,0)` → `startOfDay()`/`endOfDay()`
+- 3 padrões `toISOString().split('T')[0]` → `toDateString()`
+- 3 nested-reduces de faturamento → `somarAgendamentos()`
+- 2 monthRange duplicados → `currentMonthRange()`
+
+---
+
+## Fase 4 — DRY Web
+
+### Arquivos modificados
+
+| Arquivo                                                           | Mudança                                                                |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `apps/web/src/shared/components/chart-utils.tsx`                  | Adicionado prop `formatter?` ao `ChartTooltip`                         |
+| `apps/web/src/features/dashboard/components/FaturamentoChart.tsx` | Remove `ClientOnlyChart` e `CustomTooltip` locais — importa dos shared |
+| `apps/web/src/features/servicos/constants/servico.constants.ts`   | Extrai `getCategoria()` helper                                         |
+| `apps/web/src/features/servicos/components/ServicoCard.tsx`       | Usa `getCategoria()`                                                   |
+| `apps/web/src/features/servicos/components/ServicoDetalhe.tsx`    | Usa `getCategoria()`                                                   |
+
+---
+
+## Fase 5 — SOLID API: extrai isTimeOverlap
+
+### Problema
+
+`isBusy()` em `AgendaService` repetiria o mesmo padrão de 3 condições (início, fim, contenção) para 3 domínios (almoço, agendamentos, bloqueios) — 56 linhas repetitivas.
+
+### Solução
+
+Extraído `isTimeOverlap(slotStart, slotEnd, rangeStart, rangeEnd)` em `date.utils.ts` com 6 testes unitários. `isBusy()` reduzido de 56 → 7 linhas usando `isTimeOverlap` + `.some()`.
+
+### Arquivos criados/modificados
+
+| Arquivo                                        | Mudança                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `apps/api/src/common/utils/date.utils.ts`      | + `isTimeOverlap()`                                                                        |
+| `apps/api/src/common/utils/date.utils.spec.ts` | 11 testes unitários (isTimeOverlap, startOfDay, endOfDay, toDateString, currentMonthRange) |
+| `apps/api/src/agenda/agenda.service.ts`        | `isBusy()` simplificado                                                                    |
+
+---
+
+## Fase 6 — SOLID Web
+
+**Avaliação:** Nenhuma violação significativa encontrada.
+
+- Views já separam fetch (hooks) de render (JSX) idiomaticamente
+- `barCodigo` tem apenas 2 níveis de prop drilling (Page → View → Secao) — Context seria premature optimization
+- Componentes grandes (`app/page.tsx`, onboarding) são landing pages intencionalmente monolíticas
+- `shared/ui/` são componentes gerados (shadcn/ui) — não tocar
+
+---
+
+## Resultado Final
+
+**Status:** Completo ✓
+
+| Métrica                   | Antes       | Depois |
+| ------------------------- | ----------- | ------ |
+| Testes API                | 76          | 119    |
+| Testes Web                | 30          | 35     |
+| Erros ESLint API          | muitos      | 0      |
+| Erros TypeScript          | muitos      | 0      |
+| `as any` em produção      | muitos      | 0      |
+| `eslint-disable` inline   | 34 arquivos | 0      |
+| String literals de status | 26          | 0      |
+| `isBusy()` linhas         | 56          | 7      |
