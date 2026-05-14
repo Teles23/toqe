@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import type { FaturamentoPonto } from "../types/dashboard.types";
+import { formatBRL } from "@/shared/lib/utils";
 
 type Periodo = "semana" | "mes";
 
@@ -51,7 +52,9 @@ function CustomTooltip({
         {label}
       </div>
       <div style={{ color: "var(--status-success)", fontWeight: 600 }}>
-        R$ {payload[0]?.value?.toLocaleString("pt-BR")}
+        {payload[0]?.value !== undefined
+          ? formatBRL(payload[0].value as number)
+          : ""}
       </div>
     </div>
   );
@@ -104,7 +107,7 @@ export function FaturamentoChart({
             Faturamento
           </span>
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-            Total · R$ {total.toLocaleString("pt-BR")}
+            Total · {formatBRL(total)}
           </span>
         </div>
 

@@ -1,4 +1,5 @@
 import type { SlotStatus } from "../types/agenda.types";
+import { DIAS_SEMANA_CURTO } from "@/shared/lib/constants";
 
 export const API_STATUS_TO_SLOT: Record<string, SlotStatus> = {
   confirmado: "confirmed",
@@ -16,4 +17,4 @@ export const SLOT_TO_API_STATUS: Partial<Record<SlotStatus, string>> = {
   pending: "pendente",
 } as const;
 
-export const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+export const DIAS = DIAS_SEMANA_CURTO;

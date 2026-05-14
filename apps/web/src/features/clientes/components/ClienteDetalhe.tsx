@@ -6,6 +6,7 @@ import { DetailPanel } from "@/shared/components/detail-panel";
 import { DetailMetricGrid } from "@/shared/components/detail-metric-grid";
 import type { Cliente } from "../types/cliente.types";
 import { STATUS_CONFIG } from "../constants/cliente.constants";
+import { formatBRL } from "@/shared/lib/utils";
 
 interface ClienteDetalheProps {
   cliente: Cliente;
@@ -17,8 +18,8 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
 
   const metrics = [
     { label: "Visitas", value: `${cliente.totalVisitas}`, suffix: "x" },
-    { label: "Total gasto", value: `R$${cliente.totalGasto}` },
-    { label: "Ticket médio", value: `R$${cliente.ticketMedio}` },
+    { label: "Total gasto", value: formatBRL(cliente.totalGasto) },
+    { label: "Ticket médio", value: formatBRL(cliente.ticketMedio) },
     { label: "Perfil", value: cliente.perfil },
   ];
 

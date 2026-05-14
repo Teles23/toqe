@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import type { Cliente } from "../types/cliente.types";
 import { STATUS_CONFIG } from "../constants/cliente.constants";
+import { formatBRL } from "@/shared/lib/utils";
 
 interface ClienteCardProps {
   cliente: Cliente;
@@ -95,7 +96,7 @@ export function ClienteCard({
           fontFamily: "var(--font-heading)",
         }}
       >
-        R${cliente.totalGasto}
+        {formatBRL(cliente.totalGasto)}
       </span>
 
       <span

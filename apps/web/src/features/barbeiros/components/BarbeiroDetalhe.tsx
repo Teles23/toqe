@@ -6,8 +6,10 @@ import { DetailPanel } from "@/shared/components/detail-panel";
 import { DetailMetricGrid } from "@/shared/components/detail-metric-grid";
 import { ESTADO_CONFIG } from "../constants/barbeiro.constants";
 import type { Barbeiro } from "../types/barbeiro.types";
+import { DIAS_SEMANA_CURTO } from "@/shared/lib/constants";
+import { formatBRL } from "@/shared/lib/utils";
 
-const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const DIAS_SEMANA = DIAS_SEMANA_CURTO;
 
 export function BarbeiroDetalhe({
   b,
@@ -23,9 +25,9 @@ export function BarbeiroDetalhe({
     { label: "Este mês", value: `${b.atendimentosMes}`, suffix: "atend." },
     {
       label: "Fat. mensal",
-      value: `R$${(b.faturamentoMes / 1000).toFixed(1)}k`,
+      value: `${formatBRL(b.faturamentoMes / 1000)}k`,
     },
-    { label: "Ticket médio", value: `R$${Math.round(b.ticketMedio)}` },
+    { label: "Ticket médio", value: formatBRL(Math.round(b.ticketMedio)) },
   ];
 
   const footer = (

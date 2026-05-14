@@ -3,6 +3,7 @@
 
 import { motion } from "framer-motion";
 import type { BarbeiroItem } from "../types/relatorio.types";
+import { formatBRL } from "@/shared/lib/utils";
 
 interface BarbeirosRankingProps {
   data: BarbeiroItem[];
@@ -120,14 +121,14 @@ export function BarbeirosRanking({ data }: BarbeirosRankingProps) {
               fontFamily: "var(--font-heading)",
             }}
           >
-            R${(b.faturamento / 1000).toFixed(1)}k
+            {formatBRL(b.faturamento / 1000)}k
           </span>
 
           <span
             className="text-[13px] tabular-nums"
             style={{ color: "var(--text-secondary)" }}
           >
-            R${b.ticketMedio}
+            {formatBRL(b.ticketMedio)}
           </span>
 
           <span

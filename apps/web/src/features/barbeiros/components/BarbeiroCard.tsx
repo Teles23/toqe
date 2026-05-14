@@ -4,6 +4,7 @@
 import { motion } from "framer-motion";
 import { ESTADO_CONFIG } from "../constants/barbeiro.constants";
 import type { Barbeiro } from "../types/barbeiro.types";
+import { formatBRL } from "@/shared/lib/utils";
 
 interface BarbeiroCardProps {
   b: Barbeiro;
@@ -109,7 +110,7 @@ export function BarbeiroCard({ b, selected, onClick }: BarbeiroCardProps) {
               className="text-[11px]"
               style={{ color: "var(--text-muted)" }}
             >
-              R${Math.round(b.ticketMedio)} ticket
+              {formatBRL(Math.round(b.ticketMedio))} ticket
             </span>
             {b.avaliacao > 0 && (
               <>

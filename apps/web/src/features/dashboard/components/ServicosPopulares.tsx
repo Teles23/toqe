@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import type { ServicoPopular } from "../types/dashboard.types";
+import { formatBRL } from "@/shared/lib/utils";
 
 interface ServicosPopularesProps {
   servicos: ServicoPopular[];
@@ -105,7 +106,7 @@ export function ServicosPopulares({
                 fontFamily: "var(--font-heading)",
               }}
             >
-              R${s.receita}
+              {formatBRL(s.receita)}
             </span>
           </motion.div>
         ))}
