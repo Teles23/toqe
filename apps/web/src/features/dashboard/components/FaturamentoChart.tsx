@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Area,
@@ -13,63 +13,13 @@ import {
 } from "recharts";
 import type { FaturamentoPonto } from "../types/dashboard.types";
 import { formatBRL } from "@/shared/lib/utils";
+import { ClientOnlyChart, ChartTooltip } from "@/shared/components/chart-utils";
 
 type Periodo = "semana" | "mes";
 
 interface FaturamentoChartProps {
   semana: FaturamentoPonto[];
   mes: FaturamentoPonto[];
-}
-
-/** Recharts chama com any payload — tipagem mínima local. */
-interface TooltipPayloadEntry {
-  value?: number;
-}
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: TooltipPayloadEntry[];
-  label?: string;
-}
-
-function CustomTooltip({
-  active,
-  payload,
-  label,
-}: CustomTooltipProps): React.JSX.Element | null {
-  if (!active || !payload?.length) return null;
-  return (
-    <div
-      className="rounded-lg px-3 py-2"
-      style={{
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border-strong)",
-        boxShadow: "var(--shadow-md)",
-        fontSize: 12,
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      <div style={{ color: "var(--text-secondary)", marginBottom: 4 }}>
-        {label}
-      </div>
-      <div style={{ color: "var(--status-success)", fontWeight: 600 }}>
-        {payload[0]?.value !== undefined
-          ? formatBRL(payload[0].value as number)
-          : ""}
-      </div>
-    </div>
-  );
-}
-
-function ClientOnlyChart({
-  children,
-}: {
-  children: React.ReactNode;
-}): React.JSX.Element | null {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  return mounted ? <>{children}</> : null;
 }
 
 /** Card de faturamento com toggle semana/mês. */
@@ -174,7 +124,7 @@ export function FaturamentoChart({
                 tickLine={false}
                 tickFormatter={(v) => `R$${v}`}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<ChartTooltip formatter={formatBRL} />} />
               <Area
                 type="monotone"
                 dataKey="valor"

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Scissors, DollarSign, Clock } from "lucide-react";
-import { CATEGORIA_CONFIG } from "../constants/servico.constants";
+import { getCategoria } from "../constants/servico.constants";
 import type { ServicoAPI } from "../types/servico.types";
 import { formatBRL } from "@/shared/lib/utils";
 
@@ -14,11 +14,8 @@ interface ServicoCardProps {
 }
 
 export function ServicoCard({ s, index, selected, onClick }: ServicoCardProps) {
-  const categoria =
-    (s as unknown as { categoria?: string }).categoria ?? "corte";
-  const cfg =
-    CATEGORIA_CONFIG[categoria as keyof typeof CATEGORIA_CONFIG] ??
-    CATEGORIA_CONFIG.corte;
+  const categoria = (s as unknown as { categoria?: string }).categoria;
+  const cfg = getCategoria(categoria);
 
   return (
     <motion.div
