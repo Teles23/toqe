@@ -33,7 +33,15 @@
 - Nunca entregar mudança de código sem os testes acompanhando no mesmo commit
 - Commit e push ao final de cada entrega completa
 
-### 6. Zero tolerância a bypasses
+### 6. Testes testam o código real — sempre
+
+- **Nunca** duplicar lógica no spec. Se a função não é exportada, exportar ela e importar no teste
+- **Nunca** criar cópias locais da implementação dentro do arquivo de teste — isso testa o espelho, não o original
+- Se o spec não importa do módulo real, não está testando nada: qualquer bug na implementação passa despercebido
+- Quando corrigir um bug, o teste que cobre aquele cenário vai no **mesmo commit**
+- Antes de commitar: rodar `pnpm lint`, `pnpm check-types` e `pnpm test` — os três juntos
+
+### 7. Zero tolerância a bypasses
 
 - **Nunca** usar `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `any` casting ou flags `--passWithNoTests` para silenciar erros
 - **Nunca** remover código funcional da aplicação para fazer lint/testes passarem
