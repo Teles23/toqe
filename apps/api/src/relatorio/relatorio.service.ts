@@ -46,16 +46,13 @@ export class RelatorioService {
       },
     });
 
-    // Agrupar por dia
-    const porDia: Record<string, number> = {};
+    const porDia: Record<string, { total: number }> = {};
     itens.forEach((it) => {
       const dia = toDateString(it.agendamento.inicio);
-      porDia[dia] = (porDia[dia] ?? 0) + Number(it.preco);
+      porDia[dia] = { total: (porDia[dia]?.total ?? 0) + Number(it.preco) };
     });
 
-    return Object.entries(porDia)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([data, total]) => ({ data, total }));
+    return this.sortedByDay(porDia);
   }
 
   /** Agendamentos concluídos vs cancelados por dia */
@@ -82,9 +79,7 @@ export class RelatorioService {
       porDia[dia][ag.status as 'concluido' | 'cancelado' | 'no_show'] += 1;
     });
 
-    return Object.entries(porDia)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([data, counts]) => ({ data, ...counts }));
+    return this.sortedByDay(porDia);
   }
 
   /** Distribuição de receita por serviço */
@@ -149,6 +144,14 @@ export class RelatorioService {
         };
       }),
     ).then((lista) => lista.sort((a, b) => b.faturamento - a.faturamento));
+  }
+
+  private sortedByDay<V extends object>(
+    record: Record<string, V>,
+  ): Array<{ data: string } & V> {
+    return Object.entries(record)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([data, value]) => ({ data, ...value }) as { data: string } & V);
   }
 
   /** Volume de agendamentos por hora do dia (horários de pico) */
