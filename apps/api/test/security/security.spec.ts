@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AppModule } from '../../src/app.module';
 
 describe('Security (supertest)', () => {
@@ -12,7 +13,10 @@ describe('Security (supertest)', () => {
     }).compile();
 
     app = module.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    app.useGlobalPipes(
+      new ZodValidationPipe(),
+      new ValidationPipe({ transform: true }),
+    );
     await app.init();
   });
 
@@ -37,17 +41,17 @@ describe('Security (supertest)', () => {
     expect(res.status).toBe(401);
   });
 
-  it('POST /barbearia without auth → 401', async () => {
+  it('POST /barbearias without auth → 401', async () => {
     const res = await request(app.getHttpServer())
-      .post('/barbearia')
+      .post('/barbearias')
       .send({ nome: 'Test', slug: 'test' });
     expect(res.status).toBe(401);
   });
 
-  it('GET /relatorios/faturamento without tenant header → 400 ou 401', async () => {
+  it('GET /barbearias/1/relatorios/faturamento without auth → 401', async () => {
     const res = await request(app.getHttpServer()).get(
-      '/relatorios/faturamento',
+      '/barbearias/1/relatorios/faturamento',
     );
-    expect([400, 401]).toContain(res.status);
+    expect(res.status).toBe(401);
   });
 });
