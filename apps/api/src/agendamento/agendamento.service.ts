@@ -41,16 +41,10 @@ export class AgendamentoService {
       );
     }
 
-    let totalDuration = 0;
-    const agendamentoItemsData = servicos.map((srv) => {
-      const duracaoMin = srv.barbeiros[0]?.duracaoMin ?? srv.duracaoBase ?? 30;
-      const preco =
-        srv.barbeiros[0]?.precoProprio != null
-          ? srv.barbeiros[0].precoProprio
-          : (srv.precoBase ?? 0);
-      totalDuration += duracaoMin;
-      return { srvCodigo: srv.codigo, duracaoMin, preco, barCodigo };
-    });
+    const { itensData, totalDuration } = this.buildItensData(
+      servicos,
+      barCodigo,
+    );
 
     const inicioDate = new Date(dto.inicio);
     const fimDate = addMinutes(inicioDate, totalDuration);
@@ -80,7 +74,7 @@ export class AgendamentoService {
           inicio: inicioDate,
           fim: fimDate,
           status: StatusAgendamento.CONFIRMADO,
-          itens: { create: agendamentoItemsData },
+          itens: { create: itensData },
         },
         include: INCLUDE_COMPLETO,
       });
@@ -100,6 +94,28 @@ export class AgendamentoService {
     this.agendaGateway.emitAgendamentoCriado(barCodigo, agendamento);
 
     return agendamento;
+  }
+
+  private buildItensData(
+    servicos: {
+      codigo: number;
+      duracaoBase: number | null;
+      precoBase: number | null;
+      barbeiros: { duracaoMin: number; precoProprio: number | null }[];
+    }[],
+    barCodigo: number,
+  ) {
+    let totalDuration = 0;
+    const itensData = servicos.map((srv) => {
+      const duracaoMin = srv.barbeiros[0]?.duracaoMin ?? srv.duracaoBase ?? 30;
+      const preco =
+        srv.barbeiros[0]?.precoProprio != null
+          ? srv.barbeiros[0].precoProprio
+          : (srv.precoBase ?? 0);
+      totalDuration += duracaoMin;
+      return { srvCodigo: srv.codigo, duracaoMin, preco, barCodigo };
+    });
+    return { itensData, totalDuration };
   }
 
   async findAll(barCodigo: number, filtros: ListAgendamentoDto) {

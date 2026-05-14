@@ -16,41 +16,54 @@ export class DashboardService {
 
   async getOverview(barCodigo: number) {
     const hoje = startOfDay(new Date());
+    const fimHoje = endOfDay(hoje);
 
-    // Últimos 7 dias
+    const [faturamento7d, agendamentosHoje, barbeirosAtivos, topServicos] =
+      await Promise.all([
+        this.getFaturamento7d(barCodigo, hoje),
+        this.getAgendamentosHoje(barCodigo, hoje, fimHoje),
+        this.getBarbeirosAtivos(barCodigo),
+        this.getTopServicos(barCodigo),
+      ]);
+
+    return {
+      faturamento7d,
+      agendamentosHoje,
+      barbeirosAtivos: barbeirosAtivos.map((m) => m.usuario),
+      topServicos,
+    };
+  }
+
+  private async getFaturamento7d(barCodigo: number, hoje: Date) {
     const dias7 = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(hoje);
       d.setDate(d.getDate() - (6 - i));
       return d;
     });
 
-    // Faturamento por dia (últimos 7 dias)
-    const faturamento7d = await Promise.all(
+    return Promise.all(
       dias7.map(async (dia) => {
-        const fimDia = endOfDay(dia);
-
         const itens = await this.prisma.agendamentoItem.findMany({
           where: {
             barCodigo,
             agendamento: {
               status: StatusAgendamento.CONCLUIDO,
-              inicio: { gte: dia, lte: fimDia },
+              inicio: { gte: dia, lte: endOfDay(dia) },
             },
           },
           select: { preco: true },
         });
-
-        return {
-          data: toDateString(dia),
-          total: somarItens(itens),
-        };
+        return { data: toDateString(dia), total: somarItens(itens) };
       }),
     );
+  }
 
-    // Agendamentos de hoje
-    const fimHoje = endOfDay(hoje);
-
-    const agendamentosHoje = await this.prisma.agendamento.findMany({
+  private async getAgendamentosHoje(
+    barCodigo: number,
+    hoje: Date,
+    fimHoje: Date,
+  ) {
+    return this.prisma.agendamento.findMany({
       where: { barCodigo, inicio: { gte: hoje, lte: fimHoje } },
       include: {
         cliente: { select: { nome: true, avatarUrl: true } },
@@ -60,14 +73,16 @@ export class DashboardService {
       orderBy: { inicio: 'asc' },
       take: 10,
     });
+  }
 
-    // Barbeiros ativos hoje
-    const barbeirosAtivos = await this.prisma.membroBarbearia.findMany({
+  private async getBarbeirosAtivos(barCodigo: number) {
+    return this.prisma.membroBarbearia.findMany({
       where: { barCodigo, perfil: 'barbeiro' },
       include: { usuario: { select: SELECT_USUARIO_COM_AVATAR } },
     });
+  }
 
-    // Top 5 serviços do mês
+  private async getTopServicos(barCodigo: number) {
     const { inicio: inicioMes, fim: fimMes } = currentMonthRange();
 
     const itensMes = await this.prisma.agendamentoItem.findMany({
@@ -93,15 +108,8 @@ export class DashboardService {
       servicoMap[nome].quantidade += 1;
     });
 
-    const topServicos = Object.values(servicoMap)
+    return Object.values(servicoMap)
       .sort((a, b) => b.quantidade - a.quantidade)
       .slice(0, 5);
-
-    return {
-      faturamento7d,
-      agendamentosHoje,
-      barbeirosAtivos: barbeirosAtivos.map((m) => m.usuario),
-      topServicos,
-    };
   }
 }
