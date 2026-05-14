@@ -70,7 +70,7 @@ describe('AgendamentoService', () => {
           barbeiros: [],
         },
       ]);
-      mockPrisma.$transaction.mockImplementation(async (fn) => {
+      mockPrisma.$transaction.mockImplementation((fn) => {
         const tx = {
           $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
           agendamento: { create: jest.fn().mockResolvedValue(mockAgendamento) },
@@ -114,7 +114,7 @@ describe('AgendamentoService', () => {
           barbeiros: [],
         },
       ]);
-      mockPrisma.$transaction.mockImplementation(async (fn) => {
+      mockPrisma.$transaction.mockImplementation((fn) => {
         const tx = {
           $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(1) }]),
           agendamento: { create: jest.fn() },

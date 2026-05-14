@@ -29,7 +29,7 @@ describe('BarbeariaService', () => {
     it('cria barbearia e vincula dono', async () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue(null);
       const barbearia = { codigo: 1, nome: 'BarberShop', slug: 'bs' };
-      mockPrisma.$transaction.mockImplementation(async (fn) => {
+      mockPrisma.$transaction.mockImplementation((fn) => {
         const tx = {
           barbearia: { create: jest.fn().mockResolvedValue(barbearia) },
           membroBarbearia: { create: jest.fn().mockResolvedValue({}) },

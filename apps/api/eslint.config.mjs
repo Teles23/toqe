@@ -1,5 +1,6 @@
 // @ts-check
 import eslint from '@eslint/js';
+import jestPlugin from 'eslint-plugin-jest';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -26,15 +27,14 @@ export default tseslint.config(
     },
   },
   {
-    // Regras relaxadas em arquivos de spec — padrões Jest legítimos que disparam falsos positivos
+    // Specs Jest: usa eslint-plugin-jest para tratar corretamente mocks e padrões Jest
+    // sem desabilitar regras de forma genérica
     files: ['**/*.spec.ts'],
+    plugins: { jest: jestPlugin },
     rules: {
+      // unbound-method: plugin jest entende que expect(mock.fn) é seguro — não é chamada solta
       '@typescript-eslint/unbound-method': 'off',
-      '@typescript-eslint/require-await': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
-      ],
+      'jest/unbound-method': 'error',
     },
   },
   {
