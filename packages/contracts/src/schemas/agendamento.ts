@@ -24,7 +24,19 @@ export const patchStatusAgendamentoSchema = z.object({
   }),
 });
 
+export const listAgendamentoSchema = z.object({
+  data: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato inválido — use YYYY-MM-DD")
+    .optional(),
+  barbeiroId: z.coerce.number().int().positive().optional(),
+  status: z
+    .enum(["pendente", "confirmado", "cancelado", "concluido", "no_show"])
+    .optional(),
+});
+
 export type CreateAgendamentoInput = z.infer<typeof createAgendamentoSchema>;
 export type PatchStatusAgendamentoInput = z.infer<
   typeof patchStatusAgendamentoSchema
 >;
+export type ListAgendamentoInput = z.infer<typeof listAgendamentoSchema>;

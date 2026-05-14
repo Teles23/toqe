@@ -1,5 +1,9 @@
 import 'dotenv/config';
-import { PrismaClient } from '../src/generated/prisma';
+import {
+  PrismaClient,
+  type Usuario,
+  type Servico,
+} from '../src/generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
@@ -30,7 +34,7 @@ async function main() {
     await prisma.planoLimite.upsert({
       where: { plano: p.plano },
       update: p,
-      create: p as any,
+      create: p,
     });
   }
   console.log('  ✔ Planos sincronizados');
@@ -53,7 +57,7 @@ async function main() {
     { nome: 'Marcos Silva', email: 'marcos.silva@email.com' },
   ];
 
-  const dbUsers: Record<string, any> = {};
+  const dbUsers: Record<string, Usuario> = {};
   for (const u of usuarios) {
     dbUsers[u.email] = await prisma.usuario.upsert({
       where: { email: u.email },
@@ -108,7 +112,7 @@ async function main() {
     { nome: 'Barba Terapia', preco: 35.0, duracao: 30 },
   ];
 
-  const dbServices: Record<string, any> = {};
+  const dbServices: Record<string, Servico> = {};
   for (const s of servicos) {
     dbServices[s.nome] = await prisma.servico.upsert({
       where: { nome_barCodigo: { nome: s.nome, barCodigo: barbearia.codigo } },

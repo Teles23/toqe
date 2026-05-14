@@ -60,11 +60,6 @@ describe("toSlot", () => {
     expect(slot.status).toBe("late");
   });
 
-  it("status desconhecido cai em pending", () => {
-    const slot = toSlot(makeAgendamento({ status: "desconhecido" }), now);
-    expect(slot.status).toBe("pending");
-  });
-
   it("calcula duração em minutos corretamente", () => {
     const slot = toSlot(makeAgendamento(), now);
     expect(slot.duration).toBe(30);
@@ -117,14 +112,14 @@ describe("toSlot", () => {
 // ─── toBarbeiro ───────────────────────────────────────────────────────────────
 
 describe("toBarbeiro", () => {
-  it("state é 'active' quando barbeiro tem agendamento EM_ATENDIMENTO", () => {
-    const agendamentos = [makeAgendamento({ status: "EM_ATENDIMENTO" })];
+  it("state é 'active' quando barbeiro tem agendamento confirmado", () => {
+    const agendamentos = [makeAgendamento({ status: "confirmado" })];
     const result = toBarbeiro(barbeiro, agendamentos);
     expect(result.state).toBe("active");
   });
 
-  it("state é 'idle' quando barbeiro não tem agendamento EM_ATENDIMENTO", () => {
-    const agendamentos = [makeAgendamento({ status: "confirmado" })];
+  it("state é 'idle' quando barbeiro só tem agendamentos concluídos", () => {
+    const agendamentos = [makeAgendamento({ status: "concluido" })];
     const result = toBarbeiro(barbeiro, agendamentos);
     expect(result.state).toBe("idle");
   });
@@ -146,7 +141,7 @@ describe("toBarbeiro", () => {
   it("conta todos os agendamentos do barbeiro independente de status", () => {
     const agendamentos = [
       makeAgendamento({ codigo: 1, status: "confirmado" }),
-      makeAgendamento({ codigo: 2, status: "EM_ATENDIMENTO" }),
+      makeAgendamento({ codigo: 2, status: "confirmado" }),
     ];
     const result = toBarbeiro(barbeiro, agendamentos);
     expect(result.agendamentos).toBe(2);
@@ -159,7 +154,7 @@ describe("toBarbeiro", () => {
   });
 
   it("state respeita o contrato do tipo Barbeiro — nunca retorna valor fora de 'active'|'idle'|'late'", () => {
-    const comAtendimento = [makeAgendamento({ status: "EM_ATENDIMENTO" })];
+    const comAtendimento = [makeAgendamento({ status: "confirmado" })];
     const semAtendimento = [makeAgendamento({ status: "confirmado" })];
     const valoresValidos = ["active", "idle", "late"];
 

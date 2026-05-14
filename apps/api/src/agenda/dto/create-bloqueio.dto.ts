@@ -1,20 +1,4 @@
-import {
-  IsDateString,
-  IsNotEmpty,
-  IsString,
-  IsOptional,
-} from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { createBloqueioSchema } from '@toqe/contracts';
 
-export class CreateBloqueioDto {
-  @IsDateString()
-  @IsNotEmpty()
-  inicio: string;
-
-  @IsDateString()
-  @IsNotEmpty()
-  fim: string;
-
-  @IsString()
-  @IsOptional()
-  motivo?: string;
-}
+export class CreateBloqueioDto extends createZodDto(createBloqueioSchema) {}

@@ -104,7 +104,7 @@ export class DashboardService {
       const { nome } = it.servico;
       if (!servicoMap[nome])
         servicoMap[nome] = { nome, total: 0, quantidade: 0 };
-      servicoMap[nome].total += Number(it.preco);
+      servicoMap[nome].total += it.preco.toNumber();
       servicoMap[nome].quantidade += 1;
     });
 

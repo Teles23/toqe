@@ -1,5 +1,10 @@
 import { DashboardService } from './dashboard.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { Prisma } from '../generated/prisma';
+
+function d(value: number) {
+  return new Prisma.Decimal(value);
+}
 
 describe('DashboardService', () => {
   let service: DashboardService;
@@ -16,8 +21,8 @@ describe('DashboardService', () => {
     it('should return faturamento7d, agendamentosHoje, topServicos sorted by count', async () => {
       // Mock agendamentoItem.findMany for 7 days
       prisma.agendamentoItem.findMany
-        .mockResolvedValueOnce([{ preco: 100 }])
-        .mockResolvedValueOnce([{ preco: 50 }, { preco: 50 }])
+        .mockResolvedValueOnce([{ preco: d(100) }])
+        .mockResolvedValueOnce([{ preco: d(50) }, { preco: d(50) }])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
@@ -25,9 +30,9 @@ describe('DashboardService', () => {
         .mockResolvedValueOnce([])
         // top services call
         .mockResolvedValueOnce([
-          { preco: 100, servico: { nome: 'Corte' } },
-          { preco: 50, servico: { nome: 'Barba' } },
-          { preco: 50, servico: { nome: 'Corte' } },
+          { preco: d(100), servico: { nome: 'Corte' } },
+          { preco: d(50), servico: { nome: 'Barba' } },
+          { preco: d(50), servico: { nome: 'Corte' } },
         ]);
 
       prisma.agendamento.findMany.mockResolvedValueOnce([

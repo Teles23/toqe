@@ -49,11 +49,18 @@ export interface ServicoAPI {
 
 // ---- Agendamento ----
 
+export type StatusAgendamento =
+  | "pendente"
+  | "confirmado"
+  | "cancelado"
+  | "concluido"
+  | "no_show";
+
 export interface AgendamentoAPI {
   codigo: number;
   inicio: string;
   fim: string;
-  status: string;
+  status: StatusAgendamento;
   cliente: { codigo: number; nome: string; email: string } | null;
   barbeiro: { codigo: number; nome: string } | null;
   itens: { servico: { nome: string }; duracaoMin: number }[];
