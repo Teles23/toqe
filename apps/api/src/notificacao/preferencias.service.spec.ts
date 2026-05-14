@@ -1,5 +1,5 @@
 import { PreferenciasService } from './preferencias.service';
-import { createPrismaMock } from '../../test/prisma-mock.factory';
+import { createPrismaMock } from '../test/prisma-mock.factory';
 
 describe('PreferenciasService', () => {
   let service: PreferenciasService;

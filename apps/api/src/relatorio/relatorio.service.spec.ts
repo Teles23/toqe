@@ -1,5 +1,5 @@
 import { RelatorioService } from './relatorio.service';
-import { createPrismaMock } from '../../test/prisma-mock.factory';
+import { createPrismaMock } from '../test/prisma-mock.factory';
 
 describe('RelatorioService', () => {
   let service: RelatorioService;

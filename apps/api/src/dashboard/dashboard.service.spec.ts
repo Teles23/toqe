@@ -1,5 +1,5 @@
 import { DashboardService } from './dashboard.service';
-import { createPrismaMock } from '../../test/prisma-mock.factory';
+import { createPrismaMock } from '../test/prisma-mock.factory';
 
 describe('DashboardService', () => {
   let service: DashboardService;
