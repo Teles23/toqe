@@ -73,8 +73,8 @@ describe('Tenant Isolation Integration', () => {
       .set('Authorization', `Bearer ${tokenB}`)
       .set('x-tenant-id', barCodigoB);
 
-    expect([200]).toContain(res.status);
-    const nomes = (res.body as any[]).map((s: any) => s.nome);
+    expect(res.status).toBe(200);
+    const nomes = (res.body as { nome: string }[]).map((s) => s.nome);
     expect(nomes).not.toContain('Serviço A');
   });
 });

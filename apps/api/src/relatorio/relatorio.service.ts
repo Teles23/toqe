@@ -49,7 +49,7 @@ export class RelatorioService {
     const porDia: Record<string, { total: number }> = {};
     itens.forEach((it) => {
       const dia = toDateString(it.agendamento.inicio);
-      porDia[dia] = { total: (porDia[dia]?.total ?? 0) + Number(it.preco) };
+      porDia[dia] = { total: (porDia[dia]?.total ?? 0) + it.preco.toNumber() };
     });
 
     return this.sortedByDay(porDia);
@@ -105,7 +105,7 @@ export class RelatorioService {
       const { nome } = it.servico;
       if (!mapa[nome]) mapa[nome] = { nome, quantidade: 0, total: 0 };
       mapa[nome].quantidade += 1;
-      mapa[nome].total += Number(it.preco);
+      mapa[nome].total += it.preco.toNumber();
     });
 
     return Object.values(mapa).sort((a, b) => b.quantidade - a.quantidade);

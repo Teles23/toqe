@@ -56,10 +56,8 @@ export function toBarbeiro(
     (a) => a.barbeiro?.codigo === b.codigo,
   );
 
-  // Barbeiro fica "active" se tiver agendamento EM_ATENDIMENTO agora
-  const isActive = agendamentosBarbeiro.some(
-    (a) => a.status === "EM_ATENDIMENTO",
-  );
+  // Barbeiro fica "active" se tiver agendamento confirmado no momento
+  const isActive = agendamentosBarbeiro.some((a) => a.status === "confirmado");
 
   return {
     id: b.codigo,

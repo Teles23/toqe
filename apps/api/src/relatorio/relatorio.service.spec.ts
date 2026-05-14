@@ -1,6 +1,11 @@
 import { RelatorioService } from './relatorio.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import type { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '../generated/prisma';
+
+function d(value: number) {
+  return new Prisma.Decimal(value);
+}
 
 describe('RelatorioService', () => {
   let service: RelatorioService;
@@ -16,9 +21,9 @@ describe('RelatorioService', () => {
       const d1 = new Date('2025-01-01T10:00:00Z');
       const d2 = new Date('2025-01-02T10:00:00Z');
       prisma.agendamentoItem.findMany.mockResolvedValueOnce([
-        { preco: 100, agendamento: { inicio: d2 } },
-        { preco: 50, agendamento: { inicio: d1 } },
-        { preco: 75, agendamento: { inicio: d1 } },
+        { preco: d(100), agendamento: { inicio: d2 } },
+        { preco: d(50), agendamento: { inicio: d1 } },
+        { preco: d(75), agendamento: { inicio: d1 } },
       ]);
 
       const result = await service.faturamento(1, '30d');
@@ -63,9 +68,9 @@ describe('RelatorioService', () => {
   describe('servicos', () => {
     it('should aggregate and sort by quantity', async () => {
       prisma.agendamentoItem.findMany.mockResolvedValueOnce([
-        { preco: 50, servico: { nome: 'Barba' } },
-        { preco: 100, servico: { nome: 'Corte' } },
-        { preco: 100, servico: { nome: 'Corte' } },
+        { preco: d(50), servico: { nome: 'Barba' } },
+        { preco: d(100), servico: { nome: 'Corte' } },
+        { preco: d(100), servico: { nome: 'Corte' } },
       ]);
 
       const result = await service.servicos(1, '30d');
@@ -96,10 +101,12 @@ describe('RelatorioService', () => {
       ]);
 
       prisma.agendamento.findMany
-        .mockResolvedValueOnce([{ itens: [{ preco: 100 }, { preco: 50 }] }]) // Pedro: faturamento=150
         .mockResolvedValueOnce([
-          { itens: [{ preco: 200 }] },
-          { itens: [{ preco: 100 }] },
+          { itens: [{ preco: d(100) }, { preco: d(50) }] },
+        ]) // Pedro: faturamento=150
+        .mockResolvedValueOnce([
+          { itens: [{ preco: d(200) }] },
+          { itens: [{ preco: d(100) }] },
         ]); // João: faturamento=300
 
       const result = await service.barbeiros(1, '30d');

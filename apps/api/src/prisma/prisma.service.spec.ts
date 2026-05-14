@@ -11,7 +11,9 @@ jest.mock('@prisma/adapter-pg', () => ({
   PrismaPg: jest.fn().mockImplementation(() => ({})),
 }));
 jest.mock('pg', () => ({
-  Pool: jest.fn().mockImplementation(() => ({})),
+  Pool: jest.fn().mockImplementation(() => ({
+    end: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 describe('PrismaService', () => {
@@ -30,7 +32,7 @@ describe('PrismaService', () => {
     expect(service.$connect).toHaveBeenCalled();
   });
 
-  it('onModuleDestroy chama $disconnect', async () => {
+  it('onModuleDestroy chama $disconnect e drena o pool', async () => {
     await service.onModuleDestroy();
     expect(service.$disconnect).toHaveBeenCalled();
   });

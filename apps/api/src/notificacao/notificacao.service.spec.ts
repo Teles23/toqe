@@ -1,6 +1,16 @@
 import { Test } from '@nestjs/testing';
 import { NotificacaoService } from './notificacao.service';
-import { AgendamentoConfirmadoJob } from './notificacao.types';
+import type { AgendamentoConfirmadoJob } from './notificacao.types';
+
+const mockSend = jest.fn();
+
+// Deve estar no escopo do módulo — Jest o eleva antes dos imports,
+// então new Resend() no construtor do service recebe o mock automaticamente.
+jest.mock('resend', () => ({
+  Resend: jest.fn().mockImplementation(() => ({
+    emails: { send: mockSend },
+  })),
+}));
 
 const mockJob: AgendamentoConfirmadoJob = {
   agendamentoCodigo: 42,
@@ -20,7 +30,6 @@ describe('NotificacaoService', () => {
   afterEach(() => {
     process.env.RESEND_API_KEY = originalKey;
     jest.clearAllMocks();
-    jest.resetModules();
   });
 
   describe('sem RESEND_API_KEY', () => {
@@ -40,25 +49,14 @@ describe('NotificacaoService', () => {
   });
 
   describe('com RESEND_API_KEY configurada', () => {
-    const mockSend = jest.fn();
-
     beforeEach(async () => {
       process.env.RESEND_API_KEY = 're_test_key';
-      jest.mock('resend', () => ({
-        Resend: jest.fn().mockImplementation(() => ({
-          emails: { send: mockSend },
-        })),
-      }));
+      mockSend.mockReset();
 
       const module = await Test.createTestingModule({
         providers: [NotificacaoService],
       }).compile();
       service = module.get(NotificacaoService);
-
-      // Substitui o resend interno pelo mock diretamente
-      (
-        service as unknown as { resend: { emails: { send: jest.Mock } } }
-      ).resend = { emails: { send: mockSend } };
     });
 
     it('chama resend.emails.send com destinatário correto', async () => {
@@ -90,7 +88,6 @@ describe('NotificacaoService', () => {
       await service.enviarConfirmacaoAgendamento(mockJob);
       const calls = mockSend.mock.calls as Array<[{ html: string }]>;
       const call = calls[0]?.[0];
-      // 01 de junho de 2024 às 09:00
       expect(call.html).toMatch(/junho/i);
     });
 
