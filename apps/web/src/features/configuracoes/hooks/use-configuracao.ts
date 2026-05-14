@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { STALE_TIME, QUERY_KEYS } from "@/shared/lib/constants";
 import { configuracaoService } from "../services/configuracao.service";
 import {
   HORARIOS_DEFAULT,
@@ -16,10 +17,10 @@ export function useConfiguracaoBarbearia(barCodigo: number | null) {
   const queryClient = useQueryClient();
 
   const query = useQuery<BarbeariaConfig>({
-    queryKey: ["configuracao-barbearia", barCodigo],
+    queryKey: QUERY_KEYS.configuracoes.barbearia(barCodigo ?? 0),
     queryFn: () => configuracaoService.getBarbearia(barCodigo!),
     enabled: !!barCodigo,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.DEFAULT,
   });
 
   const mutation = useMutation({
@@ -27,7 +28,7 @@ export function useConfiguracaoBarbearia(barCodigo: number | null) {
       configuracaoService.updateBarbearia(barCodigo!, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["configuracao-barbearia", barCodigo],
+        queryKey: QUERY_KEYS.configuracoes.barbearia(barCodigo ?? 0),
       });
     },
   });
@@ -39,10 +40,10 @@ export function useConfiguracaoHorarios(barCodigo: number | null) {
   const queryClient = useQueryClient();
 
   const query = useQuery<HorarioDia[]>({
-    queryKey: ["configuracao-horarios", barCodigo],
+    queryKey: QUERY_KEYS.configuracoes.horarios(barCodigo ?? 0),
     queryFn: () => configuracaoService.getHorarios(barCodigo!),
     enabled: !!barCodigo,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.DEFAULT,
     placeholderData: HORARIOS_DEFAULT,
   });
 
@@ -51,7 +52,7 @@ export function useConfiguracaoHorarios(barCodigo: number | null) {
       configuracaoService.updateHorarios(barCodigo!, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["configuracao-horarios", barCodigo],
+        queryKey: QUERY_KEYS.configuracoes.horarios(barCodigo ?? 0),
       });
     },
   });
@@ -63,10 +64,10 @@ export function useConfiguracaoNotificacoes(barCodigo: number | null) {
   const queryClient = useQueryClient();
 
   const query = useQuery<NotificacaoConfig>({
-    queryKey: ["configuracao-notificacoes", barCodigo],
+    queryKey: QUERY_KEYS.configuracoes.notificacoes(barCodigo ?? 0),
     queryFn: () => configuracaoService.getNotificacoes(barCodigo!),
     enabled: !!barCodigo,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.DEFAULT,
     placeholderData: NOTIFICACOES_DEFAULT,
   });
 
@@ -75,7 +76,7 @@ export function useConfiguracaoNotificacoes(barCodigo: number | null) {
       configuracaoService.updateNotificacoes(barCodigo!, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["configuracao-notificacoes", barCodigo],
+        queryKey: QUERY_KEYS.configuracoes.notificacoes(barCodigo ?? 0),
       });
     },
   });

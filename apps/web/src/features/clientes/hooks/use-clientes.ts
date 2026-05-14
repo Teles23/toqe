@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getInitial } from "@/shared/lib/utils";
+import { STALE_TIME, QUERY_KEYS } from "@/shared/lib/constants";
 import { clienteService } from "../services/cliente.service";
 import type {
   ClienteAPI,
@@ -28,10 +29,10 @@ function toCliente(c: ClienteAPI): Cliente {
 
 export function useClientes(barCodigo: number | null) {
   const query = useQuery<ClienteAPI[]>({
-    queryKey: ["clientes", barCodigo],
+    queryKey: QUERY_KEYS.clientes(barCodigo ?? 0),
     queryFn: () => clienteService.list(barCodigo!),
     enabled: !!barCodigo,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.DEFAULT,
   });
 
   return {

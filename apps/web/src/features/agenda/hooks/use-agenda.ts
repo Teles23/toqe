@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { agendaService } from "../services/agenda.service";
 import { API_STATUS_TO_SLOT } from "../constants/agenda.constants";
 import { getInitial } from "@/shared/lib/utils";
+import { STALE_TIME, QUERY_KEYS } from "@/shared/lib/constants";
 import type {
   Slot,
   Barbeiro,
@@ -83,18 +84,18 @@ export function useAgenda(barCodigo: number | null, date: Date) {
   }, []);
 
   const agendamentosQuery = useQuery({
-    queryKey: ["agendamentos", barCodigo, dateStr],
+    queryKey: QUERY_KEYS.agendamentos(barCodigo ?? 0, dateStr),
     queryFn: () => agendaService.listAgendamentos(barCodigo!, dateStr),
     enabled: !!barCodigo,
-    staleTime: 10_000,
+    staleTime: STALE_TIME.REALTIME,
     refetchInterval: 60_000, // Atualiza a cada minuto para mover barra de progresso
   });
 
   const barbeirosQuery = useQuery({
-    queryKey: ["barbeiros", barCodigo],
+    queryKey: QUERY_KEYS.barbeirosAgenda(barCodigo ?? 0),
     queryFn: () => agendaService.listBarbeiros(barCodigo!),
     enabled: !!barCodigo,
-    staleTime: 60_000,
+    staleTime: STALE_TIME.DEFAULT,
   });
 
   const { slots, barbeiros } = useMemo(() => {

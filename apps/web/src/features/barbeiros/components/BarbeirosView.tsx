@@ -10,6 +10,7 @@ import { useBarbeiros } from "../hooks/use-barbeiros";
 import { BarbeiroCard } from "./BarbeiroCard";
 import { BarbeiroDetalhe } from "./BarbeiroDetalhe";
 import type { Barbeiro, BarbeiroEstado } from "../types/barbeiro.types";
+import { LoadingSpinner } from "@/shared/components/loading-spinner";
 
 export function BarbeirosView() {
   const { barbearia } = useAuth();
@@ -129,14 +130,7 @@ export function BarbeirosView() {
 
           <div className="flex-1 overflow-y-auto p-4">
             {isLoading ? (
-              <div className="flex justify-center py-16">
-                <span
-                  className="text-[13px]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Carregando...
-                </span>
-              </div>
+              <LoadingSpinner />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <AnimatePresence>

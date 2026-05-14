@@ -2,7 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getInitial } from "@/shared/lib/utils";
-import { DIAS_SEMANA_CURTO } from "@/shared/lib/constants";
+import {
+  DIAS_SEMANA_CURTO,
+  STALE_TIME,
+  QUERY_KEYS,
+} from "@/shared/lib/constants";
 import { barbeiroService } from "../services/barbeiro.service";
 import type { BarbeiroAPI, Barbeiro } from "../types/barbeiro.types";
 
@@ -20,10 +24,10 @@ function toBarbeiro(b: BarbeiroAPI): Barbeiro {
 
 export function useBarbeiros(barCodigo: number | null) {
   const query = useQuery<BarbeiroAPI[]>({
-    queryKey: ["barbeiros-detail", barCodigo],
+    queryKey: QUERY_KEYS.barbeiros(barCodigo ?? 0),
     queryFn: () => barbeiroService.list(barCodigo!),
     enabled: !!barCodigo,
-    staleTime: 30_000,
+    staleTime: STALE_TIME.DEFAULT,
   });
 
   return {

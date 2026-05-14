@@ -19,6 +19,7 @@ import { ServicoDetalhe } from "./ServicoDetalhe";
 import { ServicoModal } from "./ServicoModal";
 import { CATEGORIA_CONFIG } from "../constants/servico.constants";
 import type { Categoria, ServicoAPI } from "../types/servico.types";
+import { LoadingSpinner } from "@/shared/components/loading-spinner";
 
 export function ServicosView() {
   const { barbearia } = useAuth();
@@ -188,14 +189,7 @@ export function ServicosView() {
 
           <div className="flex-1 overflow-y-auto p-4">
             {isLoading ? (
-              <div className="flex justify-center py-16">
-                <span
-                  className="text-[13px]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Carregando...
-                </span>
-              </div>
+              <LoadingSpinner />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 <AnimatePresence>

@@ -1,9 +1,9 @@
-/* eslint-disable no-restricted-syntax */
 "use client";
 
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useAuth } from "@/shared/hooks/use-auth";
+import { LoadingSpinner } from "@/shared/components/loading-spinner";
 import { DateSelector } from "./DateSelector";
 import { AgendaMetrics } from "./AgendaMetrics";
 import { AgendaFilters } from "./AgendaFilters";
@@ -62,14 +62,7 @@ export function AgendaView() {
 
           <div className="space-y-2">
             {isLoading ? (
-              <div className="flex justify-center py-16">
-                <span
-                  className="text-[13px]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Carregando...
-                </span>
-              </div>
+              <LoadingSpinner />
             ) : (
               <AnimatePresence mode="popLayout">
                 {filtered.length > 0 ? (
