@@ -32,3 +32,14 @@
 - Qualquer mudança no frontend → garantir que mocks MSW e specs de hooks/components refletem o novo comportamento
 - Nunca entregar mudança de código sem os testes acompanhando no mesmo commit
 - Commit e push ao final de cada entrega completa
+
+### 6. Zero tolerância a bypasses
+
+- **Nunca** usar `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `any` casting ou flags `--passWithNoTests` para silenciar erros
+- **Nunca** remover código funcional da aplicação para fazer lint/testes passarem
+- **Nunca** remover uso real de variáveis, métodos ou imports só para suprimir warnings
+- Todo erro deve ser resolvido na **raiz do problema**:
+  - Lint: corrigir o código ou configurar a regra corretamente para o contexto (ex: `eslint-plugin-jest` em vez de `off` global)
+  - TypeScript: corrigir os tipos, não fazer cast para `any`
+  - Testes: corrigir a implementação ou o mock, não remover o cenário
+  - Build: corrigir a causa, não comentar o código
