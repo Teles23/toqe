@@ -10,7 +10,7 @@ import {
 import { barbeiroService } from "../services/barbeiro.service";
 import type { BarbeiroAPI, Barbeiro } from "../types/barbeiro.types";
 
-function toBarbeiro(b: BarbeiroAPI): Barbeiro {
+export function toBarbeiro(b: BarbeiroAPI): Barbeiro {
   return {
     ...b,
     initial: getInitial(b.nome),

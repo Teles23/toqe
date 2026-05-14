@@ -10,7 +10,7 @@ import type {
   ClienteStatus,
 } from "../types/cliente.types";
 
-function toCliente(c: ClienteAPI): Cliente {
+export function toCliente(c: ClienteAPI): Cliente {
   const hasVisits = c.totalVisitas > 0;
   const isRecent =
     c.ultimaVisita !== null &&
