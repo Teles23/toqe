@@ -93,14 +93,13 @@ export function useAgenda(barCodigo: number | null, date: Date) {
     staleTime: 60_000,
   });
 
-  const raw = agendamentosQuery.data ?? [];
-
   const { slots, barbeiros } = useMemo(() => {
+    const raw = agendamentosQuery.data ?? [];
     return {
       slots: raw.map((s) => toSlot(s, now)),
       barbeiros: (barbeirosQuery.data ?? []).map((b) => toBarbeiro(b, raw)),
     };
-  }, [raw, barbeirosQuery.data, now]);
+  }, [agendamentosQuery.data, barbeirosQuery.data, now]);
 
   return {
     slots,

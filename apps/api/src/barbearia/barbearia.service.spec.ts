@@ -104,7 +104,7 @@ describe('BarbeariaService', () => {
         usrCodigo: 5,
       });
 
-      const result = await service.removerMembro(1, 5);
+      await service.removerMembro(1, 5);
       expect(mockPrisma.membroBarbearia.delete).toHaveBeenCalled();
     });
 

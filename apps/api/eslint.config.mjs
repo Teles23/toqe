@@ -26,6 +26,18 @@ export default tseslint.config(
     },
   },
   {
+    // Regras relaxadas em arquivos de spec — padrões Jest legítimos que disparam falsos positivos
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       // Regras unsafe rebaixadas para warn: a base NestJS usa padrões legítimos

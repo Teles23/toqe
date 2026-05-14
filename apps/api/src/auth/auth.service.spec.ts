@@ -24,7 +24,7 @@ const mockRefreshToken = {
 describe('AuthService', () => {
   let service: AuthService;
   let usuarioService: jest.Mocked<UsuarioService>;
-  let jwtService: jest.Mocked<JwtService>;
+  let _jwtService: jest.Mocked<JwtService>;
   let prisma: jest.Mocked<PrismaService>;
 
   beforeEach(async () => {
@@ -57,7 +57,7 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     usuarioService = module.get(UsuarioService);
-    jwtService = module.get(JwtService);
+    _jwtService = module.get(JwtService);
     prisma = module.get(PrismaService);
   });
 
