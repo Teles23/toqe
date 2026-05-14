@@ -49,7 +49,7 @@ describe('RelatorioController', () => {
       expect(result).toEqual(data);
     });
 
-    it('usa periodo padrão 30d quando não informado', async () => {
+    it('usa periodo padrão 30d quando não informado', () => {
       mockRelatorioService.faturamento.mockResolvedValue([]);
 
       void controller.faturamento(1, undefined as never, 'tenant-1');

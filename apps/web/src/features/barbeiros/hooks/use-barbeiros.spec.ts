@@ -71,8 +71,8 @@ describe("useBarbeiros", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockList).toHaveBeenCalledWith(1);
-    expect(result.current.data[0].initial).toBe("C");
-    expect(result.current.data[0].estado).toBe("idle");
+    expect(result.current.data[0]?.initial).toBe("C");
+    expect(result.current.data[0]?.estado).toBe("idle");
   });
 
   it("retorna array vazio enquanto carrega", () => {

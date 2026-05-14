@@ -100,8 +100,11 @@ export class AgendamentoService {
     servicos: {
       codigo: number;
       duracaoBase: number | null;
-      precoBase: number | null;
-      barbeiros: { duracaoMin: number; precoProprio: number | null }[];
+      precoBase: { toNumber(): number } | number | null;
+      barbeiros: {
+        duracaoMin: number;
+        precoProprio: { toNumber(): number } | number | null;
+      }[];
     }[],
     barCodigo: number,
   ) {

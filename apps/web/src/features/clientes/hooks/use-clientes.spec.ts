@@ -95,8 +95,8 @@ describe("useClientes", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockList).toHaveBeenCalledWith(1);
-    expect(result.current.data[0].status).toBe("ativo");
-    expect(result.current.data[0].initial).toBe("A");
+    expect(result.current.data[0]?.status).toBe("ativo");
+    expect(result.current.data[0]?.initial).toBe("A");
   });
 
   it("retorna array vazio enquanto carrega", () => {
