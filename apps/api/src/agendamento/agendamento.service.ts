@@ -97,15 +97,7 @@ export class AgendamentoService {
   }
 
   private buildItensData(
-    servicos: {
-      codigo: number;
-      duracaoBase: number | null;
-      precoBase: { toNumber(): number } | number | null;
-      barbeiros: {
-        duracaoMin: number;
-        precoProprio: { toNumber(): number } | number | null;
-      }[];
-    }[],
+    servicos: Prisma.ServicoGetPayload<{ include: { barbeiros: true } }>[],
     barCodigo: number,
   ) {
     let totalDuration = 0;
