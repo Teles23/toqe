@@ -19,7 +19,7 @@ export class TenantGuard implements CanActivate {
 
     const barCodigo =
       request.params['barCodigo'] ??
-      (request.body['barCodigo'] as string | undefined) ??
+      (request.body?.['barCodigo'] as string | undefined) ??
       (request.headers['x-tenant-id'] as string | undefined);
 
     if (!barCodigo) return true; // rota global, sem tenant
