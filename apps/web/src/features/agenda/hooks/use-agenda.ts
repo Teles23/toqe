@@ -51,8 +51,8 @@ function toBarbeiro(b: BarbeiroAPI, agendamentos: AgendamentoAPI[]): Barbeiro {
     (a) => a.barbeiro?.codigo === b.codigo,
   );
 
-  // Barbeiro fica "busy" se tiver QUALQUER agendamento ativo agora
-  const isBusy = agendamentosBarbeiro.some(
+  // Barbeiro fica "active" se tiver agendamento EM_ATENDIMENTO agora
+  const isActive = agendamentosBarbeiro.some(
     (a) => a.status === "EM_ATENDIMENTO",
   );
 
@@ -60,7 +60,7 @@ function toBarbeiro(b: BarbeiroAPI, agendamentos: AgendamentoAPI[]): Barbeiro {
     id: b.codigo,
     nome: b.nome,
     initial: b.nome.charAt(0).toUpperCase(),
-    state: isBusy ? "busy" : "idle",
+    state: isActive ? "active" : "idle",
     agendamentos: agendamentosBarbeiro.length,
     livres: 0, // Pode ser calculado depois com base na jornada
   };

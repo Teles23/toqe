@@ -1,6 +1,8 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi } from "vitest";
+import { Perfil } from "@toqe/shared";
+import type { AuthContextValue } from "@/shared/providers/auth-provider";
 
 export function createWrapper() {
   const queryClient = new QueryClient({
@@ -19,7 +21,7 @@ export function createWrapper() {
   return { Wrapper, queryClient };
 }
 
-export const mockAuthContext = {
+export const mockAuthContext: AuthContextValue = {
   user: {
     codigo: 1,
     nome: "Test User",
@@ -31,17 +33,17 @@ export const mockAuthContext = {
     codigo: 1,
     nome: "Test Barbearia",
     slug: "test",
-    perfil: "dono" as const,
+    perfil: Perfil.DONO,
   },
   barbearias: [
     {
       codigo: 1,
       nome: "Test Barbearia",
       slug: "test",
-      perfil: "dono" as const,
+      perfil: Perfil.DONO,
     },
   ],
-  perfil: "dono" as const,
+  perfil: Perfil.DONO,
   loading: false,
   login: vi.fn(),
   logout: vi.fn(),
