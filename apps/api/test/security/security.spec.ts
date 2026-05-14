@@ -1,37 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AuthModule } from '../../src/auth/auth.module';
-import { PrismaService } from '../../src/prisma/prisma.service';
-
-const mockPrisma = {
-  usuario: {
-    findUnique: jest.fn(),
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  refreshToken: {
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    deleteMany: jest.fn(),
-  },
-  membroBarbearia: { findMany: jest.fn() },
-  $queryRaw: jest.fn(),
-  $connect: jest.fn(),
-  $disconnect: jest.fn(),
-};
+import { AppModule } from '../../src/app.module';
 
 describe('Security (supertest)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [AuthModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue(mockPrisma)
-      .compile();
+      imports: [AppModule],
+    }).compile();
 
     app = module.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
@@ -57,5 +35,19 @@ describe('Security (supertest)', () => {
       .get('/agendamentos')
       .set('Authorization', 'Bearer invalid.token.here');
     expect(res.status).toBe(401);
+  });
+
+  it('POST /barbearia without auth → 401', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/barbearia')
+      .send({ nome: 'Test', slug: 'test' });
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /relatorios/faturamento without tenant header → 400 ou 401', async () => {
+    const res = await request(app.getHttpServer()).get(
+      '/relatorios/faturamento',
+    );
+    expect([400, 401]).toContain(res.status);
   });
 });
