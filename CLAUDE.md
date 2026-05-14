@@ -10,9 +10,12 @@
 
 ### 2. Validar antes de commitar
 
-- Rodar os testes após cada mudança: `pnpm --filter api test` e `pnpm --filter web test`
-- Garantir que nada quebrou na aplicação antes de fazer commit
-- Se houver falha, corrigir antes de prosseguir
+- Rodar **os três checks** antes de qualquer `git commit`, sem exceção:
+  1. `pnpm --filter api lint` e `pnpm --filter web lint`
+  2. `cd apps/api && npx tsc --noEmit` e `cd apps/web && npx tsc --noEmit`
+  3. `pnpm --filter api test` e `pnpm --filter web test`
+- Rodar apenas os testes **não é suficiente** — lint e tipos devem passar também
+- Se houver falha em qualquer um dos três, corrigir na raiz antes de prosseguir
 
 ### 3. Testes reais e completos
 
@@ -51,3 +54,4 @@
   - TypeScript: corrigir os tipos, não fazer cast para `any`
   - Testes: corrigir a implementação ou o mock, não remover o cenário
   - Build: corrigir a causa, não comentar o código
+- **Nunca usar duck-typing para contornar tipos do Prisma** — campos `Decimal` devem ser anotados com `Prisma.Decimal` ou via `Prisma.XxxGetPayload<...>`, nunca com `{ toNumber(): number } | number`
