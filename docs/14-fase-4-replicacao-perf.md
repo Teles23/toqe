@@ -10,14 +10,14 @@ Replicar o padrão estabelecido na Fase 3 (feature `auth` + feature `dashboard`)
 
 Dividida em sub-PRs sequenciais, cada um em uma branch própria a partir de `feature/arquitetura-reorganizacao`:
 
-| Sub-PR       | Branch                             | Escopo                                                                                  | Status               |
-| ------------ | ---------------------------------- | --------------------------------------------------------------------------------------- | -------------------- |
-| **4a**       | `arch/fase-4a-dev-perf`            | Otimizações de dev: `optimizePackageImports`, bundle analyzer, `dev:turbopack`, medição | **mergeado** ✅      |
-| **fix-lint** | `arch/fix-lint-ci`                 | CI verde: Gitleaks, ESLint web+api, Prisma generate, NestJS spec stubs                  | **mergeado** ✅      |
-| **4b**       | `arch/fase-4b-agenda`              | Feature `agenda` migrada para `src/features/agenda/`                                    | **mergeado** ✅      |
-| **4c**       | `arch/fase-4c-servicos-barbeiros`  | Features `servicos` e `barbeiros` com TanStack Query                                    | **mergeado** ✅      |
-| **4d**       | `arch/fase-4d-clientes-relatorios` | Features `clientes` e `relatorios` com 5 endpoints de relatório                         | **PR #14 aberto** 🔄 |
-| 4e           | `arch/fase-4e-configuracoes`       | Feature `configuracoes` (form de perfil + tema, ~1014 linhas)                           | pendente             |
+| Sub-PR       | Branch                             | Escopo                                                                                  | Status          |
+| ------------ | ---------------------------------- | --------------------------------------------------------------------------------------- | --------------- |
+| **4a**       | `arch/fase-4a-dev-perf`            | Otimizações de dev: `optimizePackageImports`, bundle analyzer, `dev:turbopack`, medição | **mergeado** ✅ |
+| **fix-lint** | `arch/fix-lint-ci`                 | CI verde: Gitleaks, ESLint web+api, Prisma generate, NestJS spec stubs                  | **mergeado** ✅ |
+| **4b**       | `arch/fase-4b-agenda`              | Feature `agenda` migrada para `src/features/agenda/`                                    | **mergeado** ✅ |
+| **4c**       | `arch/fase-4c-servicos-barbeiros`  | Features `servicos` e `barbeiros` com TanStack Query                                    | **mergeado** ✅ |
+| **4d**       | `arch/fase-4d-clientes-relatorios` | Features `clientes` e `relatorios` com 5 endpoints de relatório                         | **mergeado** ✅ |
+| **4e**       | `arch/fase-4e-configuracoes`       | Feature `configuracoes` — 5 seções, TanStack Query, service + hooks                     | **mergeado** ✅ |
 
 ## Entregue na sub-PR 4a — otimizações de dev
 
