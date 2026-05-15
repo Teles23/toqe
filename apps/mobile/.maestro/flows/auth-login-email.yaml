@@ -1,0 +1,31 @@
+appId: com.teles23.toqe
+---
+- launchApp:
+    clearState: true
+
+# Aguarda tela de login
+- assertVisible: "Login — em breve"
+  # Após implementação completa, trocar por:
+  # - assertVisible: "Toqe"
+
+# Preenche e-mail
+- tapOn:
+    accessibilityLabel: "E-mail"
+- inputText: "teste@toqe.com"
+
+# Preenche senha
+- tapOn:
+    accessibilityLabel: "Senha"
+- inputText: "senha123"
+
+# Submete
+- tapOn:
+    accessibilityLabel: "Entrar"
+
+# Aguarda redirecionamento (barbeiro ou cliente)
+- assertVisible:
+    id: "barbeiro-agenda"
+    optional: true
+- assertVisible:
+    id: "cliente-home"
+    optional: true

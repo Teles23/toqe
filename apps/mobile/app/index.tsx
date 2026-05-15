@@ -1,11 +1,35 @@
 import { Redirect } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
 
-/**
- * Rota raiz — redireciona imediatamente.
- * A lógica de redirecionamento por autenticação/perfil
- * fica no AuthProvider (app/_layout.tsx).
- * Este arquivo existe apenas para satisfazer o Expo Router.
- */
+import { useAuth } from "@/src/shared/hooks/use-auth";
+import { Perfil } from "@toqe/shared";
+
+const BARBEIRO_PERFIS: Perfil[] = [
+  Perfil.BARBEIRO,
+  Perfil.DONO,
+  Perfil.GERENTE,
+  Perfil.RECEPCIONISTA,
+  Perfil.SUPER_ADMIN,
+];
+
 export default function Index() {
-  return <Redirect href="/(auth)/login" />;
+  const { user, perfil, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  if (perfil && BARBEIRO_PERFIS.includes(perfil)) {
+    return <Redirect href="/(barbeiro)/agenda" />;
+  }
+
+  return <Redirect href="/(cliente)/home" />;
 }
