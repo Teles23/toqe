@@ -22,7 +22,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
   web:
     image: ghcr.io/teles23/toqe-web:develop
