@@ -7,6 +7,8 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import type { JwtRequest } from '../common/types/jwt-request';
@@ -68,5 +70,32 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Token inválido ou já revogado.' })
   logout(@Request() req: JwtRequest, @Body() dto: LogoutDto) {
     return this.authService.logout(req.user.sub, dto);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Solicita link de recuperação de senha' })
+  @ApiResponse({
+    status: 200,
+    description: 'Se o e-mail existir, será enviado um link.',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(dto.email);
+    return {
+      message:
+        'Se o e-mail estiver cadastrado, você receberá um link em breve.',
+    };
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Redefine a senha usando o token recebido por e-mail',
+  })
+  @ApiResponse({ status: 200, description: 'Senha redefinida com sucesso.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.novaSenha);
+    return { message: 'Senha redefinida com sucesso.' };
   }
 }

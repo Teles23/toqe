@@ -15,6 +15,6 @@ import { PreferenciasController } from './preferencias.controller';
     NotificacaoConsumer,
     PreferenciasService,
   ],
-  exports: [NotificacaoProducer],
+  exports: [NotificacaoProducer, NotificacaoService],
 })
 export class NotificacaoModule {}

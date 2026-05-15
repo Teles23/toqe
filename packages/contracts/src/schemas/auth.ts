@@ -46,5 +46,21 @@ export const authTokensSchema = z.object({
   expiresIn: z.number().int().positive().optional(),
 });
 
+export const forgotPasswordSchema = z
+  .object({
+    email: z.string().email("E-mail inválido"),
+  })
+  .strict();
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, "Token obrigatório"),
+    novaSenha: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
+  })
+  .strict();
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
 // Tipos inferidos vivem em `src/types/index.ts` (single source) para evitar
 // duplicação de exports através do barrel raiz.

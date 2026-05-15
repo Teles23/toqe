@@ -8,6 +8,8 @@ import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
+import { NotificacaoService } from '../notificacao/notificacao.service';
+import { createHash, randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +17,7 @@ export class AuthService {
     private usuarioService: UsuarioService,
     private jwtService: JwtService,
     private prisma: PrismaService,
+    private notificacaoService: NotificacaoService,
   ) {}
 
   async register(dto: CreateUserDto) {
@@ -90,6 +93,72 @@ export class AuthService {
     }
 
     throw new UnauthorizedException('Refresh token inválido ou já revogado');
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    // Não revelar se e-mail existe (anti-enumeration)
+    const user = await this.usuarioService.findByEmail(email);
+    if (!user) return;
+
+    // Invalidar tokens anteriores não usados
+    await this.prisma.passwordResetToken.updateMany({
+      where: { usrCodigo: user.codigo, usadoEm: null },
+      data: { usadoEm: new Date() },
+    });
+
+    const rawToken = randomBytes(32).toString('hex');
+    const hash = createHash('sha256').update(rawToken).digest('hex');
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        usrCodigo: user.codigo,
+        token: hash,
+        expiraEm: new Date(Date.now() + 60 * 60 * 1000), // 1 hora
+      },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:4001';
+    const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+    await this.notificacaoService.enviarRecuperacaoSenha(
+      user.email,
+      user.nome,
+      resetLink,
+    );
+  }
+
+  async resetPassword(rawToken: string, novaSenha: string): Promise<void> {
+    const hash = createHash('sha256').update(rawToken).digest('hex');
+
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token: hash },
+      include: { usuario: true },
+    });
+
+    if (
+      !resetToken ||
+      resetToken.usadoEm !== null ||
+      resetToken.expiraEm < new Date()
+    ) {
+      throw new UnauthorizedException('Token inválido ou expirado');
+    }
+
+    const senhaHash = await bcrypt.hash(novaSenha, await bcrypt.genSalt());
+
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.update({
+        where: { codigo: resetToken.codigo },
+        data: { usadoEm: new Date() },
+      }),
+      this.prisma.usuario.update({
+        where: { codigo: resetToken.usrCodigo },
+        data: { senhaHash },
+      }),
+      // Revogar todos os refresh tokens do usuário (segurança)
+      this.prisma.refreshToken.updateMany({
+        where: { usrCodigo: resetToken.usrCodigo, revogado: false },
+        data: { revogado: true },
+      }),
+    ]);
   }
 
   private async generateTokens(codigo: number, nome: string, email: string) {

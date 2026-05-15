@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { UsuarioService } from '../usuario/usuario.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificacaoService } from '../notificacao/notificacao.service';
 
 const mockUsuario = {
   codigo: 1,
@@ -56,6 +57,10 @@ describe('AuthService', () => {
           useValue: { sign: jest.fn().mockReturnValue('access_token_mock') },
         },
         { provide: PrismaService, useValue: mockPrisma },
+        {
+          provide: NotificacaoService,
+          useValue: { enviarRecuperacaoSenha: jest.fn() },
+        },
       ],
     }).compile();
 
