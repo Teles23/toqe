@@ -10,8 +10,8 @@ services:
     restart: unless-stopped
     env_file: .env
     ports:
-      # Expõe só no loopback — o nginx do host faz o proxy
-      - "127.0.0.1:3000:3000"
+      # 4000 no host → 3000 no container (3000 ocupado pelo devportfolio-app)
+      - "127.0.0.1:4000:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,8 +29,8 @@ services:
     restart: unless-stopped
     env_file: .env
     ports:
-      # Expõe só no loopback — o nginx do host faz o proxy
-      - "127.0.0.1:3001:3001"
+      # 4001 no host → 3001 no container (3001 ocupado pelo eduia-backend)
+      - "127.0.0.1:4001:3001"
     environment:
       PORT: "3001"
       HOSTNAME: "0.0.0.0"
