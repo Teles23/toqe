@@ -216,8 +216,8 @@ jobs:
               || (echo "✗ API não respondeu" && docker compose -f docker-compose.prod.yml logs api --tail=50 && exit 1)
 
             # Atualiza nginx do host e recarrega sem downtime
-            cp nginx/conf.d/toqe.conf /etc/nginx/sites-available/toqe
-            nginx -t && systemctl reload nginx
+            sudo cp nginx/conf.d/toqe.conf /etc/nginx/sites-available/toqe
+            sudo nginx -t && sudo systemctl reload nginx
 
             docker image prune -f
 
