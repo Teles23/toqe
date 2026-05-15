@@ -211,7 +211,7 @@ jobs:
 
             echo "Aguardando API inicializar (migrações + boot)..."
             sleep 90
-            wget -qO- http://127.0.0.1:4000/api/v1/health/ready \
+            wget -qO- http://127.0.0.1:4000/health/ready \
               && echo "✓ API healthy" \
               || (echo "✗ API não respondeu" && docker compose -f docker-compose.prod.yml logs api --tail=50 && exit 1)
 
