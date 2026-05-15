@@ -9,6 +9,7 @@ import {
   createAgendamentoSchema,
   type CreateAgendamentoInput,
 } from "@toqe/contracts";
+import { toast } from "sonner";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { useBarbeiros } from "@/features/barbeiros/hooks/use-barbeiros";
 import { useClientes } from "@/features/clientes/hooks/use-clientes";
@@ -48,7 +49,15 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
   });
 
   function onSubmit(data: CreateAgendamentoInput) {
-    criar.mutate(data, { onSuccess: onClose });
+    criar.mutate(data, {
+      onSuccess: () => {
+        toast.success("Agendamento criado com sucesso!");
+        onClose();
+      },
+      onError: (err) => {
+        toast.error(err.message);
+      },
+    });
   }
 
   return (
@@ -222,6 +231,15 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                 )}
               </div>
             </div>
+
+            {criar.isError && (
+              <p
+                className="text-[12px] px-5 pb-2"
+                style={{ color: "var(--status-error)" }}
+              >
+                {criar.error.message}
+              </p>
+            )}
 
             <div
               className="flex gap-2 px-5 py-4"
