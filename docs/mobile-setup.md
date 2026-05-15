@@ -46,12 +46,15 @@ Crie `apps/mobile/.env`:
 ```env
 EXPO_PUBLIC_API_URL=https://toqe.duckdns.org/api/v1
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=330194878953-3iql45i1robhr8di453uhtp92qtqhrrh.apps.googleusercontent.com
+# Preencher após rodar: eas init (veja seção EAS abaixo)
+EAS_PROJECT_ID=
 ```
 
 > **`EXPO_PUBLIC_*`** são variáveis de build-time expostas ao bundle pelo Expo.
 > Nunca coloque segredos nessas variáveis — ficam visíveis no bundle.
+> **`EAS_PROJECT_ID`** é lido em `app.config.ts` para habilitar OTA. Sem ele, o app funciona normalmente (sem verificar updates).
 
-As mesmas variáveis ficam em `app.json` no campo `extra` para acesso via `expo-constants`:
+As variáveis ficam em `app.config.ts` no campo `extra` para acesso via `expo-constants`:
 
 ```typescript
 import Constants from "expo-constants";
@@ -97,7 +100,78 @@ Configuração EAS em `apps/mobile/eas.json`.
 
 ---
 
-## Estrutura de Pastas
+## Monorepo — Packages Compartilhados
+
+O mobile consome:
+
+- `@toqe/contracts` — schemas Zod e tipos inferidos (auth, agendamento, etc.)
+- `@toqe/shared` — tipos de domínio, enums (`Perfil`), DTOs
+
+Resolução via Metro (`extraNodeModules`) e TypeScript (`paths`).
+
+---
+
+## EAS Build + OTA (expo-updates)
+
+### Perfis (`eas.json`)
+
+| Perfil        | Distribuição | Channel OTA   | Uso                           |
+| ------------- | ------------ | ------------- | ----------------------------- |
+| `development` | internal     | `development` | Dev com hot-reload nativo     |
+| `preview`     | internal     | `preview`     | QA interno (APK/IPA via link) |
+| `production`  | store        | `production`  | Google Play / App Store       |
+
+### Primeiro uso — criar projeto EAS
+
+```bash
+# 1. Instalar EAS CLI (se não tiver)
+npm install -g eas-cli
+
+# 2. Autenticar na conta Expo
+eas login
+
+# 3. Criar projeto e obter projectId
+cd apps/mobile
+eas init
+# → gera UUID e exibe: "Project ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# 4. Copiar o UUID para .env
+echo "EAS_PROJECT_ID=<uuid-gerado>" >> .env
+```
+
+### Builds
+
+```bash
+# Build de desenvolvimento (Android)
+eas build --profile development --platform android
+
+# Build de preview (todas as plataformas)
+eas build --profile preview --platform all
+
+# Build de produção
+eas build --profile production --platform all
+```
+
+### OTA Updates — enviar sem nova build
+
+```bash
+# Publicar update no canal preview (QA)
+eas update --channel preview --message "fix: descrição do ajuste"
+
+# Publicar update no canal production
+eas update --channel production --message "fix: descrição do ajuste"
+```
+
+> **Como funciona:** quando o app abre, verifica se há uma nova versão no canal EAS configurado para o build (`channel: preview` ou `channel: production`). Se houver, baixa em background e aplica no próximo restart. A política `runtimeVersion: { policy: 'appVersion' }` garante que o update só é aplicado em apps com a mesma versão nativa.
+
+### Verificar configuração local
+
+```bash
+# Em apps/mobile — mostra a config resolvida (updates, runtimeVersion, etc.)
+npx expo config --type introspect
+```
+
+### Estrutura de pastas (atualizada)
 
 ```
 apps/mobile/
@@ -112,40 +186,11 @@ apps/mobile/
 │       ├── api/            # API client com refresh automático
 │       ├── hooks/          # useAuth e outros hooks
 │       ├── lib/            # SecureStore, utilitários
-│       └── providers/      # AuthProvider, QueryProvider
+│       ├── providers/      # AuthProvider, QueryProvider
+│       └── types/          # Tipos de domínio (AgendamentoResumo, etc.)
 ├── assets/                 # Ícones, splash, imagens
-├── components/             # Componentes de UI reutilizáveis
-├── constants/              # Tema, cores
-├── hooks/                  # Hooks do Expo (useColorScheme, etc.)
-├── app.json                # Configuração Expo
+├── app.config.ts           # Configuração Expo (dinâmica — lê EAS_PROJECT_ID)
+├── eas.json                # Perfis de build EAS
 ├── metro.config.js         # Bundler (monorepo)
 └── tsconfig.json           # TypeScript com path aliases
-```
-
----
-
-## Monorepo — Packages Compartilhados
-
-O mobile consome:
-
-- `@toqe/contracts` — schemas Zod e tipos inferidos (auth, agendamento, etc.)
-- `@toqe/shared` — tipos de domínio, enums (`Perfil`), DTOs
-
-Resolução via Metro (`extraNodeModules`) e TypeScript (`paths`).
-
----
-
-## EAS Build — Configuração
-
-`apps/mobile/eas.json` define os perfis:
-
-- `development` — build de dev com cliente de desenvolvimento
-- `preview` — build interno para testes (APK)
-- `production` — build de produção (Google Play / App Store)
-
-Para configurar um novo projeto EAS:
-
-```bash
-eas init
-eas build:configure
 ```
