@@ -186,7 +186,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT || '22' }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yml,nginx/conf.d/toqe.conf"
           target: /opt/projetos/toqe
 
       - name: Deploy via SSH
@@ -214,6 +214,10 @@ jobs:
             wget -qO- http://127.0.0.1:4000/health/ready \
               && echo "✓ API healthy" \
               || (echo "✗ API não respondeu" && docker compose -f docker-compose.prod.yml logs api --tail=50 && exit 1)
+
+            # Atualiza nginx do host e recarrega sem downtime
+            cp nginx/conf.d/toqe.conf /etc/nginx/sites-available/toqe
+            nginx -t && systemctl reload nginx
 
             docker image prune -f
 
