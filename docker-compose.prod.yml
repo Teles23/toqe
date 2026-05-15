@@ -5,21 +5,13 @@
 name: toqe-prod
 
 services:
-  nginx:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-    depends_on:
-      - api
-      - web
-
   api:
     image: ghcr.io/teles23/toqe-api:develop
     restart: unless-stopped
     env_file: .env
+    ports:
+      # Expõe só no loopback — o nginx do host faz o proxy
+      - "127.0.0.1:3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -36,6 +28,9 @@ services:
     image: ghcr.io/teles23/toqe-web:develop
     restart: unless-stopped
     env_file: .env
+    ports:
+      # Expõe só no loopback — o nginx do host faz o proxy
+      - "127.0.0.1:3001:3001"
     environment:
       PORT: "3001"
       HOSTNAME: "0.0.0.0"
