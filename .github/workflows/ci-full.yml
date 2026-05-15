@@ -187,7 +187,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT }}
           source: "docker-compose.prod.yml"
-          target: /opt/toqe
+          target: /opt/projetos/toqe
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -198,7 +198,7 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT }}
           script: |
             set -e
-            cd /opt/toqe
+            cd /opt/projetos/toqe
 
             echo "$GHCR_TOKEN" | docker login ghcr.io \
               -u "$GHCR_USER" --password-stdin
