@@ -8,12 +8,14 @@
 
 ## Resumo
 
-Eliminados quatro warnings emitidos em `pnpm web:dev`:
+Eliminados seis warnings emitidos em `pnpm dev`:
 
 1. `disableLogger is deprecated and will be removed in a future version.` (@sentry/nextjs)
 2. `Could not find onRequestError hook in instrumentation file.` (@sentry/nextjs)
 3. `Detected scroll-behavior: smooth on the <html> element.` (Next.js)
-4. `The width(-1) and height(-0.4) of chart should be greater than 0` (recharts, no `/dashboard`)
+4. `The width(-1) and height(-0.4) of chart should be greater than 0` (recharts, dashboard)
+5. `The width(-1) and height(-1) of chart should be greater than 0` (recharts, todos os charts via measurement do pai)
+6. `Unsupported route path: "/api/v1/*"` do `LegacyRouteConverter` (Nest 11 + path-to-regexp 6+)
 
 ---
 
@@ -86,6 +88,32 @@ Garante dimensões positivas desde a primeira measurement.
 
 ---
 
+### 5 — Recharts: `width(-1) height(-1)` em todos os charts (dashboard + relatórios)
+
+**Arquivo:** `apps/web/src/shared/components/chart-utils.tsx` (`ClientOnlyChart`)
+
+**Problema:** A versão anterior do `ClientOnlyChart` montava o chart logo após o `mount` do client, sem checar se o container pai já tinha dimensões. Em layouts com `grid 1fr`, `motion.div` (com opacity 0 inicial) ou Suspense, o pai tinha `clientWidth/Height = 0` na primeira measurement do `ResponsiveContainer` — recharts subtraía 1 e logava `width(-1) height(-1)` repetidamente. O sintoma aparecia em `/dashboard`, `/relatorios` e em qualquer página que use os charts.
+
+**Correção:** Reescrevemos o `ClientOnlyChart` para:
+
+1. Renderizar um `<div>` wrapper com `width: 100%; height: 100%;` ligado a um `ref`.
+2. Observar esse wrapper com `ResizeObserver`.
+3. Só montar `children` quando `width > 0 AND height > 0`.
+
+Isso ataca a raiz do warning para **todos** os charts de uma vez, sem precisar tocar em cada `ResponsiveContainer` individualmente.
+
+---
+
+### 6 — Nest 11: warning `Unsupported route path: "/api/v1/*"`
+
+**Arquivo:** `apps/api/src/main.ts`
+
+**Problema:** Nest 11 + `path-to-regexp` 6+ deprecam a sintaxe wildcard antiga (`/api/v1/*`) em favor de parâmetros nomeados (`/api/v1/*splat`). O `setGlobalPrefix('api/v1')` registra internamente o wildcard antigo e o `LegacyRouteConverter` loga um warn auto-convertendo. É ruído sem ação possível pelo usuário até o Nest atualizar o registro interno.
+
+**Correção:** Adicionado wrapper `createFilteredLogger` em `main.ts` que delega para o Pino mas suprime warns cujo contexto é `LegacyRouteConverter`. Todos os outros warns continuam intactos.
+
+---
+
 ## Arquivos Modificados
 
 | Arquivo                                                           | Mudança                                                            |
@@ -94,6 +122,8 @@ Garante dimensões positivas desde a primeira measurement.
 | `apps/web/instrumentation.ts`                                     | Adiciona `import * as Sentry` + export `onRequestError`            |
 | `apps/web/src/app/layout.tsx`                                     | `<html>` ganha `data-scroll-behavior="smooth"`                     |
 | `apps/web/src/features/dashboard/components/FaturamentoChart.tsx` | Wrapper com `height: 260` + `ResponsiveContainer height="100%"`    |
+| `apps/web/src/shared/components/chart-utils.tsx`                  | `ClientOnlyChart` aguarda dimensões positivas via `ResizeObserver` |
+| `apps/api/src/main.ts`                                            | `createFilteredLogger` suprime warns do `LegacyRouteConverter`     |
 | `docs/25-sentry-nextjs-deprecations.md`                           | Esta documentação                                                  |
 
 ---
@@ -102,8 +132,11 @@ Garante dimensões positivas desde a primeira measurement.
 
 ```bash
 pnpm --filter web lint           # ok
+pnpm --filter api lint           # ok
 cd apps/web && npx tsc --noEmit  # ok
+cd apps/api && npx tsc --noEmit  # ok
 pnpm --filter web test           # 81/81 passed
+pnpm --filter api test           # 135/135 passed
 ```
 
-Após o restart do dev server, nenhum warning do `@sentry/nextjs` é emitido no boot.
+Após o restart do `pnpm dev`, nenhum dos seis warnings é emitido no boot ou em navegação por `/dashboard` e `/relatorios`.
