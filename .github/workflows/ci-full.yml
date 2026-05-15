@@ -164,6 +164,60 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          # NEXT_PUBLIC_API_URL é build-time no Next.js — ignorado pelo Dockerfile da api
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+
+  deploy-develop:
+    name: Deploy → VPS (develop)
+    needs: [docker]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: develop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sincronizar docker-compose.prod.yml para a VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          source: "docker-compose.prod.yml"
+          target: /opt/projetos/toqe
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          script: |
+            set -e
+            cd /opt/projetos/toqe
+
+            echo "$GHCR_TOKEN" | docker login ghcr.io \
+              -u "$GHCR_USER" --password-stdin
+
+            docker compose -f docker-compose.prod.yml pull
+
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "Aguardando API inicializar (migrações + boot)..."
+            sleep 25
+            wget -qO- http://127.0.0.1:4000/api/v1/health/ready \
+              && echo "✓ API healthy" \
+              || (echo "✗ API não respondeu" && docker compose -f docker-compose.prod.yml logs api --tail=50 && exit 1)
+
+            docker image prune -f
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.repository_owner }}
+
   # Placeholder: E2E web (Playwright) — adicionar quando implementado
   # Placeholder: E2E mobile (Maestro) — adicionar quando implementado
   # Placeholder: Load tests (k6) — adicionar quando implementado

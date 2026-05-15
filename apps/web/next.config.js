@@ -111,7 +111,12 @@ export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   // project: process.env.SENTRY_PROJECT,
   // authToken: process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: true,
-  disableLogger: true,
+  // Substitui o antigo `disableLogger: true` (deprecado a partir do
+  // @sentry/nextjs v9). Remove `console.log` de debug do SDK no bundle
+  // de produção via tree-shaking.
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+  },
   // Tunnel route opcional para contornar ad-blockers em produção:
   // tunnelRoute: "/monitoring",
 });

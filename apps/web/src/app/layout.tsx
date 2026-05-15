@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>): React.JSX.Element {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR" className="dark" data-scroll-behavior="smooth">
       <body className={`${inter.variable} ${sora.variable}`}>
         <ThemeProvider defaultTheme="dark">
           <QueryProvider>

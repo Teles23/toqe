@@ -86,9 +86,15 @@ export function FaturamentoChart({
         </div>
       </div>
 
-      <div className="px-4 py-4" style={{ minWidth: 0 }}>
+      {/*
+        Altura fixa no wrapper + height="100%" no ResponsiveContainer evita
+        o warning "width(-1) and height(-0.4)" que o recharts emite quando
+        usa `aspect` e o pai (grid 1fr) ainda nao foi medido na 1a paint.
+        minWidth:0 mantido para o item de grid colapsar corretamente.
+      */}
+      <div className="px-4 py-4" style={{ minWidth: 0, height: 260 }}>
         <ClientOnlyChart>
-          <ResponsiveContainer width="100%" aspect={2.5}>
+          <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}
               margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
