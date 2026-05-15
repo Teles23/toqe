@@ -36,6 +36,7 @@ services:
       HOSTNAME: "0.0.0.0"
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
+      INTERNAL_API_URL: "http://api:3000/api/v1"
     depends_on:
       api:
         condition: service_healthy
