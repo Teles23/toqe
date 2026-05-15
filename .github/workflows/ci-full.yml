@@ -179,6 +179,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug — validar inputs
+        run: |
+          echo "VPS_HOST set: ${{ secrets.VPS_HOST != '' }}"
+          echo "VPS_SSH_PORT set: ${{ secrets.VPS_SSH_PORT != '' }}"
+          echo "VPS_SSH_KEY length: ${#KEY}"
+          echo "username: root (hardcoded)"
+        env:
+          KEY: ${{ secrets.VPS_SSH_KEY }}
+
       - name: Sincronizar docker-compose.prod.yml para a VPS
         uses: appleboy/scp-action@v0.1.7
         with:
