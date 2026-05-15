@@ -21,4 +21,10 @@ export class AppController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  @Get('health/ready')
+  @ApiExcludeEndpoint()
+  ready(): { status: string } {
+    return { status: 'ok' };
+  }
 }
