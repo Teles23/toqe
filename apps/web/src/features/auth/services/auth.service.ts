@@ -56,13 +56,43 @@ export async function requestLogout(): Promise<void> {
 }
 
 /**
- * Solicita link de recuperação de senha.
- *
- * STUB: o endpoint correspondente ainda não está implementado no NestJS.
- * Quando estiver, substituir o `setTimeout` por uma chamada real ao BFF.
+ * Solicita link de recuperação de senha via BFF → NestJS.
+ * Não revela se o e-mail existe (anti-enumeration): sempre retorna sem erro
+ * em caso de sucesso 200.
  */
-export async function requestPasswordReset(_email: string): Promise<void> {
-  // TODO: trocar por POST /api/auth/forgot-password quando o endpoint
-  // estiver disponível na API.
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch("/api/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Erro ao solicitar recuperação",
+      res.status,
+    );
+  }
+}
+
+/**
+ * Redefine a senha usando o token recebido por e-mail.
+ * Lança AuthServiceError com status 401 se o token for inválido ou expirado.
+ */
+export async function requestResetPassword(
+  token: string,
+  novaSenha: string,
+): Promise<void> {
+  const res = await fetch("/api/auth/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, novaSenha }),
+  });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Token inválido ou expirado",
+      res.status,
+    );
+  }
 }

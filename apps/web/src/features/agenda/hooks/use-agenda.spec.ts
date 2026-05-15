@@ -176,6 +176,7 @@ import { useAgendaMutations } from "./use-agenda";
 import { createWrapper } from "@/test/render-helpers";
 
 const mockCriar = vi.fn();
+const mockListarDisponibilidade = vi.fn();
 
 vi.mock("../services/agenda.service", () => ({
   agendaService: {
@@ -183,8 +184,12 @@ vi.mock("../services/agenda.service", () => ({
     listBarbeiros: vi.fn().mockResolvedValue([]),
     patchStatus: vi.fn(),
     criar: (...args: unknown[]) => mockCriar(...args),
+    listarDisponibilidade: (...args: unknown[]) =>
+      mockListarDisponibilidade(...args),
   },
 }));
+
+import { useDisponibilidade } from "./use-agenda";
 
 describe("useAgendaMutations", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -221,5 +226,81 @@ describe("useAgendaMutations", () => {
       inicio: "2026-05-15T09:00:00.000Z",
       servicosIds: [1],
     });
+  });
+});
+
+// ─── useDisponibilidade ───────────────────────────────────────────────────────
+
+describe("useDisponibilidade", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("chama agendaService.listarDisponibilidade com os parâmetros corretos", async () => {
+    mockListarDisponibilidade.mockResolvedValueOnce(["09:00", "09:30", "10:00"]);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(
+      () => useDisponibilidade(1, 10, "2026-05-15", 60),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockListarDisponibilidade).toHaveBeenCalledWith(
+      1,
+      10,
+      "2026-05-15",
+      60,
+    );
+    expect(result.current.data).toEqual(["09:00", "09:30", "10:00"]);
+  });
+
+  it("não executa a query quando barbeiroId é null (enabled: false)", () => {
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(
+      () => useDisponibilidade(1, null, "2026-05-15", 30),
+      { wrapper: Wrapper },
+    );
+
+    // Query não deve ter sido disparada
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(mockListarDisponibilidade).not.toHaveBeenCalled();
+  });
+
+  it("não executa a query quando barCodigo é null (enabled: false)", () => {
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(
+      () => useDisponibilidade(null, 10, "2026-05-15", 30),
+      { wrapper: Wrapper },
+    );
+
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(mockListarDisponibilidade).not.toHaveBeenCalled();
+  });
+
+  it("não executa a query quando barbeiroId é NaN (enabled: false)", () => {
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(
+      () => useDisponibilidade(1, NaN, "2026-05-15", 30),
+      { wrapper: Wrapper },
+    );
+
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(mockListarDisponibilidade).not.toHaveBeenCalled();
+  });
+
+  it("retorna array vazio quando API não tem slots disponíveis", async () => {
+    mockListarDisponibilidade.mockResolvedValueOnce([]);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(
+      () => useDisponibilidade(1, 5, "2026-05-15", 30),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
   });
 });

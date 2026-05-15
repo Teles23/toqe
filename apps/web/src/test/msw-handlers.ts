@@ -20,6 +20,15 @@ export const handlers = [
     }),
   ),
   http.post("/api/auth/logout", () => HttpResponse.json({ ok: true })),
+  http.post("/api/auth/forgot-password", () =>
+    HttpResponse.json({
+      message:
+        "Se o e-mail estiver cadastrado, você receberá um link em breve.",
+    }),
+  ),
+  http.post("/api/auth/reset-password", () =>
+    HttpResponse.json({ message: "Senha redefinida com sucesso." }),
+  ),
 
   // ── Usuário ──────────────────────────────────────────────────────────────
   http.get(`${BASE}/usuarios/me`, () =>
@@ -151,6 +160,11 @@ export const handlers = [
   http.delete(
     `${BASE}/barbearias/:barCodigo/servicos/:codigo`,
     () => new HttpResponse(null, { status: 204 }),
+  ),
+
+  // ── Agenda / Disponibilidade ─────────────────────────────────────────────
+  http.get(`${BASE}/agenda/disponibilidade/:barbeiroId`, () =>
+    HttpResponse.json(["09:00", "09:30", "10:00", "10:30"]),
   ),
 
   // ── Agendamentos ─────────────────────────────────────────────────────────
