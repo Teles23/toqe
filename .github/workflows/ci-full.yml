@@ -185,23 +185,25 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
           source: "docker-compose.prod.yml"
           target: /opt/projetos/toqe
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          script_stop: true
+          command_timeout: 30m
           script: |
             set -e
             cd /opt/projetos/toqe
 
-            echo "$GHCR_TOKEN" | docker login ghcr.io \
-              -u "$GHCR_USER" --password-stdin
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+              -u "${{ github.repository_owner }}" --password-stdin
 
             docker compose -f docker-compose.prod.yml pull
 
@@ -214,9 +216,6 @@ jobs:
               || (echo "✗ API não respondeu" && docker compose -f docker-compose.prod.yml logs api --tail=50 && exit 1)
 
             docker image prune -f
-        env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHCR_USER: ${{ github.repository_owner }}
 
   # Placeholder: E2E web (Playwright) — adicionar quando implementado
   # Placeholder: E2E mobile (Maestro) — adicionar quando implementado
