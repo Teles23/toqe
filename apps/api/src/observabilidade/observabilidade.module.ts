@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, RequestMethod } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import { Request } from 'express';
 
@@ -6,6 +6,13 @@ import { Request } from 'express';
 @Module({
   imports: [
     LoggerModule.forRoot({
+      // Override do default ['*', RequestMethod.ALL] do nestjs-pino@4.6.x.
+      // O default usa a sintaxe antiga de wildcard ('*'), que combinada com
+      // globalPrefix='api/v1' vira '/api/v1/*' — disparando o warn do
+      // LegacyRouteConverter no Nest 11 + path-to-regexp 6+. A sintaxe nova
+      // ('*splat' = parametro nomeado) registra direto sem conversao.
+      // Quando nestjs-pino atualizar o default, esta linha pode ser removida.
+      forRoutes: [{ path: '*splat', method: RequestMethod.ALL }],
       pinoHttp: {
         // Em dev usa pretty-print colorido; em prod emite JSON puro
         transport:

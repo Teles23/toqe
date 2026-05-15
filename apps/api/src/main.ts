@@ -2,51 +2,17 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { LoggerService, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { ZodValidationPipe, patchNestJsSwagger } from 'nestjs-zod';
 import { GlobalExceptionFilter } from './observabilidade/sentry.filter';
 
-/**
- * Wrapper sobre o Pino Logger que filtra warnings do `LegacyRouteConverter`.
- *
- * Motivo: Nest 11 + path-to-regexp 6+ emitem um warning toda vez que o
- * `setGlobalPrefix` registra `/api/v1/*` (sintaxe antiga de wildcard).
- * O Nest auto-converte para `/api/v1/*splat` internamente — ou seja, é
- * apenas ruído sem ação possível pelo usuário até a versão do Nest mudar
- * o registro interno do prefix. Suprimimos só esse contexto, mantendo
- * todos os outros warns.
- */
-function createFilteredLogger(base: LoggerService): LoggerService {
-  return {
-    log: (msg: unknown, ...args: unknown[]): void => {
-      base.log?.(msg, ...args);
-    },
-    error: (msg: unknown, ...args: unknown[]): void => {
-      base.error?.(msg, ...args);
-    },
-    warn: (msg: unknown, ...args: unknown[]): void => {
-      if (args.some((a) => a === 'LegacyRouteConverter')) return;
-      base.warn?.(msg, ...args);
-    },
-    debug: (msg: unknown, ...args: unknown[]): void => {
-      base.debug?.(msg, ...args);
-    },
-    verbose: (msg: unknown, ...args: unknown[]): void => {
-      base.verbose?.(msg, ...args);
-    },
-    fatal: (msg: unknown, ...args: unknown[]): void => {
-      base.fatal?.(msg, ...args);
-    },
-  };
-}
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   // Substitui o logger padrão do NestJS pelo Pino (JSON em prod, pretty em dev)
-  app.useLogger(createFilteredLogger(app.get(Logger)));
+  app.useLogger(app.get(Logger));
 
   // Filtro global: loga erros 5xx com contexto tenant/usuário + resposta padronizada
   app.useGlobalFilters(new GlobalExceptionFilter());

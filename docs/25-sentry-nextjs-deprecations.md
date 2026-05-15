@@ -106,25 +106,42 @@ Isso ataca a raiz do warning para **todos** os charts de uma vez, sem precisar t
 
 ### 6 — Nest 11: warning `Unsupported route path: "/api/v1/*"`
 
-**Arquivo:** `apps/api/src/main.ts`
+**Arquivo:** `apps/api/src/observabilidade/observabilidade.module.ts`
 
-**Problema:** Nest 11 + `path-to-regexp` 6+ deprecam a sintaxe wildcard antiga (`/api/v1/*`) em favor de parâmetros nomeados (`/api/v1/*splat`). O `setGlobalPrefix('api/v1')` registra internamente o wildcard antigo e o `LegacyRouteConverter` loga um warn auto-convertendo. É ruído sem ação possível pelo usuário até o Nest atualizar o registro interno.
+**Diagnóstico:** Patch temporário no `LegacyRouteConverter.printWarning` revelou o stack:
 
-**Correção:** Adicionado wrapper `createFilteredLogger` em `main.ts` que delega para o Pino mas suprime warns cujo contexto é `LegacyRouteConverter`. Todos os outros warns continuam intactos.
+```
+at LegacyRouteConverter.tryConvert
+at express-adapter.js:163  (createMiddlewareFactory)
+at middleware-module.js:189 (MiddlewareModule.registerHandler)
+```
+
+A raiz é o `nestjs-pino@4.6.x`: o `LoggerModule.configure` registra o middleware HTTP com `forRoutes('*')` (sintaxe antiga). Combinado com `setGlobalPrefix('api/v1')`, o Nest concatena para `/api/v1/*` e o `LegacyRouteConverter` loga o warn ao auto-converter. O autor do `nestjs-pino` deixou o default antigo de propósito (compat com Nest 9), com TODO no source para trocar quando dropar a compat.
+
+**Correção (na raiz):** sobrescrever o `forRoutes` default do `nestjs-pino` com a sintaxe nova de parâmetro nomeado (`*splat`):
+
+```ts
+LoggerModule.forRoot({
+  forRoutes: [{ path: '*splat', method: RequestMethod.ALL }],
+  pinoHttp: { ... },
+});
+```
+
+Validação: rebuild + boot da API confirma **zero** mensagens `LegacyRouteConverter` no log. Não é supressão de log — é eliminação da causa.
 
 ---
 
 ## Arquivos Modificados
 
-| Arquivo                                                           | Mudança                                                            |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `apps/web/next.config.js`                                         | `disableLogger` → `bundleSizeOptimizations.excludeDebugStatements` |
-| `apps/web/instrumentation.ts`                                     | Adiciona `import * as Sentry` + export `onRequestError`            |
-| `apps/web/src/app/layout.tsx`                                     | `<html>` ganha `data-scroll-behavior="smooth"`                     |
-| `apps/web/src/features/dashboard/components/FaturamentoChart.tsx` | Wrapper com `height: 260` + `ResponsiveContainer height="100%"`    |
-| `apps/web/src/shared/components/chart-utils.tsx`                  | `ClientOnlyChart` aguarda dimensões positivas via `ResizeObserver` |
-| `apps/api/src/main.ts`                                            | `createFilteredLogger` suprime warns do `LegacyRouteConverter`     |
-| `docs/25-sentry-nextjs-deprecations.md`                           | Esta documentação                                                  |
+| Arquivo                                                           | Mudança                                                                                            |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `apps/web/next.config.js`                                         | `disableLogger` → `bundleSizeOptimizations.excludeDebugStatements`                                 |
+| `apps/web/instrumentation.ts`                                     | Adiciona `import * as Sentry` + export `onRequestError`                                            |
+| `apps/web/src/app/layout.tsx`                                     | `<html>` ganha `data-scroll-behavior="smooth"`                                                     |
+| `apps/web/src/features/dashboard/components/FaturamentoChart.tsx` | Wrapper com `height: 260` + `ResponsiveContainer height="100%"`                                    |
+| `apps/web/src/shared/components/chart-utils.tsx`                  | `ClientOnlyChart` aguarda dimensões positivas via `ResizeObserver`                                 |
+| `apps/api/src/observabilidade/observabilidade.module.ts`          | `LoggerModule.forRoot` agora passa `forRoutes: '*splat'` em vez do default antigo do `nestjs-pino` |
+| `docs/25-sentry-nextjs-deprecations.md`                           | Esta documentação                                                                                  |
 
 ---
 
