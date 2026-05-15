@@ -8,6 +8,7 @@ import { useAuth } from "@/shared/hooks/use-auth";
 import { useBarbeiros } from "../hooks/use-barbeiros";
 import { BarbeiroCard } from "./BarbeiroCard";
 import { BarbeiroDetalhe } from "./BarbeiroDetalhe";
+import { BarbeiroModal } from "./BarbeiroModal";
 import type { Barbeiro, BarbeiroEstado } from "../types/barbeiro.types";
 import { LoadingSpinner } from "@/shared/components/loading-spinner";
 
@@ -18,6 +19,7 @@ export function BarbeirosView() {
   );
 
   const [selected, setSelected] = useState<Barbeiro | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [filterEstado, setFilterEstado] = useState<"todos" | BarbeiroEstado>(
     "todos",
   );
@@ -116,6 +118,8 @@ export function BarbeirosView() {
             <div className="flex-1" />
 
             <button
+              type="button"
+              onClick={() => setModalOpen(true)}
               className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold"
               style={{
                 height: 32,
@@ -162,6 +166,10 @@ export function BarbeirosView() {
           )}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {modalOpen && <BarbeiroModal onClose={() => setModalOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

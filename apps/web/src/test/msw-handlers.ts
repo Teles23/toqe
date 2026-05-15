@@ -70,6 +70,16 @@ export const handlers = [
     ]),
   ),
 
+  http.post(`${BASE}/barbearias/:barCodigo/membros`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(body, { status: 201 });
+  }),
+
+  http.delete(
+    `${BASE}/barbearias/:barCodigo/membros/:usrCodigo`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+
   // ── Clientes ─────────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo/clientes`, () =>
     HttpResponse.json([
@@ -88,6 +98,14 @@ export const handlers = [
       },
     ]),
   ),
+
+  http.post(`${BASE}/barbearias/:barCodigo/clientes`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(
+      { codigo: 21, perfil: "cliente", ...(body as object) },
+      { status: 201 },
+    );
+  }),
 
   // ── Serviços ─────────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo/servicos`, () =>
@@ -109,12 +127,49 @@ export const handlers = [
     ]),
   ),
 
+  http.post(`${BASE}/barbearias/:barCodigo/servicos`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(
+      { codigo: 99, barCodigo: 1, ativo: true, ...(body as object) },
+      { status: 201 },
+    );
+  }),
+
+  http.put(
+    `${BASE}/barbearias/:barCodigo/servicos/:codigo`,
+    async ({ request }) => {
+      const body = await request.json();
+      return HttpResponse.json({
+        codigo: 1,
+        barCodigo: 1,
+        ativo: true,
+        ...(body as object),
+      });
+    },
+  ),
+
+  http.delete(
+    `${BASE}/barbearias/:barCodigo/servicos/:codigo`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+
   // ── Agendamentos ─────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo/agendamentos`, () =>
     HttpResponse.json([]),
   ),
   // handler legado (relativo) mantido para setup.spec.ts
   http.get("/agendamentos", () => HttpResponse.json([])),
+
+  http.post(
+    `${BASE}/barbearias/:barCodigo/agendamentos`,
+    async ({ request }) => {
+      const body = await request.json();
+      return HttpResponse.json(
+        { codigo: 999, status: "pendente", ...(body as object) },
+        { status: 201 },
+      );
+    },
+  ),
 
   // ── Configurações ─────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo`, () =>

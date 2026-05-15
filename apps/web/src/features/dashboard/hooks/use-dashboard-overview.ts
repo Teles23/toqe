@@ -1,23 +1,16 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { QUERY_KEYS } from "@/shared/lib/constants";
+import { QUERY_KEYS, STALE_TIME } from "@/shared/lib/constants";
 import { fetchDashboardOverview } from "../services/dashboard.service";
 import type { DashboardOverview } from "../types/dashboard.types";
 
-/**
- * Hook de overview do dashboard.
- *
- * Usa TanStack Query — cache automático (staleTime configurado no
- * QueryClient padrão), retry, loading/error states.
- *
- * Enquanto o backend não expõe `/dashboard/overview`, o service
- * retorna mock com latência simulada (~300ms) — o que serve para
- * exercitar o estado de loading no componente.
- */
-export function useDashboardOverview() {
+export function useDashboardOverview(barCodigo: number | null) {
   return useQuery<DashboardOverview>({
-    queryKey: QUERY_KEYS.dashboard(),
-    queryFn: fetchDashboardOverview,
+    queryKey: QUERY_KEYS.dashboard(barCodigo ?? 0),
+    queryFn: () => fetchDashboardOverview(barCodigo!),
+    enabled: !!barCodigo,
+    staleTime: STALE_TIME.REALTIME,
+    refetchInterval: 60_000,
   });
 }

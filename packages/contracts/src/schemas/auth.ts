@@ -18,6 +18,14 @@ export const registerSchema = z
   })
   .strict();
 
+export const criarClienteRapidoSchema = z
+  .object({
+    nome: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
+    email: z.string().email("E-mail inválido"),
+    telefone: z.string().optional(),
+  })
+  .strict();
+
 export const refreshTokenSchema = z
   .object({
     refreshToken: z.string().min(1, "Refresh token é obrigatório"),

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import StatCard from "@/shared/components/stat-card";
 import { useAuth } from "@/shared/hooks/use-auth";
-import { useServicos } from "../hooks/use-servicos";
+import { useServicos, useServicoMutations } from "../hooks/use-servicos";
 import { ServicoCard } from "./ServicoCard";
 import { ServicoDetalhe } from "./ServicoDetalhe";
 import { ServicoModal } from "./ServicoModal";
@@ -22,9 +22,9 @@ import { LoadingSpinner } from "@/shared/components/loading-spinner";
 
 export function ServicosView() {
   const { barbearia } = useAuth();
-  const { data: servicos = [], isLoading } = useServicos(
-    barbearia?.codigo ?? null,
-  );
+  const barCodigo = barbearia?.codigo ?? null;
+  const { data: servicos = [], isLoading } = useServicos(barCodigo);
+  const { remove } = useServicoMutations(barCodigo);
 
   const [selected, setSelected] = useState<ServicoAPI | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -229,6 +229,11 @@ export function ServicosView() {
               onEdit={() => {
                 setEditTarget(selected);
                 setModalOpen(true);
+              }}
+              onDelete={() => {
+                remove.mutate(selected.codigo, {
+                  onSuccess: () => setSelected(null),
+                });
               }}
             />
           )}

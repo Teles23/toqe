@@ -1,14 +1,22 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { useBarbeiros, toBarbeiro } from "./use-barbeiros";
+import {
+  useBarbeiros,
+  toBarbeiro,
+  useBarbeiroMutations,
+} from "./use-barbeiros";
 import { createWrapper } from "@/test/render-helpers";
 import type { BarbeiroAPI } from "../types/barbeiro.types";
 
 const mockList = vi.fn();
+const mockConvidar = vi.fn();
+const mockRemover = vi.fn();
 
 vi.mock("../services/barbeiro.service", () => ({
   barbeiroService: {
     list: (...args: unknown[]) => mockList(...args),
+    convidar: (...args: unknown[]) => mockConvidar(...args),
+    remover: (...args: unknown[]) => mockRemover(...args),
   },
 }));
 
@@ -82,5 +90,49 @@ describe("useBarbeiros", () => {
       wrapper: Wrapper,
     });
     expect(result.current.data).toEqual([]);
+  });
+});
+
+describe("useBarbeiroMutations", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("convidar envia POST com email e perfil", async () => {
+    mockConvidar.mockResolvedValueOnce(undefined);
+    mockList.mockResolvedValue([]);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useBarbeiroMutations(1), {
+      wrapper: Wrapper,
+    });
+
+    await act(async () => {
+      result.current.convidar.mutate({
+        email: "novo@test.com",
+        perfil: "barbeiro",
+      });
+    });
+
+    await waitFor(() => expect(result.current.convidar.isSuccess).toBe(true));
+    expect(mockConvidar).toHaveBeenCalledWith(1, {
+      email: "novo@test.com",
+      perfil: "barbeiro",
+    });
+  });
+
+  it("remover envia DELETE com usrCodigo", async () => {
+    mockRemover.mockResolvedValueOnce(undefined);
+    mockList.mockResolvedValue([]);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useBarbeiroMutations(1), {
+      wrapper: Wrapper,
+    });
+
+    await act(async () => {
+      result.current.remover.mutate(42);
+    });
+
+    await waitFor(() => expect(result.current.remover.isSuccess).toBe(true));
+    expect(mockRemover).toHaveBeenCalledWith(1, 42);
   });
 });

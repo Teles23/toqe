@@ -5,7 +5,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
+import { CriarClienteRapidoDto } from './dto/criar-cliente-rapido.dto';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
 import { SELECT_USUARIO_PERFIL } from '../common/constants/prisma-selects';
 import {
@@ -159,6 +161,38 @@ export class MembroBarbeariaService {
 
     return this.prisma.membroBarbearia.delete({
       where: { barCodigo_usrCodigo: { barCodigo, usrCodigo } },
+    });
+  }
+
+  async criarCliente(barCodigo: number, dto: CriarClienteRapidoDto) {
+    let usuario = await this.prisma.usuario.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!usuario) {
+      const tempSenha = Math.random().toString(36).slice(-10);
+      const senhaHash = await bcrypt.hash(tempSenha, await bcrypt.genSalt());
+      usuario = await this.prisma.usuario.create({
+        data: {
+          nome: dto.nome,
+          email: dto.email,
+          telefone: dto.telefone ?? null,
+          senhaHash,
+        },
+      });
+    }
+
+    const jaEMembro = await this.prisma.membroBarbearia.findUnique({
+      where: { barCodigo_usrCodigo: { barCodigo, usrCodigo: usuario.codigo } },
+    });
+    if (jaEMembro)
+      throw new ConflictException('Usuário já é cliente desta barbearia');
+
+    return this.prisma.membroBarbearia.create({
+      data: { barCodigo, usrCodigo: usuario.codigo, perfil: 'cliente' },
+      include: {
+        usuario: { select: { codigo: true, nome: true, email: true } },
+      },
     });
   }
 }

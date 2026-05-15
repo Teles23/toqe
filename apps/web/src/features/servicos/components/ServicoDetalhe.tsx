@@ -10,9 +10,15 @@ interface ServicoDetalheProps {
   s: ServicoAPI;
   onClose: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 }
 
-export function ServicoDetalhe({ s, onClose, onEdit }: ServicoDetalheProps) {
+export function ServicoDetalhe({
+  s,
+  onClose,
+  onEdit,
+  onDelete,
+}: ServicoDetalheProps) {
   const categoria = (s as unknown as { categoria?: string }).categoria;
   const cfg = getCategoria(categoria);
 
@@ -161,6 +167,8 @@ export function ServicoDetalhe({ s, onClose, onEdit }: ServicoDetalheProps) {
           <Edit2 size={13} /> Editar
         </button>
         <button
+          type="button"
+          onClick={onDelete}
           className="px-3 flex items-center justify-center rounded-lg"
           style={{
             background: "rgba(255,77,79,0.08)",

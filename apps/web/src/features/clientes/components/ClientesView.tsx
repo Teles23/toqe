@@ -8,6 +8,7 @@ import { useAuth } from "@/shared/hooks/use-auth";
 import { useClientes } from "../hooks/use-clientes";
 import { ClienteCard } from "./ClienteCard";
 import { ClienteDetalhe } from "./ClienteDetalhe";
+import { ClienteModal } from "./ClienteModal";
 import type { Cliente, ClienteStatus } from "../types/cliente.types";
 import { STATUS_CONFIG, type SortKey } from "../constants/cliente.constants";
 import { LoadingSpinner } from "@/shared/components/loading-spinner";
@@ -22,6 +23,7 @@ export function ClientesView() {
   );
   const [sortBy, setSortBy] = useState<SortKey>("visitas");
   const [selected, setSelected] = useState<Cliente | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const filtered = clientes
     .filter((c) => {
@@ -182,6 +184,8 @@ export function ClientesView() {
             </select>
 
             <button
+              type="button"
+              onClick={() => setModalOpen(true)}
               className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold ml-auto"
               style={{
                 height: 32,
@@ -269,6 +273,10 @@ export function ClientesView() {
           )}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {modalOpen && <ClienteModal onClose={() => setModalOpen(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

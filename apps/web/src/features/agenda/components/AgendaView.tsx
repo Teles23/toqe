@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import { Plus } from "lucide-react";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { LoadingSpinner } from "@/shared/components/loading-spinner";
 import { DateSelector } from "./DateSelector";
@@ -9,6 +10,7 @@ import { AgendaMetrics } from "./AgendaMetrics";
 import { AgendaFilters } from "./AgendaFilters";
 import { AgendaSlot, AgendaSlotEmpty } from "./AgendaSlot";
 import { BarbeiroPanel } from "./BarbeiroPanel";
+import { AgendamentoModal } from "./AgendamentoModal";
 import { useAgenda } from "../hooks/use-agenda";
 
 export function AgendaView() {
@@ -17,6 +19,7 @@ export function AgendaView() {
   const [filterBarbeiro, setFilterBarbeiro] = useState("Todos");
   const [filterStatus, setFilterStatus] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
 
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + selectedOffset);
@@ -41,10 +44,20 @@ export function AgendaView() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <DateSelector
-        selectedOffset={selectedOffset}
-        onChange={setSelectedOffset}
-      />
+      <div className="flex items-center justify-between">
+        <DateSelector
+          selectedOffset={selectedOffset}
+          onChange={setSelectedOffset}
+        />
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold"
+          style={{ height: 32, background: "var(--primary)", color: "#0D0D0D" }}
+        >
+          <Plus size={13} strokeWidth={2.5} /> Novo agendamento
+        </button>
+      </div>
 
       <AgendaMetrics slots={slots} />
 
@@ -79,6 +92,15 @@ export function AgendaView() {
 
         <BarbeiroPanel barbeiros={barbeiros} slots={slots} />
       </div>
+
+      <AnimatePresence>
+        {modalOpen && (
+          <AgendamentoModal
+            date={targetDate}
+            onClose={() => setModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
