@@ -11,4 +11,5 @@ export {
   type ListItemTrailing,
 } from "./ListItem";
 export { ScreenHeader, type ScreenHeaderProps } from "./ScreenHeader";
+export { SearchInput, type SearchInputProps } from "./SearchInput";
 export { Select, type SelectOption, type SelectProps } from "./Select";
