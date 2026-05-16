@@ -82,8 +82,8 @@ Ver `~/.claude/plans/c-users-thiago-teles-downloads-prompt-r-elegant-metcalfe.md
 - **Fase 0:** Pesquisa + este doc.
 - **Fase 1 (Commit 1):** Tokens + fontes + design system base (10 componentes novos).
 - **Fase 2 (Commits 2–12):** 11 telas redesenhadas, 1 commit por tela.
-- **Fase 3 (Commit 13):** Tab bars Urban Flow.
-- **Fase 4 (Commit 14):** Remoção do alias `Button`, finalização do doc, merge.
+- **Fase 3 (Commit 8):** ✅ Tab bars Urban Flow (`buildTabBarOptions` DRY + `tabBarIcon` Feather).
+- **Fase 4 (Commit final):** Remoção do alias `Button`, finalização do doc, merge.
 
 ---
 
