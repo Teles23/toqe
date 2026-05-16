@@ -16,7 +16,9 @@ model Usuario {
   codigo    Int      @id @default(autoincrement()) @map("TQE_USR_CODIGO")
   nome      String   @map("TQE_USR_NOME") @db.VarChar(100)
   email     String   @unique @map("TQE_USR_EMAIL") @db.VarChar(100)
-  senhaHash String   @map("TQE_USR_SENHA_HASH") @db.VarChar(255)
+  // Nullable para suportar usuários OAuth (Google) que não têm senha local.
+  // AuthService.login deve checar `!user.senhaHash` antes de bcrypt.compare.
+  senhaHash String?  @map("TQE_USR_SENHA_HASH") @db.VarChar(255)
   telefone  String?  @unique @map("TQE_USR_TELEFONE") @db.VarChar(20)
   avatarUrl String?  @map("TQE_USR_AVATAR_URL")
   ativo        Boolean  @default(true) @map("TQE_USR_ATIVO")

@@ -1,3 +1,6 @@
+// Bootstrap nativo do Google Sign-In — efeito colateral antes do AuthProvider
+import "@/src/_init/google-signin";
+
 // O import de `hideSplash` já carrega o módulo `splash.ts`, cujo top-level
 // chama `SplashScreen.preventAutoHideAsync()` por efeito colateral antes de
 // qualquer render. Mantém o splash visível até `hideSplash()` ser chamado abaixo.

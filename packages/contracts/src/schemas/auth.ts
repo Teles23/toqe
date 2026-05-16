@@ -74,6 +74,12 @@ export const changePasswordSchema = z
   });
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+export const googleAuthSchema = z
+  .object({
+    idToken: z.string().min(1, "ID token Google é obrigatório"),
+  })
+  .strict();
+
 export const twoFaSetupSchema = z
   .object({ code: z.string().length(6, "Código deve ter 6 dígitos") })
   .strict();

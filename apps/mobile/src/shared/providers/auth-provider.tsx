@@ -140,7 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = useCallback(
     async (idToken: string): Promise<void> => {
-      // Endpoint POST /api/v1/auth/google — a ser implementado na API
+      // Endpoint /auth/google: backend verifica o idToken via google-auth-library
+      // (DI: ver apps/api/src/auth/google-token-verifier.ts) e emite tokens reais.
       const data = await api.post<{
         access_token: string;
         refresh_token: string;

@@ -7,6 +7,10 @@ import { AuthService } from './auth.service';
 import { UsuarioService } from '../usuario/usuario.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificacaoService } from '../notificacao/notificacao.service';
+import {
+  GOOGLE_TOKEN_VERIFIER,
+  type GoogleTokenVerifier,
+} from './google-token-verifier';
 
 const mockUsuario = {
   codigo: 1,
@@ -78,6 +82,12 @@ describe('AuthService', () => {
           useValue: {
             enviarRecuperacaoSenha: jest.fn(),
           },
+        },
+        {
+          provide: GOOGLE_TOKEN_VERIFIER,
+          useValue: {
+            verify: jest.fn(),
+          } satisfies GoogleTokenVerifier,
         },
       ],
     }).compile();

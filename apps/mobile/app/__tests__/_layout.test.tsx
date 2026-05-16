@@ -2,6 +2,12 @@ jest.mock("@/src/_init/splash", () => ({
   hideSplash: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock("@/src/_init/google-signin", () => ({}));
+
+jest.mock("@react-native-google-signin/google-signin", () => ({
+  GoogleSignin: { configure: jest.fn(), signIn: jest.fn() },
+}));
+
 jest.mock("expo-splash-screen", () => ({
   preventAutoHideAsync: jest.fn().mockResolvedValue(undefined),
   hideAsync: jest.fn().mockResolvedValue(undefined),
