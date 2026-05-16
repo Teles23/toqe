@@ -7,27 +7,24 @@ on:
       - main
     tags:
       - "v*"
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 concurrency:
-  group: ci-full-${{ github.event.pull_request.number || github.ref }}
+  group: ci-full-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
   packages: write
 
-# Lint, type-check, unit tests e build já foram validados pelo ci-fast
-# durante a PR. ci-full foca em integration + security (caros, com DB
-# real via Testcontainers) e deploy Docker.
+# Lint, type-check, unit tests e build são validados pelo ci-fast durante a PR.
+# ci-full executa após o merge: integration + security (Testcontainers + DB real)
+# e deploy Docker — evita rodar os testes caros duas vezes (PR + push).
 jobs:
-  integration:
-    name: Integration tests (Testcontainers)
+  integration-security:
+    name: Integration & Security tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       TURBO_TELEMETRY_DISABLED: 1
     services:
@@ -70,46 +67,6 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           TESTCONTAINERS_RYUK_DISABLED: true
 
-  security:
-    name: Security tests (supertest)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      TURBO_TELEMETRY_DISABLED: 1
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm --filter api exec prisma generate
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-
       - name: Test — Security
         run: pnpm --filter api test:security
         env:
@@ -118,7 +75,7 @@ jobs:
 
   docker:
     name: Docker build & push — ${{ matrix.app }}
-    needs: [integration, security]
+    needs: [integration-security]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
