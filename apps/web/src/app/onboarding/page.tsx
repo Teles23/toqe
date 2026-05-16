@@ -885,7 +885,7 @@ function Passo6({
   );
 }
 
-export default function Onboarding() {
+export default function Onboarding(): React.JSX.Element {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [stepErrors, setStepErrors] = useState<string[]>([]);

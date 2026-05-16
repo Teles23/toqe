@@ -7,6 +7,14 @@ module.exports = defineConfig([
   {
     ignores: ["dist/*"],
   },
+  // React Native usa Metro bundler para resolução de módulos — o resolver Node.js
+  // do ESLint não consegue resolver pacotes nativos (.native.js, platform-specific,
+  // etc.). Desabilitar import/no-unresolved é o padrão correto para projetos RN/Expo.
+  {
+    rules: {
+      "import/no-unresolved": "off",
+    },
+  },
   // Em arquivos de teste:
   // - jest.mock() é hoistado pelo babel-jest antes dos imports
   //   → import/first não pode entender essa ordem

@@ -44,7 +44,18 @@
 - Quando corrigir um bug, o teste que cobre aquele cenário vai no **mesmo commit**
 - Antes de commitar: rodar `pnpm lint`, `pnpm check-types` e `pnpm test` — os três juntos
 
-### 7. Zero tolerância a bypasses
+### 8. Mudanças de schema Prisma — checklist obrigatório
+
+Toda mudança em `schema.prisma` deve tocar os seguintes arquivos **no mesmo commit**:
+
+1. `schema.prisma` — a mudança
+2. Migration SQL gerada via `prisma migrate dev --name descricao`
+3. `prisma/seed-runner.js` — verificar se usa compound keys ou tipos afetados
+4. Qualquer service/spec que dependa dos tipos gerados pelo Prisma client
+
+**Atenção:** índices parciais SQL (`CREATE UNIQUE INDEX ... WHERE ...`) **não são
+reconhecidos pelo Prisma** como unique constraints — não geram compound key names
+no client. Nunca use `upsert({ where: { compoundKey: ... } })` baseado nesses índices.
 
 - **Nunca** usar `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `any` casting ou flags `--passWithNoTests` para silenciar erros
 - **Nunca** remover código funcional da aplicação para fazer lint/testes passarem

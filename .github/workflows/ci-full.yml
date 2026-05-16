@@ -28,6 +28,19 @@ jobs:
     env:
       TURBO_TELEMETRY_DISABLED: 1
     services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:7-alpine
         ports:
@@ -72,6 +85,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           TESTCONTAINERS_RYUK_DISABLED: true
+
+      - name: Validate seed
+        run: |
+          pnpm --filter api exec prisma migrate deploy
+          pnpm --filter api exec prisma db seed
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
   docker:
     name: Docker build & push — ${{ matrix.app }}
@@ -120,7 +140,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.app }}
           # NEXT_PUBLIC_API_URL é build-time no Next.js — ignorado pelo Dockerfile da api
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -191,13 +211,36 @@ jobs:
 
             docker compose -f docker-compose.prod.yml pull
 
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Sobe só a API primeiro para capturar logs em caso de falha
+            docker compose -f docker-compose.prod.yml up -d postgres redis
+            echo "Aguardando Postgres ficar healthy..."
+            sleep 15
+
+            docker compose -f docker-compose.prod.yml up -d api || {
+              echo "=== API falhou ao subir — logs abaixo ==="
+              docker compose -f docker-compose.prod.yml logs api --tail=150
+              exit 1
+            }
 
             echo "Aguardando API inicializar (migrações + boot)..."
-            sleep 90
-            wget -qO- http://127.0.0.1:4000/health/ready \
-              && echo "✓ API healthy" \
-              || (echo "✗ API não respondeu" && docker compose -f docker-compose.prod.yml logs api --tail=50 && exit 1)
+            API_HEALTHY=0
+            for i in $(seq 1 12); do
+              sleep 15
+              echo "Tentativa $i/12..."
+              docker compose -f docker-compose.prod.yml ps api
+              if wget -qO- http://127.0.0.1:4000/health/ready; then
+                echo "✓ API healthy"
+                API_HEALTHY=1
+                break
+              fi
+            done
+            if [ "$API_HEALTHY" -eq 0 ]; then
+              echo "✗ API não respondeu após 180s — logs abaixo:"
+              docker compose -f docker-compose.prod.yml logs api --tail=200
+              exit 1
+            fi
+
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Atualiza nginx do host e recarrega sem downtime
             sudo cp nginx/conf.d/toqe.conf /etc/nginx/sites-available/toqe
