@@ -5,18 +5,16 @@ on:
     branches:
       - main
       - develop
-      - "feature/**"
-      - "arch/**"
-      - "fix/**"
-      - "refactor/**"
-      - "chore/**"
-      - "docs/**"
-      - "test/**"
-      - "hotfix/**"
   pull_request:
     branches:
       - main
       - develop
+
+# Evita escanear o mesmo ref em paralelo; cancela scans antigos quando
+# novos commits chegam no mesmo PR ou branch.
+concurrency:
+  group: gitleaks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
