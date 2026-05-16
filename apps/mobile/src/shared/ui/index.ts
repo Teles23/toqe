@@ -3,6 +3,7 @@ export { Button, type ButtonProps, type ButtonVariant } from "./Button";
 export { Card, type CardProps } from "./Card";
 export { DataListWrapper, type DataListWrapperProps } from "./DataListWrapper";
 export { Divider, type DividerProps } from "./Divider";
+export { EmptyScreen, type EmptyScreenProps } from "./EmptyScreen";
 export { FormErrorBox, type FormErrorBoxProps } from "./FormErrorBox";
 export { FormInput, type FormInputProps } from "./FormInput";
 export {

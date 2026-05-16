@@ -17,6 +17,8 @@ jest.mock("expo-router", () => ({
     replace: jest.fn(),
     back: jest.fn(),
   },
+  // Mock do useSegments — usado por usePerfilBasePath para detectar grupo.
+  useSegments: jest.fn(() => ["(barbeiro)", "perfil"]),
 }));
 
 const mockUseAuth = jest.fn();

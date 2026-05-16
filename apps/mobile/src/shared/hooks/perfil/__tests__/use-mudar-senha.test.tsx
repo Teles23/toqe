@@ -16,8 +16,8 @@ const mockPost = jest.fn();
 jest.mock("@/src/shared/api/api-client", () => ({
   api: { post: (...args: unknown[]) => mockPost(...args) },
   ApiError: class MockApiError extends Error {
-    status;
-    constructor(status, message) {
+    status: number;
+    constructor(status: number, message: string) {
       super(message);
       this.status = status;
     }
