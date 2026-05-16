@@ -20,6 +20,51 @@ export const handlers = [
     }),
   ),
   http.post("/api/auth/logout", () => HttpResponse.json({ ok: true })),
+  http.post("/api/auth/forgot-password", () =>
+    HttpResponse.json({
+      message:
+        "Se o e-mail estiver cadastrado, você receberá um link em breve.",
+    }),
+  ),
+  http.post("/api/auth/reset-password", () =>
+    HttpResponse.json({ message: "Senha redefinida com sucesso." }),
+  ),
+  http.post("/api/auth/change-password", () => HttpResponse.json({ ok: true })),
+
+  // ── Sessões ──────────────────────────────────────────────────────────────
+  http.get("/api/auth/sessions", () =>
+    HttpResponse.json([
+      {
+        codigo: 1,
+        criadoEm: new Date().toISOString(),
+        expiraEm: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+      },
+    ]),
+  ),
+  http.delete(
+    "/api/auth/sessions",
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.delete(
+    "/api/auth/sessions/:id",
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+
+  // ── 2FA ──────────────────────────────────────────────────────────────────
+  http.post("/api/auth/2fa/setup", () =>
+    HttpResponse.json({
+      qrCode: "data:image/png;base64,mock",
+      secret: "MOCK2FASECRET",
+    }),
+  ),
+  http.post("/api/auth/2fa/enable", () => HttpResponse.json({ ok: true })),
+  http.post("/api/auth/2fa/disable", () => HttpResponse.json({ ok: true })),
+  http.post("/api/auth/2fa/verify", () => HttpResponse.json({ ok: true })), // BFF seta cookies; resposta não é usada pelo cliente
+
+  // ── Upload logo ───────────────────────────────────────────────────────────
+  http.post("/api/configuracoes/logo/:barCodigo", () =>
+    HttpResponse.json({ logoUrl: "/uploads/logos/mock-logo.jpg" }),
+  ),
 
   // ── Usuário ──────────────────────────────────────────────────────────────
   http.get(`${BASE}/usuarios/me`, () =>
@@ -29,6 +74,7 @@ export const handlers = [
       email: "test@test.com",
       telefone: null,
       avatarUrl: null,
+      twoFaEnabled: false,
       barbearias: [
         { codigo: 1, nome: "BarberShop", slug: "barbershop", perfil: "dono" },
       ],
@@ -153,23 +199,23 @@ export const handlers = [
     () => new HttpResponse(null, { status: 204 }),
   ),
 
-  // ── Agendamentos ─────────────────────────────────────────────────────────
-  http.get(`${BASE}/barbearias/:barCodigo/agendamentos`, () =>
-    HttpResponse.json([]),
+  // ── Agenda / Disponibilidade ─────────────────────────────────────────────
+  http.get(`${BASE}/agenda/disponibilidade/:barbeiroId`, () =>
+    HttpResponse.json(["09:00", "09:30", "10:00", "10:30"]),
   ),
+
+  // ── Agendamentos ─────────────────────────────────────────────────────────
+  http.get(`${BASE}/agendamentos`, () => HttpResponse.json([])),
   // handler legado (relativo) mantido para setup.spec.ts
   http.get("/agendamentos", () => HttpResponse.json([])),
 
-  http.post(
-    `${BASE}/barbearias/:barCodigo/agendamentos`,
-    async ({ request }) => {
-      const body = await request.json();
-      return HttpResponse.json(
-        { codigo: 999, status: "pendente", ...(body as object) },
-        { status: 201 },
-      );
-    },
-  ),
+  http.post(`${BASE}/agendamentos`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(
+      { codigo: 999, status: "pendente", ...(body as object) },
+      { status: 201 },
+    );
+  }),
 
   // ── Configurações ─────────────────────────────────────────────────────────
   http.get(`${BASE}/barbearias/:barCodigo`, () =>

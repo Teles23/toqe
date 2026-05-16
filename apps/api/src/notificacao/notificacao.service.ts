@@ -59,6 +59,69 @@ export class NotificacaoService {
     }
   }
 
+  async enviarRecuperacaoSenha(
+    email: string,
+    nome: string,
+    resetLink: string,
+  ): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn(
+        `E-mail de recuperação para ${email} ignorado: RESEND_API_KEY não configurada`,
+      );
+      return;
+    }
+    try {
+      await this.resend.emails.send({
+        from: 'Toqe <noreply@toqe.com.br>',
+        to: email,
+        subject: '🔑 Recuperação de senha — Toqe',
+        html: this.buildRecuperacaoHtml({ nome, resetLink }),
+      });
+      this.logger.log(`E-mail de recuperação enviado para ${email}`);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Falha ao enviar e-mail de recuperação para ${email}: ${msg}`,
+      );
+      throw error;
+    }
+  }
+
+  private buildRecuperacaoHtml(data: {
+    nome: string;
+    resetLink: string;
+  }): string {
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"/><title>Recuperação de senha</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <tr><td style="background:#1a1a1a;padding:32px;text-align:center;">
+          <h1 style="margin:0;color:#fff;font-size:28px;letter-spacing:2px;">✂️ TOQE</h1>
+        </td></tr>
+        <tr><td style="padding:40px 48px;">
+          <h2 style="margin:0 0 8px;color:#1a1a1a;">Recuperação de senha</h2>
+          <p style="color:#555;font-size:16px;">Olá, <strong>${data.nome}</strong>!</p>
+          <p style="color:#555;">Recebemos uma solicitação para redefinir sua senha. Clique no botão abaixo:</p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${data.resetLink}" style="background:#f4b400;color:#0d0d0d;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">
+              Redefinir senha
+            </a>
+          </div>
+          <p style="color:#888;font-size:13px;">Este link expira em <strong>1 hora</strong>. Se você não solicitou, ignore este e-mail — sua senha não será alterada.</p>
+        </td></tr>
+        <tr><td style="background:#f9f9f9;padding:24px 48px;border-top:1px solid #eee;text-align:center;">
+          <p style="margin:0;color:#aaa;font-size:12px;">© ${new Date().getFullYear()} Toqe — Plataforma de gestão para barbearias.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+  }
+
   private buildEmailHtml(data: {
     clienteNome: string;
     barbeariaNome: string;

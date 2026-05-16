@@ -8,14 +8,19 @@ import { ROUTES } from "@/shared/config/routes";
 import { AuthBrandingPanel } from "@/features/auth/components/AuthBrandingPanel";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { ForgotPasswordForm } from "@/features/auth/components/ForgotPasswordForm";
+import { TwoFaVerifyForm } from "@/features/auth/components/TwoFaVerifyForm";
 
-type Mode = "login" | "forgot";
+type Mode = "login" | "forgot" | "twofa";
 
 const TITLES: Record<Mode, { heading: string; sub: string }> = {
   login: { heading: "Bem-vindo de volta", sub: "Entre na sua conta Toqe" },
   forgot: {
     heading: "Recuperar senha",
     sub: "Enviaremos um link no seu e-mail",
+  },
+  twofa: {
+    heading: "Verificação em duas etapas",
+    sub: "Confirme sua identidade com o app autenticador",
   },
 };
 
@@ -33,7 +38,13 @@ const TITLES: Record<Mode, { heading: string; sub: string }> = {
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
+  const [tempToken, setTempToken] = useState<string | null>(null);
   const { heading, sub } = TITLES[mode];
+
+  function handleTwoFaRequired(token: string) {
+    setTempToken(token);
+    setMode("twofa");
+  }
 
   return (
     <div
@@ -104,10 +115,16 @@ export default function LoginPage(): React.JSX.Element {
           <AnimatePresence mode="wait">
             {mode === "forgot" ? (
               <ForgotPasswordForm onBackToLogin={() => setMode("login")} />
+            ) : mode === "twofa" && tempToken ? (
+              <TwoFaVerifyForm
+                tempToken={tempToken}
+                onBack={() => setMode("login")}
+              />
             ) : (
               <LoginForm
                 onForgotPassword={() => setMode("forgot")}
                 onCreateAccount={() => router.push(ROUTES.ONBOARDING)}
+                onTwoFaRequired={handleTwoFaRequired}
               />
             )}
           </AnimatePresence>

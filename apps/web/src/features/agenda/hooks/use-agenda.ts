@@ -114,6 +114,32 @@ export function useAgenda(barCodigo: number | null, date: Date) {
   };
 }
 
+export function useDisponibilidade(
+  barCodigo: number | null,
+  barbeiroId: number | null,
+  date: string,
+  duracao: number,
+) {
+  return useQuery<string[]>({
+    queryKey: [
+      "disponibilidade",
+      barCodigo ?? 0,
+      barbeiroId ?? 0,
+      date,
+      duracao,
+    ],
+    queryFn: () =>
+      agendaService.listarDisponibilidade(
+        barCodigo!,
+        barbeiroId!,
+        date,
+        duracao,
+      ),
+    enabled: !!barCodigo && !!barbeiroId && !Number.isNaN(barbeiroId),
+    staleTime: STALE_TIME.REALTIME,
+  });
+}
+
 export function useAgendaMutations(barCodigo: number | null, date: string) {
   const queryClient = useQueryClient();
 

@@ -80,7 +80,16 @@ export function AgendaView() {
               <AnimatePresence mode="popLayout">
                 {filtered.length > 0 ? (
                   filtered.map((slot, i) => (
-                    <AgendaSlot key={slot.id} slot={slot} index={i} />
+                    <AgendaSlot
+                      key={slot.id}
+                      slot={slot}
+                      index={i}
+                      onEncaixar={
+                        slot.status === "available"
+                          ? () => setModalOpen(true)
+                          : undefined
+                      }
+                    />
                   ))
                 ) : (
                   <AgendaSlotEmpty />

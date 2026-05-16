@@ -46,5 +46,45 @@ export const authTokensSchema = z.object({
   expiresIn: z.number().int().positive().optional(),
 });
 
+export const forgotPasswordSchema = z
+  .object({
+    email: z.string().email("E-mail inválido"),
+  })
+  .strict();
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, "Token obrigatório"),
+    novaSenha: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
+  })
+  .strict();
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    senhaAtual: z.string().min(1, "Senha atual é obrigatória"),
+    novaSenha: z.string().min(6, "Nova senha deve ter ao menos 6 caracteres"),
+  })
+  .strict()
+  .refine((d) => d.senhaAtual !== d.novaSenha, {
+    message: "Nova senha deve ser diferente da senha atual",
+    path: ["novaSenha"],
+  });
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const twoFaSetupSchema = z
+  .object({ code: z.string().length(6, "Código deve ter 6 dígitos") })
+  .strict();
+export const twoFaVerifySchema = z
+  .object({
+    code: z.string().length(6, "Código deve ter 6 dígitos"),
+    tempToken: z.string().min(1),
+  })
+  .strict();
+export type TwoFaSetupInput = z.infer<typeof twoFaSetupSchema>;
+export type TwoFaVerifyInput = z.infer<typeof twoFaVerifySchema>;
+
 // Tipos inferidos vivem em `src/types/index.ts` (single source) para evitar
 // duplicação de exports através do barrel raiz.

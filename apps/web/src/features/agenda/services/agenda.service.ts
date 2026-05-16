@@ -29,4 +29,15 @@ export const agendaService = {
   ): Promise<AgendamentoAPI> {
     return tenantApi(barCodigo).post<AgendamentoAPI>("/agendamentos", data);
   },
+
+  listarDisponibilidade(
+    barCodigo: number,
+    barbeiroId: number,
+    data: string,
+    duracao: number,
+  ): Promise<string[]> {
+    return tenantApi(barCodigo).get<string[]>(
+      `/agenda/disponibilidade/${barbeiroId}?data=${data}&duracao=${duracao}`,
+    );
+  },
 };

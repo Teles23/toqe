@@ -38,4 +38,23 @@ export const configuracaoService = {
       data,
     );
   },
+
+  async uploadLogo(
+    barCodigo: number,
+    file: File,
+  ): Promise<{ logoUrl: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`/api/configuracoes/logo/${barCodigo}`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+      };
+      throw new Error(data.message ?? "Erro ao fazer upload da logo");
+    }
+    return res.json() as Promise<{ logoUrl: string }>;
+  },
 };
