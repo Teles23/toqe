@@ -234,7 +234,7 @@ pnpm --filter mobile test
 
 ## Google Sign-In
 
-**Estado atual:** placeholder implementado. O botão existe, o fluxo chama `loginWithGoogle(idToken)`, que chama `POST /auth/google`. O endpoint **não existe ainda na API NestJS**. Quando for criado, o fluxo funciona automaticamente.
+**Estado atual:** ✅ implementado end-to-end. Botão "Entrar com Google" em `login.tsx` dispara `GoogleSignin.signIn()` (modal nativo), captura o `idToken` e chama `loginWithGoogle(idToken)`. O backend valida o token via `google-auth-library` (com DI — ver `docs/31-auth-google.md`) e retorna tokens reais. Usuário criado automaticamente no primeiro acesso com `senhaHash: null`.
 
 Google Client ID configurado em `app.json` → `extra.googleWebClientId` para ser lido via `Constants.expoConfig.extra`.
 

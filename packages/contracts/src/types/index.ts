@@ -10,6 +10,7 @@ import {
   refreshTokenSchema,
   logoutSchema,
   authTokensSchema,
+  googleAuthSchema,
 } from "../schemas/auth";
 
 // ---- Auth ----
@@ -19,6 +20,7 @@ export type CriarClienteRapidoInput = z.infer<typeof criarClienteRapidoSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type LogoutInput = z.infer<typeof logoutSchema>;
 export type AuthTokens = z.infer<typeof authTokensSchema>;
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
 
 // ---- API Response shapes ----
 export type {

@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Link } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -17,7 +18,7 @@ import { Button, FormInput } from "@/src/shared/ui";
 import { loginSchema, type LoginInput } from "@toqe/contracts";
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const { palette, spacing, typography } = useTheme();
 
   const {
@@ -40,6 +41,30 @@ export default function LoginScreen() {
         setError("root", { message: "Erro no servidor. Tente novamente." });
       } else {
         setError("root", { message: "Sem conexão. Verifique sua internet." });
+      }
+    }
+  };
+
+  const onGoogle = async () => {
+    try {
+      const result = (await GoogleSignin.signIn()) as {
+        idToken?: string | null;
+        data?: { idToken?: string | null };
+      };
+      // SDK pode retornar idToken direto ou dentro de `data` dependendo da versão
+      const idToken = result.idToken ?? result.data?.idToken ?? null;
+      if (!idToken) {
+        setError("root", { message: "Falha ao obter token Google." });
+        return;
+      }
+      await loginWithGoogle(idToken);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setError("root", { message: "Conta Google não autorizada." });
+      } else {
+        setError("root", {
+          message: "Falha no login Google. Tente novamente.",
+        });
       }
     }
   };
@@ -137,6 +162,15 @@ export default function LoginScreen() {
             label="Entrar"
             onPress={handleSubmit(onSubmit)}
             loading={isSubmitting}
+          />
+        </View>
+
+        <View style={{ marginTop: spacing.sm }}>
+          <Button
+            label="Entrar com Google"
+            variant="secondary"
+            onPress={onGoogle}
+            accessibilityLabel="Entrar com Google"
           />
         </View>
 
