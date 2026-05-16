@@ -1,8 +1,10 @@
 import { ExpoConfig } from "expo/config";
 
-// Preenchido após rodar: cd apps/mobile && eas init
-// Copiar o UUID gerado para .env: EAS_PROJECT_ID=<uuid>
-const projectId = process.env.EAS_PROJECT_ID ?? "";
+// EAS project ID — público (não é secret), versionado no repo.
+// Liga o app à conta @thiagoteles/toqe-mobile em expo.dev.
+// Hardcoded (em vez de process.env) porque EAS exige config estática para
+// gerenciar o link do projeto via `eas init` / `eas credentials`.
+const projectId = "d9c90eca-f4b9-4a14-a740-523935615a09";
 
 const config: ExpoConfig = {
   name: "Toqe",
@@ -44,7 +46,14 @@ const config: ExpoConfig = {
     [
       "@react-native-google-signin/google-signin",
       {
-        iosUrlScheme: "",
+        // REVERSED do Web Client ID — placeholder para satisfazer validação do
+        // plugin (que exige string não-vazia começando com "com.googleusercontent.apps.").
+        // Para build Android este valor NÃO é usado em runtime.
+        // Quando for fazer build iOS: criar OAuth Client iOS no Google Cloud
+        // (Application type: iOS, bundle id: com.teles23.toqe) e substituir
+        // por: com.googleusercontent.apps.<reversed-do-iOS-Client-ID>
+        iosUrlScheme:
+          "com.googleusercontent.apps.1095847529893-b71gjl8nqpjl5vo0ppd5c5iljfof684m",
       },
     ],
     [
@@ -62,17 +71,13 @@ const config: ExpoConfig = {
     ],
   ],
 
-  // OTA: ativo apenas quando EAS_PROJECT_ID estiver definido no ambiente de build.
-  // Localmente (sem projectId) o app funciona normalmente sem verificar updates.
-  ...(projectId
-    ? {
-        updates: {
-          url: `https://u.expo.dev/${projectId}`,
-          fallbackToCacheTimeout: 0,
-        },
-        runtimeVersion: { policy: "appVersion" },
-      }
-    : {}),
+  // OTA via EAS Update — URL derivada do projectId.
+  updates: {
+    url: `https://u.expo.dev/${projectId}`,
+    fallbackToCacheTimeout: 0,
+  },
+  // Updates só se aplicam dentro da mesma versão nativa (mudou `version` → novo build).
+  runtimeVersion: { policy: "appVersion" },
 
   extra: {
     apiUrl: "https://toqe.duckdns.org/api/v1",
