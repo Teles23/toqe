@@ -173,23 +173,29 @@ async function main() {
     const inicio = a.inicio;
     const fim = addHours(inicio, 1);
 
-    const agendamento = await prisma.agendamento.upsert({
+    let agendamento = await prisma.agendamento.findFirst({
       where: {
-        barbeiroId_inicio: {
-          barbeiroId: dbUsers[a.barbeiroEmail].codigo,
-          inicio: inicio,
-        },
-      },
-      update: { status: a.status },
-      create: {
-        barCodigo: barbearia.codigo,
         barbeiroId: dbUsers[a.barbeiroEmail].codigo,
-        clienteId: dbUsers[a.email].codigo,
         inicio: inicio,
-        fim: fim,
-        status: a.status,
       },
     });
+    if (agendamento) {
+      agendamento = await prisma.agendamento.update({
+        where: { codigo: agendamento.codigo },
+        data: { status: a.status },
+      });
+    } else {
+      agendamento = await prisma.agendamento.create({
+        data: {
+          barCodigo: barbearia.codigo,
+          barbeiroId: dbUsers[a.barbeiroEmail].codigo,
+          clienteId: dbUsers[a.email].codigo,
+          inicio: inicio,
+          fim: fim,
+          status: a.status,
+        },
+      });
+    }
 
     await prisma.agendamentoItem.upsert({
       where: {
