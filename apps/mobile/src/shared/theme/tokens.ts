@@ -1,60 +1,150 @@
 /**
- * Toqe — Design tokens (única fonte da verdade para cores, espaçamento, raios e tipografia).
+ * Toqe — Design tokens (Urban Flow Native).
  *
- * Nunca hardcoded hex em telas/componentes. Sempre via `useTheme()`.
- * Paleta deriva da cor de marca `#1a73e8` (primary light) / `#4da3ff` (primary dark).
+ * Source of truth para cores, espaçamento, raios e tipografia mobile.
+ * Inspirado e coerente com a identidade Urban Flow da web (apps/web/src/shared/ui/tokens.css).
+ *
+ * Princípios:
+ * - Mobile é dark-first; light mode é fallback.
+ * - Nenhum literal hex em telas — sempre via `useTheme()`.
+ * - JetBrains Mono **só** em horários e números críticos (TimeDisplay).
+ *
+ * Mudança de fase: campos `cardBg`/`dangerBg` permanecem como aliases de
+ * `surface`/`dangerDim` enquanto telas legadas migram. Removidos na Fase 4
+ * (ver `docs/35-redesign-mobile-urban-flow.md`).
  */
 
 // ─── Paleta por modo ─────────────────────────────────────────────────────────
 export interface Palette {
+  // Superfícies (elevation system)
   bg: string;
-  cardBg: string;
+  surface: string;
+  surfaceHigh: string;
+  surfaceOverlay: string;
+
+  // Bordas
   border: string;
-  text: string;
-  textMuted: string;
-  primary: string;
-  primaryOn: string; // texto/ícones sobre primary
+  borderStrong: string;
+
+  // Inputs
   inputBg: string;
   inputBorder: string;
-  danger: string;
-  dangerBg: string;
+  inputFocus: string;
+
+  // Texto
+  text: string;
+  textMuted: string;
+  textDisabled: string;
+
+  // Marca — Urban Flow
+  primary: string;
+  primaryDim: string;
+  primaryOn: string;
+
+  // Estados
   success: string;
+  successDim: string;
+  info: string;
+  infoDim: string;
+  danger: string;
+  dangerDim: string;
   warning: string;
+  warningDim: string;
+
+  // Especiais
   overlay: string;
+  shimmer1: string;
+  shimmer2: string;
+
+  // Aliases legados (removidos na Fase 4 — não usar em código novo)
+  /** @deprecated use `surface` */
+  cardBg: string;
+  /** @deprecated use `dangerDim` */
+  dangerBg: string;
 }
 
-const lightPalette: Palette = {
-  bg: "#f5f5f5",
-  cardBg: "#ffffff",
-  border: "#e0e0e0",
-  text: "#111111",
-  textMuted: "#666666",
-  primary: "#1a73e8",
-  primaryOn: "#ffffff",
-  inputBg: "#ffffff",
-  inputBorder: "#dddddd",
-  danger: "#c62828",
-  dangerBg: "#fdecea",
-  success: "#2f9e44",
-  warning: "#f59f00",
-  overlay: "rgba(0, 0, 0, 0.08)",
+const darkPalette: Palette = {
+  // Superfícies em camadas
+  bg: "#0a0a0a",
+  surface: "#111111",
+  surfaceHigh: "#181818",
+  surfaceOverlay: "#222222",
+
+  // Bordas
+  border: "#1e1e1e",
+  borderStrong: "#2a2a2a",
+
+  // Inputs
+  inputBg: "#111111",
+  inputBorder: "#2a2a2a",
+  inputFocus: "#f4b400",
+
+  // Texto
+  text: "#f0f0f0",
+  textMuted: "#777777",
+  textDisabled: "#333333",
+
+  // Marca — Urban Flow
+  primary: "#f4b400",
+  primaryDim: "#2a1f00",
+  primaryOn: "#0a0a0a",
+
+  // Estados
+  success: "#1db954",
+  successDim: "#0a2014",
+  info: "#4da3ff",
+  infoDim: "#091a2e",
+  danger: "#ff3b30",
+  dangerDim: "#2a0a08",
+  warning: "#ff9500",
+  warningDim: "#2a1800",
+
+  // Especiais
+  overlay: "rgba(0, 0, 0, 0.75)",
+  shimmer1: "#111111",
+  shimmer2: "#1a1a1a",
+
+  // Aliases legados
+  cardBg: "#111111",
+  dangerBg: "#2a0a08",
 };
 
-const darkPalette: Palette = {
-  bg: "#111111",
-  cardBg: "#1e1e1e",
-  border: "#333333",
-  text: "#f5f5f5",
-  textMuted: "#999999",
-  primary: "#4da3ff",
+const lightPalette: Palette = {
+  bg: "#f8f8f8",
+  surface: "#ffffff",
+  surfaceHigh: "#fafafa",
+  surfaceOverlay: "#f0f0f0",
+
+  border: "#e8e8e8",
+  borderStrong: "#d0d0d0",
+
+  inputBg: "#ffffff",
+  inputBorder: "#d8d8d8",
+  inputFocus: "#d4a000",
+
+  text: "#0a0a0a",
+  textMuted: "#666666",
+  textDisabled: "#bbbbbb",
+
+  primary: "#d4a000",
+  primaryDim: "#fff8e0",
   primaryOn: "#ffffff",
-  inputBg: "#1e1e1e",
-  inputBorder: "#333333",
-  danger: "#ff6b6b",
-  dangerBg: "#3a0a0a",
-  success: "#51cf66",
-  warning: "#ffd43b",
-  overlay: "rgba(255, 255, 255, 0.08)",
+
+  success: "#1aa34a",
+  successDim: "#e8f5ee",
+  info: "#1a73e8",
+  infoDim: "#e8f0fe",
+  danger: "#cc2200",
+  dangerDim: "#fdecea",
+  warning: "#e67e00",
+  warningDim: "#fff3e0",
+
+  overlay: "rgba(0, 0, 0, 0.5)",
+  shimmer1: "#eeeeee",
+  shimmer2: "#f5f5f5",
+
+  cardBg: "#ffffff",
+  dangerBg: "#fdecea",
 };
 
 export const palette: { readonly light: Palette; readonly dark: Palette } = {
@@ -72,25 +162,66 @@ export const spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  xxxl: 64,
 } as const;
 
 // ─── Border radius ───────────────────────────────────────────────────────────
 export const radius = {
-  sm: 6,
-  md: 10,
+  xs: 4,
+  sm: 8,
+  md: 12,
   lg: 16,
+  xl: 24,
+  full: 999,
+  /** @deprecated use `full` */
   pill: 999,
 } as const;
 
 // ─── Tipografia ──────────────────────────────────────────────────────────────
+//
+// Famílias:
+//  - Sora      → identidade da marca; display/title/heading/subheading
+//  - Inter     → corpo do texto; body/bodyMedium/bodyBold/label/caption
+//  - JetBrains → horários/números críticos; mono/monoMedium/monoLarge/monoXL
+//
+// Os tamanhos vêm do prompt da Fase 35; `fontWeight` removido para evitar
+// conflito com o `fontFamily` (a família já carrega o peso correto).
 export const typography = {
-  display: { fontSize: 36, fontWeight: "700" as const, lineHeight: 44 },
-  title: { fontSize: 28, fontWeight: "700" as const, lineHeight: 36 },
-  heading: { fontSize: 22, fontWeight: "600" as const, lineHeight: 28 },
-  body: { fontSize: 16, fontWeight: "400" as const, lineHeight: 22 },
-  bodyBold: { fontSize: 16, fontWeight: "600" as const, lineHeight: 22 },
-  label: { fontSize: 14, fontWeight: "500" as const, lineHeight: 20 },
-  caption: { fontSize: 12, fontWeight: "400" as const, lineHeight: 16 },
+  // Sora — títulos e display
+  display: { fontFamily: "Sora_700Bold", fontSize: 34, lineHeight: 42 },
+  title: { fontFamily: "Sora_700Bold", fontSize: 26, lineHeight: 34 },
+  heading: { fontFamily: "Sora_600SemiBold", fontSize: 20, lineHeight: 28 },
+  subheading: { fontFamily: "Sora_600SemiBold", fontSize: 16, lineHeight: 22 },
+
+  // Inter — corpo do texto
+  body: { fontFamily: "Inter_400Regular", fontSize: 16, lineHeight: 24 },
+  bodyMedium: { fontFamily: "Inter_500Medium", fontSize: 16, lineHeight: 24 },
+  bodyBold: { fontFamily: "Inter_600SemiBold", fontSize: 16, lineHeight: 24 },
+  label: { fontFamily: "Inter_500Medium", fontSize: 14, lineHeight: 20 },
+  caption: { fontFamily: "Inter_400Regular", fontSize: 12, lineHeight: 16 },
+  captionBold: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    lineHeight: 16,
+  },
+
+  // JetBrains Mono — horários e números críticos
+  mono: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  monoMedium: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  monoLarge: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 28,
+    lineHeight: 36,
+  },
+  monoXL: { fontFamily: "JetBrainsMono_700Bold", fontSize: 42, lineHeight: 50 },
 } as const;
 
 // ─── Tamanhos mínimos (acessibilidade — WCAG AA touch targets) ───────────────
