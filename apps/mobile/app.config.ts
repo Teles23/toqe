@@ -44,7 +44,14 @@ const config: ExpoConfig = {
     [
       "@react-native-google-signin/google-signin",
       {
-        iosUrlScheme: "",
+        // REVERSED do Web Client ID — placeholder para satisfazer validação do
+        // plugin (que exige string não-vazia começando com "com.googleusercontent.apps.").
+        // Para build Android este valor NÃO é usado em runtime.
+        // Quando for fazer build iOS: criar OAuth Client iOS no Google Cloud
+        // (Application type: iOS, bundle id: com.teles23.toqe) e substituir
+        // por: com.googleusercontent.apps.<reversed-do-iOS-Client-ID>
+        iosUrlScheme:
+          "com.googleusercontent.apps.1095847529893-b71gjl8nqpjl5vo0ppd5c5iljfof684m",
       },
     ],
     [
