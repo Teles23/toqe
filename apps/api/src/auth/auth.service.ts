@@ -14,7 +14,7 @@ import {
   GOOGLE_TOKEN_VERIFIER,
   type GoogleTokenVerifier,
 } from './google-token-verifier';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { generateSecret, generateURI, verify as otpVerify } from 'otplib';
 import * as qrcode from 'qrcode';
 
@@ -359,7 +359,7 @@ export class AuthService {
   }
 
   private async generateTokens(codigo: number, nome: string, email: string) {
-    const payload = { sub: codigo };
+    const payload = { sub: codigo, jti: randomUUID() };
     const accessToken = this.jwtService.sign(payload);
     const refreshToken =
       Math.random().toString(36).substring(2) + Date.now().toString(36);

@@ -13,6 +13,9 @@ describe('Agendamento Integration', () => {
   let inicioISO: string;
 
   beforeAll(async () => {
+    process.env.GOOGLE_CLIENT_ID =
+      process.env.GOOGLE_CLIENT_ID ?? 'test-google-client-id';
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
