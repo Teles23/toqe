@@ -124,32 +124,35 @@ export function AuthProvider({
     };
   }, []);
 
-  async function loadMe(email: string) {
-    const me: UsuarioMe = await api.get("/usuarios/me");
-    const {
-      codigo,
-      nome,
-      telefone,
-      avatarUrl,
-      twoFaEnabled,
-      barbearias: bars,
-    } = me;
-    setUser({
-      codigo,
-      nome,
-      email,
-      telefone,
-      avatarUrl,
-      twoFaEnabled: twoFaEnabled ?? false,
-    });
-    setBarbearias(bars);
-    if (bars.length > 0) {
-      setBarbearia(bars[0]!);
-      setPerfil(bars[0]!.perfil);
-    }
-    const params = new URLSearchParams(window.location.search);
-    router.push(params.get("redirect") ?? "/dashboard");
-  }
+  const loadMe = useCallback(
+    async (email: string) => {
+      const me: UsuarioMe = await api.get("/usuarios/me");
+      const {
+        codigo,
+        nome,
+        telefone,
+        avatarUrl,
+        twoFaEnabled,
+        barbearias: bars,
+      } = me;
+      setUser({
+        codigo,
+        nome,
+        email,
+        telefone,
+        avatarUrl,
+        twoFaEnabled: twoFaEnabled ?? false,
+      });
+      setBarbearias(bars);
+      if (bars.length > 0) {
+        setBarbearia(bars[0]!);
+        setPerfil(bars[0]!.perfil);
+      }
+      const params = new URLSearchParams(window.location.search);
+      router.push(params.get("redirect") ?? "/dashboard");
+    },
+    [router],
+  );
 
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(
@@ -160,8 +163,7 @@ export function AuthProvider({
       }
       await loadMe(email);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router],
+    [loadMe],
   );
 
   // ── Verify 2FA (completa login após OTP) ──────────────────────────────────
@@ -170,8 +172,7 @@ export function AuthProvider({
       await request2FaVerify(tempToken, code);
       await loadMe("");
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router],
+    [loadMe],
   );
 
   // ── Logout ─────────────────────────────────────────────────────────────────
