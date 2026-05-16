@@ -1,0 +1,34 @@
+appId: com.teles23.toqe
+---
+- launchApp
+
+# Navega para aba Clientes (assume usuário autenticado como barbeiro)
+- tapOn:
+    text: "Clientes"
+    optional: true
+
+- assertVisible: "Clientes"
+
+# Aguarda lista ou empty state
+- assertVisible:
+    id: "lista-clientes"
+    optional: true
+- assertVisible:
+    text: "Nenhum cliente"
+    optional: true
+
+# Testa busca: digita algo
+- tapOn:
+    id: "clientes-busca"
+- inputText: "test"
+
+# Limpa via botão clear
+- tapOn:
+    id: "clientes-busca-clear"
+    optional: true
+
+# Tap no primeiro card se houver lista
+- tapOn:
+    index: 0
+    id: "lista-clientes"
+    optional: true
