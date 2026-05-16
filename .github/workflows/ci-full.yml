@@ -191,13 +191,30 @@ jobs:
 
             docker compose -f docker-compose.prod.yml pull
 
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Sobe só a API primeiro para capturar logs em caso de falha
+            docker compose -f docker-compose.prod.yml up -d postgres redis
+            echo "Aguardando Postgres ficar healthy..."
+            sleep 15
+
+            docker compose -f docker-compose.prod.yml up -d api || {
+              echo "=== API falhou ao subir — logs abaixo ==="
+              docker compose -f docker-compose.prod.yml logs api --tail=150
+              exit 1
+            }
 
             echo "Aguardando API inicializar (migrações + boot)..."
-            sleep 90
-            wget -qO- http://127.0.0.1:4000/health/ready \
-              && echo "✓ API healthy" \
-              || (echo "✗ API não respondeu" && docker compose -f docker-compose.prod.yml logs api --tail=50 && exit 1)
+            for i in $(seq 1 12); do
+              sleep 15
+              wget -qO- http://127.0.0.1:4000/health/ready && echo "✓ API healthy" && break
+              echo "Tentativa $i/12 — ainda aguardando..."
+              if [ "$i" -eq 12 ]; then
+                echo "✗ API não respondeu após 180s"
+                docker compose -f docker-compose.prod.yml logs api --tail=150
+                exit 1
+              fi
+            done
+
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Atualiza nginx do host e recarrega sem downtime
             sudo cp nginx/conf.d/toqe.conf /etc/nginx/sites-available/toqe
