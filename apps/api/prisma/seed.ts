@@ -154,26 +154,29 @@ async function main() {
     const inicio = a.inicio;
     const fim = addHours(inicio, 1);
 
-    // Upsert para Agendamento (usando barbeiro + inicio como chave de unicidade lógica no seed)
-    const agendamento = await prisma.agendamento.upsert({
+    let agendamento = await prisma.agendamento.findFirst({
       where: {
-        // Nota: Se não houver índice único no schema para isso, usamos findFirst + create
-        // Mas para o seed, vamos assumir que queremos um por horário/barbeiro
-        barbeiroId_inicio: {
-          barbeiroId: dbUsers[a.barbeiroEmail].codigo,
-          inicio: inicio,
-        },
-      },
-      update: { status: a.status },
-      create: {
-        barCodigo: barbearia.codigo,
         barbeiroId: dbUsers[a.barbeiroEmail].codigo,
-        clienteId: dbUsers[a.email].codigo,
         inicio: inicio,
-        fim: fim,
-        status: a.status,
       },
     });
+    if (agendamento) {
+      agendamento = await prisma.agendamento.update({
+        where: { codigo: agendamento.codigo },
+        data: { status: a.status },
+      });
+    } else {
+      agendamento = await prisma.agendamento.create({
+        data: {
+          barCodigo: barbearia.codigo,
+          barbeiroId: dbUsers[a.barbeiroEmail].codigo,
+          clienteId: dbUsers[a.email].codigo,
+          inicio: inicio,
+          fim: fim,
+          status: a.status,
+        },
+      });
+    }
 
     // Itens do agendamento
     await prisma.agendamentoItem.upsert({
