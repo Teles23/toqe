@@ -39,8 +39,8 @@ export default function BarbeiroAgendaScreen() {
       height: a11y.minTouch,
       borderRadius: radius.md,
       borderWidth: 1,
-      backgroundColor: palette.cardBg,
-      borderColor: palette.border,
+      backgroundColor: palette.surface,
+      borderColor: palette.borderStrong,
       alignItems: "center" as const,
       justifyContent: "center" as const,
     },
@@ -55,9 +55,7 @@ export default function BarbeiroAgendaScreen() {
         accessibilityLabel="Dia anterior"
         style={navBtnStyle}
       >
-        <Text style={{ fontSize: 22, fontWeight: "600", color: palette.text }}>
-          ‹
-        </Text>
+        <Text style={[styles.navArrow, { color: palette.text }]}>‹</Text>
       </Pressable>
 
       <Pressable
@@ -70,8 +68,8 @@ export default function BarbeiroAgendaScreen() {
             height: a11y.minTouch,
             borderRadius: radius.md,
             borderWidth: 1,
-            backgroundColor: palette.cardBg,
-            borderColor: palette.border,
+            backgroundColor: palette.surface,
+            borderColor: palette.borderStrong,
             alignItems: "center" as const,
             justifyContent: "center" as const,
             paddingHorizontal: 12,
@@ -80,11 +78,10 @@ export default function BarbeiroAgendaScreen() {
         ]}
       >
         <Text
-          style={{
-            ...typography.label,
-            color: palette.text,
-            textAlign: "center",
-          }}
+          style={[
+            typography.label,
+            { color: palette.text, textAlign: "center" },
+          ]}
           numberOfLines={1}
         >
           {dayLabel}
@@ -97,9 +94,7 @@ export default function BarbeiroAgendaScreen() {
         accessibilityLabel="Próximo dia"
         style={navBtnStyle}
       >
-        <Text style={{ fontSize: 22, fontWeight: "600", color: palette.text }}>
-          ›
-        </Text>
+        <Text style={[styles.navArrow, { color: palette.text }]}>›</Text>
       </Pressable>
     </View>
   );
@@ -136,5 +131,10 @@ export default function BarbeiroAgendaScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   dayNav: { flexDirection: "row", alignItems: "center" },
+  navArrow: {
+    fontFamily: "Sora_600SemiBold",
+    fontSize: 22,
+    lineHeight: 24,
+  },
   pressed: { opacity: 0.7 },
 });
