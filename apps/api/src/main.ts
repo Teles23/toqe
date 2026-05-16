@@ -5,7 +5,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
-import { ZodValidationPipe, patchNestJsSwagger } from 'nestjs-zod';
+import { patchNestJsSwagger } from 'nestjs-zod';
 import { GlobalExceptionFilter } from './observabilidade/sentry.filter';
 
 async function bootstrap() {
@@ -22,12 +22,10 @@ async function bootstrap() {
     exclude: ['health/*path'],
   });
 
-  // Validação global de DTOs:
-  // - ZodValidationPipe trata DTOs criados via `createZodDto(...)` em @toqe/contracts.
-  // - ValidationPipe (class-validator) ainda atende DTOs legados que não foram migrados.
-  // Estratégia: migração incremental, módulo a módulo, sem big-bang.
+  // ZodValidationPipe registrado via APP_PIPE no AppModule para funcionar também
+  // nos testes de integração (que não passam pelo main.ts).
+  // ValidationPipe (class-validator) trata DTOs legados ainda não migrados.
   app.useGlobalPipes(
-    new ZodValidationPipe(),
     new ValidationPipe({
       transform: true,
     }),
