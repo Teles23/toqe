@@ -16,8 +16,8 @@ const mockHide = SplashScreen.hideAsync as jest.MockedFunction<
 
 describe("splash init", () => {
   beforeEach(() => {
-    mockHide.mockClear();
-    mockHide.mockResolvedValue(undefined as unknown as boolean);
+    mockHide.mockReset();
+    mockHide.mockResolvedValue(undefined);
     __resetForTests();
   });
 

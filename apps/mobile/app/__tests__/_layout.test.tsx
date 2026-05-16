@@ -8,10 +8,14 @@ jest.mock("expo-splash-screen", () => ({
 }));
 
 jest.mock("expo-router", () => {
-  const ReactLib = require("react");
-  const Stack = ({ children }: { children?: React.ReactNode }) =>
-    ReactLib.createElement(ReactLib.Fragment, null, children);
-  Stack.Screen = () => null;
+  // Fragment-only stub para Stack — não precisa de React.createElement aqui
+  function Stack({ children }: { children?: React.ReactNode }) {
+    return children as React.ReactElement;
+  }
+  function StackScreen() {
+    return null;
+  }
+  Stack.Screen = StackScreen;
   return { Stack, router: { replace: jest.fn() } };
 });
 
@@ -27,20 +31,22 @@ jest.mock("expo-secure-store", () => ({
   deleteItemAsync: jest.fn(),
 }));
 
-jest.mock("expo-status-bar", () => ({ StatusBar: () => null }));
-
-jest.mock("@/src/shared/hooks/use-auth", () => {
-  const useAuth = jest.fn();
-  return { useAuth };
+jest.mock("expo-status-bar", () => {
+  function StatusBar() {
+    return null;
+  }
+  return { StatusBar };
 });
 
-// Stub do AuthProvider — evita carregar o real (depende de SecureStore + fetch)
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: jest.fn(),
+}));
+
 jest.mock("@/src/shared/providers/auth-provider", () => {
-  const ReactLib = require("react");
-  return {
-    AuthProvider: ({ children }: { children: React.ReactNode }) =>
-      ReactLib.createElement(ReactLib.Fragment, null, children),
-  };
+  function AuthProvider({ children }: { children: React.ReactNode }) {
+    return children as React.ReactElement;
+  }
+  return { AuthProvider };
 });
 
 import { render, waitFor } from "@testing-library/react-native";
