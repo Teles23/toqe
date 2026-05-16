@@ -73,9 +73,9 @@ export default async function ResetPasswordPage({
             >
               Redefinir senha
             </h1>
-            {/* eslint-disable-next-line no-restricted-syntax */}
             <p
               className="text-[13px]"
+              // eslint-disable-next-line no-restricted-syntax
               style={{ color: "var(--text-secondary)" }}
             >
               Escolha uma nova senha para sua conta Toqe.
