@@ -1,4 +1,3 @@
-import { BlurView } from "expo-blur";
 import { useEffect } from "react";
 import {
   Modal,
@@ -16,6 +15,8 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { useTheme } from "@/src/shared/theme";
+
+import { SafeBlurView } from "./SafeBlurView";
 
 export interface BottomSheetProps {
   /** Controla visibilidade externamente. */
@@ -103,7 +104,7 @@ export function BottomSheet({
           style={StyleSheet.absoluteFill}
           onPress={handleBackdropPress}
         >
-          <BlurView
+          <SafeBlurView
             intensity={30}
             tint={isDark ? "dark" : "light"}
             style={StyleSheet.absoluteFill}

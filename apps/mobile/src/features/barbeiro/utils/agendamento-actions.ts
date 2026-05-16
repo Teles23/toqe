@@ -46,7 +46,7 @@ const FULL_ACTIONS: AgendamentoActionSpec[] = [
  * O BottomSheet de long-press sempre mostra todas as 4 ações (FULL_ACTIONS).
  */
 export function getInlineActions(
-  status: StatusAgendamento,
+  status: StatusAgendamento | string | null | undefined,
 ): AgendamentoActionSpec[] {
   switch (status) {
     case "pendente":
@@ -69,8 +69,15 @@ export function getFullActions(): readonly AgendamentoActionSpec[] {
  *
  * `no_show` → visualmente `cancelado` (mesmo tom de gravidade), mas label
  *   "No-show" preserva semântica para o operador.
+ *
+ * Defensivo: aceita `string | null | undefined` para sobreviver a payloads
+ * inesperados do backend (status novo, snake_case vs camelCase, null por
+ * migração incompleta etc.) — sempre retorna um par válido em vez de quebrar
+ * o render do card.
  */
-export function statusToBadge(status: StatusAgendamento): {
+export function statusToBadge(
+  status: StatusAgendamento | string | null | undefined,
+): {
   badge: StatusBadgeStatus;
   label: string;
 } {
@@ -85,6 +92,13 @@ export function statusToBadge(status: StatusAgendamento): {
       return { badge: "cancelado", label: "Cancelado" };
     case "no_show":
       return { badge: "cancelado", label: "No-show" };
+    default:
+      // Status desconhecido — trata como pendente visualmente e mostra
+      // o valor cru para o operador conseguir reportar.
+      return {
+        badge: "pendente",
+        label: typeof status === "string" && status.length > 0 ? status : "—",
+      };
   }
 }
 

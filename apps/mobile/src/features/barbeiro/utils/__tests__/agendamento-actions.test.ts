@@ -61,6 +61,23 @@ describe("statusToBadge", () => {
       label: "No-show",
     });
   });
+
+  it("status desconhecido vira badge `pendente` com o valor cru como label", () => {
+    // payload novo do backend que ainda não conhecemos
+    expect(statusToBadge("em_atendimento" as never)).toEqual({
+      badge: "pendente",
+      label: "em_atendimento",
+    });
+  });
+
+  it("null/undefined/'' viram badge `pendente` com label '—'", () => {
+    expect(statusToBadge(null)).toEqual({ badge: "pendente", label: "—" });
+    expect(statusToBadge(undefined)).toEqual({
+      badge: "pendente",
+      label: "—",
+    });
+    expect(statusToBadge("")).toEqual({ badge: "pendente", label: "—" });
+  });
 });
 
 describe("toQuickAction", () => {
