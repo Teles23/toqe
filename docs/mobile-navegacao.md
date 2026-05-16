@@ -32,7 +32,7 @@ app/
     ├── agenda.tsx           ← ✅ Agenda do dia (lista + navegação ±1d, status update)
     ├── fila.tsx             ← ✅ Fila de walk-ins (lista + FAB + modal)
     ├── clientes.tsx         ← ✅ Lista de clientes (busca, sort, detalhe com histórico)
-    └── perfil.tsx           ← Perfil do barbeiro (stub)
+    └── perfil/              ← ✅ Stack interno (index/editar/senha/2fa/sessoes/notificacoes)
 ```
 
 ---
