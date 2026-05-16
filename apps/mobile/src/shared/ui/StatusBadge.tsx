@@ -17,6 +17,11 @@ export interface StatusBadgeProps {
   /** Tamanho: `sm` (caption) ou `md` (label). Default: `sm`. */
   size?: "sm" | "md";
   testID?: string;
+  /**
+   * TestID adicional aplicado ao `<Text>` interno (não ao wrapper).
+   * Útil para testes que assertam `props.children` esperando string pura.
+   */
+  textTestID?: string;
 }
 
 interface StatusTokens {
@@ -70,6 +75,7 @@ export function StatusBadge({
   label,
   size = "sm",
   testID,
+  textTestID,
 }: StatusBadgeProps) {
   const { palette, radius, spacing, typography } = useTheme();
   const tokens = STATUS_MAP[status];
@@ -95,7 +101,7 @@ export function StatusBadge({
       ]}
     >
       {tokens.showDot ? <PulsingDot color={fg} size={6} /> : null}
-      <Text style={[textStyle, { color: fg }]}>
+      <Text testID={textTestID} style={[textStyle, { color: fg }]}>
         {label ?? tokens.defaultLabel}
       </Text>
     </View>
