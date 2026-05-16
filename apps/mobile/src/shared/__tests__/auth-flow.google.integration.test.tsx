@@ -133,6 +133,52 @@ describe("Auth flow Google — integration", () => {
     expect(body.idToken).toBe("fake_google_id_token");
   });
 
+  it("primeiro login Google sem barbearia vinculada → redireciona para cliente/home", async () => {
+    // Cenário real do bug: usuário recém-criado via Google ainda não tem
+    // UsuarioBarbearia. Backend retorna barbearias: [] e o app DEVE cair em
+    // cliente/home (não voltar ao login).
+    renderApp();
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").props.children).toBe("ready"),
+    );
+
+    mockFetch
+      .mockResolvedValueOnce(
+        jsonRes(200, {
+          access_token: "google_access",
+          refresh_token: "google_refresh",
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonRes(200, {
+          codigo: 385,
+          nome: "Novo Usuario",
+          email: "novo@gmail.com",
+          telefone: null,
+          avatarUrl: null,
+          barbearias: [],
+        }),
+      );
+
+    await act(async () => {
+      await externalAuth!.loginWithGoogle("fake_google_id_token");
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("user-name").props.children).toBe(
+        "Novo Usuario",
+      );
+    });
+
+    expect(mockSS.setItemAsync).toHaveBeenCalledWith(
+      "toqe_access_token",
+      "google_access",
+    );
+    // Sem vínculo de barbearia → perfil null → cai em cliente/home, NÃO no login
+    expect(mockRouterReplace).toHaveBeenCalledWith("/(cliente)/home");
+    expect(mockRouterReplace).not.toHaveBeenCalledWith("/(auth)/login");
+  });
+
   it("backend retorna 401 (idToken inválido) → propaga ApiError, sem salvar tokens", async () => {
     renderApp();
     await waitFor(() =>
