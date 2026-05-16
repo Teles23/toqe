@@ -33,11 +33,13 @@ apps/mobile/src/shared/
     ├── Button.tsx          # Botão padrão (primary/secondary/danger + loading)
     ├── FormInput.tsx       # Label + TextInput + error (compatível com Controller)
     ├── Card.tsx            # Container (View ou Pressable conforme handlers)
+    ├── Select.tsx          # Picker tipado genérico (Modal + FlatList)
     ├── index.ts
     └── __tests__/
         ├── Button.test.tsx
         ├── FormInput.test.tsx
-        └── Card.test.tsx
+        ├── Card.test.tsx
+        └── Select.test.tsx
 ```
 
 ---
