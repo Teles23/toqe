@@ -50,6 +50,7 @@ import React from "react";
 
 import { api, ApiError } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+
 import CadastroScreen from "../cadastro";
 
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
@@ -70,48 +71,188 @@ function makeAuthValue(overrides: Partial<{ login: jest.Mock }> = {}) {
   } as unknown as ReturnType<typeof useAuth>;
 }
 
-async function fillAndSubmit(opts: { senha?: string; confirma?: string } = {}) {
+/**
+ * Caminha do step 1 ao step 3 preenchendo todos os campos. Útil para os
+ * testes de submit (409/5xx/sucesso) que precisam do form completo.
+ */
+async function walkThroughSteps(
+  opts: {
+    email?: string;
+    senha?: string;
+    confirma?: string;
+    nome?: string;
+    telefone?: string;
+  } = {},
+) {
+  const email = opts.email ?? "novo@toqe.com";
   const senha = opts.senha ?? "senha123";
   const confirma = opts.confirma ?? senha;
-  fireEvent.changeText(screen.getByLabelText("Nome"), "Carlos");
-  fireEvent.changeText(screen.getByLabelText("E-mail"), "novo@toqe.com");
-  fireEvent.changeText(screen.getByLabelText("Telefone"), "+5511999999999");
+  const nome = opts.nome ?? "Carlos";
+  const telefone = opts.telefone ?? "+5511999999999";
+
+  // Step 1: email + senha + confirmar
+  fireEvent.changeText(screen.getByLabelText("E-mail"), email);
   fireEvent.changeText(screen.getByLabelText("Senha"), senha);
   fireEvent.changeText(screen.getByLabelText("Confirmar senha"), confirma);
   await act(async () => {
-    fireEvent.press(screen.getByRole("button", { name: "Criar conta" }));
+    fireEvent.press(screen.getByTestId("continuar-step-1"));
+  });
+
+  // Step 2: nome + telefone (opcional)
+  await waitFor(() => {
+    expect(screen.getByTestId("cadastro-step-2")).toBeTruthy();
+  });
+  fireEvent.changeText(screen.getByLabelText("Nome completo"), nome);
+  if (telefone) {
+    fireEvent.changeText(screen.getByLabelText("Telefone"), telefone);
+  }
+  await act(async () => {
+    fireEvent.press(screen.getByTestId("continuar-step-2"));
+  });
+
+  // Step 3: submit
+  await waitFor(() => {
+    expect(screen.getByTestId("cadastro-step-3")).toBeTruthy();
+  });
+  await act(async () => {
+    fireEvent.press(screen.getByTestId("criar-conta"));
   });
 }
 
-describe("CadastroScreen", () => {
+describe("CadastroScreen — fluxo de 3 steps", () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockApiPost.mockReset();
+    mockUseAuth.mockReturnValue(makeAuthValue());
   });
 
-  it("renderiza todos os 5 campos + botão", () => {
-    mockUseAuth.mockReturnValue(makeAuthValue());
+  it("step 1 mostra email e senha; não mostra nome nem toggle de tipo", () => {
     render(<CadastroScreen />);
-
-    expect(screen.getByLabelText("Nome")).toBeTruthy();
+    expect(screen.getByTestId("cadastro-step-1")).toBeTruthy();
     expect(screen.getByLabelText("E-mail")).toBeTruthy();
-    expect(screen.getByLabelText("Telefone")).toBeTruthy();
     expect(screen.getByLabelText("Senha")).toBeTruthy();
     expect(screen.getByLabelText("Confirmar senha")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Criar conta" })).toBeTruthy();
+    // step 2 e 3 escondidos
+    expect(screen.queryByLabelText("Nome completo")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cliente" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Barbeiro" })).toBeNull();
   });
 
-  it("mostra erro de validação quando senhas não coincidem", async () => {
-    mockUseAuth.mockReturnValue(makeAuthValue());
+  it("botão Continuar do step 1 não avança se campos vazios", async () => {
     render(<CadastroScreen />);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-1"));
+    });
+    // continua no step 1 — campo nome NÃO aparece
+    expect(screen.queryByLabelText("Nome completo")).toBeNull();
+    expect(screen.getByTestId("cadastro-step-1")).toBeTruthy();
+  });
 
-    await fillAndSubmit({ senha: "senha123", confirma: "outra456" });
+  it("Continuar do step 1 NÃO avança quando senhas não coincidem", async () => {
+    render(<CadastroScreen />);
+    fireEvent.changeText(screen.getByLabelText("E-mail"), "x@x.com");
+    fireEvent.changeText(screen.getByLabelText("Senha"), "senha123");
+    fireEvent.changeText(screen.getByLabelText("Confirmar senha"), "outra456");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-1"));
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/senhas não coincidem/i)).toBeTruthy();
     });
-    // Não deve chamar a API se a validação local falhou
+    // Continua no step 1
+    expect(screen.queryByLabelText("Nome completo")).toBeNull();
+    // E não chamou a API
     expect(mockApiPost).not.toHaveBeenCalled();
+  });
+
+  it("step 2 mostra campo nome após Continuar válido no step 1", async () => {
+    render(<CadastroScreen />);
+    fireEvent.changeText(screen.getByLabelText("E-mail"), "novo@toqe.com");
+    fireEvent.changeText(screen.getByLabelText("Senha"), "senha123");
+    fireEvent.changeText(screen.getByLabelText("Confirmar senha"), "senha123");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-1"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Nome completo")).toBeTruthy();
+    });
+    expect(screen.getByTestId("cadastro-step-2")).toBeTruthy();
+    // campos do step 1 não aparecem mais
+    expect(screen.queryByLabelText("E-mail")).toBeNull();
+  });
+
+  it("step 3 mostra toggle Cliente/Barbeiro + botão Criar conta", async () => {
+    render(<CadastroScreen />);
+    fireEvent.changeText(screen.getByLabelText("E-mail"), "novo@toqe.com");
+    fireEvent.changeText(screen.getByLabelText("Senha"), "senha123");
+    fireEvent.changeText(screen.getByLabelText("Confirmar senha"), "senha123");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-1"));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("cadastro-step-2")).toBeTruthy(),
+    );
+    fireEvent.changeText(screen.getByLabelText("Nome completo"), "Carlos");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-2"));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("cadastro-step-3")).toBeTruthy(),
+    );
+    expect(screen.getByRole("button", { name: "Cliente" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Barbeiro" })).toBeTruthy();
+    expect(screen.getByTestId("criar-conta")).toBeTruthy();
+    // botão Continuar não existe mais — é Criar conta
+    expect(screen.queryByTestId("continuar-step-1")).toBeNull();
+    expect(screen.queryByTestId("continuar-step-2")).toBeNull();
+  });
+
+  it("toggle muda a opção selecionada ao pressionar", async () => {
+    render(<CadastroScreen />);
+    // navega até o step 3
+    fireEvent.changeText(screen.getByLabelText("E-mail"), "x@x.com");
+    fireEvent.changeText(screen.getByLabelText("Senha"), "senha123");
+    fireEvent.changeText(screen.getByLabelText("Confirmar senha"), "senha123");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-1"));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("cadastro-step-2")).toBeTruthy(),
+    );
+    fireEvent.changeText(screen.getByLabelText("Nome completo"), "Yago");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-2"));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("cadastro-step-3")).toBeTruthy(),
+    );
+
+    // default = cliente
+    expect(
+      screen.getByRole("button", { name: "Cliente" }).props.accessibilityState
+        .selected,
+    ).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Barbeiro" }).props.accessibilityState
+        .selected,
+    ).toBe(false);
+
+    // troca para barbeiro
+    fireEvent.press(screen.getByRole("button", { name: "Barbeiro" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Barbeiro" }).props
+          .accessibilityState.selected,
+      ).toBe(true);
+    });
+    expect(
+      screen.getByRole("button", { name: "Cliente" }).props.accessibilityState
+        .selected,
+    ).toBe(false);
   });
 
   it("submete /auth/register e faz login automático em sucesso", async () => {
@@ -120,7 +261,7 @@ describe("CadastroScreen", () => {
     mockApiPost.mockResolvedValueOnce({});
 
     render(<CadastroScreen />);
-    await fillAndSubmit();
+    await walkThroughSteps();
 
     await waitFor(() => {
       expect(mockApiPost).toHaveBeenCalledWith("/auth/register", {
@@ -136,17 +277,10 @@ describe("CadastroScreen", () => {
   });
 
   it("não envia telefone vazio (envia undefined para a API)", async () => {
-    mockUseAuth.mockReturnValue(makeAuthValue());
     mockApiPost.mockResolvedValueOnce({});
 
     render(<CadastroScreen />);
-    fireEvent.changeText(screen.getByLabelText("Nome"), "Carlos");
-    fireEvent.changeText(screen.getByLabelText("E-mail"), "novo@toqe.com");
-    fireEvent.changeText(screen.getByLabelText("Senha"), "senha123");
-    fireEvent.changeText(screen.getByLabelText("Confirmar senha"), "senha123");
-    await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Criar conta" }));
-    });
+    await walkThroughSteps({ telefone: "" });
 
     await waitFor(() => {
       expect(mockApiPost).toHaveBeenCalledWith(
@@ -156,27 +290,55 @@ describe("CadastroScreen", () => {
     });
   });
 
-  it("em 409, marca erro no campo email", async () => {
-    mockUseAuth.mockReturnValue(makeAuthValue());
+  it("em 409, marca erro no campo email e volta para step 1", async () => {
     mockApiPost.mockRejectedValueOnce(new ApiError(409, "Conflict"));
 
     render(<CadastroScreen />);
-    await fillAndSubmit();
+    await walkThroughSteps();
 
     await waitFor(() => {
       expect(screen.getByText(/já está cadastrado/i)).toBeTruthy();
     });
+    // Volta para o step 1 (onde o erro mora)
+    expect(screen.getByTestId("cadastro-step-1")).toBeTruthy();
   });
 
   it("em 5xx, mostra erro global de servidor", async () => {
-    mockUseAuth.mockReturnValue(makeAuthValue());
     mockApiPost.mockRejectedValueOnce(new ApiError(500, "Server Error"));
 
     render(<CadastroScreen />);
-    await fillAndSubmit();
+    await walkThroughSteps();
 
     await waitFor(() => {
       expect(screen.getByText(/Erro no servidor/i)).toBeTruthy();
     });
+  });
+
+  it("Voltar do step 2 retorna para step 1 preservando email", async () => {
+    render(<CadastroScreen />);
+    fireEvent.changeText(screen.getByLabelText("E-mail"), "tmp@x.com");
+    fireEvent.changeText(screen.getByLabelText("Senha"), "senha123");
+    fireEvent.changeText(screen.getByLabelText("Confirmar senha"), "senha123");
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("continuar-step-1"));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("cadastro-step-2")).toBeTruthy(),
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("voltar-step-2"));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("cadastro-step-1")).toBeTruthy(),
+    );
+    // valor do email preservado pelo react-hook-form
+    expect(
+      (
+        screen.getByLabelText("E-mail") as unknown as {
+          props: { value: string };
+        }
+      ).props.value,
+    ).toBe("tmp@x.com");
   });
 });
