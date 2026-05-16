@@ -19,11 +19,7 @@ interface ForgotPasswordFormProps {
   onBackToLogin: () => void;
 }
 
-/**
- * Formulário de "esqueci minha senha". Atualmente é um stub: ao
- * submeter, espera 1s e mostra tela de sucesso (o endpoint real ainda
- * não existe na API). Toda a UX já está pronta para quando ele existir.
- */
+/** Formulário de recuperação de senha. Envia e-mail via BFF → API. */
 export function ForgotPasswordForm({
   onBackToLogin,
 }: ForgotPasswordFormProps): React.JSX.Element {

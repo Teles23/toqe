@@ -12,7 +12,14 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { BarbeariaService } from './barbearia.service';
 import { MembroBarbeariaService } from './membro-barbearia.service';
 import { TemaTenantService } from './tema-tenant.service';
@@ -206,5 +213,51 @@ export class BarbeariaController {
     @Headers('x-tenant-id') _tenantId: string,
   ) {
     return this.membroService.removerMembro(barCodigo, usrCodigo);
+  }
+
+  @Post(':barCodigo/logo')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente')
+  @ApiSecurity('x-tenant-id')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          const dir = join(process.cwd(), 'uploads', 'logos');
+          if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (_req, file, cb) => {
+          const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          cb(null, unique + extname(file.originalname));
+        },
+      }),
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.match(/^image\/(jpeg|png|webp)$/)) {
+          cb(
+            new BadRequestException(
+              'Apenas imagens JPEG, PNG ou WebP são aceitas',
+            ),
+            false,
+          );
+        } else {
+          cb(null, true);
+        }
+      },
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  @ApiOperation({ summary: 'Upload da logo da barbearia' })
+  @ApiResponse({ status: 201, description: 'Logo atualizada.' })
+  async uploadLogo(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    if (!file) throw new BadRequestException('Arquivo de imagem é obrigatório');
+    const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000';
+    const logoUrl = `${apiBaseUrl}/uploads/logos/${file.filename}`;
+    await this.temaService.upsertTema(barCodigo, { logoUrl });
+    return { logoUrl };
   }
 }

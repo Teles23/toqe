@@ -96,3 +96,115 @@ export async function requestResetPassword(
     );
   }
 }
+
+export async function requestChangePassword(
+  senhaAtual: string,
+  novaSenha: string,
+): Promise<void> {
+  const res = await fetch("/api/auth/change-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ senhaAtual, novaSenha }),
+  });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Erro ao alterar senha",
+      res.status,
+    );
+  }
+}
+
+export interface SessaoAtiva {
+  codigo: number;
+  criadoEm: string;
+  expiraEm: string;
+}
+
+export async function fetchSessions(): Promise<SessaoAtiva[]> {
+  const res = await fetch("/api/auth/sessions");
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Erro ao buscar sessões",
+      res.status,
+    );
+  }
+  return res.json() as Promise<SessaoAtiva[]>;
+}
+
+export async function revokeSession(codigo: number): Promise<void> {
+  const res = await fetch(`/api/auth/sessions/${codigo}`, { method: "DELETE" });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Erro ao encerrar sessão",
+      res.status,
+    );
+  }
+}
+
+export async function revokeAllSessions(): Promise<void> {
+  const res = await fetch("/api/auth/sessions", { method: "DELETE" });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Erro ao encerrar sessões",
+      res.status,
+    );
+  }
+}
+
+export async function request2FaSetup(): Promise<{
+  qrCode: string;
+  secret: string;
+}> {
+  const res = await fetch("/api/auth/2fa/setup", { method: "POST" });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Erro ao configurar 2FA",
+      res.status,
+    );
+  }
+  return res.json() as Promise<{ qrCode: string; secret: string }>;
+}
+
+export async function request2FaEnable(code: string): Promise<void> {
+  const res = await fetch("/api/auth/2fa/enable", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(data.message ?? "Código inválido", res.status);
+  }
+}
+
+export async function request2FaDisable(code: string): Promise<void> {
+  const res = await fetch("/api/auth/2fa/disable", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(data.message ?? "Código inválido", res.status);
+  }
+}
+
+export async function request2FaVerify(
+  tempToken: string,
+  code: string,
+): Promise<void> {
+  const res = await fetch("/api/auth/2fa/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tempToken, code }),
+  });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(data.message ?? "Código inválido", res.status);
+  }
+}

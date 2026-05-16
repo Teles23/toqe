@@ -33,7 +33,17 @@ export function useConfiguracaoBarbearia(barCodigo: number | null) {
     },
   });
 
-  return { ...query, update: mutation };
+  const uploadLogo = useMutation({
+    mutationFn: (file: File) =>
+      configuracaoService.uploadLogo(barCodigo!, file),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.configuracoes.barbearia(barCodigo ?? 0),
+      });
+    },
+  });
+
+  return { ...query, update: mutation, uploadLogo };
 }
 
 export function useConfiguracaoHorarios(barCodigo: number | null) {

@@ -16,6 +16,8 @@ const mockUsuario = {
   telefone: null,
   avatarUrl: null,
   ativo: true,
+  twoFaSecret: null,
+  twoFaEnabled: false,
   criadoEm: new Date('2024-01-01'),
 };
 
@@ -39,6 +41,7 @@ describe('AuthService', () => {
       refreshToken: {
         create: jest.fn(),
         findMany: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
       },
@@ -120,11 +123,13 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('access_token', 'access_token_mock');
       expect(result).toHaveProperty('refresh_token');
-      expect(result.user).toEqual({
-        codigo: 1,
-        nome: 'João Silva',
-        email: 'joao@example.com',
-      });
+      if ('user' in result) {
+        expect(result.user).toEqual({
+          codigo: 1,
+          nome: 'João Silva',
+          email: 'joao@example.com',
+        });
+      }
     });
 
     it('lança UnauthorizedException quando usuário não existe', async () => {
@@ -374,6 +379,107 @@ describe('AuthService', () => {
           where: { token: expectedHash },
         }),
       );
+    });
+  });
+
+  describe('changePassword', () => {
+    it('altera senha quando credenciais são válidas', async () => {
+      const senhaAtual = 'senha123';
+      const hash = await bcrypt.hash(senhaAtual, await bcrypt.genSalt());
+      usuarioService.findById.mockResolvedValue({
+        ...mockUsuario,
+        senhaHash: hash,
+      });
+      (prisma.$transaction as jest.Mock).mockResolvedValue([]);
+
+      await service.changePassword(1, senhaAtual, 'novaSenha456');
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('lança UnauthorizedException quando usuário não existe', async () => {
+      usuarioService.findById.mockResolvedValue(null);
+
+      await expect(service.changePassword(1, 'senha', 'nova')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('lança UnauthorizedException quando senha atual está errada', async () => {
+      const hash = await bcrypt.hash('correta', await bcrypt.genSalt());
+      usuarioService.findById.mockResolvedValue({
+        ...mockUsuario,
+        senhaHash: hash,
+      });
+
+      await expect(
+        service.changePassword(1, 'errada', 'nova123'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('listSessions', () => {
+    it('lista sessões ativas do usuário', async () => {
+      const now = new Date();
+      const sessions = [
+        { codigo: 1, criadoEm: now, expiraEm: new Date(Date.now() + 86400000) },
+      ];
+      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue(sessions);
+
+      const result = await service.listSessions(1);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty('codigo', 1);
+    });
+  });
+
+  describe('revokeSession', () => {
+    it('revoga sessão específica', async () => {
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue({
+        codigo: 5,
+        usrCodigo: 1,
+        revogado: false,
+      });
+      (prisma.refreshToken.update as jest.Mock).mockResolvedValue({});
+
+      await service.revokeSession(1, 5);
+
+      expect(prisma.refreshToken.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { revogado: true } }),
+      );
+    });
+
+    it('lança UnauthorizedException ao revogar sessão inexistente', async () => {
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.revokeSession(1, 99)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+  });
+
+  describe('revokeAllSessions', () => {
+    it('revoga todas as sessões do usuário', async () => {
+      (prisma.refreshToken.updateMany as jest.Mock).mockResolvedValue({
+        count: 3,
+      });
+
+      await service.revokeAllSessions(1);
+
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ usrCodigo: 1 }) as object,
+          data: { revogado: true },
+        }),
+      );
+    });
+  });
+
+  describe('verifyTwoFa', () => {
+    it('lança UnauthorizedException quando tempToken é inválido', async () => {
+      await expect(
+        service.verifyTwoFa('token_invalido', '123456'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

@@ -19,7 +19,9 @@ model Usuario {
   senhaHash String   @map("TQE_USR_SENHA_HASH") @db.VarChar(255)
   telefone  String?  @unique @map("TQE_USR_TELEFONE") @db.VarChar(20)
   avatarUrl String?  @map("TQE_USR_AVATAR_URL")
-  ativo     Boolean  @default(true) @map("TQE_USR_ATIVO")
+  ativo        Boolean  @default(true) @map("TQE_USR_ATIVO")
+  twoFaSecret  String?  @map("TQE_USR_TWO_FA_SECRET") @db.VarChar(64)
+  twoFaEnabled Boolean  @default(false) @map("TQE_USR_TWO_FA_ENABLED")
   criadoEm  DateTime @default(now()) @map("TQE_USR_CRIADO_EM") @db.Timestamptz
 
   refreshTokens       RefreshToken[]

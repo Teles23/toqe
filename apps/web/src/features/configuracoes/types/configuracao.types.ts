@@ -28,6 +28,7 @@ export interface BarbeariaConfig {
   telefone: string;
   email: string;
   endereco: string;
+  logoUrl?: string | null;
 }
 
 export interface Plano {
@@ -36,10 +37,4 @@ export interface Plano {
   preco: number;
   atual: boolean;
   features: string[];
-}
-
-export interface SessaoAtiva {
-  dispositivo: string;
-  ultimo: string;
-  atual: boolean;
 }

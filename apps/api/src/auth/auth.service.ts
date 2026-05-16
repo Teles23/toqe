@@ -10,6 +10,8 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { NotificacaoService } from '../notificacao/notificacao.service';
 import { createHash, randomBytes } from 'crypto';
+import { generateSecret, generateURI, verify as otpVerify } from 'otplib';
+import * as qrcode from 'qrcode';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +37,15 @@ export class AuthService {
 
     if (!passwordMatch) {
       throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    // Se 2FA ativo, retorna token temporário em vez de tokens completos
+    if ((user as { twoFaEnabled?: boolean }).twoFaEnabled) {
+      const tempToken = this.jwtService.sign(
+        { sub: user.codigo, type: '2fa' },
+        { expiresIn: '5m' },
+      );
+      return { requiresTwoFa: true as const, tempToken };
     }
 
     return this.generateTokens(user.codigo, user.nome, user.email);
@@ -159,6 +170,141 @@ export class AuthService {
         data: { revogado: true },
       }),
     ]);
+  }
+
+  async changePassword(
+    usrCodigo: number,
+    senhaAtual: string,
+    novaSenha: string,
+  ): Promise<void> {
+    const user = await this.usuarioService.findById(usrCodigo);
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    const match = await bcrypt.compare(senhaAtual, user.senhaHash);
+    if (!match) throw new UnauthorizedException('Senha atual incorreta');
+    const senhaHash = await bcrypt.hash(novaSenha, await bcrypt.genSalt());
+    await this.prisma.$transaction([
+      this.prisma.usuario.update({
+        where: { codigo: usrCodigo },
+        data: { senhaHash },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { usrCodigo, revogado: false },
+        data: { revogado: true },
+      }),
+    ]);
+  }
+
+  async listSessions(usrCodigo: number) {
+    const tokens = await this.prisma.refreshToken.findMany({
+      where: { usrCodigo, revogado: false, expiraEm: { gt: new Date() } },
+      select: { codigo: true, criadoEm: true, expiraEm: true },
+      orderBy: { criadoEm: 'desc' },
+    });
+    return tokens.map((t) => ({
+      codigo: t.codigo,
+      criadoEm: t.criadoEm,
+      expiraEm: t.expiraEm,
+    }));
+  }
+
+  async revokeSession(usrCodigo: number, tokenCodigo: number): Promise<void> {
+    const token = await this.prisma.refreshToken.findFirst({
+      where: { codigo: tokenCodigo, usrCodigo, revogado: false },
+    });
+    if (!token) throw new UnauthorizedException('Sessão não encontrada');
+    await this.prisma.refreshToken.update({
+      where: { codigo: tokenCodigo },
+      data: { revogado: true },
+    });
+  }
+
+  async revokeAllSessions(usrCodigo: number): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { usrCodigo, revogado: false },
+      data: { revogado: true },
+    });
+  }
+
+  async setup2Fa(
+    usrCodigo: number,
+  ): Promise<{ qrCode: string; secret: string }> {
+    const user = await this.usuarioService.findById(usrCodigo);
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    const secret = generateSecret();
+    const otpauth = generateURI({
+      secret,
+      label: user.email,
+      issuer: 'Toqe',
+      strategy: 'totp',
+    });
+    const qrCodeDataUrl = await qrcode.toDataURL(otpauth);
+    await this.prisma.usuario.update({
+      where: { codigo: usrCodigo },
+      data: { twoFaSecret: secret },
+    });
+    return { qrCode: qrCodeDataUrl, secret };
+  }
+
+  async enable2Fa(usrCodigo: number, code: string): Promise<void> {
+    const user = await this.usuarioService.findById(usrCodigo);
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    const secret = (user as { twoFaSecret?: string | null }).twoFaSecret;
+    if (!secret) throw new UnauthorizedException('Configure o 2FA primeiro');
+    const { valid } = await otpVerify({
+      strategy: 'totp',
+      secret,
+      token: code,
+    });
+    if (!valid) throw new UnauthorizedException('Código inválido');
+    await this.prisma.usuario.update({
+      where: { codigo: usrCodigo },
+      data: { twoFaEnabled: true },
+    });
+  }
+
+  async disable2Fa(usrCodigo: number, code: string): Promise<void> {
+    const user = await this.usuarioService.findById(usrCodigo);
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    const secret = (user as { twoFaSecret?: string | null }).twoFaSecret;
+    const enabled = (user as { twoFaEnabled?: boolean }).twoFaEnabled;
+    if (!enabled || !secret)
+      throw new UnauthorizedException('2FA não está ativo');
+    const { valid } = await otpVerify({
+      strategy: 'totp',
+      secret,
+      token: code,
+    });
+    if (!valid) throw new UnauthorizedException('Código inválido');
+    await this.prisma.usuario.update({
+      where: { codigo: usrCodigo },
+      data: { twoFaEnabled: false, twoFaSecret: null },
+    });
+  }
+
+  async verifyTwoFa(tempToken: string, code: string) {
+    let payload: { sub: number; type: string };
+    try {
+      payload = this.jwtService.verify<{ sub: number; type: string }>(
+        tempToken,
+      );
+    } catch {
+      throw new UnauthorizedException('Token expirado ou inválido');
+    }
+    if (payload.type !== '2fa')
+      throw new UnauthorizedException('Token inválido');
+    const user = await this.usuarioService.findById(payload.sub);
+    if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    const secret = (user as { twoFaSecret?: string | null }).twoFaSecret;
+    const enabled = (user as { twoFaEnabled?: boolean }).twoFaEnabled;
+    if (!enabled || !secret)
+      throw new UnauthorizedException('2FA não está configurado');
+    const { valid } = await otpVerify({
+      strategy: 'totp',
+      secret,
+      token: code,
+    });
+    if (!valid) throw new UnauthorizedException('Código inválido');
+    return this.generateTokens(user.codigo, user.nome, user.email);
   }
 
   private async generateTokens(codigo: number, nome: string, email: string) {

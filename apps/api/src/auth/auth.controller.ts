@@ -1,14 +1,21 @@
 import {
   Controller,
   Post,
+  Get,
+  Delete,
   Body,
   UseGuards,
   Request,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { TwoFaSetupDto } from './dto/two-fa-setup.dto';
+import { TwoFaVerifyDto } from './dto/two-fa-verify.dto';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import type { JwtRequest } from '../common/types/jwt-request';
@@ -97,5 +104,90 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto) {
     await this.authService.resetPassword(dto.token, dto.novaSenha);
     return { message: 'Senha redefinida com sucesso.' };
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Altera a senha do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Senha alterada.' })
+  @ApiResponse({ status: 401, description: 'Senha atual incorreta.' })
+  async changePassword(
+    @Request() req: JwtRequest,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(
+      req.user.sub,
+      dto.senhaAtual,
+      dto.novaSenha,
+    );
+    return { message: 'Senha alterada com sucesso.' };
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Lista sessões ativas do usuário' })
+  listSessions(@Request() req: JwtRequest) {
+    return this.authService.listSessions(req.user.sub);
+  }
+
+  @Delete('sessions')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Revoga todas as sessões ativas' })
+  async revokeAllSessions(@Request() req: JwtRequest) {
+    await this.authService.revokeAllSessions(req.user.sub);
+    return { message: 'Todas as sessões foram encerradas' };
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Revoga uma sessão específica' })
+  async revokeSession(
+    @Request() req: JwtRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    await this.authService.revokeSession(req.user.sub, id);
+    return { message: 'Sessão encerrada' };
+  }
+
+  @Post('2fa/setup')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Gera QR code para configurar 2FA' })
+  setup2Fa(@Request() req: JwtRequest) {
+    return this.authService.setup2Fa(req.user.sub);
+  }
+
+  @Post('2fa/enable')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Habilita 2FA após verificar código TOTP' })
+  async enable2Fa(@Request() req: JwtRequest, @Body() dto: TwoFaSetupDto) {
+    await this.authService.enable2Fa(req.user.sub, dto.code);
+    return { message: '2FA ativado com sucesso.' };
+  }
+
+  @Post('2fa/disable')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Desabilita 2FA após verificar código TOTP' })
+  async disable2Fa(@Request() req: JwtRequest, @Body() dto: TwoFaSetupDto) {
+    await this.authService.disable2Fa(req.user.sub, dto.code);
+    return { message: '2FA desativado.' };
+  }
+
+  @Post('2fa/verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verifica código 2FA e completa o login' })
+  verify2Fa(@Body() dto: TwoFaVerifyDto) {
+    return this.authService.verifyTwoFa(dto.tempToken, dto.code);
   }
 }

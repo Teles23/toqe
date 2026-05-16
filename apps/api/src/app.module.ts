@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { BullModule } from '@nestjs/bull';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { TenantModule } from './tenant/tenant.module';
 import { AuthModule } from './auth/auth.module';
@@ -21,6 +23,10 @@ import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ObservabilidadeModule, // primeiro — garante que o logger está pronto para os outros módulos
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
     ThrottlerModule.forRoot([
       {
         // Limite global: 60 req / 60s por IP
