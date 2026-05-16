@@ -1,0 +1,83 @@
+jest.mock("@/src/_init/splash", () => ({
+  hideSplash: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("expo-splash-screen", () => ({
+  preventAutoHideAsync: jest.fn().mockResolvedValue(undefined),
+  hideAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock("expo-router", () => {
+  const ReactLib = require("react");
+  const Stack = ({ children }: { children?: React.ReactNode }) =>
+    ReactLib.createElement(ReactLib.Fragment, null, children);
+  Stack.Screen = () => null;
+  return { Stack, router: { replace: jest.fn() } };
+});
+
+jest.mock("expo-constants", () => ({
+  default: {
+    expoConfig: { extra: { apiUrl: "http://localhost:3000/api/v1" } },
+  },
+}));
+
+jest.mock("expo-secure-store", () => ({
+  getItemAsync: jest.fn().mockResolvedValue(null),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
+}));
+
+jest.mock("expo-status-bar", () => ({ StatusBar: () => null }));
+
+jest.mock("@/src/shared/hooks/use-auth", () => {
+  const useAuth = jest.fn();
+  return { useAuth };
+});
+
+// Stub do AuthProvider — evita carregar o real (depende de SecureStore + fetch)
+jest.mock("@/src/shared/providers/auth-provider", () => {
+  const ReactLib = require("react");
+  return {
+    AuthProvider: ({ children }: { children: React.ReactNode }) =>
+      ReactLib.createElement(ReactLib.Fragment, null, children),
+  };
+});
+
+import { render, waitFor } from "@testing-library/react-native";
+import React from "react";
+
+import { hideSplash } from "@/src/_init/splash";
+import { useAuth } from "@/src/shared/hooks/use-auth";
+import RootLayout from "../_layout";
+
+const mockHideSplash = hideSplash as jest.MockedFunction<typeof hideSplash>;
+const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+
+describe("RootLayout — splash control", () => {
+  beforeEach(() => {
+    mockHideSplash.mockClear();
+    mockUseAuth.mockReset();
+  });
+
+  it("não chama hideSplash enquanto loading=true", () => {
+    mockUseAuth.mockReturnValue({
+      loading: true,
+    } as unknown as ReturnType<typeof useAuth>);
+
+    render(<RootLayout />);
+
+    expect(mockHideSplash).not.toHaveBeenCalled();
+  });
+
+  it("chama hideSplash quando loading vira false", async () => {
+    mockUseAuth.mockReturnValue({
+      loading: false,
+    } as unknown as ReturnType<typeof useAuth>);
+
+    render(<RootLayout />);
+
+    await waitFor(() => {
+      expect(mockHideSplash).toHaveBeenCalledTimes(1);
+    });
+  });
+});
