@@ -74,6 +74,7 @@ export const handlers = [
       email: "test@test.com",
       telefone: null,
       avatarUrl: null,
+      twoFaEnabled: false,
       barbearias: [
         { codigo: 1, nome: "BarberShop", slug: "barbershop", perfil: "dono" },
       ],

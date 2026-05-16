@@ -7,6 +7,7 @@ import { Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { Toggle } from "@/shared/components/toggle";
 import { ConfigRow } from "@/shared/components/config-row";
+import { useAuth } from "@/shared/hooks/use-auth";
 import { useChangePassword } from "@/features/auth/hooks/use-change-password";
 import { useSessions } from "@/features/auth/hooks/use-sessions";
 import { useTwoFaSetup } from "@/features/auth/hooks/use-two-fa";
@@ -14,8 +15,9 @@ import { TwoFaModal } from "@/features/auth/components/TwoFaModal";
 import { TwoFaDisableModal } from "@/features/auth/components/TwoFaDisableModal";
 
 export function SecaoSeguranca() {
+  const { user } = useAuth();
   const [senha, setSenha] = useState({ atual: "", nova: "", confirma: "" });
-  const [twoFaEnabled, setTwoFaEnabled] = useState(false);
+  const [twoFaEnabled, setTwoFaEnabled] = useState(user?.twoFaEnabled ?? false);
   const [twoFaData, setTwoFaData] = useState<{
     qrCode: string;
     secret: string;

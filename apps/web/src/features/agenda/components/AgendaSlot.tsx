@@ -51,7 +51,15 @@ export function AgendaSlotEmpty() {
   );
 }
 
-export function AgendaSlot({ slot, index }: { slot: Slot; index: number }) {
+export function AgendaSlot({
+  slot,
+  index,
+  onEncaixar,
+}: {
+  slot: Slot;
+  index: number;
+  onEncaixar?: () => void;
+}) {
   const cfg = STATUS_CONFIG[slot.status];
   const countdown = useCountdown(slot.startedAt, slot.duration);
   const isAvailable = slot.status === "available";
@@ -231,8 +239,12 @@ export function AgendaSlot({ slot, index }: { slot: Slot; index: number }) {
             </span>
           )}
 
-          {isAvailable && (
+          {isAvailable && onEncaixar && (
             <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEncaixar();
+              }}
               className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded transition-all opacity-0 group-hover:opacity-100"
               style={{
                 background: "rgba(29,185,84,0.1)",

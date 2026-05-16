@@ -99,6 +99,7 @@ describe('AuthService', () => {
         telefone: null,
         avatarUrl: null,
         ativo: true,
+        twoFaEnabled: false,
         criadoEm: new Date('2024-01-01'),
       };
       usuarioService.create.mockResolvedValue(expected);

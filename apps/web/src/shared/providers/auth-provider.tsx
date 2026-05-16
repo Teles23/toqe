@@ -25,6 +25,7 @@ interface AuthUser {
   email: string;
   telefone: string | null;
   avatarUrl: string | null;
+  twoFaEnabled: boolean;
 }
 
 interface AuthState {
@@ -92,9 +93,17 @@ export function AuthProvider({
           email,
           telefone,
           avatarUrl,
+          twoFaEnabled,
           barbearias: bars,
         } = me;
-        setUser({ codigo, nome, email, telefone, avatarUrl });
+        setUser({
+          codigo,
+          nome,
+          email,
+          telefone,
+          avatarUrl,
+          twoFaEnabled: twoFaEnabled ?? false,
+        });
         setBarbearias(bars);
 
         // Seleciona a primeira barbearia como ativa (por padrão)
@@ -117,8 +126,22 @@ export function AuthProvider({
 
   async function loadMe(email: string) {
     const me: UsuarioMe = await api.get("/usuarios/me");
-    const { codigo, nome, telefone, avatarUrl, barbearias: bars } = me;
-    setUser({ codigo, nome, email, telefone, avatarUrl });
+    const {
+      codigo,
+      nome,
+      telefone,
+      avatarUrl,
+      twoFaEnabled,
+      barbearias: bars,
+    } = me;
+    setUser({
+      codigo,
+      nome,
+      email,
+      telefone,
+      avatarUrl,
+      twoFaEnabled: twoFaEnabled ?? false,
+    });
     setBarbearias(bars);
     if (bars.length > 0) {
       setBarbearia(bars[0]!);
