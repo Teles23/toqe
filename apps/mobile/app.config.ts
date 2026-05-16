@@ -77,7 +77,7 @@ const config: ExpoConfig = {
   extra: {
     apiUrl: "https://toqe.duckdns.org/api/v1",
     googleWebClientId:
-      "330194878953-3iql45i1robhr8di453uhtp92qtqhrrh.apps.googleusercontent.com",
+      "1095847529893-b71gjl8nqpjl5vo0ppd5c5iljfof684m.apps.googleusercontent.com",
     eas: { projectId },
   },
 
