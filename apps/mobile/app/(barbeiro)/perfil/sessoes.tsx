@@ -14,9 +14,10 @@ import {
 } from "@/src/shared/hooks/perfil/use-sessoes";
 import { useTheme } from "@/src/shared/theme";
 import {
-  Button,
+  DangerButton,
   DataListWrapper,
   Divider,
+  GhostButton,
   ListItem,
   ScreenHeader,
 } from "@/src/shared/ui";
@@ -61,9 +62,8 @@ export default function PerfilSessoesScreen() {
       <ScreenHeader
         title="Sessões ativas"
         right={
-          <Button
+          <GhostButton
             label="Voltar"
-            variant="secondary"
             onPress={() => router.back()}
             accessibilityLabel="Voltar"
           />
@@ -97,9 +97,8 @@ export default function PerfilSessoesScreen() {
             trailing={{
               kind: "node",
               node: (
-                <Button
+                <DangerButton
                   label="Encerrar"
-                  variant="danger"
                   onPress={() => handleRevogar(item.codigo)}
                   accessibilityLabel={`Encerrar sessão ${item.codigo}`}
                 />
@@ -120,9 +119,8 @@ export default function PerfilSessoesScreen() {
           },
         ]}
       >
-        <Button
+        <DangerButton
           label="Encerrar todas as outras"
-          variant="danger"
           onPress={handleRevogarTodas}
           loading={revogarTodas.isPending}
         />

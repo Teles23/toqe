@@ -10,7 +10,14 @@ import {
 } from "@/src/shared/hooks/perfil/use-2fa";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormErrorBox, FormInput, ScreenHeader } from "@/src/shared/ui";
+import {
+  AmberButton,
+  DangerButton,
+  FormErrorBox,
+  FormInput,
+  GhostButton,
+  ScreenHeader,
+} from "@/src/shared/ui";
 
 export default function Perfil2faScreen() {
   const { palette, spacing, typography } = useTheme();
@@ -91,9 +98,8 @@ export default function Perfil2faScreen() {
       <ScreenHeader
         title="Autenticação 2 fatores"
         right={
-          <Button
+          <GhostButton
             label="Voltar"
-            variant="secondary"
             onPress={() => router.back()}
             accessibilityLabel="Voltar"
           />
@@ -140,9 +146,8 @@ export default function Perfil2faScreen() {
               autoComplete="one-time-code"
               maxLength={6}
             />
-            <Button
+            <DangerButton
               label="Desativar 2FA"
-              variant="danger"
               onPress={onDisable}
               loading={disable.isPending}
             />
@@ -163,7 +168,7 @@ export default function Perfil2faScreen() {
                 autoComplete="one-time-code"
                 maxLength={6}
               />
-              <Button
+              <AmberButton
                 label="Ativar"
                 onPress={onEnable}
                 loading={enable.isPending}
@@ -182,7 +187,7 @@ export default function Perfil2faScreen() {
               Adicione uma camada extra de segurança. Após ativar, será
               necessário digitar um código do seu app autenticador a cada login.
             </Text>
-            <Button
+            <AmberButton
               label="Configurar 2FA"
               onPress={onSetup}
               loading={setup.isPending}
