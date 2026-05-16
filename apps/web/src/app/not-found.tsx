@@ -1,10 +1,11 @@
 "use client";
 
+import React from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Scissors, ArrowLeft, LayoutDashboard } from "lucide-react";
 
-export default function NotFound() {
+export default function NotFound(): React.JSX.Element {
   const router = useRouter();
 
   return (
