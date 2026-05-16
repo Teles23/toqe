@@ -120,7 +120,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.app }}
           # NEXT_PUBLIC_API_URL é build-time no Next.js — ignorado pelo Dockerfile da api
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
