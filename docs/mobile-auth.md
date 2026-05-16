@@ -239,3 +239,30 @@ pnpm --filter mobile test
 Google Client ID configurado em `app.json` → `extra.googleWebClientId` para ser lido via `Constants.expoConfig.extra`.
 
 Configuração `GoogleSignin.configure()` é chamada em `app/_layout.tsx` root antes do primeiro render.
+
+---
+
+## Regra de redirect pós-login (`getRedirectForPerfil`)
+
+Perfil no Toqe é por **vínculo de barbearia** (`UsuarioBarbearia`), não global no usuário. Um mesmo usuário pode ser `DONO` numa barbearia e `CLIENTE` em outra; o app usa `barbearias[0].perfil` como perfil corrente.
+
+Tabela de decisão em `auth-provider.tsx` (espelha `app/index.tsx`):
+
+| Estado pós-login                                                               | Redirect             |
+| ------------------------------------------------------------------------------ | -------------------- |
+| `barbearias = []` (primeiro login Google, sem convite ainda)                   | `/(cliente)/home`    |
+| `barbearias[0].perfil = CLIENTE`                                               | `/(cliente)/home`    |
+| `barbearias[0].perfil ∈ {BARBEIRO, DONO, GERENTE, RECEPCIONISTA, SUPER_ADMIN}` | `/(barbeiro)/agenda` |
+
+`logout()` continua redirecionando para `/(auth)/login` (única action que volta para a tela de login).
+
+### Como o usuário "vira barbeiro"
+
+- **Dono novo:** cadastra a barbearia (fluxo web de onboarding). Backend cria `UsuarioBarbearia { perfil: DONO }`.
+- **Funcionário:** o dono convida pela tela de equipe. Backend cria `UsuarioBarbearia { perfil: BARBEIRO | GERENTE | RECEPCIONISTA }`.
+
+Na próxima chamada `/usuarios/me` o vínculo aparece em `barbearias[]` e o redirect já cai em `/(barbeiro)/agenda`.
+
+### Cobertura
+
+`auth-flow.google.integration.test.tsx` inclui o cenário `barbearias: []` → garante que primeiro Google login cai em `cliente/home` e não volta ao login (regressão do bug observado em produção: `tenantId=null, userId=385`).

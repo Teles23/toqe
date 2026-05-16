@@ -30,16 +30,18 @@ apps/mobile/src/shared/
 │   ├── index.ts            # Re-exports
 │   └── __tests__/use-theme.test.tsx
 └── ui/
+    ├── Avatar.tsx          # Circular com fallback em iniciais (sm/md/lg/xl)
     ├── Button.tsx          # Botão padrão (primary/secondary/danger + loading)
-    ├── FormInput.tsx       # Label + TextInput + error (compatível com Controller)
     ├── Card.tsx            # Container (View ou Pressable conforme handlers)
+    ├── DataListWrapper.tsx # FlatList + estados (loading/error/empty) + RefreshControl
+    ├── Divider.tsx         # Separador horizontal 1px
+    ├── FormErrorBox.tsx    # Box de erro global de form (role=alert)
+    ├── FormInput.tsx       # Label + TextInput + error (compatível com Controller)
+    ├── ListItem.tsx        # Linha (label + subtitle + leading + trailing: arrow/switch/radio/node)
+    ├── ScreenHeader.tsx    # Header de tela (título + right + subheader slots)
     ├── Select.tsx          # Picker tipado genérico (Modal + FlatList)
     ├── index.ts
-    └── __tests__/
-        ├── Button.test.tsx
-        ├── FormInput.test.tsx
-        ├── Card.test.tsx
-        └── Select.test.tsx
+    └── __tests__/          # 1 spec por componente
 ```
 
 ---

@@ -20,19 +20,19 @@ app/
 │
 ├── (cliente)/
 │   ├── _layout.tsx          ← Tabs: Início | Buscar | Agendamentos | Perfil
-│   ├── home.tsx             ← Página inicial do cliente
-│   ├── buscar.tsx           ← Busca de barbearias
+│   ├── home.tsx             ← ✅ Saudação + cards das barbearias + atalhos
+│   ├── buscar.tsx           ← ⏳ EmptyScreen "Em breve" (backend público pendente)
 │   ├── agendamentos/
-│   │   ├── index.tsx        ← Lista de agendamentos
-│   │   └── [codigo].tsx     ← Detalhe de agendamento
-│   └── perfil.tsx           ← Perfil do cliente
+│   │   ├── index.tsx        ← ⏳ EmptyScreen "Em breve" (role cliente sem GET lista)
+│   │   └── [codigo].tsx     ← ✅ Detalhe completo + cancelar (role cliente PODE)
+│   └── perfil/              ← ✅ Re-export thin de (barbeiro)/perfil/ — DRY total
 │
 └── (barbeiro)/
     ├── _layout.tsx          ← Tabs: Agenda | Fila | Clientes | Perfil
     ├── agenda.tsx           ← ✅ Agenda do dia (lista + navegação ±1d, status update)
     ├── fila.tsx             ← ✅ Fila de walk-ins (lista + FAB + modal)
-    ├── clientes.tsx         ← Lista de clientes (stub)
-    └── perfil.tsx           ← Perfil do barbeiro (stub)
+    ├── clientes.tsx         ← ✅ Lista de clientes (busca, sort, detalhe com histórico)
+    └── perfil/              ← ✅ Stack interno (index/editar/senha/2fa/sessoes/notificacoes)
 ```
 
 ---

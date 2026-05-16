@@ -47,9 +47,12 @@ const BARBEIRO_PERFIS: Perfil[] = [
   Perfil.SUPER_ADMIN,
 ];
 
+// Usuário autenticado sem vínculo de barbearia (ex: primeiro login via Google,
+// ainda não convidado por nenhuma barbearia) cai em cliente/home por default.
+// Espelha a regra de app/index.tsx — perfil de equipe vai pra agenda do barbeiro,
+// qualquer outro caso (CLIENTE explícito ou sem vínculo) vai pra cliente/home.
 function getRedirectForPerfil(perfil: Perfil | null): string {
-  if (!perfil) return "/(auth)/login";
-  return BARBEIRO_PERFIS.includes(perfil)
+  return perfil && BARBEIRO_PERFIS.includes(perfil)
     ? "/(barbeiro)/agenda"
     : "/(cliente)/home";
 }
