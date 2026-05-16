@@ -1,14 +1,19 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { RefreshToken } from '../generated/prisma';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from '../usuario/usuario.service';
 import { LoginDto } from './dto/login.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { NotificacaoService } from '../notificacao/notificacao.service';
+import {
+  GOOGLE_TOKEN_VERIFIER,
+  type GoogleTokenVerifier,
+} from './google-token-verifier';
 import { createHash, randomBytes } from 'crypto';
 import { generateSecret, generateURI, verify as otpVerify } from 'otplib';
 import * as qrcode from 'qrcode';
@@ -20,10 +25,44 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private notificacaoService: NotificacaoService,
+    @Inject(GOOGLE_TOKEN_VERIFIER)
+    private googleVerifier: GoogleTokenVerifier,
   ) {}
 
   async register(dto: CreateUserDto) {
     return this.usuarioService.create(dto);
+  }
+
+  /**
+   * Autentica via Google ID token.
+   * - Verifica o token via GoogleTokenVerifier (DI)
+   * - Se email novo → cria usuário com `senhaHash: null` (OAuth-only)
+   * - Se email existe → reusa o user (login transparente)
+   * - Emite os mesmos tokens de uma autenticação por senha
+   *
+   * Usuários criados via Google ficam com `twoFaEnabled: false` por padrão —
+   * Google já é um segundo fator externo, sem necessidade do 2FA interno.
+   */
+  async googleAuth(dto: GoogleAuthDto) {
+    const payload = await this.googleVerifier.verify(dto.idToken);
+
+    let user = await this.prisma.usuario.findUnique({
+      where: { email: payload.email },
+    });
+
+    if (!user) {
+      user = await this.prisma.usuario.create({
+        data: {
+          nome: payload.nome,
+          email: payload.email,
+          avatarUrl: payload.avatarUrl,
+          senhaHash: null,
+          ativo: true,
+        },
+      });
+    }
+
+    return this.generateTokens(user.codigo, user.nome, user.email);
   }
 
   async login(dto: LoginDto) {
@@ -31,6 +70,13 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Credenciais inválidas');
+    }
+
+    // Usuário OAuth (Google) não tem senha local — não pode logar via email/senha
+    if (!user.senhaHash) {
+      throw new UnauthorizedException(
+        'Esta conta usa login Google. Use "Entrar com Google".',
+      );
     }
 
     const passwordMatch = await bcrypt.compare(dto.senha, user.senhaHash);
@@ -179,6 +225,11 @@ export class AuthService {
   ): Promise<void> {
     const user = await this.usuarioService.findById(usrCodigo);
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
+    if (!user.senhaHash) {
+      throw new UnauthorizedException(
+        'Conta OAuth não tem senha local para alterar',
+      );
+    }
     const match = await bcrypt.compare(senhaAtual, user.senhaHash);
     if (!match) throw new UnauthorizedException('Senha atual incorreta');
     const senhaHash = await bcrypt.hash(novaSenha, await bcrypt.genSalt());

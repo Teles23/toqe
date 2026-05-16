@@ -49,8 +49,12 @@ describe("ResetPasswordForm", () => {
     mockUseResetPassword.mockReturnValue(makeResetMutation());
     renderForm();
 
-    expect(screen.getByPlaceholderText("Mínimo 6 caracteres")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Repita a nova senha")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Mínimo 6 caracteres"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("Repita a nova senha"),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /redefinir senha/i }),
     ).toBeInTheDocument();
@@ -78,7 +82,9 @@ describe("ResetPasswordForm", () => {
   });
 
   it("exibe tela de sucesso após redefinição bem-sucedida", () => {
-    mockUseResetPassword.mockReturnValue(makeResetMutation({ isSuccess: true }));
+    mockUseResetPassword.mockReturnValue(
+      makeResetMutation({ isSuccess: true }),
+    );
     renderForm();
 
     expect(screen.getByText("Senha redefinida!")).toBeInTheDocument();
@@ -90,7 +96,9 @@ describe("ResetPasswordForm", () => {
 
   it("chama onBackToLogin ao clicar no botão de sucesso", () => {
     const onBackToLogin = vi.fn();
-    mockUseResetPassword.mockReturnValue(makeResetMutation({ isSuccess: true }));
+    mockUseResetPassword.mockReturnValue(
+      makeResetMutation({ isSuccess: true }),
+    );
     renderForm("token", onBackToLogin);
 
     fireEvent.click(screen.getByRole("button", { name: /ir para o login/i }));
@@ -107,9 +115,7 @@ describe("ResetPasswordForm", () => {
     );
     renderForm();
 
-    expect(
-      screen.getByText("Token inválido ou expirado"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Token inválido ou expirado")).toBeInTheDocument();
   });
 
   it("exibe erro de validação quando senhas não coincidem", async () => {

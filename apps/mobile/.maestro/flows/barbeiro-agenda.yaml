@@ -1,0 +1,29 @@
+appId: com.teles23.toqe
+---
+- launchApp
+
+# Aguarda chegada na tela de agenda (assume usuário autenticado como barbeiro)
+- assertVisible: "Agenda"
+
+# Verifica que o cabeçalho de dia aparece (ex: "Hoje · qua, 15 de mai")
+- assertVisible:
+    text: "Hoje"
+    optional: true
+
+# Verifica lista ou estado vazio
+- assertVisible:
+    id: "lista-agendamentos"
+    optional: true
+- assertVisible:
+    text: "Sem agendamentos"
+    optional: true
+
+# Navega um dia adiante
+- tapOn:
+    accessibilityLabel: "Próximo dia"
+- assertVisible: "Agenda"
+
+# Volta para hoje
+- tapOn:
+    accessibilityLabel: "Ir para hoje"
+- assertVisible: "Hoje"

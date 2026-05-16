@@ -26,8 +26,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json(
       {
-        message:
-          "Serviço indisponível. Tente novamente em instantes.",
+        message: "Serviço indisponível. Tente novamente em instantes.",
       },
       { status: 503 },
     );
@@ -39,7 +38,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         message:
-          (data as { message?: string }).message ?? "Erro ao processar solicitação.",
+          (data as { message?: string }).message ??
+          "Erro ao processar solicitação.",
       },
       { status: apiRes.status },
     );

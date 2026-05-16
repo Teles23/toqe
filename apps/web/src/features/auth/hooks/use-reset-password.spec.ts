@@ -24,7 +24,10 @@ describe("useResetPassword", () => {
     });
 
     await act(async () => {
-      result.current.mutate({ token: "abc123token", novaSenha: "novaSenha123" });
+      result.current.mutate({
+        token: "abc123token",
+        novaSenha: "novaSenha123",
+      });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

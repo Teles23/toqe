@@ -48,21 +48,28 @@ export class AgendamentoService {
 
     const inicioDate = new Date(dto.inicio);
     const fimDate = addMinutes(inicioDate, totalDuration);
+    const tipo = dto.tipo ?? 'AGENDADO';
+    const isWalkIn = tipo === 'WALK_IN';
 
     const agendamento = await this.prisma.$transaction(async (tx) => {
-      const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
-        SELECT COUNT(1) as count
-        FROM "TQE_AGENDAMENTO"
-        WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.barbeiroId}
-          AND "TQE_AGD_STATUS" NOT IN (${StatusAgendamento.CANCELADO}, ${StatusAgendamento.NO_SHOW})
-          AND "TQE_AGD_INICIO" < ${fimDate}
-          AND "TQE_AGD_FIM"   > ${inicioDate}
-      `;
+      // Walk-ins coexistem com agendamentos do mesmo horário por design —
+      // são fila paralela ao calendário; o barbeiro decide ordem manualmente.
+      // Conflict check só vale para agendamentos com horário marcado (AGENDADO/ENCAIXE).
+      if (!isWalkIn) {
+        const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
+          SELECT COUNT(1) as count
+          FROM "TQE_AGENDAMENTO"
+          WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.barbeiroId}
+            AND "TQE_AGD_STATUS" NOT IN (${StatusAgendamento.CANCELADO}, ${StatusAgendamento.NO_SHOW})
+            AND "TQE_AGD_INICIO" < ${fimDate}
+            AND "TQE_AGD_FIM"   > ${inicioDate}
+        `;
 
-      if (Number(conflitos[0].count) > 0) {
-        throw new ConflictException(
-          'Horário indisponível: já existe um agendamento neste período para este barbeiro',
-        );
+        if (Number(conflitos[0].count) > 0) {
+          throw new ConflictException(
+            'Horário indisponível: já existe um agendamento neste período para este barbeiro',
+          );
+        }
       }
 
       return tx.agendamento.create({
@@ -72,7 +79,10 @@ export class AgendamentoService {
           barCodigo,
           inicio: inicioDate,
           fim: fimDate,
-          status: StatusAgendamento.CONFIRMADO,
+          status: isWalkIn
+            ? StatusAgendamento.PENDENTE
+            : StatusAgendamento.CONFIRMADO,
+          tipo,
           itens: { create: itensData },
         },
         include: INCLUDE_COMPLETO,
@@ -121,6 +131,7 @@ export class AgendamentoService {
     }
     if (filtros.barbeiroId) where.barbeiroId = filtros.barbeiroId;
     if (filtros.status) where.status = filtros.status;
+    if (filtros.tipo) where.tipo = filtros.tipo;
 
     return this.prisma.agendamento.findMany({
       where,

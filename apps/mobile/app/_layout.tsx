@@ -1,24 +1,58 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+// Bootstrap nativo do Google Sign-In — efeito colateral antes do AuthProvider
+import "@/src/_init/google-signin";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+// O import de `hideSplash` já carrega o módulo `splash.ts`, cujo top-level
+// chama `SplashScreen.preventAutoHideAsync()` por efeito colateral antes de
+// qualquer render. Mantém o splash visível até `hideSplash()` ser chamado abaixo.
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import "react-native-reanimated";
 
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { hideSplash } from "@/src/_init/splash";
+import { useAuth } from "@/src/shared/hooks/use-auth";
+import { AuthProvider } from "@/src/shared/providers/auth-provider";
+import { QueryProvider } from "@/src/shared/providers/query-provider";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-export default function RootLayout() {
+/**
+ * Wrapper interno que consome `useAuth().loading` para esconder o splash.
+ * Precisa estar DENTRO do AuthProvider — por isso é um componente separado.
+ */
+function RootNavigator() {
   const colorScheme = useColorScheme();
+  const { loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) {
+      void hideSplash();
+    }
+  }, [loading]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(cliente)" />
+        <Stack.Screen name="(barbeiro)" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <QueryProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </QueryProvider>
   );
 }

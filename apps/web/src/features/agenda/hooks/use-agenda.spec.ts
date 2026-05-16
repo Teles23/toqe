@@ -235,7 +235,11 @@ describe("useDisponibilidade", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("chama agendaService.listarDisponibilidade com os parâmetros corretos", async () => {
-    mockListarDisponibilidade.mockResolvedValueOnce(["09:00", "09:30", "10:00"]);
+    mockListarDisponibilidade.mockResolvedValueOnce([
+      "09:00",
+      "09:30",
+      "10:00",
+    ]);
 
     const { Wrapper } = createWrapper();
     const { result } = renderHook(

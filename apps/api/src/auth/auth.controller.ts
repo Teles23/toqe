@@ -20,6 +20,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { LoginDto } from './dto/login.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
 import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
@@ -55,6 +56,23 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Credenciais inválidas.' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Autentica via Google ID token (cria usuário se primeiro acesso)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Autenticação Google bem-sucedida.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'ID token Google inválido ou expirado.',
+  })
+  googleAuth(@Body() dto: GoogleAuthDto) {
+    return this.authService.googleAuth(dto);
   }
 
   @Post('refresh')

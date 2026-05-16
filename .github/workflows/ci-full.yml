@@ -140,6 +140,11 @@ jobs:
         # Backend lê GOOGLE_CLIENT_ID em process.env durante a inicialização do
         # GoogleAuthLibraryVerifier (POST /auth/google). Sem essa var, o container
         # API não sobe. Atualização idempotente — não duplica se já existe.
+        #
+        # Implementação: filtra a linha antiga (se houver) e re-adiciona com o valor
+        # do secret. Padrão "rewrite" é mais simples e robusto que `sed -i` (não
+        # depende de delimitadores no valor) e que `if/else` com grep (que pode
+        # disparar `set -e` em condicionais com bash antigo).
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -148,12 +153,15 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT || '22' }}
           script_stop: true
           script: |
+            set -ex
             cd /opt/projetos/toqe
-            if grep -q '^GOOGLE_CLIENT_ID=' .env 2>/dev/null; then
-              sed -i 's|^GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}|' .env
-            else
-              echo 'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}' >> .env
-            fi
+            touch .env
+            # Filtra linhas antigas de GOOGLE_CLIENT_ID; `|| true` evita exit !=0
+            # quando .env está vazio ou não tem a linha (grep -v retorna 1 nesse caso).
+            grep -v '^GOOGLE_CLIENT_ID=' .env > .env.tmp || true
+            echo 'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}' >> .env.tmp
+            mv .env.tmp .env
+            echo "GOOGLE_CLIENT_ID atualizado em /opt/projetos/toqe/.env"
 
       - name: Sincronizar docker-compose.prod.yml para a VPS
         uses: appleboy/scp-action@v0.1.7

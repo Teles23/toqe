@@ -25,8 +25,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json(
       {
-        message:
-          "Serviço indisponível. Tente novamente em instantes.",
+        message: "Serviço indisponível. Tente novamente em instantes.",
       },
       { status: 503 },
     );
@@ -38,7 +37,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         message:
-          (data as { message?: string }).message ?? "Token inválido ou expirado.",
+          (data as { message?: string }).message ??
+          "Token inválido ou expirado.",
       },
       { status: apiRes.status },
     );
@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       message:
-        (data as { message?: string }).message ?? "Senha redefinida com sucesso.",
+        (data as { message?: string }).message ??
+        "Senha redefinida com sucesso.",
     },
     { status: 200 },
   );
