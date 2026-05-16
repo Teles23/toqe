@@ -9,11 +9,18 @@ import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
 import { DangerButton, Divider, ListItem, ScreenHeader } from "@/src/shared/ui";
 
+const ROLE_LABEL: Record<string, string> = {
+  cliente: "Cliente",
+  barbeiro: "Barbeiro",
+  dono: "Dono",
+  admin: "Admin",
+};
+
 /**
- * Tela principal de perfil — compartilhada entre (barbeiro) e (cliente)
- * via re-export do arquivo `(cliente)/perfil/index.tsx`.
- * `usePerfilBasePath()` detecta o grupo via useSegments() para gerar
- * as rotas de navegação corretas.
+ * Tela principal de perfil — compartilhada entre (barbeiro) e (cliente) via
+ * re-export. Layout Urban Flow: avatar grande hash-color centralizado,
+ * nome + role, seções tipograficamente fortes (Barbearia → Conta →
+ * Segurança → Preferências), DangerButton de saída no rodapé.
  */
 export default function PerfilIndexScreen() {
   const { palette, spacing } = useTheme();
@@ -35,64 +42,34 @@ export default function PerfilIndexScreen() {
   }, [logout]);
 
   const temMultiBarbearia = barbearias.length > 1;
+  const temBarbeariaUnica = barbearias.length === 1;
   // Cast `as never` — typedRoutes resolve cada path concretamente, mas o
   // basePath é dinâmico (depende do grupo barbeiro/cliente). Em runtime
   // Expo aceita ambos.
   const go = (path: string) => router.push(`${basePath}${path}` as never);
+
+  const roleLabel = perfil ? (ROLE_LABEL[perfil] ?? perfil) : undefined;
 
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       <ScreenHeader title="Perfil" />
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
+        contentContainerStyle={{ paddingBottom: spacing.xxxl }}
         testID="perfil-scroll"
       >
-        <PerfilHeader
-          nome={user?.nome}
-          email={user?.email}
-          avatarUrl={user?.avatarUrl}
-        />
+        <PerfilHeader nome={user?.nome} roleLabel={roleLabel} />
 
-        <SecaoCard title="Conta">
-          <ListItem
-            label="Editar perfil"
-            trailing={{ kind: "arrow" }}
-            onPress={() => go("/editar")}
-            testID="ir-editar"
-          />
-          <Divider indent={16} />
-          <ListItem
-            label="Mudar senha"
-            trailing={{ kind: "arrow" }}
-            onPress={() => go("/senha")}
-            testID="ir-senha"
-          />
-          <Divider indent={16} />
-          <ListItem
-            label="Notificações"
-            trailing={{ kind: "arrow" }}
-            onPress={() => go("/notificacoes")}
-            testID="ir-notificacoes"
-          />
-        </SecaoCard>
-
-        <SecaoCard title="Segurança">
-          <ListItem
-            label="Autenticação 2 fatores"
-            subtitle="Aumenta a segurança da conta"
-            trailing={{ kind: "arrow" }}
-            onPress={() => go("/2fa")}
-            testID="ir-2fa"
-          />
-          <Divider indent={16} />
-          <ListItem
-            label="Sessões ativas"
-            trailing={{ kind: "arrow" }}
-            onPress={() => go("/sessoes")}
-            testID="ir-sessoes"
-          />
-        </SecaoCard>
+        {/* BARBEARIA — quando single, mostra readonly; quando multi, switch */}
+        {temBarbeariaUnica && barbearia ? (
+          <SecaoCard title="Barbearia">
+            <ListItem
+              label={barbearia.nome}
+              subtitle="Sua barbearia"
+              testID={`barbearia-${barbearia.codigo}`}
+            />
+          </SecaoCard>
+        ) : null}
 
         {temMultiBarbearia ? (
           <SecaoCard title="Barbearia ativa">
@@ -114,6 +91,61 @@ export default function PerfilIndexScreen() {
           </SecaoCard>
         ) : null}
 
+        {/* CONTA — Email readonly + Editar perfil + Mudar senha */}
+        <SecaoCard title="Conta">
+          {user?.email ? (
+            <>
+              <ListItem
+                label="E-mail"
+                subtitle={user.email}
+                testID="ir-email"
+              />
+              <Divider indent={16} />
+            </>
+          ) : null}
+          <ListItem
+            label="Editar perfil"
+            trailing={{ kind: "arrow" }}
+            onPress={() => go("/editar")}
+            testID="ir-editar"
+          />
+          <Divider indent={16} />
+          <ListItem
+            label="Mudar senha"
+            trailing={{ kind: "arrow" }}
+            onPress={() => go("/senha")}
+            testID="ir-senha"
+          />
+        </SecaoCard>
+
+        {/* SEGURANÇA — 2FA + sessões */}
+        <SecaoCard title="Segurança">
+          <ListItem
+            label="Autenticação 2 fatores"
+            subtitle="Aumenta a segurança da conta"
+            trailing={{ kind: "arrow" }}
+            onPress={() => go("/2fa")}
+            testID="ir-2fa"
+          />
+          <Divider indent={16} />
+          <ListItem
+            label="Sessões ativas"
+            trailing={{ kind: "arrow" }}
+            onPress={() => go("/sessoes")}
+            testID="ir-sessoes"
+          />
+        </SecaoCard>
+
+        {/* PREFERÊNCIAS — notificações */}
+        <SecaoCard title="Preferências">
+          <ListItem
+            label="Notificações"
+            trailing={{ kind: "arrow" }}
+            onPress={() => go("/notificacoes")}
+            testID="ir-notificacoes"
+          />
+        </SecaoCard>
+
         <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.xl }}>
           <DangerButton
             label="Sair da conta"
@@ -121,9 +153,6 @@ export default function PerfilIndexScreen() {
             accessibilityLabel="Sair da conta"
           />
         </View>
-
-        {/* Texto de debug oculto pra perfis multi-tenant */}
-        {perfil ? null : null}
       </ScrollView>
     </View>
   );
