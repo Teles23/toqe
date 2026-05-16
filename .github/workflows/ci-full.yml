@@ -28,6 +28,19 @@ jobs:
     env:
       TURBO_TELEMETRY_DISABLED: 1
     services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:7-alpine
         ports:
@@ -72,6 +85,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           TESTCONTAINERS_RYUK_DISABLED: true
+
+      - name: Validate seed
+        run: |
+          pnpm --filter api exec prisma migrate deploy
+          pnpm --filter api exec prisma db seed
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
   docker:
     name: Docker build & push — ${{ matrix.app }}
