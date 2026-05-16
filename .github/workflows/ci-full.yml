@@ -136,6 +136,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Sincronizar GOOGLE_CLIENT_ID na .env da VPS
+        # Backend lê GOOGLE_CLIENT_ID em process.env durante a inicialização do
+        # GoogleAuthLibraryVerifier (POST /auth/google). Sem essa var, o container
+        # API não sobe. Atualização idempotente — não duplica se já existe.
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          script_stop: true
+          script: |
+            cd /opt/projetos/toqe
+            if grep -q '^GOOGLE_CLIENT_ID=' .env 2>/dev/null; then
+              sed -i 's|^GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}|' .env
+            else
+              echo 'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}' >> .env
+            fi
+
       - name: Sincronizar docker-compose.prod.yml para a VPS
         uses: appleboy/scp-action@v0.1.7
         with:
