@@ -88,7 +88,7 @@ describe("BarbeiroAgendaScreen", () => {
 
     render(<BarbeiroAgendaScreen />);
 
-    expect(screen.getByTestId("agenda-loading")).toBeTruthy();
+    expect(screen.getByTestId("lista-agendamentos-loading")).toBeTruthy();
   });
 
   it("mostra estado vazio quando não há agendamentos no dia (hoje)", () => {

@@ -15,7 +15,7 @@ import { z } from "zod";
 import { api, ApiError } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormInput } from "@/src/shared/ui";
+import { Button, FormErrorBox, FormInput } from "@/src/shared/ui";
 import { registerSchema } from "@toqe/contracts";
 
 // Estende o schema com confirmação de senha (campo apenas no mobile)
@@ -105,19 +105,7 @@ export default function CadastroScreen() {
           Preencha seus dados para começar
         </Text>
 
-        {errors.root && (
-          <View
-            style={[
-              styles.errorBox,
-              { backgroundColor: palette.dangerBg, marginBottom: spacing.md },
-            ]}
-            accessibilityRole="alert"
-          >
-            <Text style={{ color: palette.danger, fontSize: 14 }}>
-              {errors.root.message}
-            </Text>
-          </View>
-        )}
+        <FormErrorBox error={errors.root?.message} />
 
         <Controller
           control={control}
@@ -244,6 +232,5 @@ export default function CadastroScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { paddingBottom: 40 },
-  errorBox: { borderRadius: 8, padding: 12 },
   footer: { flexDirection: "row", justifyContent: "center" },
 });

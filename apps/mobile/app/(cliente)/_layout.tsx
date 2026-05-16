@@ -19,7 +19,7 @@ export default function ClienteLayout() {
       <Tabs.Screen name="buscar" options={{ title: "Buscar" }} />
       <Tabs.Screen
         name="agendamentos/index"
-        options={{ title: "Agendamentos", href: "/cliente/agendamentos" }}
+        options={{ title: "Agendamentos", href: "/(cliente)/agendamentos" }}
       />
       <Tabs.Screen name="perfil" options={{ title: "Perfil" }} />
     </Tabs>

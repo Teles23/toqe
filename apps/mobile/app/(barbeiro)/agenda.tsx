@@ -1,20 +1,13 @@
 import { addDays, format, isSameDay, isToday, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AgendamentoCard } from "@/src/features/barbeiro/AgendamentoCard";
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import { useTheme } from "@/src/shared/theme";
+import { DataListWrapper, ScreenHeader } from "@/src/shared/ui";
 import type { StatusAgendamento } from "@toqe/shared";
 
 export default function BarbeiroAgendaScreen() {
@@ -54,162 +47,94 @@ export default function BarbeiroAgendaScreen() {
     pressed && styles.pressed,
   ];
 
-  return (
-    <View style={[styles.container, { backgroundColor: palette.bg }]}>
-      <View
-        style={[
-          styles.header,
+  const dayNav = (
+    <View style={[styles.dayNav, { gap: spacing.sm }]}>
+      <Pressable
+        onPress={goPrev}
+        accessibilityRole="button"
+        accessibilityLabel="Dia anterior"
+        style={navBtnStyle}
+      >
+        <Text style={{ fontSize: 22, fontWeight: "600", color: palette.text }}>
+          ‹
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={goToday}
+        accessibilityRole="button"
+        accessibilityLabel="Ir para hoje"
+        style={({ pressed }) => [
           {
-            paddingHorizontal: spacing.lg - 4,
-            paddingTop: spacing.xxl + spacing.sm,
-            paddingBottom: spacing.md,
-            borderBottomWidth: 1,
+            flex: 1,
+            height: a11y.minTouch,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            backgroundColor: palette.cardBg,
             borderColor: palette.border,
+            alignItems: "center" as const,
+            justifyContent: "center" as const,
+            paddingHorizontal: 12,
           },
+          pressed && styles.pressed,
         ]}
       >
         <Text
           style={{
-            ...typography.heading,
-            fontSize: 24,
+            ...typography.label,
             color: palette.text,
-            marginBottom: spacing.md,
+            textAlign: "center",
           }}
+          numberOfLines={1}
         >
-          Agenda
+          {dayLabel}
         </Text>
+      </Pressable>
 
-        <View style={[styles.dayNav, { gap: spacing.sm }]}>
-          <Pressable
-            onPress={goPrev}
-            accessibilityRole="button"
-            accessibilityLabel="Dia anterior"
-            style={navBtnStyle}
-          >
-            <Text
-              style={{ fontSize: 22, fontWeight: "600", color: palette.text }}
-            >
-              ‹
-            </Text>
-          </Pressable>
+      <Pressable
+        onPress={goNext}
+        accessibilityRole="button"
+        accessibilityLabel="Próximo dia"
+        style={navBtnStyle}
+      >
+        <Text style={{ fontSize: 22, fontWeight: "600", color: palette.text }}>
+          ›
+        </Text>
+      </Pressable>
+    </View>
+  );
 
-          <Pressable
-            onPress={goToday}
-            accessibilityRole="button"
-            accessibilityLabel="Ir para hoje"
-            style={({ pressed }) => [
-              {
-                flex: 1,
-                height: a11y.minTouch,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                backgroundColor: palette.cardBg,
-                borderColor: palette.border,
-                alignItems: "center" as const,
-                justifyContent: "center" as const,
-                paddingHorizontal: 12,
-              },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text
-              style={{
-                ...typography.label,
-                color: palette.text,
-                textAlign: "center",
-              }}
-              numberOfLines={1}
-            >
-              {dayLabel}
-            </Text>
-          </Pressable>
+  return (
+    <View style={[styles.container, { backgroundColor: palette.bg }]}>
+      <ScreenHeader title="Agenda" subheader={dayNav} />
 
-          <Pressable
-            onPress={goNext}
-            accessibilityRole="button"
-            accessibilityLabel="Próximo dia"
-            style={navBtnStyle}
-          >
-            <Text
-              style={{ fontSize: 22, fontWeight: "600", color: palette.text }}
-            >
-              ›
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {isLoading ? (
-        <View style={styles.center} testID="agenda-loading">
-          <ActivityIndicator color={palette.text} />
-        </View>
-      ) : isError ? (
-        <View style={styles.center}>
-          <Text
-            style={{
-              ...typography.body,
-              fontSize: 14,
-              color: palette.textMuted,
-              textAlign: "center",
-            }}
-          >
-            Não foi possível carregar a agenda. Puxe para tentar novamente.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          testID="lista-agendamentos"
-          data={data ?? []}
-          keyExtractor={(item) => String(item.codigo)}
-          contentContainerStyle={[
-            styles.list,
-            { padding: spacing.md, paddingBottom: 40 },
-          ]}
-          renderItem={({ item }) => (
-            <AgendamentoCard
-              agendamento={item}
-              onChangeStatus={handleChangeStatus}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={refetch}
-              tintColor={palette.text}
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.center}>
-              <Text
-                style={{
-                  ...typography.body,
-                  fontSize: 14,
-                  color: palette.textMuted,
-                  textAlign: "center",
-                }}
-              >
-                {isSameDay(selectedDate, new Date())
-                  ? "Sem agendamentos para hoje."
-                  : "Sem agendamentos para este dia."}
-              </Text>
-            </View>
-          }
-        />
-      )}
+      <DataListWrapper
+        testID="lista-agendamentos"
+        data={data}
+        isLoading={isLoading}
+        isError={isError}
+        isRefetching={isRefetching}
+        refetch={refetch}
+        emptyMessage={
+          isSameDay(selectedDate, new Date())
+            ? "Sem agendamentos para hoje."
+            : "Sem agendamentos para este dia."
+        }
+        errorMessage="Não foi possível carregar a agenda. Puxe para tentar novamente."
+        keyExtractor={(item) => String(item.codigo)}
+        renderItem={({ item }) => (
+          <AgendamentoCard
+            agendamento={item}
+            onChangeStatus={handleChangeStatus}
+          />
+        )}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {},
   dayNav: { flexDirection: "row", alignItems: "center" },
   pressed: { opacity: 0.7 },
-  list: { flexGrow: 1 },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
 });

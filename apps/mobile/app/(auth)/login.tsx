@@ -14,7 +14,7 @@ import {
 import { ApiError } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormInput } from "@/src/shared/ui";
+import { Button, FormErrorBox, FormInput } from "@/src/shared/ui";
 import { loginSchema, type LoginInput } from "@toqe/contracts";
 
 export default function LoginScreen() {
@@ -106,19 +106,7 @@ export default function LoginScreen() {
           Entre na sua conta
         </Text>
 
-        {errors.root && (
-          <View
-            style={[
-              styles.errorBox,
-              { backgroundColor: palette.dangerBg, marginBottom: spacing.md },
-            ]}
-            accessibilityRole="alert"
-          >
-            <Text style={{ color: palette.danger, fontSize: 14 }}>
-              {errors.root.message}
-            </Text>
-          </View>
-        )}
+        <FormErrorBox error={errors.root?.message} />
 
         <Controller
           control={control}
@@ -200,6 +188,5 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingBottom: 40 },
-  errorBox: { borderRadius: 8, padding: 12 },
   footer: { flexDirection: "row", justifyContent: "center" },
 });

@@ -16,7 +16,7 @@ import { useBarbeirosDaBarbearia } from "@/src/shared/hooks/barbeiro/use-barbeir
 import { useCriarWalkIn } from "@/src/shared/hooks/barbeiro/use-criar-walk-in";
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormInput, Select } from "@/src/shared/ui";
+import { Button, FormErrorBox, FormInput, Select } from "@/src/shared/ui";
 
 const walkInFormSchema = z.object({
   nome: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
@@ -150,22 +150,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingHorizontal: spacing.lg }}
           >
-            {errors.root ? (
-              <View
-                style={[
-                  styles.errorBox,
-                  {
-                    backgroundColor: palette.dangerBg,
-                    marginBottom: spacing.md,
-                  },
-                ]}
-                accessibilityRole="alert"
-              >
-                <Text style={{ color: palette.danger, fontSize: 14 }}>
-                  {errors.root.message}
-                </Text>
-              </View>
-            ) : null}
+            <FormErrorBox error={errors.root?.message} />
 
             <Controller
               control={control}
@@ -278,5 +263,4 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
-  errorBox: { borderRadius: 8, padding: 12 },
 });

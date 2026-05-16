@@ -96,7 +96,7 @@ describe("BarbeiroFilaScreen", () => {
   it("mostra loading state", () => {
     mockUseFilaDia.mockReturnValue(mockQ({ isLoading: true }));
     render(<BarbeiroFilaScreen />);
-    expect(screen.getByTestId("fila-loading")).toBeTruthy();
+    expect(screen.getByTestId("lista-fila-loading")).toBeTruthy();
   });
 
   it("mostra estado vazio com mensagem específica", () => {
