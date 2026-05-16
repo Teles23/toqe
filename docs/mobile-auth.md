@@ -62,7 +62,7 @@ Toda request →
   3. Envia a request
   4. Se response.status === 401:
       a. Lê refresh token
-      b. POST /auth/refresh com { refresh_token }
+      b. POST /auth/refresh com { refresh_token }   ← single-flight (dedup)
       c. Salva os novos tokens via TokenStorage.saveTokens()
       d. Repete a request original com o novo access token
       e. Se refresh também retorna 401:
@@ -71,6 +71,18 @@ Toda request →
            → lança ApiError(401)
   5. Se status >= 400 e != 401: lança ApiError(status, message)
 ```
+
+#### Single-flight do refresh (dedup)
+
+Se N requests recebem 401 simultaneamente, apenas **1** POST /auth/refresh
+é disparado — as outras N-1 aguardam o mesmo promise via variável module-level
+`inflightRefresh`. Evita o seguinte race condition:
+
+1. Request A recebe 401 → chama refresh → API emite token_v2, invalida refresh_v1
+2. Request B (em paralelo) recebe 401 → chama refresh com refresh_v1 → 401
+3. Sessão derruba mesmo com login válido
+
+Coberto pelo teste `api-client.edge.test.ts` (cenário "Refresh concorrente").
 
 ### API surface
 
@@ -205,11 +217,18 @@ const BARBEIRO_PERFIS = [
 pnpm --filter mobile test
 ```
 
-| Suite                    | Cenários                                                                                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `secure-storage.test.ts` | getAccessToken, getRefreshToken, saveTokens, clearTokens                                                    |
-| `api-client.test.ts`     | GET com/sem token, x-tenant-id, retry em 401, redirect em refresh falho, ApiError em 404/500, POST com body |
-| `use-auth.test.tsx`      | hook com contexto, lança erro fora do provider                                                              |
+### Matriz de cobertura (auth + relacionados)
+
+| Suite                            | Cenários                                                                                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `secure-storage.test.ts`         | getAccessToken, getRefreshToken, saveTokens, clearTokens                                                                               |
+| `secure-storage.error.test.ts`   | propagação de erro nos 4 métodos, chaves canônicas usadas                                                                              |
+| `api-client.test.ts`             | GET com/sem token, x-tenant-id, retry em 401, redirect em refresh falho, ApiError em 404/500, POST com body                            |
+| `api-client.edge.test.ts`        | JSON malformado (200 e erro), fetch rejeitado (offline), refresh concorrente (dedup)                                                   |
+| `use-auth.test.tsx`              | hook com contexto, lança erro fora do provider                                                                                         |
+| `auth-flow.integration.test.tsx` | bootstrap (com/sem token), login → /me → redirect por perfil, logout limpa tokens, logout robusto em 500, switchBarbearia troca perfil |
+| `(auth)/login.test.tsx`          | render, submit, erro 401/5xx/network                                                                                                   |
+| `(auth)/cadastro.test.tsx`       | render, senha não coincide, sucesso → auto-login, telefone vazio → undefined, 409 no email, 5xx global                                 |
 
 ---
 

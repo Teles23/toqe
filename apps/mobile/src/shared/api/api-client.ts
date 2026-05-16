@@ -57,7 +57,12 @@ async function handleResponse<T>(res: Response): Promise<T> {
   throw new ApiError(res.status, `HTTP ${res.status}: ${res.url}`, body);
 }
 
-async function refreshTokens(): Promise<boolean> {
+// Dedup de refresh: se múltiplas requests 401 chegarem simultaneamente,
+// todas aguardam o MESMO POST /auth/refresh em voo (single-flight).
+// Evita race condition que invalidaria o refresh token recém-emitido.
+let inflightRefresh: Promise<boolean> | null = null;
+
+async function refreshTokensInternal(): Promise<boolean> {
   const refreshToken = await TokenStorage.getRefreshToken();
   if (!refreshToken) return false;
 
@@ -79,6 +84,14 @@ async function refreshTokens(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function refreshTokens(): Promise<boolean> {
+  if (inflightRefresh) return inflightRefresh;
+  inflightRefresh = refreshTokensInternal().finally(() => {
+    inflightRefresh = null;
+  });
+  return inflightRefresh;
 }
 
 async function request<T>(
