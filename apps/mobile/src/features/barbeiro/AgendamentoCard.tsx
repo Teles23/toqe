@@ -1,16 +1,17 @@
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { memo, useCallback } from "react";
 import {
   ActionSheetIOS,
   Alert,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   View,
-  useColorScheme,
 } from "react-native";
 
+import { useTheme } from "@/src/shared/theme";
+import { Card } from "@/src/shared/ui";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 
 interface Props {
@@ -30,21 +31,25 @@ const STATUS_LABEL: Record<StatusAgendamento, string> = {
   no_show: "No-show",
 };
 
-const STATUS_COLOR_LIGHT: Record<StatusAgendamento, string> = {
-  pendente: "#f59f00",
-  confirmado: "#1a73e8",
-  concluido: "#2f9e44",
-  cancelado: "#868e96",
-  no_show: "#868e96",
-};
-
-const STATUS_COLOR_DARK: Record<StatusAgendamento, string> = {
-  pendente: "#ffd43b",
-  confirmado: "#4da3ff",
-  concluido: "#51cf66",
-  cancelado: "#adb5bd",
-  no_show: "#adb5bd",
-};
+// Cores semânticas — mapeamento centralizado de status → token de cor do tema.
+function statusColor(
+  status: StatusAgendamento,
+  palette: ReturnType<typeof useTheme>["palette"],
+): string {
+  switch (status) {
+    case "pendente":
+      return palette.warning;
+    case "confirmado":
+      return palette.primary;
+    case "concluido":
+      return palette.success;
+    case "cancelado":
+    case "no_show":
+      return palette.textMuted;
+    default:
+      return palette.textMuted;
+  }
+}
 
 const ACTIONS: {
   label: string;
@@ -56,16 +61,9 @@ const ACTIONS: {
   { label: "Cancelar", status: "cancelado" },
 ];
 
-export function AgendamentoCard({
-  agendamento,
-  onChangeStatus,
-  testID,
-}: Props) {
-  const isDark = useColorScheme() === "dark";
-  const colors = isDark ? darkColors : lightColors;
-  const statusColor = (isDark ? STATUS_COLOR_DARK : STATUS_COLOR_LIGHT)[
-    agendamento.status
-  ];
+function AgendamentoCardImpl({ agendamento, onChangeStatus, testID }: Props) {
+  const { palette, radius, typography } = useTheme();
+  const badgeColor = statusColor(agendamento.status, palette);
 
   const inicio = parseISO(agendamento.inicio);
   const fim = parseISO(agendamento.fim);
@@ -76,7 +74,7 @@ export function AgendamentoCard({
       ? agendamento.itens[0].servico.nome
       : `${agendamento.itens[0]?.servico.nome ?? "Serviço"} +${agendamento.itens.length - 1}`;
 
-  const handleLongPress = () => {
+  const handleLongPress = useCallback(() => {
     if (!onChangeStatus) return;
     const labels = ACTIONS.map((a) => a.label);
 
@@ -107,83 +105,76 @@ export function AgendamentoCard({
         { cancelable: true },
       );
     }
-  };
+  }, [agendamento.codigo, agendamento.cliente.nome, onChangeStatus]);
 
   return (
-    <Pressable
+    <Card
+      testID={testID ?? `agendamento-${agendamento.codigo}`}
       onLongPress={handleLongPress}
       delayLongPress={350}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: colors.cardBg, borderColor: colors.border },
-        pressed && styles.pressed,
-      ]}
-      accessibilityRole="button"
       accessibilityLabel={`Agendamento de ${agendamento.cliente.nome} às ${horarioStr}`}
       accessibilityHint="Pressione e segure para mudar o status"
-      testID={testID ?? `agendamento-${agendamento.codigo}`}
     >
       <View style={styles.row}>
-        <Text style={[styles.horario, { color: colors.text }]}>
+        <Text style={{ ...typography.bodyBold, color: palette.text }}>
           {horarioStr}
         </Text>
-        <View style={[styles.badge, { backgroundColor: statusColor }]}>
+        <View
+          style={[
+            styles.badge,
+            { backgroundColor: badgeColor, borderRadius: radius.pill },
+          ]}
+        >
           <Text style={styles.badgeText} testID="status-badge">
             {STATUS_LABEL[agendamento.status]}
           </Text>
         </View>
       </View>
-      <Text style={[styles.cliente, { color: colors.text }]} numberOfLines={1}>
+      <Text
+        style={{
+          ...typography.label,
+          fontSize: 15,
+          color: palette.text,
+          marginTop: 2,
+        }}
+        numberOfLines={1}
+      >
         {agendamento.cliente.nome}
       </Text>
       <Text
-        style={[styles.servico, { color: colors.textMuted }]}
+        style={{
+          ...typography.caption,
+          fontSize: 13,
+          color: palette.textMuted,
+          marginTop: 2,
+        }}
         numberOfLines={1}
       >
         {servicoNome}
       </Text>
-    </Pressable>
+    </Card>
   );
 }
 
-const lightColors = {
-  cardBg: "#fff",
-  border: "#e9ecef",
-  text: "#111",
-  textMuted: "#666",
-};
-
-const darkColors = {
-  cardBg: "#1e1e1e",
-  border: "#333",
-  text: "#f5f5f5",
-  textMuted: "#999",
-};
+/**
+ * `React.memo` evita re-render quando props não mudam — relevante na FlatList
+ * de agenda onde o usuário pode atualizar status de um card e os outros
+ * permanecem idênticos.
+ */
+export const AgendamentoCard = memo(AgendamentoCardImpl);
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 10,
-    minHeight: 80,
-  },
-  pressed: { opacity: 0.85 },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 4,
   },
-  horario: { fontSize: 16, fontWeight: "600" },
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 999,
     minHeight: 24,
     justifyContent: "center",
   },
   badgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  cliente: { fontSize: 15, fontWeight: "500", marginTop: 2 },
-  servico: { fontSize: 13, marginTop: 2 },
 });
