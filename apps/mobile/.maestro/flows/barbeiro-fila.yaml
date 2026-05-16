@@ -1,0 +1,54 @@
+appId: com.teles23.toqe
+---
+- launchApp
+
+# Assume usuário autenticado como barbeiro (precisa estar logado antes)
+# Navega para aba Fila
+- tapOn:
+    text: "Fila"
+    optional: true
+
+# Aguarda tela
+- assertVisible: "Fila de atendimento"
+
+# Toca no FAB de adicionar
+- tapOn:
+    accessibilityLabel: "Adicionar walk-in"
+
+# Modal abre — preenche dados do cliente
+- assertVisible: "Adicionar à fila"
+- tapOn:
+    accessibilityLabel: "Nome do cliente"
+- inputText: "Cliente Teste Maestro"
+- tapOn:
+    accessibilityLabel: "E-mail"
+- inputText: "maestro@toqe.com"
+
+# Seleciona barbeiro
+- tapOn:
+    accessibilityLabel: "Atender com"
+- tapOn:
+    index: 0
+    text: ".*"
+    optional: true
+
+# Seleciona serviço
+- tapOn:
+    accessibilityLabel: "Serviço"
+- tapOn:
+    index: 0
+    text: ".*"
+    optional: true
+
+# Submete
+- tapOn:
+    text: "Adicionar à fila"
+
+# Verifica que voltou pra tela de fila e o cliente aparece
+- assertVisible: "Fila de atendimento"
+- assertVisible:
+    text: "Cliente Teste Maestro"
+    optional: true
+- assertVisible:
+    id: "lista-fila"
+    optional: true

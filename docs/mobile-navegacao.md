@@ -30,7 +30,7 @@ app/
 └── (barbeiro)/
     ├── _layout.tsx          ← Tabs: Agenda | Fila | Clientes | Perfil
     ├── agenda.tsx           ← ✅ Agenda do dia (lista + navegação ±1d, status update)
-    ├── fila.tsx             ← Fila de espera (stub)
+    ├── fila.tsx             ← ✅ Fila de walk-ins (lista + FAB + modal)
     ├── clientes.tsx         ← Lista de clientes (stub)
     └── perfil.tsx           ← Perfil do barbeiro (stub)
 ```
