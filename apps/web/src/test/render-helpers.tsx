@@ -28,6 +28,7 @@ export const mockAuthContext: AuthContextValue = {
     email: "test@test.com",
     telefone: null,
     avatarUrl: null,
+    twoFaEnabled: false,
   },
   barbearia: {
     codigo: 1,
@@ -46,6 +47,7 @@ export const mockAuthContext: AuthContextValue = {
   perfil: Perfil.DONO,
   loading: false,
   login: vi.fn(),
+  verifyTwoFa: vi.fn(),
   logout: vi.fn(),
   switchBarbearia: vi.fn(),
 };

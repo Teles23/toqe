@@ -13,6 +13,8 @@ import { api } from "@/shared/api/api-client";
 import {
   requestLogin,
   requestLogout,
+  request2FaVerify,
+  TwoFaRequiredError,
 } from "@/features/auth/services/auth.service";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -23,6 +25,7 @@ interface AuthUser {
   email: string;
   telefone: string | null;
   avatarUrl: string | null;
+  twoFaEnabled: boolean;
 }
 
 interface AuthState {
@@ -39,8 +42,10 @@ interface AuthState {
 }
 
 interface AuthActions {
-  /** Autentica com e-mail/senha. Chama o BFF /api/auth/login. */
+  /** Autentica com e-mail/senha. Lança TwoFaRequiredError se 2FA for necessário. */
   login: (email: string, senha: string) => Promise<void>;
+  /** Completa o login após verificação TOTP. Seta estado e redireciona. */
+  verifyTwoFa: (tempToken: string, code: string) => Promise<void>;
   /** Encerra a sessão. */
   logout: () => Promise<void>;
   /** Troca a barbearia ativa (multi-tenant). */
@@ -88,9 +93,17 @@ export function AuthProvider({
           email,
           telefone,
           avatarUrl,
+          twoFaEnabled,
           barbearias: bars,
         } = me;
-        setUser({ codigo, nome, email, telefone, avatarUrl });
+        setUser({
+          codigo,
+          nome,
+          email,
+          telefone,
+          avatarUrl,
+          twoFaEnabled: twoFaEnabled ?? false,
+        });
         setBarbearias(bars);
 
         // Seleciona a primeira barbearia como ativa (por padrão)
@@ -111,29 +124,55 @@ export function AuthProvider({
     };
   }, []);
 
-  // ── Login ──────────────────────────────────────────────────────────────────
-  const login = useCallback(
-    async (email: string, senha: string) => {
-      // O service trata o BFF, parse de erro e seta cookies httpOnly.
-      await requestLogin({ email, senha });
-
+  const loadMe = useCallback(
+    async (email: string) => {
       const me: UsuarioMe = await api.get("/usuarios/me");
-      const { codigo, nome, telefone, avatarUrl, barbearias: bars } = me;
-
-      setUser({ codigo, nome, email, telefone, avatarUrl });
+      const {
+        codigo,
+        nome,
+        telefone,
+        avatarUrl,
+        twoFaEnabled,
+        barbearias: bars,
+      } = me;
+      setUser({
+        codigo,
+        nome,
+        email,
+        telefone,
+        avatarUrl,
+        twoFaEnabled: twoFaEnabled ?? false,
+      });
       setBarbearias(bars);
-
       if (bars.length > 0) {
         setBarbearia(bars[0]!);
         setPerfil(bars[0]!.perfil);
       }
-
-      // Redireciona para dashboard (ou para onde veio)
       const params = new URLSearchParams(window.location.search);
-      const redirect = params.get("redirect") ?? "/dashboard";
-      router.push(redirect);
+      router.push(params.get("redirect") ?? "/dashboard");
     },
     [router],
+  );
+
+  // ── Login ──────────────────────────────────────────────────────────────────
+  const login = useCallback(
+    async (email: string, senha: string) => {
+      const result = await requestLogin({ email, senha });
+      if (result?.requiresTwoFa) {
+        throw new TwoFaRequiredError(result.tempToken);
+      }
+      await loadMe(email);
+    },
+    [loadMe],
+  );
+
+  // ── Verify 2FA (completa login após OTP) ──────────────────────────────────
+  const verifyTwoFa = useCallback(
+    async (tempToken: string, code: string) => {
+      await request2FaVerify(tempToken, code);
+      await loadMe("");
+    },
+    [loadMe],
   );
 
   // ── Logout ─────────────────────────────────────────────────────────────────
@@ -169,6 +208,7 @@ export function AuthProvider({
       perfil,
       loading,
       login,
+      verifyTwoFa,
       logout,
       switchBarbearia,
     }),
@@ -179,6 +219,7 @@ export function AuthProvider({
       perfil,
       loading,
       login,
+      verifyTwoFa,
       logout,
       switchBarbearia,
     ],

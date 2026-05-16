@@ -27,6 +27,7 @@ export interface UsuarioMe {
   email: string;
   telefone: string | null;
   avatarUrl: string | null;
+  twoFaEnabled?: boolean;
   barbearias: BarbeariaResumo[];
 }
 

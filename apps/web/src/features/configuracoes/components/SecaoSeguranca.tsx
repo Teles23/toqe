@@ -1,20 +1,61 @@
 "use client";
 
 import React, { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Smartphone } from "lucide-react";
+import { toast } from "sonner";
 import { Toggle } from "@/shared/components/toggle";
 import { ConfigRow } from "@/shared/components/config-row";
-import type { SessaoAtiva } from "../types/configuracao.types";
-
-const SESSOES_MOCK: SessaoAtiva[] = [
-  { dispositivo: "Chrome · Salvador, BA", ultimo: "Agora", atual: true },
-  { dispositivo: "Safari · iPhone 15", ultimo: "1h atrás", atual: false },
-  { dispositivo: "Firefox · São Paulo, SP", ultimo: "3 dias", atual: false },
-];
+import { useAuth } from "@/shared/hooks/use-auth";
+import { useChangePassword } from "@/features/auth/hooks/use-change-password";
+import { useSessions } from "@/features/auth/hooks/use-sessions";
+import { useTwoFaSetup } from "@/features/auth/hooks/use-two-fa";
+import { TwoFaModal } from "@/features/auth/components/TwoFaModal";
+import { TwoFaDisableModal } from "@/features/auth/components/TwoFaDisableModal";
 
 export function SecaoSeguranca() {
+  const { user } = useAuth();
   const [senha, setSenha] = useState({ atual: "", nova: "", confirma: "" });
-  const [twoFa, setTwoFa] = useState(false);
+  const [twoFaEnabled, setTwoFaEnabled] = useState(user?.twoFaEnabled ?? false);
+  const [twoFaData, setTwoFaData] = useState<{
+    qrCode: string;
+    secret: string;
+  } | null>(null);
+  const [showDisable2Fa, setShowDisable2Fa] = useState(false);
+
+  const changePassword = useChangePassword();
+  const sessions = useSessions();
+  const setup2Fa = useTwoFaSetup();
+
+  const senhaValida =
+    senha.nova.length >= 6 &&
+    senha.nova === senha.confirma &&
+    senha.atual.length > 0;
+
+  function handleChangePassword() {
+    changePassword.mutate(
+      { senhaAtual: senha.atual, novaSenha: senha.nova },
+      {
+        onSuccess: () => {
+          toast.success("Senha alterada com sucesso!");
+          setSenha({ atual: "", nova: "", confirma: "" });
+        },
+        onError: (err) => toast.error(err.message),
+      },
+    );
+  }
+
+  function handleTwoFaToggle(checked: boolean) {
+    if (checked) {
+      setup2Fa.mutate(undefined, {
+        onSuccess: (data) => setTwoFaData(data),
+        onError: (err) => toast.error(err.message),
+      });
+    } else {
+      setShowDisable2Fa(true);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -33,6 +74,7 @@ export function SecaoSeguranca() {
         </p>
       </div>
 
+      {/* Alterar senha */}
       <div
         className="rounded-xl overflow-hidden"
         style={{ border: "1px solid var(--border-default)" }}
@@ -70,15 +112,41 @@ export function SecaoSeguranca() {
               />
             </div>
           ))}
+          {senha.nova.length > 0 &&
+            senha.confirma.length > 0 &&
+            senha.nova !== senha.confirma && (
+              <p
+                className="text-[11px]"
+                style={{ color: "var(--status-error)" }}
+              >
+                As senhas não coincidem
+              </p>
+            )}
+          {changePassword.isError && (
+            <p className="text-[11px]" style={{ color: "var(--status-error)" }}>
+              {changePassword.error.message}
+            </p>
+          )}
           <button
+            onClick={handleChangePassword}
+            disabled={!senhaValida || changePassword.isPending}
             className="px-4 py-2 rounded-lg text-[12px] font-semibold mt-1"
-            style={{ background: "var(--primary)", color: "#0D0D0D" }}
+            style={{
+              background: "var(--primary)",
+              color: "#0D0D0D",
+              opacity: !senhaValida || changePassword.isPending ? 0.5 : 1,
+              cursor:
+                !senhaValida || changePassword.isPending
+                  ? "not-allowed"
+                  : "pointer",
+            }}
           >
-            Alterar senha
+            {changePassword.isPending ? "Alterando..." : "Alterar senha"}
           </button>
         </div>
       </div>
 
+      {/* 2FA */}
       <div
         className="rounded-xl overflow-hidden"
         style={{ border: "1px solid var(--border-default)" }}
@@ -101,17 +169,18 @@ export function SecaoSeguranca() {
           <ConfigRow
             label="Autenticação de dois fatores"
             desc={
-              twoFa
+              twoFaEnabled
                 ? "Ativado — via app autenticador"
                 : "Adiciona uma camada extra de segurança"
             }
             noBorder
           >
-            <Toggle checked={twoFa} onChange={setTwoFa} />
+            <Toggle checked={twoFaEnabled} onChange={handleTwoFaToggle} />
           </ConfigRow>
         </div>
       </div>
 
+      {/* Sessões ativas */}
       <div
         className="rounded-xl overflow-hidden"
         style={{ border: "1px solid var(--border-default)" }}
@@ -132,17 +201,31 @@ export function SecaoSeguranca() {
           <button
             className="text-[11px] font-medium"
             style={{ color: "var(--status-error)" }}
+            onClick={() =>
+              sessions.revokeAll.mutate(undefined, {
+                onSuccess: () => toast.success("Todas as sessões encerradas"),
+                onError: (err) => toast.error(err.message),
+              })
+            }
+            disabled={sessions.revokeAll.isPending}
           >
             Encerrar todas
           </button>
         </div>
-        {SESSOES_MOCK.map((s, i) => (
+        {sessions.isLoading && (
+          <div className="px-4 py-3">
+            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+              Carregando sessões...
+            </p>
+          </div>
+        )}
+        {(sessions.data ?? []).map((s, i) => (
           <div
-            key={i}
+            key={s.codigo}
             className="flex items-center justify-between px-4 py-3 gap-3"
             style={{
               borderBottom:
-                i < SESSOES_MOCK.length - 1
+                i < (sessions.data?.length ?? 0) - 1
                   ? "1px solid var(--border-subtle)"
                   : "none",
             }}
@@ -153,12 +236,8 @@ export function SecaoSeguranca() {
                 style={{
                   width: 32,
                   height: 32,
-                  background: s.atual
-                    ? "rgba(29,185,84,0.1)"
-                    : "var(--bg-hover)",
-                  color: s.atual
-                    ? "var(--status-success)"
-                    : "var(--text-muted)",
+                  background: "var(--bg-hover)",
+                  color: "var(--text-muted)",
                 }}
               >
                 <Smartphone size={14} />
@@ -168,31 +247,63 @@ export function SecaoSeguranca() {
                   className="block text-[12px] font-medium"
                   style={{ color: "var(--text-primary)" }}
                 >
-                  {s.dispositivo}
+                  Sessão iniciada em{" "}
+                  {format(new Date(s.criadoEm), "dd/MM HH:mm", {
+                    locale: ptBR,
+                  })}
                 </span>
                 <span
                   className="text-[11px]"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  {s.atual ? "Esta sessão" : s.ultimo}
+                  Expira em{" "}
+                  {format(new Date(s.expiraEm), "dd/MM/yyyy", { locale: ptBR })}
                 </span>
               </div>
             </div>
-            {!s.atual && (
-              <button
-                className="text-[11px] font-medium px-2.5 py-1 rounded-lg"
-                style={{
-                  background: "rgba(255,77,79,0.08)",
-                  color: "var(--status-error)",
-                  border: "1px solid rgba(255,77,79,0.15)",
-                }}
-              >
-                Encerrar
-              </button>
-            )}
+            <button
+              className="text-[11px] font-medium px-2.5 py-1 rounded-lg"
+              style={{
+                background: "rgba(255,77,79,0.08)",
+                color: "var(--status-error)",
+                border: "1px solid rgba(255,77,79,0.15)",
+              }}
+              onClick={() =>
+                sessions.revokeOne.mutate(s.codigo, {
+                  onSuccess: () => toast.success("Sessão encerrada"),
+                  onError: (err) => toast.error(err.message),
+                })
+              }
+              disabled={sessions.revokeOne.isPending}
+            >
+              Encerrar
+            </button>
           </div>
         ))}
       </div>
+
+      {twoFaData && (
+        <TwoFaModal
+          qrCode={twoFaData.qrCode}
+          secret={twoFaData.secret}
+          onVerified={() => {
+            setTwoFaEnabled(true);
+            setTwoFaData(null);
+            toast.success("2FA ativado com sucesso!");
+          }}
+          onClose={() => setTwoFaData(null)}
+        />
+      )}
+      {showDisable2Fa && (
+        <TwoFaDisableModal
+          onDisabled={() => {
+            setTwoFaEnabled(false);
+            setShowDisable2Fa(false);
+            toast.success("2FA desativado.");
+          }}
+          onClose={() => setShowDisable2Fa(false)}
+        />
+      )}
     </div>
   );
 }

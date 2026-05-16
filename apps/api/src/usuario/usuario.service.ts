@@ -16,6 +16,7 @@ const SELECT_PERFIL = {
   avatarUrl: true,
   ativo: true,
   criadoEm: true,
+  twoFaEnabled: true,
 } as const;
 
 @Injectable()

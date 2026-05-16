@@ -6,12 +6,16 @@ import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const mockAuthService = {
   register: jest.fn(),
   login: jest.fn(),
   refresh: jest.fn(),
   logout: jest.fn(),
+  forgotPassword: jest.fn(),
+  resetPassword: jest.fn(),
 };
 
 describe('AuthController', () => {
@@ -73,6 +77,39 @@ describe('AuthController', () => {
       void controller.logout(req, dto);
 
       expect(mockAuthService.logout).toHaveBeenCalledWith(7, dto);
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('delega para authService.forgotPassword e retorna mensagem', async () => {
+      const dto: ForgotPasswordDto = { email: 'ana@test.com' };
+      mockAuthService.forgotPassword.mockResolvedValue(undefined);
+
+      const result = await controller.forgotPassword(dto);
+
+      expect(mockAuthService.forgotPassword).toHaveBeenCalledWith(dto.email);
+      expect(result).toEqual({
+        message:
+          'Se o e-mail estiver cadastrado, você receberá um link em breve.',
+      });
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('delega para authService.resetPassword e retorna mensagem', async () => {
+      const dto: ResetPasswordDto = {
+        token: 'abc123token',
+        novaSenha: 'novaSenha123',
+      };
+      mockAuthService.resetPassword.mockResolvedValue(undefined);
+
+      const result = await controller.resetPassword(dto);
+
+      expect(mockAuthService.resetPassword).toHaveBeenCalledWith(
+        dto.token,
+        dto.novaSenha,
+      );
+      expect(result).toEqual({ message: 'Senha redefinida com sucesso.' });
     });
   });
 });

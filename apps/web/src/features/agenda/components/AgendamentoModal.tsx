@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
@@ -9,11 +10,12 @@ import {
   createAgendamentoSchema,
   type CreateAgendamentoInput,
 } from "@toqe/contracts";
+import { toast } from "sonner";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { useBarbeiros } from "@/features/barbeiros/hooks/use-barbeiros";
 import { useClientes } from "@/features/clientes/hooks/use-clientes";
 import { useServicos } from "@/features/servicos/hooks/use-servicos";
-import { useAgendaMutations } from "../hooks/use-agenda";
+import { useAgendaMutations, useDisponibilidade } from "../hooks/use-agenda";
 
 interface AgendamentoModalProps {
   date: Date;
@@ -25,30 +27,74 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
   const barCodigo = barbearia?.codigo ?? null;
   const dateStr = format(date, "yyyy-MM-dd");
 
-  const { data: barbeiros } = useBarbeiros(barCodigo);
-  const { data: clientes } = useClientes(barCodigo);
+  const { data: barbeiros = [] } = useBarbeiros(barCodigo);
+  const { data: clientes = [] } = useClientes(barCodigo);
   const { data: servicos = [] } = useServicos(barCodigo);
   const { criar } = useAgendaMutations(barCodigo, dateStr);
 
-  const defaultInicio = format(date, "yyyy-MM-dd") + "T09:00";
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateAgendamentoInput>({
     resolver: zodResolver(createAgendamentoSchema),
     defaultValues: {
       barbeiroId: undefined,
       clienteId: undefined,
-      inicio: new Date(defaultInicio).toISOString(),
+      inicio: undefined,
       servicosIds: [],
     },
   });
 
+  const watchedBarbeiroId = watch("barbeiroId");
+  const watchedServicosIds = watch("servicosIds");
+
+  // Calcula duração total baseada nos serviços selecionados
+  const totalDuracao = (() => {
+    const total = servicos
+      .filter((s) => watchedServicosIds?.includes(s.codigo))
+      .reduce((sum, s) => sum + (s.duracaoBase ?? 30), 0);
+    return total > 0 ? total : 30;
+  })();
+
+  const barbeiroIdNum =
+    watchedBarbeiroId && !Number.isNaN(Number(watchedBarbeiroId))
+      ? Number(watchedBarbeiroId)
+      : null;
+
+  const { data: slots = [], isFetching: isLoadingSlots } = useDisponibilidade(
+    barCodigo,
+    barbeiroIdNum,
+    dateStr,
+    totalDuracao,
+  );
+
+  function handleSlotChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value;
+    setSelectedSlot(value);
+    if (value) {
+      const isoString = new Date(`${dateStr}T${value}:00`).toISOString();
+      setValue("inicio", isoString);
+    } else {
+      setValue("inicio", "");
+    }
+  }
+
   function onSubmit(data: CreateAgendamentoInput) {
-    criar.mutate(data, { onSuccess: onClose });
+    criar.mutate(data, {
+      onSuccess: () => {
+        toast.success("Agendamento criado com sucesso!");
+        onClose();
+      },
+      onError: (err) => {
+        toast.error(err.message);
+      },
+    });
   }
 
   return (
@@ -103,17 +149,30 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
             <div className="px-5 py-4 space-y-4">
               <div>
                 <label className="tqe-label">Barbeiro</label>
-                <select
-                  {...register("barbeiroId", { valueAsNumber: true })}
-                  className="tqe-input"
-                >
-                  <option value="">Selecione um barbeiro</option>
-                  {barbeiros.map((b) => (
-                    <option key={b.codigo} value={b.codigo}>
-                      {b.nome}
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  name="barbeiroId"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      className="tqe-input"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        // Resetar slot quando barbeiro muda
+                        setSelectedSlot("");
+                        setValue("inicio", "");
+                        const val = e.target.value;
+                        field.onChange(val === "" ? undefined : Number(val));
+                      }}
+                    >
+                      <option value="">Selecione um barbeiro</option>
+                      {barbeiros.map((b) => (
+                        <option key={b.codigo} value={b.codigo}>
+                          {b.nome}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
                 {errors.barbeiroId && (
                   <p
                     className="text-[11px] mt-1"
@@ -148,21 +207,37 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
               </div>
 
               <div>
-                <label className="tqe-label">Data e hora</label>
-                <Controller
-                  name="inicio"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      type="datetime-local"
-                      className="tqe-input"
-                      value={field.value ? field.value.slice(0, 16) : ""}
-                      onChange={(e) =>
-                        field.onChange(new Date(e.target.value).toISOString())
-                      }
-                    />
+                <label className="tqe-label">
+                  Horário disponível —{" "}
+                  <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
+                    {format(date, "dd/MM/yyyy")}
+                  </span>
+                </label>
+                <select
+                  className="tqe-input"
+                  value={selectedSlot}
+                  onChange={handleSlotChange}
+                  disabled={!barbeiroIdNum || isLoadingSlots}
+                >
+                  {!barbeiroIdNum ? (
+                    <option value="">Selecione um barbeiro primeiro</option>
+                  ) : isLoadingSlots ? (
+                    <option value="">Carregando horários...</option>
+                  ) : slots.length === 0 ? (
+                    <option value="">
+                      Nenhum horário disponível para esta data
+                    </option>
+                  ) : (
+                    <>
+                      <option value="">Selecione um horário</option>
+                      {slots.map((slot) => (
+                        <option key={slot} value={slot}>
+                          {slot}
+                        </option>
+                      ))}
+                    </>
                   )}
-                />
+                </select>
                 {errors.inicio && (
                   <p
                     className="text-[11px] mt-1"
@@ -222,6 +297,15 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                 )}
               </div>
             </div>
+
+            {criar.isError && (
+              <p
+                className="text-[12px] px-5 pb-2"
+                style={{ color: "var(--status-error)" }}
+              >
+                {criar.error.message}
+              </p>
+            )}
 
             <div
               className="flex gap-2 px-5 py-4"

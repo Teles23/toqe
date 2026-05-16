@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Store, Phone, Mail, MapPin, Camera, Check } from "lucide-react";
+import { toast } from "sonner";
 import { useConfiguracaoBarbearia } from "../hooks/use-configuracao";
 
 interface Props {
@@ -10,12 +11,13 @@ interface Props {
 }
 
 export function SecaoBarbearia({ barCodigo }: Props) {
-  const { data, update } = useConfiguracaoBarbearia(barCodigo);
+  const { data, update, uploadLogo } = useConfiguracaoBarbearia(barCodigo);
   const [nome, setNome] = useState(data?.nome ?? "");
   const [tel, setTel] = useState(data?.telefone ?? "");
   const [email, setEmail] = useState(data?.email ?? "");
   const [end, setEnd] = useState(data?.endereco ?? "");
   const [salvo, setSalvo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (data) {
@@ -25,6 +27,16 @@ export function SecaoBarbearia({ barCodigo }: Props) {
       setEnd(data.endereco);
     }
   }, [data]);
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadLogo.mutate(file, {
+      onSuccess: () => toast.success("Logo atualizada com sucesso!"),
+      onError: (err) => toast.error(err.message),
+    });
+    e.target.value = "";
+  }
 
   function salvar() {
     update.mutate(
@@ -63,9 +75,16 @@ export function SecaoBarbearia({ barCodigo }: Props) {
         </p>
       </div>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={handleLogoChange}
+      />
       <div className="flex items-center gap-4">
         <div
-          className="relative flex items-center justify-center rounded-2xl font-bold text-2xl flex-shrink-0"
+          className="relative flex items-center justify-center rounded-2xl font-bold text-2xl flex-shrink-0 overflow-hidden"
           style={{
             width: 72,
             height: 72,
@@ -75,8 +94,19 @@ export function SecaoBarbearia({ barCodigo }: Props) {
             fontFamily: "var(--font-heading)",
           }}
         >
-          {initials}
+          {data?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={data.logoUrl}
+              alt="Logo"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            initials
+          )}
           <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadLogo.isPending}
             className="absolute bottom-0 right-0 flex items-center justify-center rounded-full"
             style={{
               width: 22,
@@ -84,6 +114,7 @@ export function SecaoBarbearia({ barCodigo }: Props) {
               background: "var(--primary)",
               color: "#0D0D0D",
               transform: "translate(4px, 4px)",
+              opacity: uploadLogo.isPending ? 0.6 : 1,
             }}
           >
             <Camera size={11} />
@@ -105,8 +136,10 @@ export function SecaoBarbearia({ barCodigo }: Props) {
           <button
             className="mt-1.5 text-[11px] font-medium"
             style={{ color: "var(--status-info)" }}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadLogo.isPending}
           >
-            Alterar foto
+            {uploadLogo.isPending ? "Enviando…" : "Alterar foto"}
           </button>
         </div>
       </div>

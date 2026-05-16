@@ -7,13 +7,13 @@ import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { loginSchema, type LoginInput } from "@/features/auth/schemas";
 import { useLogin } from "@/features/auth/hooks/use-login";
+import { TwoFaRequiredError } from "@/features/auth/services/auth.service";
 import { AuthErrorBanner } from "./AuthErrorBanner";
 
 interface LoginFormProps {
-  /** Callback para alternar para o formulário de recuperação de senha. */
   onForgotPassword: () => void;
-  /** Callback para ir para o fluxo de criação de conta (onboarding). */
   onCreateAccount: () => void;
+  onTwoFaRequired: (tempToken: string) => void;
 }
 
 /**
@@ -29,6 +29,7 @@ interface LoginFormProps {
 export function LoginForm({
   onForgotPassword,
   onCreateAccount,
+  onTwoFaRequired,
 }: LoginFormProps): React.JSX.Element {
   const [showPass, setShowPass] = useState(false);
   const login = useLogin();
@@ -43,10 +44,10 @@ export function LoginForm({
   });
 
   const apiError =
-    login.error instanceof Error
-      ? login.error.message
-      : login.error
-        ? "Erro ao entrar. Tente novamente."
+    login.error instanceof TwoFaRequiredError
+      ? ""
+      : login.error instanceof Error
+        ? login.error.message
         : "";
 
   return (
@@ -56,7 +57,15 @@ export function LoginForm({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -10 }}
       transition={{ duration: 0.18 }}
-      onSubmit={handleSubmit((data) => login.mutate(data))}
+      onSubmit={handleSubmit((data) =>
+        login.mutate(data, {
+          onError: (err) => {
+            if (err instanceof TwoFaRequiredError) {
+              onTwoFaRequired(err.tempToken);
+            }
+          },
+        }),
+      )}
       className="space-y-4"
     >
       {/* E-mail */}

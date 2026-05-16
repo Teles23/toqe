@@ -18,7 +18,10 @@ interface FaturamentoChartProps {
 }
 
 export function FaturamentoChart({ data }: FaturamentoChartProps) {
-  const chartData = data.map((d) => ({ ...d, data: d.data.slice(5) }));
+  const chartData = data.map((d) => ({
+    ...d,
+    data: `${d.data.slice(8)}/${d.data.slice(5, 7)}`,
+  }));
 
   return (
     <div

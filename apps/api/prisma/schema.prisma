@@ -19,10 +19,13 @@ model Usuario {
   senhaHash String   @map("TQE_USR_SENHA_HASH") @db.VarChar(255)
   telefone  String?  @unique @map("TQE_USR_TELEFONE") @db.VarChar(20)
   avatarUrl String?  @map("TQE_USR_AVATAR_URL")
-  ativo     Boolean  @default(true) @map("TQE_USR_ATIVO")
+  ativo        Boolean  @default(true) @map("TQE_USR_ATIVO")
+  twoFaSecret  String?  @map("TQE_USR_TWO_FA_SECRET") @db.VarChar(64)
+  twoFaEnabled Boolean  @default(false) @map("TQE_USR_TWO_FA_ENABLED")
   criadoEm  DateTime @default(now()) @map("TQE_USR_CRIADO_EM") @db.Timestamptz
 
-  refreshTokens  RefreshToken[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
   membros        MembroBarbearia[]
   agendamentos   Agendamento[]      @relation("AgendamentosCliente")
   atendimentos   Agendamento[]      @relation("AgendamentosBarbeiro")
@@ -45,6 +48,19 @@ model RefreshToken {
   usuario   Usuario  @relation(fields: [usrCodigo], references: [codigo])
 
   @@map("TQE_REFRESH_TOKEN")
+}
+
+model PasswordResetToken {
+  codigo    Int       @id @default(autoincrement()) @map("TQE_PRT_CODIGO")
+  usrCodigo Int       @map("TQE_PRT_USR_CODIGO")
+  token     String    @unique @map("TQE_PRT_TOKEN") @db.VarChar(100)
+  expiraEm  DateTime  @map("TQE_PRT_EXPIRA_EM") @db.Timestamptz
+  usadoEm   DateTime? @map("TQE_PRT_USADO_EM") @db.Timestamptz
+  criadoEm  DateTime  @default(now()) @map("TQE_PRT_CRIADO_EM") @db.Timestamptz
+
+  usuario   Usuario   @relation(fields: [usrCodigo], references: [codigo])
+
+  @@map("TQE_PASSWORD_RESET_TOKEN")
 }
 
 // ==========================================

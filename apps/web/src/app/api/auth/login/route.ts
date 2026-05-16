@@ -16,14 +16,14 @@ const INTERNAL_API =
 const IS_PROD = process.env.NODE_ENV === "production";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
+  const reqBody = await req.json().catch(() => ({}));
 
   let apiRes: Response;
   try {
     apiRes = await fetch(`${INTERNAL_API}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(reqBody),
     });
   } catch {
     return NextResponse.json(
@@ -44,7 +44,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { access_token, refresh_token, user } = data as {
+  const body = data as {
+    requiresTwoFa?: boolean;
+    tempToken?: string;
+    access_token?: string;
+    refresh_token?: string;
+    user?: { codigo: number; nome: string; email: string };
+  };
+
+  if (body.requiresTwoFa) {
+    return NextResponse.json(
+      { requiresTwoFa: true, tempToken: body.tempToken },
+      { status: 200 },
+    );
+  }
+
+  const { access_token, refresh_token, user } = body as {
     access_token: string;
     refresh_token: string;
     user: { codigo: number; nome: string; email: string };
