@@ -1,22 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { ZodValidationPipe } from 'nestjs-zod';
 import { AppModule } from '../../src/app.module';
 
 describe('Security (supertest)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    process.env.GOOGLE_CLIENT_ID =
+      process.env.GOOGLE_CLIENT_ID ?? 'test-google-client-id';
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = module.createNestApplication();
-    app.useGlobalPipes(
-      new ZodValidationPipe(),
-      new ValidationPipe({ transform: true }),
-    );
     await app.init();
   });
 
