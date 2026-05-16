@@ -21,6 +21,16 @@ export class AuthServiceError extends Error {
   }
 }
 
+/** Lançado pelo login quando o usuário tem 2FA ativo — não é um erro real. */
+export class TwoFaRequiredError extends Error {
+  readonly tempToken: string;
+  constructor(tempToken: string) {
+    super("2fa-required");
+    this.name = "TwoFaRequiredError";
+    this.tempToken = tempToken;
+  }
+}
+
 async function parseJsonSafe(response: Response): Promise<unknown> {
   try {
     return await response.json();
@@ -29,12 +39,14 @@ async function parseJsonSafe(response: Response): Promise<unknown> {
   }
 }
 
+export type LoginResult = { requiresTwoFa: true; tempToken: string } | void;
+
 /**
- * Autentica via BFF. O BFF seta os cookies httpOnly (refresh_token) e
- * o cookie de access_token; este service não retorna tokens — o
- * `AuthProvider` pode chamar `getCurrentUser()` em seguida.
+ * Autentica via BFF. Se o usuário tem 2FA ativo, retorna
+ * `{ requiresTwoFa: true, tempToken }`. Caso contrário, o BFF seta os
+ * cookies e retorna void.
  */
-export async function requestLogin(input: LoginInput): Promise<void> {
+export async function requestLogin(input: LoginInput): Promise<LoginResult> {
   const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -47,6 +59,14 @@ export async function requestLogin(input: LoginInput): Promise<void> {
       data.message ?? "Credenciais inválidas",
       res.status,
     );
+  }
+
+  const data = (await parseJsonSafe(res)) as {
+    requiresTwoFa?: boolean;
+    tempToken?: string;
+  };
+  if (data.requiresTwoFa) {
+    return { requiresTwoFa: true, tempToken: data.tempToken! };
   }
 }
 

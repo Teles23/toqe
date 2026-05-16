@@ -46,6 +46,7 @@ export const mockAuthContext: AuthContextValue = {
   perfil: Perfil.DONO,
   loading: false,
   login: vi.fn(),
+  verifyTwoFa: vi.fn(),
   logout: vi.fn(),
   switchBarbearia: vi.fn(),
 };

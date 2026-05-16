@@ -59,7 +59,7 @@ export const handlers = [
   ),
   http.post("/api/auth/2fa/enable", () => HttpResponse.json({ ok: true })),
   http.post("/api/auth/2fa/disable", () => HttpResponse.json({ ok: true })),
-  http.post("/api/auth/2fa/verify", () => HttpResponse.json({ ok: true })),
+  http.post("/api/auth/2fa/verify", () => HttpResponse.json({ ok: true })), // BFF seta cookies; resposta não é usada pelo cliente
 
   // ── Upload logo ───────────────────────────────────────────────────────────
   http.post("/api/configuracoes/logo/:barCodigo", () =>
