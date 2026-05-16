@@ -15,7 +15,7 @@ import { z } from "zod";
 import { api, ApiError } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormErrorBox, FormInput } from "@/src/shared/ui";
+import { AmberButton, FormErrorBox, FormInput } from "@/src/shared/ui";
 import { registerSchema } from "@toqe/contracts";
 
 // Estende o schema com confirmação de senha (campo apenas no mobile)
@@ -81,29 +81,42 @@ export default function CadastroScreen() {
           styles.inner,
           {
             paddingHorizontal: spacing.lg,
-            paddingTop: spacing.xxl + spacing.xl,
+            paddingTop: spacing.xxl,
           },
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text
-          style={{
-            ...typography.title,
-            color: palette.text,
-            marginBottom: spacing.xs,
-          }}
-        >
-          Criar conta
-        </Text>
-        <Text
-          style={{
-            ...typography.body,
-            color: palette.textMuted,
-            marginBottom: spacing.xl,
-          }}
-        >
-          Preencha seus dados para começar
-        </Text>
+        {/* Brand sutil + título — coerente com login, sem competir com o form */}
+        <View style={[styles.header, { marginBottom: spacing.xl }]}>
+          <Text
+            style={[
+              styles.brandTag,
+              {
+                color: palette.primary,
+                backgroundColor: palette.primaryDim,
+              },
+            ]}
+            accessibilityLabel="Toqe"
+          >
+            toqe
+          </Text>
+          <Text
+            style={[
+              typography.title,
+              { color: palette.text, marginTop: spacing.md },
+            ]}
+          >
+            Criar conta
+          </Text>
+          <Text
+            style={[
+              typography.body,
+              { color: palette.textMuted, marginTop: spacing.xs },
+            ]}
+          >
+            Preencha seus dados para começar
+          </Text>
+        </View>
 
         <FormErrorBox error={errors.root?.message} />
 
@@ -198,26 +211,25 @@ export default function CadastroScreen() {
           )}
         />
 
-        <View style={{ marginTop: spacing.sm }}>
-          <Button
+        <View style={{ marginTop: spacing.md }}>
+          <AmberButton
             label="Criar conta"
             onPress={handleSubmit(onSubmit)}
             loading={isSubmitting}
           />
         </View>
 
-        <View style={[styles.footer, { marginTop: spacing.lg }]}>
-          <Text style={{ ...typography.label, color: palette.textMuted }}>
+        <View style={[styles.footer, { marginTop: spacing.xl }]}>
+          <Text style={[typography.label, { color: palette.textMuted }]}>
             Já tem uma conta?{" "}
           </Text>
           <Link href="/(auth)/login" asChild>
             <Pressable accessibilityRole="link">
               <Text
-                style={{
-                  ...typography.label,
-                  fontWeight: "600",
-                  color: palette.primary,
-                }}
+                style={[
+                  typography.label,
+                  { color: palette.primary, fontFamily: "Inter_600SemiBold" },
+                ]}
               >
                 Entrar
               </Text>
@@ -232,5 +244,16 @@ export default function CadastroScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { paddingBottom: 40 },
+  header: { alignItems: "flex-start" },
+  brandTag: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 0.5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: "hidden",
+  },
   footer: { flexDirection: "row", justifyContent: "center" },
 });

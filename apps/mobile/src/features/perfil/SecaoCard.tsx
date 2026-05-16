@@ -40,7 +40,7 @@ export function SecaoCard({ title, children }: Props) {
         style={[
           styles.card,
           {
-            backgroundColor: palette.cardBg,
+            backgroundColor: palette.surface,
             borderColor: palette.border,
             borderRadius: radius.md,
             marginHorizontal: spacing.md,

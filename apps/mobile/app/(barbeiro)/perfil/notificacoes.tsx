@@ -13,7 +13,7 @@ import {
   useNotificacaoPreferencias,
 } from "@/src/shared/hooks/perfil/use-notificacao-preferencias";
 import { useTheme } from "@/src/shared/theme";
-import { Button, Divider, ListItem, ScreenHeader } from "@/src/shared/ui";
+import { Divider, GhostButton, ListItem, ScreenHeader } from "@/src/shared/ui";
 
 type Canal = "email" | "push" | "whatsapp" | "sms";
 
@@ -46,9 +46,8 @@ export default function PerfilNotificacoesScreen() {
       <ScreenHeader
         title="Notificações"
         right={
-          <Button
+          <GhostButton
             label="Voltar"
-            variant="secondary"
             onPress={() => router.back()}
             accessibilityLabel="Voltar"
           />

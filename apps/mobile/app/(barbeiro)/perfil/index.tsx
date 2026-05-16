@@ -7,7 +7,7 @@ import { SecaoCard } from "@/src/features/perfil/SecaoCard";
 import { usePerfilBasePath } from "@/src/features/perfil/use-perfil-base-path";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { Button, Divider, ListItem, ScreenHeader } from "@/src/shared/ui";
+import { DangerButton, Divider, ListItem, ScreenHeader } from "@/src/shared/ui";
 
 /**
  * Tela principal de perfil — compartilhada entre (barbeiro) e (cliente)
@@ -115,9 +115,8 @@ export default function PerfilIndexScreen() {
         ) : null}
 
         <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.xl }}>
-          <Button
+          <DangerButton
             label="Sair da conta"
-            variant="danger"
             onPress={handleLogout}
             accessibilityLabel="Sair da conta"
           />

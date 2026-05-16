@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
-import { Button } from "../Button";
+import { AmberButton } from "../AmberButton";
 import { EmptyScreen } from "../EmptyScreen";
 
 describe("EmptyScreen", () => {
@@ -25,7 +25,7 @@ describe("EmptyScreen", () => {
     render(
       <EmptyScreen
         title="X"
-        action={<Button label="Tentar de novo" onPress={onPress} />}
+        action={<AmberButton label="Tentar de novo" onPress={onPress} />}
       />,
     );
     fireEvent.press(screen.getByRole("button", { name: "Tentar de novo" }));

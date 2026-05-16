@@ -150,20 +150,19 @@ function SortButton({
         {
           paddingHorizontal: 12,
           paddingVertical: 6,
-          borderRadius: radius.pill,
+          borderRadius: radius.full,
           borderWidth: 1,
-          backgroundColor: active ? palette.primary : palette.cardBg,
-          borderColor: active ? palette.primary : palette.border,
+          backgroundColor: active ? palette.primary : palette.surface,
+          borderColor: active ? palette.primary : palette.borderStrong,
         },
         pressed && { opacity: 0.7 },
       ]}
     >
       <Text
-        style={{
-          ...typography.caption,
-          color: active ? palette.primaryOn : palette.text,
-          fontWeight: "600",
-        }}
+        style={[
+          typography.captionBold,
+          { color: active ? palette.primaryOn : palette.text },
+        ]}
       >
         {label}
       </Text>

@@ -130,7 +130,7 @@ export function Select<T>({
           style={[
             styles.sheet,
             {
-              backgroundColor: palette.cardBg,
+              backgroundColor: palette.surface,
               borderColor: palette.border,
               paddingTop: spacing.md,
               paddingBottom: spacing.xl,
