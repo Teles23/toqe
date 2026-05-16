@@ -22,7 +22,8 @@ const config: ExpoConfig = {
   android: {
     package: "com.teles23.toqe",
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      // Cor da marca — bate com splash + icon principal
+      backgroundColor: "#1a73e8",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -50,11 +51,12 @@ const config: ExpoConfig = {
       "expo-splash-screen",
       {
         image: "./assets/images/splash-icon.png",
-        imageWidth: 200,
+        imageWidth: 240,
         resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        // Fundo da marca — sem flash branco entre splash e primeira tela
+        backgroundColor: "#1a73e8",
         dark: {
-          backgroundColor: "#000000",
+          backgroundColor: "#0d1117",
         },
       },
     ],

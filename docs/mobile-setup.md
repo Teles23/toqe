@@ -74,7 +74,13 @@ pnpm --filter mobile lint         # ESLint
 pnpm --filter mobile type-check   # TypeScript sem emitir arquivos
 pnpm --filter mobile test         # Jest (unit + componentes)
 pnpm --filter mobile test:e2e     # Maestro (fluxos e2e)
+
+# Branding (raiz do repo)
+pnpm branding:generate            # Regera PNGs a partir dos SVGs em tools/branding/source/
+pnpm branding:check               # Dry-run: lista os alvos sem gerar arquivos
 ```
+
+> Detalhes do sistema de branding em [`mobile-branding.md`](./mobile-branding.md).
 
 ---
 
