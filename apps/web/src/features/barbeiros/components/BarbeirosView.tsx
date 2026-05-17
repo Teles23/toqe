@@ -85,7 +85,10 @@ export function BarbeirosView() {
             className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
             style={{ borderBottom: "1px solid var(--border-subtle)" }}
           >
-            <div className="flex gap-1">
+            <div
+              className="flex gap-1 overflow-x-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
               {(
                 [
                   { key: "todos", label: "Todos" },
@@ -97,7 +100,7 @@ export function BarbeirosView() {
                 <button
                   key={f.key}
                   onClick={() => setFilterEstado(f.key)}
-                  className="px-2.5 py-1 rounded text-[11px] font-medium transition-all"
+                  className="flex-shrink-0 whitespace-nowrap px-2.5 py-1 rounded text-[11px] font-medium transition-all"
                   style={{
                     background:
                       filterEstado === f.key
