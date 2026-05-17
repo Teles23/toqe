@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   BarChart,
   Bar,
@@ -47,48 +48,58 @@ export function HorariosPicoChart({ data }: HorariosPicoChartProps) {
           Volume de agendamentos por hora do dia
         </span>
       </div>
-      <div className="px-4 py-4" style={{ height: 180 }}>
-        <ClientOnlyChart>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--border-subtle)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="hora"
-                tick={{
-                  fill: "var(--text-muted)",
-                  fontSize: 10,
-                  fontFamily: "var(--font-body)",
-                }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{
-                  fill: "var(--text-muted)",
-                  fontSize: 11,
-                  fontFamily: "var(--font-body)",
-                }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip content={<ChartTooltip suffix=" agend." />} />
-              <Bar
-                dataKey="quantidade"
-                fill="var(--status-info)"
-                radius={[3, 3, 0, 0]}
-                maxBarSize={28}
-                fillOpacity={0.8}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </ClientOnlyChart>
+      <div
+        className="overflow-x-auto"
+        style={
+          {
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch",
+          } as React.CSSProperties
+        }
+      >
+        <div style={{ minWidth: 420, height: 180 }} className="px-4 py-4">
+          <ClientOnlyChart>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--border-subtle)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="hora"
+                  tick={{
+                    fill: "var(--text-muted)",
+                    fontSize: 10,
+                    fontFamily: "var(--font-body)",
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{
+                    fill: "var(--text-muted)",
+                    fontSize: 11,
+                    fontFamily: "var(--font-body)",
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip content={<ChartTooltip suffix=" agend." />} />
+                <Bar
+                  dataKey="quantidade"
+                  fill="var(--status-info)"
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={28}
+                  fillOpacity={0.8}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </ClientOnlyChart>
+        </div>
       </div>
     </div>
   );
