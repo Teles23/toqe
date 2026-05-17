@@ -23,6 +23,8 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
     register,
     handleSubmit,
     reset,
+    setValue,
+    setError,
     formState: { errors },
   } = useForm<CreateServicoInput>({
     resolver: zodResolver(createServicoSchema),
@@ -44,10 +46,18 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
   }, [servico, reset]);
 
   function onSubmit(data: CreateServicoInput) {
+    const duracaoArredondada = Math.round(data.duracaoBase / 5) * 5;
+    const payload = { ...data, duracaoBase: duracaoArredondada };
+    const onError = () =>
+      setError("root", { message: "Erro ao salvar. Tente novamente." });
+
     if (servico) {
-      update.mutate({ codigo: servico.codigo, data }, { onSuccess: onClose });
+      update.mutate(
+        { codigo: servico.codigo, data: payload },
+        { onSuccess: onClose, onError },
+      );
     } else {
-      create.mutate(data, { onSuccess: onClose });
+      create.mutate(payload, { onSuccess: onClose, onError });
     }
   }
 
@@ -103,6 +113,18 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="px-5 py-4 space-y-4">
+              {errors.root && (
+                <p
+                  className="text-[12px] px-3 py-2 rounded-lg"
+                  style={{
+                    background: "rgba(255,77,79,0.08)",
+                    color: "var(--status-error)",
+                    border: "1px solid rgba(255,77,79,0.2)",
+                  }}
+                >
+                  {errors.root.message}
+                </p>
+              )}
               <div>
                 <label className="tqe-label">Nome do serviço</label>
                 <input
@@ -147,13 +169,28 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                     className="tqe-input"
                     min={5}
                     step={5}
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val))
+                        setValue(
+                          "duracaoBase",
+                          Math.max(5, Math.round(val / 5) * 5),
+                        );
+                    }}
                   />
-                  {errors.duracaoBase && (
+                  {errors.duracaoBase ? (
                     <p
                       className="text-[11px] mt-1"
                       style={{ color: "var(--status-error)" }}
                     >
                       {errors.duracaoBase.message}
+                    </p>
+                  ) : (
+                    <p
+                      className="text-[11px] mt-1"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Em minutos · múltiplo de 5 (ex: 30, 45, 60)
                     </p>
                   )}
                 </div>
