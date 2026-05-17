@@ -4,25 +4,47 @@ import { z } from "zod";
 
 export const loginSchema = z
   .object({
-    email: z.string().email("E-mail inválido"),
-    senha: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
+    email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
+    senha: z
+      .string()
+      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .max(128, "Senha muito longa"),
   })
   .strict();
 
 export const registerSchema = z
   .object({
-    nome: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
-    email: z.string().email("E-mail inválido"),
-    senha: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
-    telefone: z.string().optional(),
+    nome: z
+      .string()
+      .min(2, "Nome deve ter ao menos 2 caracteres")
+      .max(100, "Nome muito longo"),
+    email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
+    senha: z
+      .string()
+      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .max(128, "Senha muito longa"),
+    telefone: z
+      .string()
+      .regex(/^\+?[\d\s\-()]{8,20}$/, "Telefone inválido")
+      .max(20, "Telefone muito longo")
+      .optional()
+      .or(z.literal("")),
   })
   .strict();
 
 export const criarClienteRapidoSchema = z
   .object({
-    nome: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
-    email: z.string().email("E-mail inválido"),
-    telefone: z.string().optional(),
+    nome: z
+      .string()
+      .min(2, "Nome deve ter ao menos 2 caracteres")
+      .max(100, "Nome muito longo"),
+    email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
+    telefone: z
+      .string()
+      .regex(/^\+?[\d\s\-()]{8,20}$/, "Telefone inválido")
+      .max(20, "Telefone muito longo")
+      .optional()
+      .or(z.literal("")),
   })
   .strict();
 
@@ -48,14 +70,17 @@ export const authTokensSchema = z.object({
 
 export const forgotPasswordSchema = z
   .object({
-    email: z.string().email("E-mail inválido"),
+    email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
   })
   .strict();
 
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Token obrigatório"),
-    novaSenha: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
+    novaSenha: z
+      .string()
+      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .max(128, "Senha muito longa"),
   })
   .strict();
 
@@ -64,8 +89,14 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const changePasswordSchema = z
   .object({
-    senhaAtual: z.string().min(1, "Senha atual é obrigatória"),
-    novaSenha: z.string().min(6, "Nova senha deve ter ao menos 6 caracteres"),
+    senhaAtual: z
+      .string()
+      .min(1, "Senha atual é obrigatória")
+      .max(128, "Senha muito longa"),
+    novaSenha: z
+      .string()
+      .min(6, "Nova senha deve ter ao menos 6 caracteres")
+      .max(128, "Senha muito longa"),
   })
   .strict()
   .refine((d) => d.senhaAtual !== d.novaSenha, {
@@ -81,11 +112,19 @@ export const googleAuthSchema = z
   .strict();
 
 export const twoFaSetupSchema = z
-  .object({ code: z.string().length(6, "Código deve ter 6 dígitos") })
+  .object({
+    code: z
+      .string()
+      .length(6, "Código deve ter 6 dígitos")
+      .regex(/^\d{6}$/, "Código deve conter apenas números"),
+  })
   .strict();
 export const twoFaVerifySchema = z
   .object({
-    code: z.string().length(6, "Código deve ter 6 dígitos"),
+    code: z
+      .string()
+      .length(6, "Código deve ter 6 dígitos")
+      .regex(/^\d{6}$/, "Código deve conter apenas números"),
     tempToken: z.string().min(1),
   })
   .strict();

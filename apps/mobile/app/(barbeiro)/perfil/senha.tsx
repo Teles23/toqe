@@ -12,9 +12,18 @@ import { Button, FormErrorBox, FormInput, ScreenHeader } from "@/src/shared/ui";
 // Schema local: estende o do backend com confirmação
 const senhaFormSchema = z
   .object({
-    senhaAtual: z.string().min(1, "Senha atual é obrigatória"),
-    novaSenha: z.string().min(6, "Nova senha deve ter ao menos 6 caracteres"),
-    confirmar: z.string().min(1, "Confirme a nova senha"),
+    senhaAtual: z
+      .string()
+      .min(1, "Senha atual é obrigatória")
+      .max(128, "Senha muito longa"),
+    novaSenha: z
+      .string()
+      .min(6, "Nova senha deve ter ao menos 6 caracteres")
+      .max(128, "Senha muito longa"),
+    confirmar: z
+      .string()
+      .min(1, "Confirme a nova senha")
+      .max(128, "Senha muito longa"),
   })
   .refine((d) => d.novaSenha !== d.senhaAtual, {
     message: "Nova senha deve ser diferente da atual",
@@ -96,6 +105,7 @@ export default function PerfilSenhaScreen() {
               placeholder="••••••"
               secureTextEntry
               autoComplete="password"
+              maxLength={128}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -113,6 +123,7 @@ export default function PerfilSenhaScreen() {
               placeholder="Mínimo 6 caracteres"
               secureTextEntry
               autoComplete="new-password"
+              maxLength={128}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -130,6 +141,7 @@ export default function PerfilSenhaScreen() {
               placeholder="Repita a senha"
               secureTextEntry
               autoComplete="new-password"
+              maxLength={128}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}

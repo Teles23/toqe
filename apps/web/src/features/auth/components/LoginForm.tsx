@@ -77,6 +77,7 @@ export function LoginForm({
           placeholder="seu@email.com"
           className="tqe-input"
           autoComplete="email"
+          maxLength={100}
         />
         {errors.email && (
           <p
@@ -110,6 +111,7 @@ export function LoginForm({
             placeholder="••••••••"
             className="tqe-input pr-10"
             autoComplete="current-password"
+            maxLength={128}
           />
           <button
             type="button"

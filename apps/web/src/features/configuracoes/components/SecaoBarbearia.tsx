@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Store, Phone, Mail, MapPin, Camera, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useConfiguracaoBarbearia } from "../hooks/use-configuracao";
+import { maskTelefone } from "@/shared/utils/masks";
 
 interface Props {
   barCodigo: number | null;
@@ -151,11 +152,31 @@ export function SecaoBarbearia({ barCodigo }: Props) {
             icon: Store,
             value: nome,
             set: setNome,
+            maxLength: 100,
           },
-          { label: "Telefone", icon: Phone, value: tel, set: setTel },
-          { label: "E-mail", icon: Mail, value: email, set: setEmail },
-          { label: "Endereço", icon: MapPin, value: end, set: setEnd },
-        ].map(({ label, icon: Icon, value, set }) => (
+          {
+            label: "Telefone",
+            icon: Phone,
+            value: tel,
+            set: setTel,
+            maxLength: 20,
+            transform: maskTelefone,
+          },
+          {
+            label: "E-mail",
+            icon: Mail,
+            value: email,
+            set: setEmail,
+            maxLength: 100,
+          },
+          {
+            label: "Endereço",
+            icon: MapPin,
+            value: end,
+            set: setEnd,
+            maxLength: 200,
+          },
+        ].map(({ label, icon: Icon, value, set, maxLength, transform }) => (
           <div key={label}>
             <label className="tqe-label">{label}</label>
             <div className="relative">
@@ -173,10 +194,11 @@ export function SecaoBarbearia({ barCodigo }: Props) {
               <input
                 value={value}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  set(e.target.value)
+                  set(transform ? transform(e.target.value) : e.target.value)
                 }
                 className="tqe-input"
                 style={{ paddingLeft: 30 }}
+                maxLength={maxLength}
               />
             </div>
           </div>

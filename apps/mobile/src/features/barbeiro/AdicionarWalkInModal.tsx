@@ -13,15 +13,24 @@ import {
 import { z } from "zod";
 
 import { useBarbeirosDaBarbearia } from "@/src/shared/hooks/barbeiro/use-barbeiros-da-barbearia";
+import { maskTelefone } from "@/src/shared/utils/masks";
 import { useCriarWalkIn } from "@/src/shared/hooks/barbeiro/use-criar-walk-in";
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 import { useTheme } from "@/src/shared/theme";
 import { Button, FormErrorBox, FormInput, Select } from "@/src/shared/ui";
 
 const walkInFormSchema = z.object({
-  nome: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
-  email: z.string().email("E-mail inválido"),
-  telefone: z.string().optional(),
+  nome: z
+    .string()
+    .min(2, "Nome deve ter ao menos 2 caracteres")
+    .max(100, "Nome muito longo"),
+  email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
+  telefone: z
+    .string()
+    .regex(/^\+?[\d\s\-()]{8,20}$/, "Telefone inválido")
+    .max(20, "Telefone muito longo")
+    .optional()
+    .or(z.literal("")),
   barbeiroId: z
     .number({ invalid_type_error: "Selecione um barbeiro" })
     .int()
@@ -160,6 +169,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
                   label="Nome do cliente"
                   placeholder="João Silva"
                   autoCapitalize="words"
+                  maxLength={100}
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
@@ -177,6 +187,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
                   placeholder="joao@example.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  maxLength={100}
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
@@ -192,10 +203,11 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
                 <FormInput
                   label="Telefone"
                   hint="(opcional)"
-                  placeholder="+55 11 99999-9999"
+                  placeholder="(11) 99999-9999"
                   keyboardType="phone-pad"
+                  maxLength={20}
                   onBlur={onBlur}
-                  onChangeText={onChange}
+                  onChangeText={(text) => onChange(maskTelefone(text))}
                   value={value ?? ""}
                 />
               )}

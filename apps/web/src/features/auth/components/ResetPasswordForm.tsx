@@ -11,8 +11,14 @@ import { AuthErrorBanner } from "./AuthErrorBanner";
 
 const resetSchema = z
   .object({
-    novaSenha: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
-    confirmarSenha: z.string().min(6, "Confirme sua senha"),
+    novaSenha: z
+      .string()
+      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .max(128, "Senha muito longa"),
+    confirmarSenha: z
+      .string()
+      .min(6, "Confirme sua senha")
+      .max(128, "Senha muito longa"),
   })
   .refine((d) => d.novaSenha === d.confirmarSenha, {
     message: "As senhas não coincidem",
@@ -118,6 +124,7 @@ export function ResetPasswordForm({
           placeholder="Mínimo 6 caracteres"
           className="tqe-input"
           autoComplete="new-password"
+          maxLength={128}
         />
         {errors.novaSenha && (
           <p
@@ -137,6 +144,7 @@ export function ResetPasswordForm({
           placeholder="Repita a nova senha"
           className="tqe-input"
           autoComplete="new-password"
+          maxLength={128}
         />
         {errors.confirmarSenha && (
           <p

@@ -25,6 +25,12 @@ export const createAgendamentoSchema = z.object({
   // (.optional() em vez de .default() para não tornar `tipo` obrigatório no tipo
   // de saída do createZodDto — quebraria fixtures de teste existentes.)
   tipo: tipoAgendamentoSchema.optional(),
+
+  observacao: z
+    .string()
+    .max(500, "Observação muito longa")
+    .optional()
+    .or(z.literal("")),
 });
 
 export const patchStatusAgendamentoSchema = z.object({

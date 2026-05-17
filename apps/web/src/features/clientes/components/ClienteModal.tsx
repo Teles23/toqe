@@ -8,6 +8,7 @@ import {
   criarClienteRapidoSchema,
   type CriarClienteRapidoInput,
 } from "@toqe/contracts";
+import { maskTelefone } from "@/shared/utils/masks";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { useClienteMutations } from "../hooks/use-clientes";
 
@@ -22,6 +23,7 @@ export function ClienteModal({ onClose }: ClienteModalProps) {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<CriarClienteRapidoInput>({
     resolver: zodResolver(criarClienteRapidoSchema),
@@ -88,6 +90,7 @@ export function ClienteModal({ onClose }: ClienteModalProps) {
                   {...register("nome")}
                   placeholder="Nome completo"
                   className="tqe-input"
+                  maxLength={100}
                 />
                 {errors.nome && (
                   <p
@@ -106,6 +109,7 @@ export function ClienteModal({ onClose }: ClienteModalProps) {
                   type="email"
                   placeholder="cliente@email.com"
                   className="tqe-input"
+                  maxLength={100}
                 />
                 {errors.email && (
                   <p
@@ -124,6 +128,10 @@ export function ClienteModal({ onClose }: ClienteModalProps) {
                   type="tel"
                   placeholder="(11) 99999-9999"
                   className="tqe-input"
+                  maxLength={20}
+                  onChange={(e) => {
+                    setValue("telefone", maskTelefone(e.target.value));
+                  }}
                 />
               </div>
             </div>
