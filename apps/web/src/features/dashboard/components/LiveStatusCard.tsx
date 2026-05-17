@@ -65,7 +65,7 @@ export function LiveStatusCard({
       </div>
 
       <div
-        className="grid grid-cols-2 sm:grid-cols-4 divide-x"
+        className="grid grid-cols-2 sm:grid-cols-4 sm:divide-x"
         style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
         {liveMetrics.map((stat) => (
