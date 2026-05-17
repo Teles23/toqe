@@ -78,7 +78,7 @@ export function SecaoHorarios({ barCodigo }: Props) {
             </span>
 
             {h.aberto ? (
-              <div className="flex items-center gap-2 flex-1">
+              <div className="flex items-center gap-2 flex-1 flex-wrap">
                 <input
                   type="time"
                   value={h.abertura}
@@ -88,6 +88,7 @@ export function SecaoHorarios({ barCodigo }: Props) {
                   style={{
                     height: 30,
                     padding: "0 8px",
+                    minWidth: 110,
                     background: "var(--bg-secondary)",
                     border: "1px solid var(--border-default)",
                     borderRadius: 6,
@@ -109,6 +110,7 @@ export function SecaoHorarios({ barCodigo }: Props) {
                   style={{
                     height: 30,
                     padding: "0 8px",
+                    minWidth: 110,
                     background: "var(--bg-secondary)",
                     border: "1px solid var(--border-default)",
                     borderRadius: 6,
