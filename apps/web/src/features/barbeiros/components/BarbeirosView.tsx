@@ -85,7 +85,10 @@ export function BarbeirosView() {
             className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
             style={{ borderBottom: "1px solid var(--border-subtle)" }}
           >
-            <div className="flex gap-1">
+            <div
+              className="flex gap-1 overflow-x-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
               {(
                 [
                   { key: "todos", label: "Todos" },
@@ -97,7 +100,7 @@ export function BarbeirosView() {
                 <button
                   key={f.key}
                   onClick={() => setFilterEstado(f.key)}
-                  className="px-2.5 py-1 rounded text-[11px] font-medium transition-all"
+                  className="px-2.5 py-1 rounded text-[11px] font-medium transition-all flex-shrink-0 whitespace-nowrap"
                   style={{
                     background:
                       filterEstado === f.key
@@ -160,12 +163,49 @@ export function BarbeirosView() {
           </div>
         </div>
 
+        {/* Desktop side panel — hidden on mobile to avoid squeezing the grid */}
         <AnimatePresence>
           {selected && (
-            <BarbeiroDetalhe b={selected} onClose={() => setSelected(null)} />
+            <div className="hidden md:flex">
+              <BarbeiroDetalhe b={selected} onClose={() => setSelected(null)} />
+            </div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Mobile bottom-sheet */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            key="mobile-detalhe"
+            className="fixed inset-0 z-50 flex flex-col justify-end md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{ background: "rgba(0,0,0,0.5)" }}
+              onClick={() => setSelected(null)}
+            />
+            <motion.div
+              className="relative z-10 rounded-t-2xl overflow-hidden"
+              style={{
+                maxHeight: "78vh",
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-default)",
+              }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            >
+              <BarbeiroDetalhe b={selected} onClose={() => setSelected(null)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {modalOpen && <BarbeiroModal onClose={() => setModalOpen(false)} />}
