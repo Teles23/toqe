@@ -19,6 +19,9 @@ const mockAgendamentoService = {
   findOne: jest.fn(),
   patchStatus: jest.fn(),
   cancel: jest.fn(),
+  meusAgendamentos: jest.fn(),
+  proximoAgendamento: jest.fn(),
+  agendamentoAtual: jest.fn(),
 };
 
 describe('AgendamentoController', () => {
@@ -106,6 +109,39 @@ describe('AgendamentoController', () => {
       void controller.cancel(42, '3');
 
       expect(mockAgendamentoService.cancel).toHaveBeenCalledWith(42, 3);
+    });
+  });
+
+  describe('meusAgendamentos', () => {
+    it('delega para service.meusAgendamentos com sub e barCodigo', () => {
+      mockAgendamentoService.meusAgendamentos.mockResolvedValue([]);
+      void controller.meusAgendamentos({ user: { sub: 20 } } as never, '3');
+      expect(mockAgendamentoService.meusAgendamentos).toHaveBeenCalledWith(
+        20,
+        3,
+      );
+    });
+  });
+
+  describe('proximoAgendamento', () => {
+    it('delega para service.proximoAgendamento', () => {
+      mockAgendamentoService.proximoAgendamento.mockResolvedValue(null);
+      void controller.proximoAgendamento({ user: { sub: 20 } } as never, '3');
+      expect(mockAgendamentoService.proximoAgendamento).toHaveBeenCalledWith(
+        20,
+        3,
+      );
+    });
+  });
+
+  describe('agendamentoAtual', () => {
+    it('delega para service.agendamentoAtual', () => {
+      mockAgendamentoService.agendamentoAtual.mockResolvedValue(null);
+      void controller.agendamentoAtual({ user: { sub: 10 } } as never, '3');
+      expect(mockAgendamentoService.agendamentoAtual).toHaveBeenCalledWith(
+        10,
+        3,
+      );
     });
   });
 });

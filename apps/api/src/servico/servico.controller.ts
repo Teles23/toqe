@@ -55,6 +55,17 @@ export class ServicoController {
     return this.servicoService.findAll(Number(barCodigo));
   }
 
+  @Get('metricas')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
+  @ApiOperation({
+    summary:
+      'Métricas dos serviços: total ativo, pedidos/mês, receita/mês, ticket médio',
+  })
+  @ApiResponse({ status: 200, description: 'Métricas calculadas.' })
+  getMetricas(@Headers('x-tenant-id') barCodigo: string) {
+    return this.servicoService.getMetricas(Number(barCodigo));
+  }
+
   @Get(':codigo')
   @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
   @ApiOperation({ summary: 'Detalha um serviço pelo código' })

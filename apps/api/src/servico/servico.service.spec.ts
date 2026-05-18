@@ -97,4 +97,31 @@ describe('ServicoService', () => {
       expect(result.ativo).toBe(false);
     });
   });
+
+  describe('getMetricas', () => {
+    it('retorna métricas calculadas do mês atual', async () => {
+      mockPrisma.servico.count.mockResolvedValue(5);
+      mockPrisma.agendamento.findMany.mockResolvedValue([
+        { itens: [{ preco: '50.00' }, { preco: '30.00' }] },
+        { itens: [{ preco: '100.00' }] },
+      ]);
+
+      const result = await service.getMetricas(1);
+
+      expect(result.totalAtivos).toBe(5);
+      expect(result.pedidosMes).toBe(2);
+      expect(result.receitaMes).toBeCloseTo(180);
+      expect(result.ticketMedio).toBeCloseTo(90);
+    });
+
+    it('retorna ticketMedio 0 quando não há pedidos', async () => {
+      mockPrisma.servico.count.mockResolvedValue(3);
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      const result = await service.getMetricas(1);
+
+      expect(result.pedidosMes).toBe(0);
+      expect(result.ticketMedio).toBe(0);
+    });
+  });
 });

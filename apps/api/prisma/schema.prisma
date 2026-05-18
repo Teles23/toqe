@@ -35,6 +35,7 @@ model Usuario {
   jornadas       JornadaTrabalho[]
   servicosProps  BarbeiroServico[]
   preferencias   NotificacaoPreferencia[]
+  pushTokens     PushToken[]
 
   @@map("TQE_USUARIO")
 }
@@ -252,4 +253,17 @@ model NotificacaoPreferencia {
   usuario     Usuario   @relation(fields: [usrCodigo], references: [codigo])
 
   @@map("TQE_NOTIFICACAO_PREFERENCIA")
+}
+
+model PushToken {
+  codigo      Int      @id @default(autoincrement()) @map("TQE_PTK_CODIGO")
+  usrCodigo   Int      @map("TQE_PTK_USR_CODIGO")
+  token       String   @map("TQE_PTK_TOKEN") @db.VarChar(255)
+  plataforma  String   @default("unknown") @map("TQE_PTK_PLATAFORMA") @db.VarChar(10) // ios | android | unknown
+  criadoEm   DateTime @default(now()) @map("TQE_PTK_CRIADO_EM") @db.Timestamptz
+
+  usuario    Usuario  @relation(fields: [usrCodigo], references: [codigo], onDelete: Cascade)
+
+  @@unique([usrCodigo, token])
+  @@map("TQE_PUSH_TOKEN")
 }

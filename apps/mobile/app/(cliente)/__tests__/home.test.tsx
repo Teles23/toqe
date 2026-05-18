@@ -10,7 +10,13 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
-jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
+jest.mock("expo-router", () => ({
+  router: { replace: jest.fn(), push: jest.fn() },
+}));
+
+jest.mock("@/src/shared/hooks/cliente/use-proximo-agendamento", () => ({
+  useProximoAgendamento: jest.fn().mockReturnValue({ data: null }),
+}));
 
 const mockUseAuth = jest.fn();
 jest.mock("@/src/shared/hooks/use-auth", () => ({

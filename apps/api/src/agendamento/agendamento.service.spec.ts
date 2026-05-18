@@ -214,4 +214,45 @@ describe('AgendamentoService', () => {
       );
     });
   });
+
+  describe('meusAgendamentos', () => {
+    it('retorna agendamentos do cliente excluindo cancelados', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([mockAgendamento]);
+      const result = await service.meusAgendamentos(20, barCodigo);
+      expect(result).toEqual([mockAgendamento]);
+      expect(mockPrisma.agendamento.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ clienteId: 20, barCodigo }),
+        }),
+      );
+    });
+  });
+
+  describe('proximoAgendamento', () => {
+    it('retorna o próximo agendamento futuro', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      const result = await service.proximoAgendamento(20, barCodigo);
+      expect(result).toEqual(mockAgendamento);
+    });
+
+    it('retorna null quando não há próximo agendamento', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(null);
+      const result = await service.proximoAgendamento(20, barCodigo);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('agendamentoAtual', () => {
+    it('retorna agendamento em andamento', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      const result = await service.agendamentoAtual(10, barCodigo);
+      expect(result).toEqual(mockAgendamento);
+    });
+
+    it('retorna null quando não há agendamento atual', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(null);
+      const result = await service.agendamentoAtual(10, barCodigo);
+      expect(result).toBeNull();
+    });
+  });
 });
