@@ -79,7 +79,7 @@ export default function Sidebar({
         animate={{ width: isOpen ? 220 : 56 }}
         transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
         style={{ willChange: "width" }}
-        className="relative flex flex-col h-screen overflow-hidden flex-shrink-0"
+        className="relative z-50 flex flex-col h-screen overflow-hidden flex-shrink-0"
         aria-label="Navegação principal"
       >
         {/* Fundo com borda direita */}
