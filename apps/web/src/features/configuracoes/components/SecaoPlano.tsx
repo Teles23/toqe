@@ -50,16 +50,10 @@ export function SecaoPlano() {
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-[15px] font-bold mb-1"
-          style={{
-            fontFamily: "var(--font-heading)",
-            color: "var(--text-primary)",
-          }}
-        >
+        <h2 className="text-[15px] font-bold mb-1 font-heading text-[var(--text-primary)]">
           Plano & Faturamento
         </h2>
-        <p className="text-[12px]" style={{ color: "var(--text-secondary)" }}>
+        <p className="text-[12px] text-[var(--text-secondary)]">
           Gerencie sua assinatura e dados de pagamento.
         </p>
       </div>
@@ -102,13 +96,7 @@ export function SecaoPlano() {
               </span>
             )}
 
-            <span
-              className="block font-bold text-[16px] mb-0.5"
-              style={{
-                fontFamily: "var(--font-heading)",
-                color: "var(--text-primary)",
-              }}
-            >
+            <span className="block font-bold text-[16px] mb-0.5 font-heading text-[var(--text-primary)]">
               {p.nome}
             </span>
             <div className="flex items-baseline gap-1 mb-4">
@@ -122,12 +110,7 @@ export function SecaoPlano() {
               >
                 R${p.preco}
               </span>
-              <span
-                className="text-[11px]"
-                style={{ color: "var(--text-muted)" }}
-              >
-                /mês
-              </span>
+              <span className="text-[11px] text-[var(--text-muted)]">/mês</span>
             </div>
 
             <ul className="space-y-1.5 mb-4">
@@ -142,10 +125,7 @@ export function SecaoPlano() {
                       flexShrink: 0,
                     }}
                   />
-                  <span
-                    className="text-[11px]"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
+                  <span className="text-[11px] text-[var(--text-secondary)]">
                     {f}
                   </span>
                 </li>
@@ -153,14 +133,7 @@ export function SecaoPlano() {
             </ul>
 
             {!p.atual && (
-              <button
-                className="w-full py-2 rounded-lg text-[12px] font-semibold transition-all"
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--text-secondary)",
-                }}
-              >
+              <button className="w-full py-2 rounded-lg text-[12px] font-semibold transition-all border border-[var(--border-strong)] text-[var(--text-secondary)]">
                 {p.preco > 99 ? "Falar com vendas" : "Fazer upgrade"}
               </button>
             )}
@@ -168,35 +141,16 @@ export function SecaoPlano() {
         ))}
       </div>
 
-      <div
-        className="flex items-center justify-between p-4 rounded-xl"
-        style={{
-          background: "var(--bg-secondary)",
-          border: "1px solid var(--border-default)",
-        }}
-      >
+      <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)]">
         <div>
-          <span
-            className="block text-[13px] font-medium"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <span className="block text-[13px] font-medium text-[var(--text-primary)]">
             Próxima fatura
           </span>
-          <span
-            className="text-[12px]"
-            style={{ color: "var(--text-secondary)" }}
-          >
+          <span className="text-[12px] text-[var(--text-secondary)]">
             R$ 99,00 em 01/06/2025 · Cartão ···· 4242
           </span>
         </div>
-        <button
-          className="text-[12px] font-medium px-3 py-1.5 rounded-lg"
-          style={{
-            background: "transparent",
-            border: "1px solid var(--border-strong)",
-            color: "var(--text-secondary)",
-          }}
-        >
+        <button className="text-[12px] font-medium px-3 py-1.5 rounded-lg border border-[var(--border-strong)] text-[var(--text-secondary)]">
           Gerenciar
         </button>
       </div>

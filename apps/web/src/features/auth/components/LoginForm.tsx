@@ -80,10 +80,7 @@ export function LoginForm({
           maxLength={100}
         />
         {errors.email && (
-          <p
-            className="text-[11px] mt-1"
-            style={{ color: "var(--status-error)" }}
-          >
+          <p className="text-[11px] mt-1 text-[var(--status-error)]">
             {errors.email.message}
           </p>
         )}
@@ -92,14 +89,11 @@ export function LoginForm({
       {/* Senha */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="tqe-label" style={{ margin: 0 }}>
-            Senha
-          </label>
+          <label className="tqe-label !m-0">Senha</label>
           <button
             type="button"
             onClick={onForgotPassword}
-            className="text-[11px]"
-            style={{ color: "var(--status-info)" }}
+            className="text-[11px] text-[var(--status-info)]"
           >
             Esqueci minha senha
           </button>
@@ -116,17 +110,13 @@ export function LoginForm({
           <button
             type="button"
             onClick={() => setShowPass(!showPass)}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-            style={{ color: "var(--text-muted)" }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
           >
             {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
           </button>
         </div>
         {errors.senha && (
-          <p
-            className="text-[11px] mt-1"
-            style={{ color: "var(--status-error)" }}
-          >
+          <p className="text-[11px] mt-1 text-[var(--status-error)]">
             {errors.senha.message}
           </p>
         )}
@@ -167,31 +157,19 @@ export function LoginForm({
 
       {/* Divisor */}
       <div className="flex items-center gap-3">
-        <div
-          className="flex-1 h-px"
-          style={{ background: "var(--border-subtle)" }}
-        />
-        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-          ou
-        </span>
-        <div
-          className="flex-1 h-px"
-          style={{ background: "var(--border-subtle)" }}
-        />
+        <div className="flex-1 h-px bg-[var(--border-subtle)]" />
+        <span className="text-[11px] text-[var(--text-muted)]">ou</span>
+        <div className="flex-1 h-px bg-[var(--border-subtle)]" />
       </div>
 
       {/* Criar conta */}
       <div className="text-center">
-        <span
-          className="text-[13px]"
-          style={{ color: "var(--text-secondary)" }}
-        >
+        <span className="text-[13px] text-[var(--text-secondary)]">
           Não tem conta?{" "}
           <button
             type="button"
             onClick={onCreateAccount}
-            className="font-semibold"
-            style={{ color: "var(--primary)" }}
+            className="font-semibold text-[var(--primary)]"
           >
             Criar conta grátis
           </button>

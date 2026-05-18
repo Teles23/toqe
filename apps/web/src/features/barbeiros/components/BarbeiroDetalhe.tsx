@@ -31,20 +31,10 @@ export function BarbeiroDetalhe({
 
   const footer = (
     <>
-      <button
-        className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold"
-        style={{ background: "var(--primary)", color: "#0D0D0D" }}
-      >
+      <button className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold bg-[var(--primary)] text-[#0D0D0D]">
         <Calendar size={13} /> Ver agenda
       </button>
-      <button
-        className="px-3 flex items-center justify-center rounded-lg text-[12px]"
-        style={{
-          background: "transparent",
-          border: "1px solid var(--border-strong)",
-          color: "var(--text-secondary)",
-        }}
-      >
+      <button className="px-3 flex items-center justify-center rounded-lg text-[12px] border border-[var(--border-strong)] text-[var(--text-secondary)]">
         Editar
       </button>
     </>
@@ -58,10 +48,7 @@ export function BarbeiroDetalhe({
       footer={footer}
     >
       {/* Avatar + status */}
-      <div
-        className="px-4 py-5 text-center"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      >
+      <div className="px-4 py-5 text-center border-b border-[var(--border-subtle)]">
         <div className="relative inline-block mb-3">
           <div
             className="flex items-center justify-center rounded-full font-bold text-xl"
@@ -90,20 +77,11 @@ export function BarbeiroDetalhe({
             }}
           />
         </div>
-        <span
-          className="block font-bold text-[15px] mb-0.5"
-          style={{
-            fontFamily: "var(--font-heading)",
-            color: "var(--text-primary)",
-          }}
-        >
+        <span className="block font-bold text-[15px] mb-0.5 font-heading text-[var(--text-primary)]">
           {b.nome}
         </span>
         {b.especialidade && (
-          <span
-            className="block text-[11px] mb-2"
-            style={{ color: "var(--text-secondary)" }}
-          >
+          <span className="block text-[11px] mb-2 text-[var(--text-secondary)]">
             {b.especialidade}
           </span>
         )}
@@ -134,22 +112,13 @@ export function BarbeiroDetalhe({
       <DetailMetricGrid metrics={metrics} />
 
       {/* Escala */}
-      <div
-        className="px-4 py-3"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      >
-        <span
-          className="block text-[10px] uppercase tracking-wider mb-2"
-          style={{ color: "var(--text-muted)" }}
-        >
+      <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
+        <span className="block text-[10px] uppercase tracking-wider mb-2 text-[var(--text-muted)]">
           Escala
         </span>
         <div className="flex items-center gap-2 mb-2">
-          <Clock size={12} style={{ color: "var(--text-muted)" }} />
-          <span
-            className="text-[12px]"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <Clock size={12} className="text-[var(--text-muted)]" />
+          <span className="text-[12px] text-[var(--text-primary)]">
             Entrada às {b.horarioEntrada}
           </span>
         </div>
@@ -177,11 +146,8 @@ export function BarbeiroDetalhe({
       {b.telefone && (
         <div className="px-4 py-3">
           <div className="flex items-center gap-2">
-            <Phone size={12} style={{ color: "var(--text-muted)" }} />
-            <span
-              className="text-[12px]"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <Phone size={12} className="text-[var(--text-muted)]" />
+            <span className="text-[12px] text-[var(--text-primary)]">
               {b.telefone}
             </span>
           </div>

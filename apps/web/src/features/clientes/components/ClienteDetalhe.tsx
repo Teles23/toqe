@@ -24,20 +24,10 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
 
   const footer = (
     <>
-      <button
-        className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold"
-        style={{ background: "var(--primary)", color: "#0D0D0D" }}
-      >
+      <button className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold bg-[var(--primary)] text-[#0D0D0D]">
         <Calendar size={13} /> Agendar
       </button>
-      <button
-        className="flex items-center justify-center gap-1.5 px-3 rounded-lg py-2 text-[12px]"
-        style={{
-          background: "transparent",
-          border: "1px solid var(--border-strong)",
-          color: "var(--text-secondary)",
-        }}
-      >
+      <button className="flex items-center justify-center gap-1.5 px-3 rounded-lg py-2 text-[12px] border border-[var(--border-strong)] text-[var(--text-secondary)]">
         <MessageCircle size={13} />
       </button>
     </>
@@ -46,10 +36,7 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
   return (
     <DetailPanel title="Perfil do cliente" onClose={onClose} footer={footer}>
       {/* Avatar + nome */}
-      <div
-        className="px-4 py-5 text-center"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      >
+      <div className="px-4 py-5 text-center border-b border-[var(--border-subtle)]">
         <div
           className="mx-auto flex items-center justify-center rounded-full font-bold text-xl mb-3"
           style={{
@@ -63,13 +50,7 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
         >
           {cliente.initial}
         </div>
-        <span
-          className="block font-bold text-[15px] mb-2"
-          style={{
-            fontFamily: "var(--font-heading)",
-            color: "var(--text-primary)",
-          }}
-        >
+        <span className="block font-bold text-[15px] mb-2 font-heading text-[var(--text-primary)]">
           {cliente.nome}
         </span>
         <span
@@ -84,22 +65,13 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
 
       {/* Serviço favorito */}
       {cliente.servicoFav && (
-        <div
-          className="px-4 py-3"
-          style={{ borderBottom: "1px solid var(--border-subtle)" }}
-        >
-          <span
-            className="block text-[10px] uppercase tracking-wider mb-2"
-            style={{ color: "var(--text-muted)" }}
-          >
+        <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
+          <span className="block text-[10px] uppercase tracking-wider mb-2 text-[var(--text-muted)]">
             Serviço favorito
           </span>
           <div className="flex items-center gap-2">
-            <Scissors size={13} style={{ color: "var(--status-warning)" }} />
-            <span
-              className="text-[13px]"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <Scissors size={13} className="text-[var(--status-warning)]" />
+            <span className="text-[13px] text-[var(--text-primary)]">
               {cliente.servicoFav}
             </span>
           </div>
@@ -108,22 +80,13 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
 
       {/* Contato */}
       {cliente.telefone && (
-        <div
-          className="px-4 py-3"
-          style={{ borderBottom: "1px solid var(--border-subtle)" }}
-        >
-          <span
-            className="block text-[10px] uppercase tracking-wider mb-2"
-            style={{ color: "var(--text-muted)" }}
-          >
+        <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
+          <span className="block text-[10px] uppercase tracking-wider mb-2 text-[var(--text-muted)]">
             Contato
           </span>
           <div className="flex items-center gap-2">
-            <Phone size={13} style={{ color: "var(--text-muted)" }} />
-            <span
-              className="text-[13px]"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <Phone size={13} className="text-[var(--text-muted)]" />
+            <span className="text-[13px] text-[var(--text-primary)]">
               {cliente.telefone}
             </span>
           </div>

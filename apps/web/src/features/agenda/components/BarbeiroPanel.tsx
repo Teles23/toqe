@@ -25,13 +25,10 @@ export function BarbeiroPanel({ barbeiros, slots }: BarbeiroPanelProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span
-          className="text-[11px] font-semibold uppercase tracking-wider"
-          style={{ color: "var(--text-muted)" }}
-        >
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
           Barbeiros
         </span>
-        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+        <span className="text-[11px] text-[var(--text-muted)]">
           {ativos} ativos
         </span>
       </div>
@@ -49,17 +46,8 @@ export function BarbeiroPanel({ barbeiros, slots }: BarbeiroPanelProps) {
         ))}
       </div>
 
-      <div
-        className="rounded-xl p-4 space-y-2.5 mt-2"
-        style={{
-          background: "var(--bg-card)",
-          border: "1px solid var(--border-default)",
-        }}
-      >
-        <span
-          className="block text-[10px] font-semibold uppercase tracking-wider mb-3"
-          style={{ color: "var(--text-muted)" }}
-        >
+      <div className="rounded-xl p-4 space-y-2.5 mt-2 bg-[var(--bg-card)] border border-[var(--border-default)]">
+        <span className="block text-[10px] font-semibold uppercase tracking-wider mb-3 text-[var(--text-muted)]">
           Legenda
         </span>
         {LEGEND.map((l) => (
@@ -68,27 +56,15 @@ export function BarbeiroPanel({ barbeiros, slots }: BarbeiroPanelProps) {
               className="rounded-sm flex-shrink-0"
               style={{ width: 8, height: 8, background: l.color }}
             />
-            <span
-              className="text-[12px]"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <span className="text-[12px] text-[var(--text-secondary)]">
               {l.label}
             </span>
           </div>
         ))}
       </div>
 
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          background: "var(--bg-card)",
-          border: "1px solid var(--border-default)",
-        }}
-      >
-        <div
-          className="flex items-center gap-2 px-4 py-3"
-          style={{ borderBottom: "1px solid var(--border-subtle)" }}
-        >
+      <div className="rounded-xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-default)]">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-subtle)]">
           <span
             className="rounded-full"
             style={{
@@ -98,13 +74,7 @@ export function BarbeiroPanel({ barbeiros, slots }: BarbeiroPanelProps) {
               animation: "tqe-pulse-green 1.5s ease-in-out infinite",
             }}
           />
-          <span
-            className="text-[11px] font-semibold"
-            style={{
-              color: "var(--text-primary)",
-              fontFamily: "var(--font-body)",
-            }}
-          >
+          <span className="text-[11px] font-semibold text-[var(--text-primary)] font-body">
             Status ao vivo
           </span>
         </div>
@@ -128,15 +98,14 @@ export function BarbeiroPanel({ barbeiros, slots }: BarbeiroPanelProps) {
             },
           ].map((stat) => (
             <div key={stat.label} className="flex items-center justify-between">
-              <span
-                className="text-[11px]"
-                style={{ color: "var(--text-secondary)" }}
-              >
+              <span className="text-[11px] text-[var(--text-secondary)]">
                 {stat.label}
               </span>
               <span
-                className="text-[12px] font-semibold tabular-nums"
-                style={{ color: stat.color, fontFamily: "var(--font-heading)" }}
+                className="text-[12px] font-semibold tabular-nums font-heading"
+                style={{
+                  color: stat.color,
+                }} /* CSS var dinâmico — não migrar */
               >
                 {stat.value}
               </span>
