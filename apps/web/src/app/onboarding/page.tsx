@@ -603,6 +603,12 @@ function Passo4({
 
         <div className="ob-field">
           <label>Serviços</label>
+          <div className="svc-header">
+            <span>Nome do serviço</span>
+            <span>Preço (R$)</span>
+            <span>Duração (min)</span>
+            <span />
+          </div>
           <div className="svc-list">
             {servicos.map((servico, index) => (
               <div key={index} className="svc-row">
