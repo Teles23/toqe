@@ -40,7 +40,7 @@ const securityHeaders = [
       // script-src-elem explícito — alguns browsers exigem para o <script>
       // injetado dinamicamente pelo @react-oauth/google.
       `script-src-elem 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
-      "style-src 'self' 'unsafe-inline'",
+      `style-src 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       // Avatares Google do usuário logado.
       "img-src 'self' data: blob: https://*.googleusercontent.com https://accounts.google.com",
       "font-src 'self'",

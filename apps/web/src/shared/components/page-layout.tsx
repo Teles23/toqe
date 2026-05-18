@@ -19,9 +19,11 @@ export default function PageLayout({
   topbarActions,
   noPadding = false,
 }: PageLayoutProps): React.JSX.Element {
-  const [sidebarOpen, setSidebarOpen] = useState(
-    () => typeof window !== "undefined" && window.innerWidth >= 1024,
-  );
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  React.useEffect(() => {
+    setSidebarOpen(window.innerWidth >= 1024);
+  }, []);
 
   return (
     <div
