@@ -146,7 +146,7 @@ jobs:
           # NEXT_PUBLIC_* são build-time no Next.js — embutidos no bundle pelo next build
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
 
   deploy-develop:
     name: Deploy → VPS (develop)
