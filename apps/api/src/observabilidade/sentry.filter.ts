@@ -7,11 +7,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ApiErrorCode, ApiErrorPayload } from '@toqe/contracts/errors';
 
 /**
  * Filtro global de exceções:
  * - Loga erros 5xx com contexto de tenant/usuário (via Pino)
- * - Retorna resposta HTTP padronizada para todos os erros
+ * - Retorna resposta HTTP padronizada para todos os erros no formato ApiErrorPayload
  */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -69,11 +70,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         ? 'Erro interno do servidor'
         : errorMessage;
 
-    res.status(status).json({
+    const errorCode: string =
+      status >= 500 ? ApiErrorCode.INTERNAL : String(status);
+
+    const payload: ApiErrorPayload = {
       statusCode: status,
+      code: errorCode,
       message,
       timestamp: new Date().toISOString(),
       path: req.url,
-    });
+    };
+
+    res.status(status).json(payload);
   }
 }
