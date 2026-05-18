@@ -143,9 +143,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=min,scope=${{ matrix.app }}
-          # NEXT_PUBLIC_API_URL é build-time no Next.js — ignorado pelo Dockerfile da api
+          # NEXT_PUBLIC_* são build-time no Next.js — embutidos no bundle pelo next build
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
 
   deploy-develop:
     name: Deploy → VPS (develop)
