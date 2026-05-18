@@ -4,8 +4,10 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/src/shared/theme";
-import { Avatar, Card } from "@/src/shared/ui";
+import { Card } from "@/src/shared/ui";
 import type { ClienteAPI } from "@toqe/contracts";
+
+import { ClienteAvatar } from "./clientes/components/ClienteAvatar";
 
 interface Props {
   cliente: ClienteAPI;
@@ -39,24 +41,35 @@ function ClienteCardImpl({ cliente, onPress, testID }: Props) {
       accessibilityLabel={`Cliente ${cliente.nome}, ${cliente.totalVisitas} visitas`}
     >
       <View style={styles.row}>
-        <Avatar uri={cliente.avatarUrl} name={cliente.nome} size="md" />
+        <ClienteAvatar nome={cliente.nome} size={44} />
         <View style={[styles.info, { marginLeft: spacing.md - 4 }]}>
           <Text
-            style={{ ...typography.bodyBold, color: palette.text }}
+            style={[typography.bodyBold, { color: palette.text }]}
             numberOfLines={1}
           >
             {cliente.nome}
           </Text>
-          <Text
-            style={{
-              ...typography.caption,
-              color: palette.textMuted,
-              marginTop: 2,
-            }}
-            numberOfLines={1}
-          >
-            {cliente.email}
-          </Text>
+          {cliente.telefone ? (
+            <Text
+              style={[
+                typography.mono,
+                { color: palette.textMuted, marginTop: 2 },
+              ]}
+              numberOfLines={1}
+            >
+              {cliente.telefone}
+            </Text>
+          ) : (
+            <Text
+              style={[
+                typography.caption,
+                { color: palette.textMuted, marginTop: 2 },
+              ]}
+              numberOfLines={1}
+            >
+              {cliente.email}
+            </Text>
+          )}
         </View>
       </View>
 

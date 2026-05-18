@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { statusToBadge } from "@/src/features/barbeiro/utils/agendamento-actions";
 import {
   useAgendamento,
   useCancelarAgendamento,
@@ -18,23 +19,19 @@ import {
 import { useTheme } from "@/src/shared/theme";
 import {
   Avatar,
-  Button,
   Card,
+  CountdownTimer,
+  DangerButton,
   Divider,
   EmptyScreen,
+  GhostButton,
   ScreenHeader,
+  StatusBadge,
+  TimeDisplay,
 } from "@/src/shared/ui";
 
-const STATUS_LABEL: Record<string, string> = {
-  pendente: "Pendente",
-  confirmado: "Confirmado",
-  concluido: "Concluído",
-  cancelado: "Cancelado",
-  no_show: "No-show",
-};
-
 export default function AgendamentoDetalheScreen() {
-  const { palette, spacing, typography } = useTheme();
+  const { palette, spacing, radius, typography } = useTheme();
   const { codigo: codigoStr } = useLocalSearchParams<{ codigo: string }>();
   const codigo = Number(codigoStr);
   const { data, isLoading, isError, refetch } = useAgendamento(codigo);
@@ -72,7 +69,7 @@ export default function AgendamentoDetalheScreen() {
         style={[styles.center, { backgroundColor: palette.bg }]}
         testID="agendamento-loading"
       >
-        <ActivityIndicator color={palette.text} />
+        <ActivityIndicator color={palette.primary} />
       </View>
     );
   }
@@ -83,9 +80,8 @@ export default function AgendamentoDetalheScreen() {
         <ScreenHeader
           title="Agendamento"
           right={
-            <Button
+            <GhostButton
               label="Voltar"
-              variant="secondary"
               onPress={() => router.back()}
               accessibilityLabel="Voltar"
             />
@@ -95,7 +91,9 @@ export default function AgendamentoDetalheScreen() {
           icon="⚠️"
           title="Agendamento não encontrado"
           description="Verifique se o link está correto ou tente novamente."
-          action={<Button label="Tentar novamente" onPress={() => refetch()} />}
+          action={
+            <GhostButton label="Tentar novamente" onPress={() => refetch()} />
+          }
         />
       </View>
     );
@@ -106,18 +104,28 @@ export default function AgendamentoDetalheScreen() {
   const dataStr = format(inicio, "EEEE, dd 'de' MMMM 'de' yyyy", {
     locale: ptBR,
   });
-  const horarioStr = `${format(inicio, "HH:mm", { locale: ptBR })} – ${format(fim, "HH:mm", { locale: ptBR })}`;
+  const horaInicio = format(inicio, "HH:mm", { locale: ptBR });
+  const horarioStr = `${horaInicio} – ${format(fim, "HH:mm", { locale: ptBR })}`;
   const podeCancelar =
     data.status === "pendente" || data.status === "confirmado";
+  const isUpcoming =
+    inicio.getTime() > Date.now() &&
+    (data.status === "confirmado" || data.status === "pendente");
+
+  const totalPreco = data.itens.reduce(
+    (sum, item) => sum + Number(item.preco ?? 0),
+    0,
+  );
+
+  const badge = statusToBadge(data.status);
 
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       <ScreenHeader
         title="Agendamento"
         right={
-          <Button
+          <GhostButton
             label="Voltar"
-            variant="secondary"
             onPress={() => router.back()}
             accessibilityLabel="Voltar"
           />
@@ -127,49 +135,72 @@ export default function AgendamentoDetalheScreen() {
       <ScrollView
         contentContainerStyle={{
           padding: spacing.md,
-          paddingBottom: spacing.xxl,
+          paddingBottom: spacing.xxxl,
         }}
       >
-        <SectionLabel>Status</SectionLabel>
-        <Card testID="status-card">
-          <Text
-            style={{ ...typography.heading, color: palette.text }}
-            testID="status-text"
-          >
-            {STATUS_LABEL[data.status] ?? data.status}
-          </Text>
-        </Card>
+        {/* HERO TICKET — TimeDisplay XL + StatusBadge + CountdownTimer */}
+        <View
+          testID="status-card"
+          style={[
+            styles.hero,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.borderStrong,
+              borderRadius: radius.xl,
+              padding: spacing.lg,
+              marginBottom: spacing.lg,
+            },
+          ]}
+        >
+          <View style={styles.heroBadgeRow}>
+            <StatusBadge
+              status={badge.badge}
+              label={badge.label}
+              size="md"
+              textTestID="status-text"
+            />
+          </View>
 
-        <View style={{ height: spacing.sm }} />
+          <View style={[styles.heroTimeBlock, { marginTop: spacing.md }]}>
+            <TimeDisplay time={horaInicio} size="xl" color={palette.primary} />
+            <Text
+              style={[
+                typography.caption,
+                {
+                  color: palette.textMuted,
+                  marginTop: spacing.xs,
+                  fontFamily: "JetBrainsMono_500Medium",
+                },
+              ]}
+            >
+              até {format(fim, "HH:mm", { locale: ptBR })}
+            </Text>
+          </View>
 
-        <SectionLabel>Quando</SectionLabel>
-        <Card testID="data-card">
           <Text
-            style={{
-              ...typography.body,
-              color: palette.text,
-              fontWeight: "500",
-              textTransform: "capitalize",
-            }}
+            style={[
+              typography.subheading,
+              {
+                color: palette.text,
+                marginTop: spacing.md,
+                textTransform: "capitalize",
+                textAlign: "center",
+              },
+            ]}
           >
             {dataStr}
           </Text>
-          <Text
-            style={{
-              ...typography.bodyBold,
-              color: palette.text,
-              marginTop: 2,
-            }}
-          >
-            {horarioStr}
-          </Text>
-        </Card>
 
-        <View style={{ height: spacing.sm }} />
+          {isUpcoming ? (
+            <View style={{ marginTop: spacing.md }}>
+              <CountdownTimer target={inicio} />
+            </View>
+          ) : null}
+        </View>
 
         {data.barbeiro ? (
           <>
-            <SectionLabel>Com</SectionLabel>
+            <SectionLabel>Com quem</SectionLabel>
             <Card testID="barbeiro-card">
               <View style={styles.row}>
                 <Avatar
@@ -177,12 +208,20 @@ export default function AgendamentoDetalheScreen() {
                   name={data.barbeiro.nome}
                   size="md"
                 />
-                <View style={[styles.info, { marginLeft: spacing.md - 4 }]}>
+                <View style={[styles.info, { marginLeft: spacing.md }]}>
                   <Text
-                    style={{ ...typography.bodyBold, color: palette.text }}
+                    style={[typography.bodyBold, { color: palette.text }]}
                     numberOfLines={1}
                   >
                     {data.barbeiro.nome}
+                  </Text>
+                  <Text
+                    style={[
+                      typography.caption,
+                      { color: palette.textMuted, marginTop: 2 },
+                    ]}
+                  >
+                    Barbeiro
                   </Text>
                 </View>
               </View>
@@ -190,6 +229,32 @@ export default function AgendamentoDetalheScreen() {
             <View style={{ height: spacing.sm }} />
           </>
         ) : null}
+
+        <SectionLabel>Quando</SectionLabel>
+        <Card testID="data-card">
+          <Text
+            style={[
+              typography.bodyMedium,
+              { color: palette.text, textTransform: "capitalize" },
+            ]}
+          >
+            {dataStr}
+          </Text>
+          <Text
+            style={[
+              {
+                fontFamily: "JetBrainsMono_500Medium",
+                fontSize: 18,
+                lineHeight: 24,
+              },
+              { color: palette.primary, marginTop: 2 },
+            ]}
+          >
+            {horarioStr}
+          </Text>
+        </Card>
+
+        <View style={{ height: spacing.sm }} />
 
         <SectionLabel>Serviços</SectionLabel>
         <Card testID="servicos-card">
@@ -201,27 +266,63 @@ export default function AgendamentoDetalheScreen() {
                   paddingVertical: spacing.sm,
                   flexDirection: "row",
                   justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
                 <Text
-                  style={{ ...typography.body, color: palette.text }}
+                  style={[typography.body, { color: palette.text, flex: 1 }]}
                   numberOfLines={1}
                 >
                   {item.servico.nome}
                 </Text>
-                <Text style={{ ...typography.body, color: palette.textMuted }}>
+                <Text
+                  style={[typography.caption, { color: palette.textMuted }]}
+                >
                   {item.duracao}min
                 </Text>
               </View>
             </View>
           ))}
+          {totalPreco > 0 ? (
+            <>
+              <Divider />
+              <View
+                style={{
+                  paddingTop: spacing.sm,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={[
+                    typography.label,
+                    { color: palette.textMuted, textTransform: "uppercase" },
+                  ]}
+                >
+                  Total
+                </Text>
+                <Text
+                  style={[
+                    {
+                      fontFamily: "JetBrainsMono_500Medium",
+                      fontSize: 16,
+                      lineHeight: 22,
+                    },
+                    { color: palette.text },
+                  ]}
+                >
+                  R$ {totalPreco.toFixed(2).replace(".", ",")}
+                </Text>
+              </View>
+            </>
+          ) : null}
         </Card>
 
         {podeCancelar ? (
-          <View style={{ marginTop: spacing.lg }}>
-            <Button
+          <View style={{ marginTop: spacing.xl }}>
+            <DangerButton
               label="Cancelar agendamento"
-              variant="danger"
               onPress={handleCancelar}
               loading={cancelar.isPending}
               testID="botao-cancelar"
@@ -234,19 +335,17 @@ export default function AgendamentoDetalheScreen() {
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  const { palette, spacing, typography } = useTheme();
+  const { palette, spacing } = useTheme();
   return (
     <Text
-      style={{
-        ...typography.caption,
-        color: palette.textMuted,
-        textTransform: "uppercase",
-        fontSize: 11,
-        letterSpacing: 0.6,
-        fontWeight: "600",
-        marginBottom: 6,
-        marginTop: spacing.xs,
-      }}
+      style={[
+        styles.sectionLabel,
+        {
+          color: palette.textMuted,
+          marginBottom: 6,
+          marginTop: spacing.xs,
+        },
+      ]}
     >
       {children}
     </Text>
@@ -260,6 +359,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  hero: {
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  heroBadgeRow: {
+    alignSelf: "center",
+  },
+  heroTimeBlock: {
+    alignItems: "center",
+  },
   row: { flexDirection: "row", alignItems: "center" },
   info: { flex: 1 },
+  sectionLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
 });

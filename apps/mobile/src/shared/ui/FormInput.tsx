@@ -31,8 +31,10 @@ export const FormInput = forwardRef<TextInput, FormInputProps>(
     const { palette, spacing, radius, typography, a11y } = useTheme();
 
     return (
-      <View style={styles.wrapper(spacing)}>
-        <Text style={[styles.label(typography), { color: palette.text }]}>
+      <View style={{ marginBottom: spacing.md }}>
+        <Text
+          style={[typography.label, { color: palette.text, marginBottom: 6 }]}
+        >
           {label}
           {hint ? (
             <Text style={{ color: palette.textMuted }}> {hint}</Text>
@@ -41,8 +43,13 @@ export const FormInput = forwardRef<TextInput, FormInputProps>(
         <TextInput
           ref={ref}
           style={[
-            styles.input(spacing, radius, typography, a11y.minTouch),
+            styles.input,
             {
+              borderRadius: radius.md,
+              paddingHorizontal: spacing.md - 2,
+              fontFamily: typography.body.fontFamily,
+              fontSize: typography.body.fontSize,
+              minHeight: a11y.minTouch,
               backgroundColor: palette.inputBg,
               color: palette.text,
               borderColor: error ? palette.danger : palette.inputBorder,
@@ -54,7 +61,10 @@ export const FormInput = forwardRef<TextInput, FormInputProps>(
         />
         {error ? (
           <Text
-            style={[styles.error(typography), { color: palette.danger }]}
+            style={[
+              typography.caption,
+              { color: palette.danger, marginTop: 4 },
+            ]}
             accessibilityRole="alert"
           >
             {error}
@@ -65,31 +75,9 @@ export const FormInput = forwardRef<TextInput, FormInputProps>(
   },
 );
 
-const styles = {
-  wrapper: (s: { md: number }) => ({ marginBottom: s.md }),
-  label: (t: { label: { fontSize: number; fontWeight: "500" } }) => ({
-    fontSize: t.label.fontSize,
-    fontWeight: t.label.fontWeight,
-    marginBottom: 6,
-  }),
-  input: (
-    s: { md: number },
-    r: { md: number },
-    t: { body: { fontSize: number } },
-    minH: number,
-  ) =>
-    StyleSheet.create({
-      x: {
-        height: 48,
-        borderRadius: r.md,
-        borderWidth: 1,
-        paddingHorizontal: s.md - 2,
-        fontSize: t.body.fontSize,
-        minHeight: minH,
-      },
-    }).x,
-  error: (t: { caption: { fontSize: number } }) => ({
-    fontSize: t.caption.fontSize,
-    marginTop: 4,
-  }),
-};
+const styles = StyleSheet.create({
+  input: {
+    height: 48,
+    borderWidth: 1,
+  },
+});

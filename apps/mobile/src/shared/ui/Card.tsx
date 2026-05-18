@@ -44,7 +44,7 @@ export function Card(props: CardProps) {
 
   const containerStyle = [
     {
-      backgroundColor: palette.cardBg,
+      backgroundColor: palette.surface,
       borderColor: palette.border,
       borderWidth: 1,
       borderRadius: radius.md,

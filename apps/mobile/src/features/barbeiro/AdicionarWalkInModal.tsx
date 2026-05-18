@@ -17,7 +17,7 @@ import { maskTelefone } from "@/src/shared/utils/masks";
 import { useCriarWalkIn } from "@/src/shared/hooks/barbeiro/use-criar-walk-in";
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormErrorBox, FormInput, Select } from "@/src/shared/ui";
+import { AmberButton, FormErrorBox, FormInput, Select } from "@/src/shared/ui";
 
 const walkInFormSchema = z.object({
   nome: z
@@ -253,7 +253,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
             />
 
             <View style={{ marginTop: spacing.sm }}>
-              <Button
+              <AmberButton
                 label="Adicionar à fila"
                 onPress={handleSubmit(onSubmit)}
                 loading={isSubmitting}

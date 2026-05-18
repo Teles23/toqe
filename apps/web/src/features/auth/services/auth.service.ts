@@ -190,6 +190,17 @@ export async function requestGoogleLogin(idToken: string): Promise<void> {
   }
 }
 
+export async function checkEmailExists(email: string): Promise<boolean> {
+  const res = await fetch(
+    `/api/auth/check-email?email=${encodeURIComponent(email)}`,
+  );
+  if (!res.ok) {
+    return false;
+  }
+  const data = (await res.json()) as { exists: boolean };
+  return data.exists;
+}
+
 export async function request2FaSetup(): Promise<{
   qrCode: string;
   secret: string;

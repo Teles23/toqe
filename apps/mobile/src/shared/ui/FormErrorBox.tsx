@@ -24,7 +24,7 @@ export function FormErrorBox({ error, testID }: FormErrorBoxProps) {
       testID={testID ?? "form-error-box"}
       style={[
         styles.box,
-        { backgroundColor: palette.dangerBg, marginBottom: 16 },
+        { backgroundColor: palette.dangerDim, marginBottom: 16 },
       ]}
     >
       <Text

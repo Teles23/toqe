@@ -7,7 +7,13 @@ import { useEditarPerfil } from "@/src/shared/hooks/perfil/use-editar-perfil";
 import { maskTelefone } from "@/src/shared/utils/masks";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormErrorBox, FormInput, ScreenHeader } from "@/src/shared/ui";
+import {
+  AmberButton,
+  FormErrorBox,
+  FormInput,
+  GhostButton,
+  ScreenHeader,
+} from "@/src/shared/ui";
 import { updateUsuarioSchema, type UpdateUsuarioInput } from "@toqe/contracts";
 
 export default function PerfilEditarScreen() {
@@ -51,9 +57,8 @@ export default function PerfilEditarScreen() {
       <ScreenHeader
         title="Editar perfil"
         right={
-          <Button
+          <GhostButton
             label="Voltar"
-            variant="secondary"
             onPress={() => router.back()}
             accessibilityLabel="Voltar"
           />
@@ -107,7 +112,7 @@ export default function PerfilEditarScreen() {
         />
 
         <View style={{ marginTop: spacing.md }}>
-          <Button
+          <AmberButton
             label="Salvar"
             onPress={handleSubmit(onSubmit)}
             loading={isSubmitting}

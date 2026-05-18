@@ -10,7 +10,7 @@ export interface EmptyScreenProps {
   title: string;
   /** Descrição opcional */
   description?: string;
-  /** Slot opcional para botão de ação (use <Button>) */
+  /** Slot opcional para botão de ação (use AmberButton/GhostButton) */
   action?: ReactNode;
   testID?: string;
 }

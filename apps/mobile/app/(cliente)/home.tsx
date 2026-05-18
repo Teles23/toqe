@@ -7,6 +7,7 @@ import { useProximoAgendamento } from "@/src/shared/hooks/cliente/use-proximo-ag
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
 import {
+  AmberButton,
   Avatar,
   Card,
   Divider,
@@ -14,24 +15,66 @@ import {
   ListItem,
   ScreenHeader,
 } from "@/src/shared/ui";
+import { getCurrentGreeting } from "@/src/shared/utils/greeting";
 
+/**
+ * Home do cliente — saudação contextual, suas barbearias vinculadas e atalhos.
+ *
+ * Princípio Barber's Flow aplicado: greeting dinâmico ("Boa tarde ⛅") como
+ * primeira informação, seções tipograficamente fortes, cards dark.
+ *
+ * **TODO (refino futuro):** quando existir endpoint `GET /agendamentos/proximo`,
+ * substituir a saudação no topo por um **card hero** com `TimeDisplay` XL +
+ * `CountdownTimer` + `StatusBadge` quando houver agendamento próximo (estado A
+ * do prompt da Fase 35); voltar ao layout atual quando não houver (estado B).
+ */
 export default function ClienteHomeScreen() {
-  const { palette, spacing, typography } = useTheme();
+  const { palette, spacing, typography, radius } = useTheme();
   const { user, barbearias } = useAuth();
   const { data: proximo } = useProximoAgendamento();
 
+  const firstName = user?.nome?.split(" ")[0] ?? "cliente";
+  const greeting = getCurrentGreeting();
   const semBarbearias = barbearias.length === 0;
 
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
-      <ScreenHeader title={`Olá, ${user?.nome?.split(" ")[0] ?? "cliente"}`} />
+      <ScreenHeader title={`Olá, ${firstName}`} />
 
       <ScrollView
         contentContainerStyle={{
           padding: spacing.md,
-          paddingBottom: spacing.xxl,
+          paddingBottom: spacing.xxxl,
         }}
       >
+        {/* Greeting contextual em destaque — antecipa o card hero futuro */}
+        <View
+          style={[
+            styles.greeting,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+              borderRadius: radius.lg,
+              padding: spacing.lg,
+              marginBottom: spacing.lg,
+            },
+          ]}
+        >
+          <Text style={[typography.heading, { color: palette.text }]}>
+            {greeting.text} {greeting.icon}
+          </Text>
+          <Text
+            style={[
+              typography.caption,
+              { color: palette.textMuted, marginTop: spacing.xs },
+            ]}
+          >
+            {semBarbearias
+              ? "Vamos te conectar à sua próxima barbearia."
+              : "Que tal agendar seu próximo corte?"}
+          </Text>
+        </View>
+
         {semBarbearias ? (
           <EmptyScreen
             icon="✂️"
@@ -92,15 +135,13 @@ export default function ClienteHomeScreen() {
             ) : null}
 
             <Text
-              style={{
-                ...typography.caption,
-                color: palette.textMuted,
-                marginBottom: spacing.sm,
-                textTransform: "uppercase",
-                fontSize: 11,
-                letterSpacing: 0.6,
-                fontWeight: "600",
-              }}
+              style={[
+                styles.sectionTitle,
+                {
+                  color: palette.textMuted,
+                  marginBottom: spacing.sm,
+                },
+              ]}
             >
               Suas barbearias
             </Text>
@@ -111,20 +152,16 @@ export default function ClienteHomeScreen() {
                     <Avatar name={b.nome} size="md" />
                     <View style={[styles.info, { marginLeft: spacing.md - 4 }]}>
                       <Text
-                        style={{
-                          ...typography.bodyBold,
-                          color: palette.text,
-                        }}
+                        style={[typography.bodyBold, { color: palette.text }]}
                         numberOfLines={1}
                       >
                         {b.nome}
                       </Text>
                       <Text
-                        style={{
-                          ...typography.caption,
-                          color: palette.textMuted,
-                          marginTop: 2,
-                        }}
+                        style={[
+                          typography.caption,
+                          { color: palette.textMuted, marginTop: 2 },
+                        ]}
                       >
                         Perfil: {b.perfil}
                       </Text>
@@ -132,26 +169,35 @@ export default function ClienteHomeScreen() {
                   </View>
                 </Card>
                 {idx < barbearias.length - 1 ? (
-                  <View style={{ height: 8 }} />
+                  <View style={{ height: spacing.sm }} />
                 ) : null}
               </View>
             ))}
 
-            <View
+            <Text
               style={[
-                styles.atalhos,
+                styles.sectionTitle,
                 {
+                  color: palette.textMuted,
                   marginTop: spacing.lg,
-                  backgroundColor: palette.cardBg,
-                  borderColor: palette.border,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  overflow: "hidden",
+                  marginBottom: spacing.sm,
                 },
               ]}
             >
+              Atalhos
+            </Text>
+            <View
+              style={{
+                backgroundColor: palette.surface,
+                borderColor: palette.border,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                overflow: "hidden",
+              }}
+            >
               <ListItem
                 label="Meus agendamentos"
+                subtitle="Veja seus horários marcados"
                 trailing={{ kind: "arrow" }}
                 onPress={() => router.push("/(cliente)/agendamentos")}
                 testID="atalho-agendamentos"
@@ -159,9 +205,20 @@ export default function ClienteHomeScreen() {
               <Divider indent={16} />
               <ListItem
                 label="Buscar barbearias"
+                subtitle="Encontre profissionais perto de você"
                 trailing={{ kind: "arrow" }}
                 onPress={() => router.push("/(cliente)/buscar")}
                 testID="atalho-buscar"
+              />
+            </View>
+
+            <View style={{ marginTop: spacing.xl }}>
+              <AmberButton
+                label="Agendar novo horário"
+                onPress={() => {
+                  // navegação futura — placeholder até existir /(cliente)/agendar
+                }}
+                accessibilityLabel="Agendar novo horário"
               />
             </View>
           </>
@@ -175,5 +232,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center" },
   info: { flex: 1 },
-  atalhos: {},
+  greeting: { borderWidth: 1 },
+  sectionTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
 });

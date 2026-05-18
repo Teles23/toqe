@@ -1,27 +1,49 @@
 import { Tabs } from "expo-router";
-import { useColorScheme } from "react-native";
 
-const TINT_LIGHT = "#1a73e8";
-const TINT_DARK = "#4da3ff";
+import { useTheme } from "@/src/shared/theme";
+import {
+  buildTabBarOptions,
+  tabBarIcon,
+} from "@/src/shared/ui/tab-bar-options";
 
+/**
+ * Tab bar do cliente — 4 tabs no estilo Urban Flow native.
+ * Mesma fábrica do barbeiro (`buildTabBarOptions`) — DRY entre layouts.
+ */
 export default function ClienteLayout() {
-  const colorScheme = useColorScheme();
-  const tint = colorScheme === "dark" ? TINT_DARK : TINT_LIGHT;
+  const theme = useTheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: tint,
-        headerShown: false,
-      }}
-    >
-      <Tabs.Screen name="home" options={{ title: "Início" }} />
-      <Tabs.Screen name="buscar" options={{ title: "Buscar" }} />
+    <Tabs screenOptions={buildTabBarOptions(theme)}>
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: "Início",
+          tabBarIcon: tabBarIcon("home"),
+        }}
+      />
+      <Tabs.Screen
+        name="buscar"
+        options={{
+          title: "Buscar",
+          tabBarIcon: tabBarIcon("search"),
+        }}
+      />
       <Tabs.Screen
         name="agendamentos/index"
-        options={{ title: "Agendamentos", href: "/(cliente)/agendamentos" }}
+        options={{
+          title: "Agendamentos",
+          href: "/(cliente)/agendamentos",
+          tabBarIcon: tabBarIcon("calendar"),
+        }}
       />
-      <Tabs.Screen name="perfil" options={{ title: "Perfil" }} />
+      <Tabs.Screen
+        name="perfil"
+        options={{
+          title: "Perfil",
+          tabBarIcon: tabBarIcon("user"),
+        }}
+      />
     </Tabs>
   );
 }

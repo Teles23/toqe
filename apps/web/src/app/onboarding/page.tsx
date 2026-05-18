@@ -24,6 +24,7 @@ import {
   registerSchema,
 } from "@toqe/contracts";
 import { api, tenantApi } from "@/shared/api/api-client";
+import { checkEmailExists } from "@/features/auth/services/auth.service";
 import { getInitial } from "@/shared/lib/utils";
 import { maskTelefone, maskSlug } from "@/shared/utils/masks";
 
@@ -216,10 +217,11 @@ function Passo1Conta({
   onChange: (key: keyof AccountData, value: string) => void;
   fieldErrors: Record<string, string>;
   googleAuthed: boolean;
-  onGoogleSuccess: (credential: string) => void;
+  onGoogleSuccess: (credential: string) => Promise<void>;
 }) {
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
 
   if (googleAuthed) {
     return (
@@ -242,18 +244,56 @@ function Passo1Conta({
 
       {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
         <div className="ob-form" style={{ marginBottom: 0 }}>
-          <GoogleLogin
-            onSuccess={(credentialResponse) => {
-              if (credentialResponse.credential) {
-                onGoogleSuccess(credentialResponse.credential);
-              }
-            }}
-            onError={() => {}}
-            theme="filled_black"
-            text="signup_with"
-            shape="rectangular"
-            width="360"
-          />
+          <div className="relative">
+            <div className={loadingGoogle ? "opacity-0" : "opacity-100"}>
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  if (credentialResponse.credential) {
+                    setLoadingGoogle(true);
+                    try {
+                      await onGoogleSuccess(credentialResponse.credential);
+                    } finally {
+                      setLoadingGoogle(false);
+                    }
+                  }
+                }}
+                onError={() => {}}
+                theme="filled_black"
+                text="continue_with"
+                shape="pill"
+                type="standard"
+                size="large"
+                logo_alignment="left"
+              />
+            </div>
+            {loadingGoogle && (
+              <div className="absolute inset-0 bg-[var(--bg-secondary)] flex items-center justify-center rounded-full z-10 border border-[var(--border-default)]">
+                <span className="text-[var(--text-primary)] text-sm font-medium flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-4 w-4 text-[var(--status-info)]"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l1-2.647z"
+                    ></path>
+                  </svg>
+                  Carregando...
+                </span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px bg-[var(--border-subtle)]" />
             <span className="text-[11px] text-[var(--text-muted)]">
@@ -386,6 +426,16 @@ function Passo1Conta({
           </a>
           .
         </div>
+
+        <div className="mt-4 text-center text-sm text-[var(--foreground-muted)]">
+          Já tem uma conta?{" "}
+          <a
+            href="/login"
+            className="text-[var(--status-info)] font-medium hover:underline"
+          >
+            Fazer login
+          </a>
+        </div>
       </div>
     </>
   );
@@ -429,18 +479,20 @@ function Passo1({
               municipality?: string;
               county?: string;
               state_code?: string;
+              state?: string;
             };
           };
           const addr = geo.address;
           const city =
             addr?.city ?? addr?.town ?? addr?.municipality ?? addr?.county;
-          const state = addr?.state_code;
+          const state = addr?.state_code ?? addr?.state;
           if (city)
             onChangeRef.current(
               "cidade",
               `${city}${state ? `, ${state}` : ""}`,
             );
-        } catch {
+        } catch (err) {
+          console.error("Erro ao buscar localização no Nominatim:", err);
           // silencioso — campo fica em branco para o usuário preencher
         }
       },
@@ -1245,6 +1297,13 @@ export default function Onboarding(): React.JSX.Element {
       }
       if (account.senha !== account.confirmarSenha) {
         setFieldErrors({ confirmarSenha: "As senhas não conferem" });
+        return;
+      }
+
+      // Checa se o e-mail já existe
+      const emailExists = await checkEmailExists(account.email);
+      if (emailExists) {
+        setFieldErrors({ email: "Este e-mail já está em uso" });
         return;
       }
     }

@@ -22,14 +22,20 @@ function make(over: Partial<ClienteAPI> = {}): ClienteAPI {
 }
 
 describe("ClienteCard", () => {
-  it("renderiza nome, email e métricas formatadas", () => {
+  it("renderiza nome, telefone (mono) e métricas formatadas", () => {
     render(<ClienteCard cliente={make()} />);
     expect(screen.getByText("Carlos Silva")).toBeTruthy();
-    expect(screen.getByText("carlos@toqe.com")).toBeTruthy();
+    // Telefone agora é o identificador secundário (mono font)
+    expect(screen.getByText("+5511999999999")).toBeTruthy();
     expect(screen.getByText("5")).toBeTruthy(); // visitas
     // Formatação BRL — pode variar em separador (espaço regular vs nbsp/narrow)
     expect(screen.getByText(/R\$\s?50,10/)).toBeTruthy();
     expect(screen.getByText(/R\$\s?250,50/)).toBeTruthy();
+  });
+
+  it("cai para email quando telefone é null (não some o identificador)", () => {
+    render(<ClienteCard cliente={make({ telefone: null })} />);
+    expect(screen.getByText("carlos@toqe.com")).toBeTruthy();
   });
 
   it("formata última visita como dd/MM/yyyy", () => {

@@ -19,7 +19,10 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Toqe — Portal",
+  title: {
+    default: "Toqe — Gestão para Barbearias",
+    template: "%s | Toqe",
+  },
   description: "Sistema de gestão para barbearias",
 };
 
