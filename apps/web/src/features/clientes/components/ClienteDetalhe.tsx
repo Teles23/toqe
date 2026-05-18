@@ -96,16 +96,10 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
       {/* Última visita */}
       {cliente.ultimaVisita && (
         <div className="px-4 py-3">
-          <span
-            className="block text-[10px] uppercase tracking-wider mb-2"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <span className="block text-[10px] uppercase tracking-wider mb-2 text-[var(--text-muted)]">
             Última visita
           </span>
-          <span
-            className="text-[13px]"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <span className="text-[13px] text-[var(--text-primary)]">
             {new Date(cliente.ultimaVisita).toLocaleDateString("pt-BR")}
           </span>
         </div>
