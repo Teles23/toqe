@@ -7,13 +7,13 @@ import { UpdateServicoDto } from './dto/update-servico.dto';
 export class ServicoService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateServicoDto, barCodigo: number) {
+  create(dto: CreateServicoDto, barCodigo: number) {
     return this.prisma.servico.create({
       data: { ...dto, barCodigo },
     });
   }
 
-  async findAll(barCodigo: number) {
+  findAll(barCodigo: number) {
     return this.prisma.servico.findMany({
       where: { barCodigo, ativo: true },
       orderBy: { nome: 'asc' },
