@@ -21,7 +21,7 @@ export class TemaTenantService {
     );
   }
 
-  async upsertTema(barCodigo: number, dto: UpdateTemaDto) {
+  upsertTema(barCodigo: number, dto: UpdateTemaDto) {
     return this.prisma.temaTenant.upsert({
       where: { barCodigo },
       update: dto,
