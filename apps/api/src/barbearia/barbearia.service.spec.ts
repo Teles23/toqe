@@ -64,4 +64,32 @@ describe('BarbeariaService', () => {
       await expect(service.findOne(99)).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('findPublico', () => {
+    it('retorna barbearias ativas com dados públicos', async () => {
+      const mockList = [
+        { codigo: 1, nome: 'Barbearia A', slug: 'a', tema: null },
+      ];
+      mockPrisma.barbearia.findMany.mockResolvedValue(mockList);
+      const result = await service.findPublico();
+      expect(result).toEqual(mockList);
+      expect(mockPrisma.barbearia.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ ativo: true }),
+        }),
+      );
+    });
+
+    it('filtra por nome quando query fornecida', async () => {
+      mockPrisma.barbearia.findMany.mockResolvedValue([]);
+      await service.findPublico('barber');
+      expect(mockPrisma.barbearia.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            nome: { contains: 'barber', mode: 'insensitive' },
+          }),
+        }),
+      );
+    });
+  });
 });

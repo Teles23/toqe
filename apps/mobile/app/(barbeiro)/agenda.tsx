@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AgendamentoCard } from "@/src/features/barbeiro/AgendamentoCard";
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
+import { useAgendamentoAtual } from "@/src/shared/hooks/barbeiro/use-agendamento-atual";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import { useTheme } from "@/src/shared/theme";
 import { DataListWrapper, ScreenHeader } from "@/src/shared/ui";
@@ -17,6 +18,7 @@ export default function BarbeiroAgendaScreen() {
   const { data, isLoading, isRefetching, refetch, isError } =
     useAgendaDia(selectedDate);
   const updateStatus = useUpdateStatus();
+  const { data: atual } = useAgendamentoAtual();
 
   const handleChangeStatus = useCallback(
     (codigo: number, status: Exclude<StatusAgendamento, "pendente">) => {
@@ -107,6 +109,50 @@ export default function BarbeiroAgendaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       <ScreenHeader title="Agenda" subheader={dayNav} />
+
+      {atual ? (
+        <View
+          style={{
+            marginHorizontal: spacing.md,
+            marginBottom: spacing.sm,
+            padding: spacing.sm + 2,
+            backgroundColor: palette.primary + "20",
+            borderRadius: radius.md,
+            borderLeftWidth: 3,
+            borderLeftColor: palette.primary,
+          }}
+          testID="card-agora"
+        >
+          <Text
+            style={{
+              ...typography.label,
+              color: palette.primary,
+              fontSize: 11,
+              fontWeight: "700",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+            }}
+          >
+            Em atendimento agora
+          </Text>
+          <Text
+            style={{
+              ...typography.bodyBold,
+              color: palette.text,
+              marginTop: 2,
+            }}
+            numberOfLines={1}
+          >
+            {atual.cliente.nome}
+          </Text>
+          <Text
+            style={{ ...typography.caption, color: palette.textMuted }}
+            numberOfLines={1}
+          >
+            {atual.itens[0]?.servico.nome ?? "Serviço"}
+          </Text>
+        </View>
+      ) : null}
 
       <DataListWrapper
         testID="lista-agendamentos"

@@ -37,6 +37,23 @@ export class BarbeariaService {
     return barbearia;
   }
 
+  findPublico(q?: string) {
+    return this.prisma.barbearia.findMany({
+      where: {
+        ativo: true,
+        ...(q ? { nome: { contains: q, mode: 'insensitive' } } : {}),
+      },
+      select: {
+        codigo: true,
+        nome: true,
+        slug: true,
+        tema: { select: { logoUrl: true } },
+      },
+      orderBy: { nome: 'asc' },
+      take: 50,
+    });
+  }
+
   async update(barCodigo: number, dto: UpdateBarbeariaDto) {
     await this.findOne(barCodigo);
 

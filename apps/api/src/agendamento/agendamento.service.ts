@@ -105,6 +105,56 @@ export class AgendamentoService {
     return agendamento;
   }
 
+  meusAgendamentos(clienteId: number, barCodigo: number) {
+    return this.prisma.agendamento.findMany({
+      where: {
+        clienteId,
+        barCodigo,
+        status: { not: StatusAgendamento.CANCELADO },
+      },
+      include: INCLUDE_COMPLETO,
+      orderBy: { inicio: 'asc' },
+    });
+  }
+
+  async proximoAgendamento(clienteId: number, barCodigo: number) {
+    const agendamento = await this.prisma.agendamento.findFirst({
+      where: {
+        clienteId,
+        barCodigo,
+        inicio: { gt: new Date() },
+        status: {
+          notIn: [
+            StatusAgendamento.CANCELADO,
+            StatusAgendamento.CONCLUIDO,
+            StatusAgendamento.NO_SHOW,
+          ],
+        },
+      },
+      include: INCLUDE_COMPLETO,
+      orderBy: { inicio: 'asc' },
+    });
+    return agendamento ?? null;
+  }
+
+  async agendamentoAtual(barbeiroId: number, barCodigo: number) {
+    const now = new Date();
+    const agendamento = await this.prisma.agendamento.findFirst({
+      where: {
+        barbeiroId,
+        barCodigo,
+        inicio: { lte: now },
+        fim: { gte: now },
+        status: {
+          in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+        },
+      },
+      include: INCLUDE_COMPLETO,
+      orderBy: { inicio: 'asc' },
+    });
+    return agendamento ?? null;
+  }
+
   private buildItensData(
     servicos: Prisma.ServicoGetPayload<{ include: { barbeiros: true } }>[],
     barCodigo: number,

@@ -1,5 +1,9 @@
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { router } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { useProximoAgendamento } from "@/src/shared/hooks/cliente/use-proximo-agendamento";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
 import {
@@ -11,14 +15,10 @@ import {
   ScreenHeader,
 } from "@/src/shared/ui";
 
-/**
- * Home do cliente — cumprimento, suas barbearias vinculadas e atalhos.
- * Sem dependência de novos endpoints — usa dados do user já carregados
- * no `useAuth` (barbearias[] vem de GET /usuarios/me).
- */
 export default function ClienteHomeScreen() {
   const { palette, spacing, typography } = useTheme();
   const { user, barbearias } = useAuth();
+  const { data: proximo } = useProximoAgendamento();
 
   const semBarbearias = barbearias.length === 0;
 
@@ -40,6 +40,57 @@ export default function ClienteHomeScreen() {
           />
         ) : (
           <>
+            {proximo ? (
+              <>
+                <Text
+                  style={{
+                    ...typography.caption,
+                    color: palette.textMuted,
+                    marginBottom: spacing.sm,
+                    textTransform: "uppercase",
+                    fontSize: 11,
+                    letterSpacing: 0.6,
+                    fontWeight: "600",
+                  }}
+                >
+                  Próximo agendamento
+                </Text>
+                <Card testID="proximo-agendamento-card">
+                  <Text
+                    style={{ ...typography.bodyBold, color: palette.text }}
+                    numberOfLines={1}
+                  >
+                    {proximo.itens[0]?.servico.nome ?? "Serviço"}
+                  </Text>
+                  <Text
+                    style={{
+                      ...typography.caption,
+                      color: palette.textMuted,
+                      marginTop: 2,
+                    }}
+                  >
+                    {format(
+                      parseISO(proximo.inicio),
+                      "EEEE, dd 'de' MMMM 'às' HH:mm",
+                      { locale: ptBR },
+                    )}
+                  </Text>
+                  {proximo.barbeiro ? (
+                    <Text
+                      style={{
+                        ...typography.caption,
+                        color: palette.textMuted,
+                        marginTop: 2,
+                      }}
+                    >
+                      Com {proximo.barbeiro.nome}
+                    </Text>
+                  ) : null}
+                </Card>
+                <View style={{ height: spacing.lg }} />
+              </>
+            ) : null}
+
             <Text
               style={{
                 ...typography.caption,
@@ -101,15 +152,15 @@ export default function ClienteHomeScreen() {
             >
               <ListItem
                 label="Meus agendamentos"
-                subtitle="Em breve"
                 trailing={{ kind: "arrow" }}
+                onPress={() => router.push("/(cliente)/agendamentos")}
                 testID="atalho-agendamentos"
               />
               <Divider indent={16} />
               <ListItem
                 label="Buscar barbearias"
-                subtitle="Em breve"
                 trailing={{ kind: "arrow" }}
+                onPress={() => router.push("/(cliente)/buscar")}
                 testID="atalho-buscar"
               />
             </View>

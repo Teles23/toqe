@@ -22,6 +22,10 @@ jest.mock("@/src/shared/hooks/barbeiro/use-update-status", () => ({
   useUpdateStatus: jest.fn(),
 }));
 
+jest.mock("@/src/shared/hooks/barbeiro/use-agendamento-atual", () => ({
+  useAgendamentoAtual: jest.fn().mockReturnValue({ data: null }),
+}));
+
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { addDays, format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";

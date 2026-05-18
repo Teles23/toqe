@@ -16,6 +16,7 @@ import "react-native-reanimated";
 
 import { hideSplash } from "@/src/_init/splash";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { usePushNotifications } from "@/src/shared/hooks/use-push-notifications";
 import { AuthProvider } from "@/src/shared/providers/auth-provider";
 import { QueryProvider } from "@/src/shared/providers/query-provider";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -27,6 +28,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 function RootNavigator() {
   const colorScheme = useColorScheme();
   const { loading } = useAuth();
+  usePushNotifications();
 
   useEffect(() => {
     if (!loading) {

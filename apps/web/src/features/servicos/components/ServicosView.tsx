@@ -13,6 +13,7 @@ import {
 import StatCard from "@/shared/components/stat-card";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { useServicos, useServicoMutations } from "../hooks/use-servicos";
+import { useServicosMetricas } from "../hooks/use-servicos-metricas";
 import { ServicoCard } from "./ServicoCard";
 import { ServicoDetalhe } from "./ServicoDetalhe";
 import { ServicoModal } from "./ServicoModal";
@@ -24,6 +25,7 @@ export function ServicosView() {
   const barCodigo = barbearia?.codigo ?? null;
   const { data: servicos = [], isLoading } = useServicos(barCodigo);
   const { remove } = useServicoMutations(barCodigo);
+  const { data: metricas } = useServicosMetricas(barCodigo);
 
   const [selected, setSelected] = useState<ServicoAPI | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -49,26 +51,26 @@ export function ServicosView() {
         {[
           {
             label: "Serviços ativos",
-            value: totalAtivos,
+            value: metricas?.totalAtivos ?? totalAtivos,
             status: "info" as const,
             icon: Scissors,
           },
           {
             label: "Pedidos este mês",
-            value: 0,
+            value: metricas?.pedidosMes ?? 0,
             status: "success" as const,
             icon: TrendingUp,
           },
           {
             label: "Receita do mês",
-            value: 0,
+            value: metricas ? Math.round(metricas.receitaMes) : 0,
             unit: "R$",
             status: "warning" as const,
             icon: DollarSign,
           },
           {
             label: "Ticket médio",
-            value: 0,
+            value: metricas ? Math.round(metricas.ticketMedio) : 0,
             unit: "R$",
             status: "neutral" as const,
             icon: Star,

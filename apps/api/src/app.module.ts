@@ -20,6 +20,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { RelatorioModule } from './relatorio/relatorio.module';
 import { ObservabilidadeModule } from './observabilidade/observabilidade.module';
 import { HealthModule } from './health/health.module';
+import { PushTokenModule } from './push-token/push-token.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { HealthModule } from './health/health.module';
     DashboardModule,
     RelatorioModule,
     HealthModule,
+    PushTokenModule,
   ],
   controllers: [AppController],
   providers: [

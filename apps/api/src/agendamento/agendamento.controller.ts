@@ -12,6 +12,7 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { AgendamentoService } from './agendamento.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
@@ -21,6 +22,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { JwtRequest } from '../common/types/jwt-request';
 import {
   ApiTags,
   ApiOperation,
@@ -61,6 +63,55 @@ export class AgendamentoController {
     @Headers('x-tenant-id') barCodigo: string,
   ) {
     return this.agendamentoService.findAll(Number(barCodigo), filtros);
+  }
+
+  @Get('meus')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
+  @ApiOperation({
+    summary: 'Lista agendamentos do cliente logado nesta barbearia',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de agendamentos do cliente.',
+  })
+  meusAgendamentos(
+    @Request() req: JwtRequest,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
+    return this.agendamentoService.meusAgendamentos(
+      req.user.sub,
+      Number(barCodigo),
+    );
+  }
+
+  @Get('proximo')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
+  @ApiOperation({ summary: 'Próximo agendamento futuro do cliente logado' })
+  @ApiResponse({ status: 200, description: 'Agendamento ou null.' })
+  proximoAgendamento(
+    @Request() req: JwtRequest,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
+    return this.agendamentoService.proximoAgendamento(
+      req.user.sub,
+      Number(barCodigo),
+    );
+  }
+
+  @Get('atual')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
+  @ApiOperation({
+    summary: 'Agendamento em atendimento agora pelo barbeiro logado',
+  })
+  @ApiResponse({ status: 200, description: 'Agendamento atual ou null.' })
+  agendamentoAtual(
+    @Request() req: JwtRequest,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
+    return this.agendamentoService.agendamentoAtual(
+      req.user.sub,
+      Number(barCodigo),
+    );
   }
 
   @Get(':codigo')

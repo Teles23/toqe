@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
   Headers,
@@ -62,6 +63,13 @@ export class BarbeariaController {
   @ApiResponse({ status: 409, description: 'Slug já em uso.' })
   create(@Body() dto: CreateBarbeariaDto, @Request() req: JwtRequest) {
     return this.barbeariaService.create(dto, req.user.sub);
+  }
+
+  @Get('publico')
+  @ApiOperation({ summary: 'Lista pública de barbearias (sem autenticação)' })
+  @ApiResponse({ status: 200, description: 'Lista de barbearias.' })
+  findPublico(@Query('q') q?: string) {
+    return this.barbeariaService.findPublico(q);
   }
 
   @Get(':barCodigo')
