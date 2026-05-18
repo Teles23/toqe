@@ -16,14 +16,7 @@ import { Scissors } from "lucide-react";
  */
 export function AuthBrandingPanel(): React.JSX.Element {
   return (
-    <div
-      className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden"
-      style={{
-        width: "45%",
-        background: "var(--bg-secondary)",
-        borderRight: "1px solid var(--border-subtle)",
-      }}
-    >
+    <div className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden w-[45%] bg-[var(--bg-secondary)] border-r border-[var(--border-subtle)]">
       {/* Grade decorativa */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -58,24 +51,16 @@ export function AuthBrandingPanel(): React.JSX.Element {
         className="relative z-10 flex items-center gap-3"
       >
         <div
-          className="flex items-center justify-center rounded-xl"
+          className="flex items-center justify-center rounded-xl bg-[var(--primary)]"
           style={{
             width: 38,
             height: 38,
-            background: "var(--primary)",
             boxShadow: "0 0 20px rgba(244,180,0,0.3)",
           }}
         >
           <Scissors size={17} color="#0D0D0D" strokeWidth={2.5} />
         </div>
-        <span
-          className="font-bold text-[20px]"
-          style={{
-            fontFamily: "var(--font-heading)",
-            letterSpacing: "-0.03em",
-            color: "var(--text-primary)",
-          }}
-        >
+        <span className="font-bold text-[20px] font-heading tracking-[-0.03em] text-[var(--text-primary)]">
           Toqe
         </span>
       </motion.div>
@@ -87,16 +72,7 @@ export function AuthBrandingPanel(): React.JSX.Element {
         transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10"
       >
-        <blockquote
-          className="font-bold mb-6"
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "1.75rem",
-            letterSpacing: "-0.03em",
-            lineHeight: 1.25,
-            color: "var(--text-primary)",
-          }}
-        >
+        <blockquote className="font-bold mb-6 font-heading text-[1.75rem] tracking-[-0.03em] leading-[1.25] text-[var(--text-primary)]">
           &ldquo;A operação da barbearia em tempo real, no seu controle.&rdquo;
         </blockquote>
 
@@ -110,7 +86,7 @@ export function AuthBrandingPanel(): React.JSX.Element {
         transition={{ delay: 0.5 }}
         className="relative z-10 flex items-center gap-2"
       >
-        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+        <span className="text-[12px] text-[var(--text-muted)]">
           © 2025 Toqe · Urban Flow System
         </span>
       </motion.div>
@@ -142,20 +118,9 @@ function BrandingLiveStatusMock(): React.JSX.Element {
   ];
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--border-default)",
-        boxShadow: "var(--shadow-lg)",
-        maxWidth: 360,
-      }}
-    >
+    <div className="rounded-2xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-default)] shadow-[var(--shadow-lg)] max-w-[360px]">
       {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 py-3"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      >
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2">
           <span
             className="rounded-full"
@@ -166,10 +131,7 @@ function BrandingLiveStatusMock(): React.JSX.Element {
               animation: "tqe-pulse-green 1.5s ease-in-out infinite",
             }}
           />
-          <span
-            className="text-[12px] font-semibold"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <span className="text-[12px] font-semibold text-[var(--text-primary)]">
             Status ao vivo
           </span>
         </div>
@@ -185,30 +147,16 @@ function BrandingLiveStatusMock(): React.JSX.Element {
       </div>
 
       {/* Métricas */}
-      <div
-        className="grid grid-cols-2 divide-x"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      >
+      <div className="grid grid-cols-2 divide-x border-b border-[var(--border-subtle)] divide-[var(--border-subtle)]">
         {metrics.map((s) => (
-          <div
-            key={s.label}
-            className="px-4 py-3"
-            style={{ borderColor: "var(--border-subtle)" }}
-          >
+          <div key={s.label} className="px-4 py-3">
             <span
-              className="block font-bold text-[16px]"
-              style={{
-                fontFamily: "var(--font-heading)",
-                color: s.color,
-                letterSpacing: "-0.03em",
-              }}
+              className="block font-bold text-[16px] font-heading tracking-[-0.03em]"
+              style={{ color: s.color }} /* CSS var dinâmico — não migrar */
             >
               {s.value}
             </span>
-            <span
-              className="text-[10px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <span className="text-[10px] text-[var(--text-muted)]">
               {s.label}
             </span>
           </div>
@@ -245,50 +193,37 @@ function BrandingLiveStatusMock(): React.JSX.Element {
                 />
               )}
               <div
-                className="flex-shrink-0 flex items-center justify-center rounded-full font-bold text-[10px]"
+                className="flex-shrink-0 flex items-center justify-center rounded-full font-bold text-[10px] font-heading"
                 style={{
                   width: 24,
                   height: 24,
-                  background: `${color}18`,
-                  color,
-                  fontFamily: "var(--font-heading)",
+                  background: `${color}18` /* CSS var dinâmico — não migrar */,
+                  color /* CSS var dinâmico — não migrar */,
                 }}
               >
                 {b.n[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <span
-                  className="block text-[11px] font-medium"
-                  style={{ color: "var(--text-primary)" }}
-                >
+                <span className="block text-[11px] font-medium text-[var(--text-primary)]">
                   {b.n}
                 </span>
                 {b.cliente ? (
                   <>
-                    <span
-                      className="block text-[10px]"
-                      style={{ color: "var(--text-secondary)" }}
-                    >
+                    <span className="block text-[10px] text-[var(--text-secondary)]">
                       {b.cliente}
                     </span>
-                    <div
-                      className="mt-1 rounded-full overflow-hidden"
-                      style={{
-                        height: 2,
-                        background: "var(--border-default)",
-                      }}
-                    >
+                    <div className="mt-1 rounded-full overflow-hidden h-0.5 bg-[var(--border-default)]">
                       <div
                         className="h-full rounded-full"
-                        style={{ width: `${b.pct}%`, background: color }}
+                        style={{
+                          width: `${b.pct}%`,
+                          background: color,
+                        }} /* CSS var dinâmico — não migrar */
                       />
                     </div>
                   </>
                 ) : (
-                  <span
-                    className="text-[10px]"
-                    style={{ color: "var(--text-muted)" }}
-                  >
+                  <span className="text-[10px] text-[var(--text-muted)]">
                     Disponível
                   </span>
                 )}

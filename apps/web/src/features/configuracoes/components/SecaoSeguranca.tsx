@@ -60,36 +60,18 @@ export function SecaoSeguranca() {
   return (
     <div className="space-y-6">
       <div>
-        <h2
-          className="text-[15px] font-bold mb-1"
-          style={{
-            fontFamily: "var(--font-heading)",
-            color: "var(--text-primary)",
-          }}
-        >
+        <h2 className="text-[15px] font-bold mb-1 font-heading text-[var(--text-primary)]">
           Segurança
         </h2>
-        <p className="text-[12px]" style={{ color: "var(--text-secondary)" }}>
+        <p className="text-[12px] text-[var(--text-secondary)]">
           Gerencie sua senha e as sessões ativas.
         </p>
       </div>
 
       {/* Alterar senha */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ border: "1px solid var(--border-default)" }}
-      >
-        <div
-          className="px-4 py-2.5"
-          style={{
-            borderBottom: "1px solid var(--border-subtle)",
-            background: "var(--bg-secondary)",
-          }}
-        >
-          <span
-            className="text-[11px] font-semibold uppercase tracking-wider"
-            style={{ color: "var(--text-muted)" }}
-          >
+      <div className="rounded-xl overflow-hidden border border-[var(--border-default)]">
+        <div className="px-4 py-2.5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Alterar senha
           </span>
         </div>
@@ -116,26 +98,25 @@ export function SecaoSeguranca() {
           {senha.nova.length > 0 &&
             senha.confirma.length > 0 &&
             senha.nova !== senha.confirma && (
-              <p
-                className="text-[11px]"
-                style={{ color: "var(--status-error)" }}
-              >
+              <p className="text-[11px] text-[var(--status-error)]">
                 As senhas não coincidem
               </p>
             )}
           {changePassword.isError && (
-            <p className="text-[11px]" style={{ color: "var(--status-error)" }}>
+            <p className="text-[11px] text-[var(--status-error)]">
               {changePassword.error.message}
             </p>
           )}
           <button
             onClick={handleChangePassword}
             disabled={!senhaValida || changePassword.isPending}
-            className="px-4 py-2 rounded-lg text-[12px] font-semibold mt-1"
+            className="px-4 py-2 rounded-lg text-[12px] font-semibold mt-1 bg-[var(--primary)] text-[#0D0D0D]"
             style={{
-              background: "var(--primary)",
-              color: "#0D0D0D",
-              opacity: !senhaValida || changePassword.isPending ? 0.5 : 1,
+              opacity:
+                !senhaValida || changePassword.isPending
+                  ? 0.5
+                  : 1 /* CSS var dinâmico — não migrar */,
+              /* CSS var dinâmico — não migrar */
               cursor:
                 !senhaValida || changePassword.isPending
                   ? "not-allowed"
@@ -148,21 +129,9 @@ export function SecaoSeguranca() {
       </div>
 
       {/* 2FA */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ border: "1px solid var(--border-default)" }}
-      >
-        <div
-          className="px-4 py-2.5"
-          style={{
-            borderBottom: "1px solid var(--border-subtle)",
-            background: "var(--bg-secondary)",
-          }}
-        >
-          <span
-            className="text-[11px] font-semibold uppercase tracking-wider"
-            style={{ color: "var(--text-muted)" }}
-          >
+      <div className="rounded-xl overflow-hidden border border-[var(--border-default)]">
+        <div className="px-4 py-2.5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Autenticação
           </span>
         </div>
@@ -182,26 +151,13 @@ export function SecaoSeguranca() {
       </div>
 
       {/* Sessões ativas */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ border: "1px solid var(--border-default)" }}
-      >
-        <div
-          className="px-4 py-2.5 flex items-center justify-between"
-          style={{
-            borderBottom: "1px solid var(--border-subtle)",
-            background: "var(--bg-secondary)",
-          }}
-        >
-          <span
-            className="text-[11px] font-semibold uppercase tracking-wider"
-            style={{ color: "var(--text-muted)" }}
-          >
+      <div className="rounded-xl overflow-hidden border border-[var(--border-default)]">
+        <div className="px-4 py-2.5 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
             Sessões ativas
           </span>
           <button
-            className="text-[11px] font-medium"
-            style={{ color: "var(--status-error)" }}
+            className="text-[11px] font-medium text-[var(--status-error)]"
             onClick={() =>
               sessions.revokeAll.mutate(undefined, {
                 onSuccess: () => toast.success("Todas as sessões encerradas"),
@@ -215,7 +171,7 @@ export function SecaoSeguranca() {
         </div>
         {sessions.isLoading && (
           <div className="px-4 py-3">
-            <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <p className="text-[12px] text-[var(--text-muted)]">
               Carregando sessões...
             </p>
           </div>
@@ -232,43 +188,24 @@ export function SecaoSeguranca() {
             }}
           >
             <div className="flex items-center gap-3">
-              <div
-                className="flex items-center justify-center rounded-lg flex-shrink-0"
-                style={{
-                  width: 32,
-                  height: 32,
-                  background: "var(--bg-hover)",
-                  color: "var(--text-muted)",
-                }}
-              >
+              <div className="flex items-center justify-center rounded-lg flex-shrink-0 w-8 h-8 bg-[var(--bg-hover)] text-[var(--text-muted)]">
                 <Smartphone size={14} />
               </div>
               <div>
-                <span
-                  className="block text-[12px] font-medium"
-                  style={{ color: "var(--text-primary)" }}
-                >
+                <span className="block text-[12px] font-medium text-[var(--text-primary)]">
                   Sessão iniciada em{" "}
                   {format(new Date(s.criadoEm), "dd/MM HH:mm", {
                     locale: ptBR,
                   })}
                 </span>
-                <span
-                  className="text-[11px]"
-                  style={{ color: "var(--text-muted)" }}
-                >
+                <span className="text-[11px] text-[var(--text-muted)]">
                   Expira em{" "}
                   {format(new Date(s.expiraEm), "dd/MM/yyyy", { locale: ptBR })}
                 </span>
               </div>
             </div>
             <button
-              className="text-[11px] font-medium px-2.5 py-1 rounded-lg"
-              style={{
-                background: "rgba(255,77,79,0.08)",
-                color: "var(--status-error)",
-                border: "1px solid rgba(255,77,79,0.15)",
-              }}
+              className="text-[11px] font-medium px-2.5 py-1 rounded-lg bg-[rgba(255,77,79,0.08)] text-[var(--status-error)] border border-[rgba(255,77,79,0.15)]"
               onClick={() =>
                 sessions.revokeOne.mutate(s.codigo, {
                   onSuccess: () => toast.success("Sessão encerrada"),

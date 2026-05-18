@@ -71,13 +71,7 @@ export function BarbeiroCard({ b, selected, onClick }: BarbeiroCardProps) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
-            <span
-              className="font-semibold text-[13px]"
-              style={{
-                color: "var(--text-primary)",
-                fontFamily: "var(--font-body)",
-              }}
-            >
+            <span className="font-semibold text-[13px] text-[var(--text-primary)] font-body">
               {b.nome}
             </span>
             <span
@@ -89,35 +83,23 @@ export function BarbeiroCard({ b, selected, onClick }: BarbeiroCardProps) {
           </div>
 
           {b.especialidade && (
-            <span
-              className="block text-[11px] mb-2"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <span className="block text-[11px] mb-2 text-[var(--text-secondary)]">
               {b.especialidade}
             </span>
           )}
 
           <div className="flex items-center gap-3">
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <span className="text-[11px] text-[var(--text-muted)]">
               {b.atendimentosHoje} hoje
             </span>
-            <span style={{ color: "var(--border-default)" }}>·</span>
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+            <span className="text-[var(--border-default)]">·</span>
+            <span className="text-[11px] text-[var(--text-muted)]">
               {formatBRL(Math.round(b.ticketMedio))} ticket
             </span>
             {b.avaliacao > 0 && (
               <>
-                <span style={{ color: "var(--border-default)" }}>·</span>
-                <span
-                  className="text-[11px]"
-                  style={{ color: "var(--status-warning)" }}
-                >
+                <span className="text-[var(--border-default)]">·</span>
+                <span className="text-[11px] text-[var(--status-warning)]">
                   ★ {b.avaliacao.toFixed(1)}
                 </span>
               </>

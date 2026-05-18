@@ -116,32 +116,15 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
       >
-        <div
-          className="pointer-events-auto w-full max-w-md rounded-2xl overflow-hidden"
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-strong)",
-            boxShadow: "var(--shadow-xl)",
-          }}
-        >
-          <div
-            className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border-subtle)" }}
-          >
-            <span
-              className="font-bold text-[15px]"
-              style={{
-                fontFamily: "var(--font-heading)",
-                color: "var(--text-primary)",
-              }}
-            >
+        <div className="pointer-events-auto w-full max-w-md rounded-2xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-strong)] shadow-[var(--shadow-xl)]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
+            <span className="font-bold text-[15px] font-heading text-[var(--text-primary)]">
               Novo agendamento
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-lg"
-              style={{ color: "var(--text-muted)" }}
+              className="p-1 rounded-lg text-[var(--text-muted)]"
             >
               <X size={16} />
             </button>
@@ -176,10 +159,7 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                   )}
                 />
                 {errors.barbeiroId && (
-                  <p
-                    className="text-[11px] mt-1"
-                    style={{ color: "var(--status-error)" }}
-                  >
+                  <p className="text-[11px] mt-1 text-[var(--status-error)]">
                     {errors.barbeiroId.message}
                   </p>
                 )}
@@ -199,10 +179,7 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                   ))}
                 </select>
                 {errors.clienteId && (
-                  <p
-                    className="text-[11px] mt-1"
-                    style={{ color: "var(--status-error)" }}
-                  >
+                  <p className="text-[11px] mt-1 text-[var(--status-error)]">
                     {errors.clienteId.message}
                   </p>
                 )}
@@ -211,7 +188,7 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
               <div>
                 <label className="tqe-label">
                   Horário disponível —{" "}
-                  <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>
+                  <span className="text-[var(--text-muted)] font-normal">
                     {format(date, "dd/MM/yyyy")}
                   </span>
                 </label>
@@ -241,10 +218,7 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                   )}
                 </select>
                 {errors.inicio && (
-                  <p
-                    className="text-[11px] mt-1"
-                    style={{ color: "var(--status-error)" }}
-                  >
+                  <p className="text-[11px] mt-1 text-[var(--status-error)]">
                     {errors.inicio.message}
                   </p>
                 )}
@@ -278,10 +252,7 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                           />
                         )}
                       />
-                      <span
-                        className="text-[12px]"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
+                      <span className="text-[12px] text-[var(--text-secondary)]">
                         {s.nome}
                         {s.precoBase != null &&
                           ` — R$ ${Number(s.precoBase).toFixed(2)}`}
@@ -290,10 +261,7 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                   ))}
                 </div>
                 {errors.servicosIds && (
-                  <p
-                    className="text-[11px] mt-1"
-                    style={{ color: "var(--status-error)" }}
-                  >
+                  <p className="text-[11px] mt-1 text-[var(--status-error)]">
                     {errors.servicosIds.message}
                   </p>
                 )}
@@ -306,63 +274,35 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                   placeholder="Informações adicionais..."
                   rows={2}
                   maxLength={500}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    background: "var(--bg-secondary)",
-                    border: "1px solid var(--border-default)",
-                    borderRadius: 8,
-                    color: "var(--text-primary)",
-                    fontSize: 13,
-                    fontFamily: "var(--font-body)",
-                    outline: "none",
-                    resize: "vertical",
-                    lineHeight: 1.5,
-                  }}
+                  className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] text-[13px] font-body outline-none resize-y leading-[1.5]"
                 />
-                <p
-                  className="text-[11px] mt-1 text-right"
-                  style={{ color: "var(--text-muted)" }}
-                >
+                <p className="text-[11px] mt-1 text-right text-[var(--text-muted)]">
                   {(observacaoValue as string).length}/500
                 </p>
               </div>
             </div>
 
             {criar.isError && (
-              <p
-                className="text-[12px] px-5 pb-2"
-                style={{ color: "var(--status-error)" }}
-              >
+              <p className="text-[12px] px-5 pb-2 text-[var(--status-error)]">
                 {criar.error.message}
               </p>
             )}
 
-            <div
-              className="flex gap-2 px-5 py-4"
-              style={{ borderTop: "1px solid var(--border-subtle)" }}
-            >
+            <div className="flex gap-2 px-5 py-4 border-t border-[var(--border-subtle)]">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2 rounded-lg text-[13px] font-medium"
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--text-secondary)",
-                }}
+                className="flex-1 py-2 rounded-lg text-[13px] font-medium border border-[var(--border-strong)] text-[var(--text-secondary)]"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={criar.isPending}
-                className="flex-1 py-2 rounded-lg text-[13px] font-semibold"
+                className="flex-1 py-2 rounded-lg text-[13px] font-semibold bg-[var(--primary)] text-[#0D0D0D]"
                 style={{
-                  background: "var(--primary)",
-                  color: "#0D0D0D",
                   opacity: criar.isPending ? 0.6 : 1,
-                }}
+                }} /* CSS var dinâmico — não migrar */
               >
                 {criar.isPending ? "Agendando..." : "Agendar"}
               </button>

@@ -84,10 +84,8 @@ function FeatureCard({
       viewport={{ once: true }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -4 }}
-      className="relative rounded-2xl p-6"
+      className="relative rounded-2xl p-6 bg-[var(--bg-card)] border border-[var(--border-default)]"
       style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--border-default)",
         transition: "border-color 200ms, box-shadow 200ms",
       }}
       onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
@@ -111,19 +109,10 @@ function FeatureCard({
       >
         <Icon size={20} strokeWidth={1.8} />
       </div>
-      <h3
-        className="font-bold text-[15px] mb-2"
-        style={{
-          fontFamily: "var(--font-heading)",
-          color: "var(--text-primary)",
-        }}
-      >
+      <h3 className="font-bold text-[15px] mb-2 font-heading text-[var(--text-primary)]">
         {title}
       </h3>
-      <p
-        className="text-[13px] leading-relaxed"
-        style={{ color: "var(--text-secondary)" }}
-      >
+      <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
         {desc}
       </p>
     </motion.div>
@@ -161,18 +150,12 @@ function PlanCard({
     >
       {destaque && (
         <div
-          className="absolute top-0 left-6 right-6 rounded-b"
-          style={{ height: 2, background: "var(--primary)", opacity: 0.7 }}
+          className="absolute top-0 left-6 right-6 rounded-b bg-[var(--primary)] opacity-70"
+          style={{ height: 2 }}
         />
       )}
       {destaque && (
-        <span
-          className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-4"
-          style={{
-            background: "rgba(244,180,0,0.15)",
-            color: "var(--primary)",
-          }}
-        >
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-4 bg-[rgba(244,180,0,0.15)] text-[var(--primary)]">
           <Zap size={9} /> Mais popular
         </span>
       )}
@@ -183,20 +166,10 @@ function PlanCard({
         {nome}
       </span>
       <div className="flex items-baseline gap-1 mb-5">
-        <span
-          className="font-bold"
-          style={{
-            fontFamily: "var(--font-heading)",
-            fontSize: "2rem",
-            letterSpacing: "-0.04em",
-            color: "var(--text-primary)",
-          }}
-        >
+        <span className="font-bold font-heading text-[2rem] tracking-[-0.04em] text-[var(--text-primary)]">
           R${preco}
         </span>
-        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-          /mês
-        </span>
+        <span className="text-[12px] text-[var(--text-muted)]">/mês</span>
       </div>
       <ul className="space-y-2.5 mb-6">
         {features.map((f) => (
@@ -208,10 +181,7 @@ function PlanCard({
                 color: destaque ? "var(--primary)" : "var(--status-success)",
               }}
             />
-            <span
-              className="text-[13px]"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <span className="text-[13px] text-[var(--text-secondary)]">
               {f}
             </span>
           </li>
@@ -253,11 +223,7 @@ function Depoimento({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay, duration: 0.4 }}
-      className="rounded-2xl p-6"
-      style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--border-default)",
-      }}
+      className="rounded-2xl p-6 bg-[var(--bg-card)] border border-[var(--border-default)]"
     >
       <div className="flex gap-1 mb-4">
         {Array.from({ length: avaliacao }).map((_, i) => (
@@ -269,33 +235,24 @@ function Depoimento({
           />
         ))}
       </div>
-      <p
-        className="text-[13px] leading-relaxed mb-5"
-        style={{ color: "var(--text-secondary)" }}
-      >
+      <p className="text-[13px] leading-relaxed mb-5 text-[var(--text-secondary)]">
         "{texto}"
       </p>
       <div className="flex items-center gap-3">
         <div
-          className="flex items-center justify-center rounded-full font-bold text-sm"
+          className="flex items-center justify-center rounded-full font-bold text-sm bg-[rgba(244,180,0,0.1)] text-[var(--primary)] font-heading"
           style={{
             width: 36,
             height: 36,
-            background: "rgba(244,180,0,0.1)",
-            color: "var(--primary)",
-            fontFamily: "var(--font-heading)",
           }}
         >
           {nome[0]}
         </div>
         <div>
-          <span
-            className="block text-[13px] font-semibold"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <span className="block text-[13px] font-semibold text-[var(--text-primary)]">
             {nome}
           </span>
-          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+          <span className="text-[11px] text-[var(--text-muted)]">
             {barbearia}
           </span>
         </div>
@@ -416,21 +373,19 @@ export default function Landing(): React.JSX.Element {
   ];
 
   return (
-    <div
-      className="min-h-screen overflow-x-hidden"
-      style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}
-    >
+    <div className="min-h-screen overflow-x-hidden bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* ── Navbar ── */}
       <motion.nav
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 h-[60px]"
         style={{
-          height: 60,
-          background: scrolled ? "rgba(13,13,13,0.97)" : "rgba(13,13,13,0.5)",
+          background: scrolled
+            ? "rgba(13,13,13,0.97)"
+            : "rgba(13,13,13,0.5)" /* CSS var dinâmico — não migrar */,
           backdropFilter: "blur(20px)",
-          borderBottom: `1px solid ${scrolled ? "var(--border-subtle)" : "transparent"}`,
+          borderBottom: `1px solid ${scrolled ? "var(--border-subtle)" : "transparent"}` /* CSS var dinâmico — não migrar */,
           transition: "background 300ms, border-color 300ms",
         }}
       >
@@ -442,24 +397,16 @@ export default function Landing(): React.JSX.Element {
         >
           <motion.div
             whileHover={{ scale: 1.08 }}
-            className="flex items-center justify-center rounded-lg"
+            className="flex items-center justify-center rounded-lg bg-[var(--primary)]"
             style={{
               width: 30,
               height: 30,
-              background: "var(--primary)",
               boxShadow: "0 0 14px rgba(244,180,0,0.25)",
             }}
           >
             <Scissors size={13} color="#0D0D0D" strokeWidth={2.5} />
           </motion.div>
-          <span
-            className="font-bold text-[17px]"
-            style={{
-              fontFamily: "var(--font-heading)",
-              letterSpacing: "-0.02em",
-              color: "var(--text-primary)",
-            }}
-          >
+          <span className="font-bold text-[17px] font-heading tracking-[-0.02em] text-[var(--text-primary)]">
             Toqe
           </span>
         </motion.button>
@@ -474,8 +421,7 @@ export default function Landing(): React.JSX.Element {
             <a
               key={link.label}
               href={link.href}
-              className="px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all"
-              style={{ color: "var(--text-primary)", opacity: 0.7 }}
+              className="px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all text-[var(--text-primary)] opacity-70"
               onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
                 (e.currentTarget as HTMLElement).style.opacity = "1";
                 (e.currentTarget as HTMLElement).style.background =
@@ -495,8 +441,7 @@ export default function Landing(): React.JSX.Element {
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push("/login")}
-            className="hidden sm:block text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all"
-            style={{ color: "var(--text-primary)", opacity: 0.8 }}
+            className="hidden sm:block text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all text-[var(--text-primary)] opacity-80"
             onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
               (e.currentTarget as HTMLElement).style.opacity = "1";
               (e.currentTarget as HTMLElement).style.background =
@@ -513,11 +458,8 @@ export default function Landing(): React.JSX.Element {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/onboarding")}
-            className="flex items-center gap-1.5 px-4 rounded-lg text-[13px] font-semibold"
+            className="flex items-center gap-1.5 px-4 rounded-lg text-[13px] font-semibold h-[34px] bg-[var(--primary)] text-[#0D0D0D]"
             style={{
-              height: 34,
-              background: "var(--primary)",
-              color: "#0D0D0D",
               boxShadow: "0 0 14px rgba(244,180,0,0.2)",
             }}
           >
@@ -525,8 +467,7 @@ export default function Landing(): React.JSX.Element {
           </motion.button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 rounded-lg ml-1"
-            style={{ color: "var(--text-primary)" }}
+            className="md:hidden p-1.5 rounded-lg ml-1 text-[var(--text-primary)]"
           >
             {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -541,10 +482,9 @@ export default function Landing(): React.JSX.Element {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="fixed top-[60px] left-0 right-0 z-40 py-3 px-4"
+            className="fixed top-[60px] left-0 right-0 z-40 py-3 px-4 border-b border-[var(--border-subtle)]"
             style={{
               background: "rgba(13,13,13,0.98)",
-              borderBottom: "1px solid var(--border-subtle)",
             }}
           >
             {["Como funciona", "Planos", "Depoimentos"].map((label, i) => (
@@ -552,11 +492,12 @@ export default function Landing(): React.JSX.Element {
                 key={label}
                 href={`#${["funcionalidades", "planos", "depoimentos"][i]}`}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block py-3 text-[14px]"
+                className="block py-3 text-[14px] text-[var(--text-primary)]"
                 style={{
-                  color: "var(--text-primary)",
                   borderBottom:
-                    i < 2 ? "1px solid var(--border-subtle)" : "none",
+                    i < 2
+                      ? "1px solid var(--border-subtle)"
+                      : "none" /* CSS var dinâmico — não migrar */,
                 }}
               >
                 {label}
@@ -567,8 +508,7 @@ export default function Landing(): React.JSX.Element {
                 setMobileMenuOpen(false);
                 router.push("/login");
               }}
-              className="block w-full text-left py-3 text-[14px]"
-              style={{ color: "var(--text-primary)", opacity: 0.7 }}
+              className="block w-full text-left py-3 text-[14px] text-[var(--text-primary)] opacity-70"
             >
               Entrar
             </button>
@@ -577,16 +517,7 @@ export default function Landing(): React.JSX.Element {
       </AnimatePresence>
 
       {/* ── Hero ── */}
-      <section
-        className="relative flex flex-col items-center justify-center text-center overflow-hidden"
-        style={{
-          minHeight: "100vh",
-          paddingTop: 100,
-          paddingBottom: 80,
-          paddingLeft: 24,
-          paddingRight: 24,
-        }}
-      >
+      <section className="relative flex flex-col items-center justify-center text-center overflow-hidden min-h-screen pt-[100px] pb-[80px] px-6">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -619,25 +550,17 @@ export default function Landing(): React.JSX.Element {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1, duration: 0.4 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8"
-            style={{
-              background: "rgba(29,185,84,0.08)",
-              border: "1px solid rgba(29,185,84,0.2)",
-            }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 bg-[rgba(29,185,84,0.08)] border border-[rgba(29,185,84,0.2)]"
           >
             <span
-              className="rounded-full"
+              className="rounded-full bg-[var(--status-success)]"
               style={{
                 width: 6,
                 height: 6,
-                background: "var(--status-success)",
                 animation: "tqe-pulse-green 1.5s ease-in-out infinite",
               }}
             />
-            <span
-              className="text-[12px] font-medium"
-              style={{ color: "var(--status-success)" }}
-            >
+            <span className="text-[12px] font-medium text-[var(--status-success)]">
               Mais de 1.200 barbearias já usam o Toqe
             </span>
           </motion.div>
@@ -646,17 +569,13 @@ export default function Landing(): React.JSX.Element {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="font-bold mb-6"
+            className="font-bold mb-6 font-heading tracking-[-0.03em] leading-[1.1] text-[var(--text-primary)]"
             style={{
-              fontFamily: "var(--font-heading)",
               fontSize: "clamp(2.4rem, 6vw, 4rem)",
-              letterSpacing: "-0.03em",
-              lineHeight: 1.1,
-              color: "var(--text-primary)",
             }}
           >
             Sua barbearia,{" "}
-            <span style={{ color: "var(--primary)" }}>
+            <span className="text-[var(--primary)]">
               do jeito que deveria ser.
             </span>
           </motion.h1>
@@ -665,12 +584,9 @@ export default function Landing(): React.JSX.Element {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="mx-auto mb-10"
+            className="mx-auto mb-10 max-w-[540px] text-[var(--text-secondary)] leading-[1.75]"
             style={{
-              maxWidth: 540,
               fontSize: "clamp(1rem, 2vw, 1.1rem)",
-              color: "var(--text-secondary)",
-              lineHeight: 1.75,
             }}
           >
             Agenda, equipe e faturamento em um lugar só. Seu cliente agenda
@@ -690,11 +606,8 @@ export default function Landing(): React.JSX.Element {
               }}
               whileTap={{ scale: 0.97 }}
               onClick={() => router.push("/onboarding")}
-              className="flex items-center gap-2 px-7 rounded-xl font-bold text-[15px]"
+              className="flex items-center gap-2 px-7 rounded-xl font-bold text-[15px] h-[50px] bg-[var(--primary)] text-[#0D0D0D]"
               style={{
-                height: 50,
-                background: "var(--primary)",
-                color: "#0D0D0D",
                 boxShadow: "0 0 20px rgba(244,180,0,0.2)",
               }}
             >
@@ -703,13 +616,7 @@ export default function Landing(): React.JSX.Element {
             </motion.button>
             <button
               onClick={() => router.push("/dashboard")}
-              className="flex items-center gap-2 px-6 rounded-xl font-medium text-[14px]"
-              style={{
-                height: 50,
-                background: "transparent",
-                border: "1px solid var(--border-strong)",
-                color: "var(--text-secondary)",
-              }}
+              className="flex items-center gap-2 px-6 rounded-xl font-medium text-[14px] h-[50px] border border-[var(--border-strong)] text-[var(--text-secondary)]"
             >
               Ver demonstração
             </button>
@@ -729,13 +636,10 @@ export default function Landing(): React.JSX.Element {
               <div key={item.l} className="flex items-center gap-1.5">
                 <CheckCircle
                   size={13}
-                  style={{ color: "var(--status-success)" }}
+                  className="text-[var(--status-success)]"
                 />
-                <span
-                  className="text-[12px]"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  <strong style={{ color: "var(--text-primary)" }}>
+                <span className="text-[12px] text-[var(--text-secondary)]">
+                  <strong className="text-[var(--text-primary)]">
                     {item.v}
                   </strong>{" "}
                   {item.l}
@@ -754,18 +658,12 @@ export default function Landing(): React.JSX.Element {
           }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <ChevronDown size={20} style={{ color: "var(--text-muted)" }} />
+          <ChevronDown size={20} className="text-[var(--text-muted)]" />
         </motion.div>
       </section>
 
       {/* ── Números ── */}
-      <section
-        className="py-16 px-6"
-        style={{
-          borderTop: "1px solid var(--border-subtle)",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-      >
+      <section className="py-16 px-6 border-y border-[var(--border-subtle)]">
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
             { value: 1200, suffix: "+", label: "Barbearias ativas" },
@@ -780,21 +678,10 @@ export default function Landing(): React.JSX.Element {
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.4 }}
             >
-              <div
-                className="font-bold mb-1"
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  fontSize: "2rem",
-                  letterSpacing: "-0.04em",
-                  color: "var(--primary)",
-                }}
-              >
+              <div className="font-bold mb-1 font-heading text-[2rem] tracking-[-0.04em] text-[var(--primary)]">
                 <CountUp to={stat.value} suffix={stat.suffix} />
               </div>
-              <span
-                className="text-[13px]"
-                style={{ color: "var(--text-secondary)" }}
-              >
+              <span className="text-[13px] text-[var(--text-secondary)]">
                 {stat.label}
               </span>
             </motion.div>
@@ -811,35 +698,18 @@ export default function Landing(): React.JSX.Element {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <span
-              className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full"
-              style={{
-                background: "rgba(77,163,255,0.1)",
-                color: "var(--status-info)",
-              }}
-            >
+            <span className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full bg-[rgba(77,163,255,0.1)] text-[var(--status-info)]">
               Como funciona
             </span>
             <h2
-              className="font-bold mb-4"
+              className="font-bold mb-4 font-heading tracking-[-0.03em] text-[var(--text-primary)]"
               style={{
-                fontFamily: "var(--font-heading)",
                 fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-                letterSpacing: "-0.03em",
-                color: "var(--text-primary)",
               }}
             >
               Tudo o que sua barbearia precisa
             </h2>
-            <p
-              style={{
-                color: "var(--text-secondary)",
-                maxWidth: 440,
-                margin: "0 auto",
-                fontSize: 15,
-                lineHeight: 1.7,
-              }}
-            >
+            <p className="text-[var(--text-secondary)] max-w-[440px] mx-auto text-[15px] leading-[1.7]">
               Feito do zero para o dia a dia de uma barbearia. Não é um sistema
               genérico adaptado.
             </p>
@@ -853,14 +723,7 @@ export default function Landing(): React.JSX.Element {
       </section>
 
       {/* ── Preview ── */}
-      <section
-        className="py-20 px-6"
-        style={{
-          background: "var(--bg-secondary)",
-          borderTop: "1px solid var(--border-subtle)",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-      >
+      <section className="py-20 px-6 bg-[var(--bg-secondary)] border-y border-[var(--border-subtle)]">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -869,17 +732,14 @@ export default function Landing(): React.JSX.Element {
             className="text-center mb-10"
           >
             <h2
-              className="font-bold mb-3"
+              className="font-bold mb-3 font-heading tracking-[-0.03em] text-[var(--text-primary)]"
               style={{
-                fontFamily: "var(--font-heading)",
                 fontSize: "clamp(1.4rem, 3vw, 2rem)",
-                letterSpacing: "-0.03em",
-                color: "var(--text-primary)",
               }}
             >
               O painel que você sempre quis ter
             </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+            <p className="text-[var(--text-secondary)] text-[14px]">
               Veja o que está acontecendo na sua barbearia agora.
             </p>
           </motion.div>
@@ -888,23 +748,15 @@ export default function Landing(): React.JSX.Element {
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl overflow-hidden"
+            className="rounded-2xl overflow-hidden border border-[var(--border-default)]"
             style={{
-              border: "1px solid var(--border-default)",
               boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
             }}
           >
-            <div
-              className="flex items-center gap-3 px-5"
-              style={{
-                height: 44,
-                background: "var(--bg-secondary)",
-                borderBottom: "1px solid var(--border-subtle)",
-              }}
-            >
+            <div className="flex items-center gap-3 px-5 h-[44px] bg-[var(--bg-secondary)] border-b border-[var(--border-subtle)]">
               <div
-                className="flex items-center justify-center rounded"
-                style={{ width: 24, height: 24, background: "var(--primary)" }}
+                className="flex items-center justify-center rounded bg-[var(--primary)]"
+                style={{ width: 24, height: 24 }}
               >
                 <Scissors size={11} color="#0D0D0D" strokeWidth={2.5} />
               </div>
@@ -927,7 +779,7 @@ export default function Landing(): React.JSX.Element {
                 ))}
               </div>
             </div>
-            <div className="p-5" style={{ background: "var(--bg-base)" }}>
+            <div className="p-5 bg-[var(--bg-base)]">
               <div className="grid grid-cols-4 gap-3 mb-4">
                 {[
                   {
@@ -953,66 +805,41 @@ export default function Landing(): React.JSX.Element {
                 ].map((m) => (
                   <div
                     key={m.label}
-                    className="rounded-xl px-3 py-2.5 relative overflow-hidden"
-                    style={{
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--border-default)",
-                    }}
+                    className="rounded-xl px-3 py-2.5 relative overflow-hidden bg-[var(--bg-card)] border border-[var(--border-default)]"
                   >
                     <div
                       className="absolute top-0 left-3 right-3 rounded-b"
                       style={{ height: 2, background: m.color, opacity: 0.5 }}
                     />
                     <span
-                      className="block font-bold text-base"
+                      className="block font-bold text-base font-heading tracking-[-0.03em]"
                       style={{
-                        fontFamily: "var(--font-heading)",
-                        color: m.color,
-                        letterSpacing: "-0.03em",
+                        color: m.color /* CSS var dinâmico — não migrar */,
                       }}
                     >
                       {m.value}
                     </span>
-                    <span
-                      className="text-[10px]"
-                      style={{ color: "var(--text-muted)" }}
-                    >
+                    <span className="text-[10px] text-[var(--text-muted)]">
                       {m.label}
                     </span>
                   </div>
                 ))}
               </div>
-              <div
-                className="rounded-xl overflow-hidden"
-                style={{
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border-default)",
-                }}
-              >
-                <div
-                  className="flex items-center gap-2 px-4 py-2.5"
-                  style={{ borderBottom: "1px solid var(--border-subtle)" }}
-                >
+              <div className="rounded-xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-default)]">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border-subtle)]">
                   <span
-                    className="rounded-full"
+                    className="rounded-full bg-[var(--status-success)]"
                     style={{
                       width: 6,
                       height: 6,
-                      background: "var(--status-success)",
                       animation: "tqe-pulse-green 1.5s ease-in-out infinite",
                     }}
                   />
-                  <span
-                    className="text-[11px] font-semibold"
-                    style={{ color: "var(--text-primary)" }}
-                  >
+                  <span className="text-[11px] font-semibold text-[var(--text-primary)]">
                     Ao vivo agora
                   </span>
                 </div>
-                <div
-                  className="flex divide-x"
-                  style={{ borderBottom: "1px solid var(--border-subtle)" }}
-                >
+                <div className="flex divide-x border-b border-[var(--border-subtle)]">
                   {[
                     {
                       label: "Atendendo",
@@ -1037,23 +864,17 @@ export default function Landing(): React.JSX.Element {
                   ].map((s) => (
                     <div
                       key={s.label}
-                      className="flex-1 px-3 py-2"
-                      style={{ borderColor: "var(--border-subtle)" }}
+                      className="flex-1 px-3 py-2 border-[var(--border-subtle)]"
                     >
                       <span
-                        className="block font-bold text-sm"
+                        className="block font-bold text-sm font-heading tracking-[-0.02em]"
                         style={{
-                          fontFamily: "var(--font-heading)",
-                          color: s.color,
-                          letterSpacing: "-0.02em",
+                          color: s.color /* CSS var dinâmico — não migrar */,
                         }}
                       >
                         {s.value}
                       </span>
-                      <span
-                        className="text-[10px]"
-                        style={{ color: "var(--text-muted)" }}
-                      >
+                      <span className="text-[10px] text-[var(--text-muted)]">
                         {s.label}
                       </span>
                     </div>
@@ -1078,19 +899,15 @@ export default function Landing(): React.JSX.Element {
                     >
                       {b.st === "active" && (
                         <div
-                          className="absolute left-0 top-2 bottom-2 rounded-r"
+                          className="absolute left-0 top-2 bottom-2 rounded-r bg-[var(--status-success)]"
                           style={{
                             width: 2,
-                            background: "var(--status-success)",
                             animation:
                               "tqe-sidebar-pulse 2s ease-in-out infinite",
                           }}
                         />
                       )}
-                      <span
-                        className="block text-[11px] font-semibold pl-1"
-                        style={{ color: "var(--text-primary)" }}
-                      >
+                      <span className="block text-[11px] font-semibold pl-1 text-[var(--text-primary)]">
                         {b.n}
                       </span>
                       <span
@@ -1122,27 +939,18 @@ export default function Landing(): React.JSX.Element {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <span
-              className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full"
-              style={{
-                background: "rgba(244,180,0,0.1)",
-                color: "var(--primary)",
-              }}
-            >
+            <span className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full bg-[rgba(244,180,0,0.1)] text-[var(--primary)]">
               Planos
             </span>
             <h2
-              className="font-bold mb-3"
+              className="font-bold mb-3 font-heading tracking-[-0.03em] text-[var(--text-primary)]"
               style={{
-                fontFamily: "var(--font-heading)",
                 fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-                letterSpacing: "-0.03em",
-                color: "var(--text-primary)",
               }}
             >
               Simples, transparente, sem surpresas
             </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+            <p className="text-[var(--text-secondary)] text-[14px]">
               14 dias gratuitos. Sem cartão de crédito para começar.
             </p>
           </motion.div>
@@ -1157,12 +965,7 @@ export default function Landing(): React.JSX.Element {
       {/* ── Depoimentos ── */}
       <section
         id="depoimentos"
-        className="py-20 px-6"
-        style={{
-          background: "var(--bg-secondary)",
-          borderTop: "1px solid var(--border-subtle)",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
+        className="py-20 px-6 bg-[var(--bg-secondary)] border-y border-[var(--border-subtle)]"
       >
         <div className="max-w-5xl mx-auto">
           <motion.div
@@ -1171,22 +974,13 @@ export default function Landing(): React.JSX.Element {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <span
-              className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full"
-              style={{
-                background: "rgba(29,185,84,0.1)",
-                color: "var(--status-success)",
-              }}
-            >
+            <span className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full bg-[rgba(29,185,84,0.1)] text-[var(--status-success)]">
               Depoimentos
             </span>
             <h2
-              className="font-bold"
+              className="font-bold font-heading tracking-[-0.03em] text-[var(--text-primary)]"
               style={{
-                fontFamily: "var(--font-heading)",
                 fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-                letterSpacing: "-0.03em",
-                color: "var(--text-primary)",
               }}
             >
               Quem usa não volta atrás
@@ -1216,21 +1010,14 @@ export default function Landing(): React.JSX.Element {
           className="relative max-w-xl mx-auto"
         >
           <h2
-            className="font-bold mb-4"
+            className="font-bold mb-4 font-heading tracking-[-0.03em] text-[var(--text-primary)] leading-[1.15]"
             style={{
-              fontFamily: "var(--font-heading)",
               fontSize: "clamp(1.8rem, 5vw, 2.8rem)",
-              letterSpacing: "-0.03em",
-              color: "var(--text-primary)",
-              lineHeight: 1.15,
             }}
           >
             Pronto para mudar como sua barbearia funciona?
           </h2>
-          <p
-            className="mb-8 text-[15px]"
-            style={{ color: "var(--text-secondary)", lineHeight: 1.7 }}
-          >
+          <p className="mb-8 text-[15px] text-[var(--text-secondary)] leading-[1.7]">
             Configure em menos de 5 minutos e veja a diferença no primeiro dia.
           </p>
           <motion.button
@@ -1240,11 +1027,8 @@ export default function Landing(): React.JSX.Element {
             }}
             whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/onboarding")}
-            className="inline-flex items-center gap-2 px-8 rounded-xl font-bold text-[15px]"
+            className="inline-flex items-center gap-2 px-8 rounded-xl font-bold text-[15px] h-[52px] bg-[var(--primary)] text-[#0D0D0D]"
             style={{
-              height: 52,
-              background: "var(--primary)",
-              color: "#0D0D0D",
               boxShadow: "0 0 24px rgba(244,180,0,0.2)",
             }}
           >
@@ -1254,32 +1038,22 @@ export default function Landing(): React.JSX.Element {
       </section>
 
       {/* ── Footer ── */}
-      <footer
-        className="flex items-center justify-between px-8 py-5"
-        style={{ borderTop: "1px solid var(--border-subtle)" }}
-      >
+      <footer className="flex items-center justify-between px-8 py-5 border-t border-[var(--border-subtle)]">
         <button
           onClick={() => router.push("/")}
           className="flex items-center gap-2"
         >
           <div
-            className="flex items-center justify-center rounded"
-            style={{ width: 22, height: 22, background: "var(--primary)" }}
+            className="flex items-center justify-center rounded bg-[var(--primary)]"
+            style={{ width: 22, height: 22 }}
           >
             <Scissors size={10} color="#0D0D0D" strokeWidth={2.5} />
           </div>
-          <span
-            className="font-bold text-[14px]"
-            style={{
-              fontFamily: "var(--font-heading)",
-              letterSpacing: "-0.02em",
-              color: "var(--text-primary)",
-            }}
-          >
+          <span className="font-bold text-[14px] font-heading tracking-[-0.02em] text-[var(--text-primary)]">
             Toqe
           </span>
         </button>
-        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+        <span className="text-[12px] text-[var(--text-muted)]">
           © 2026 Toqe. Todos os direitos reservados.
         </span>
       </footer>

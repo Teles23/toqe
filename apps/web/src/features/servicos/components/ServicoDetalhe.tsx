@@ -36,30 +36,20 @@ export function ServicoDetalhe({
         height: "100%",
       }}
     >
-      <div
-        className="flex items-center justify-between px-4 py-3.5 flex-shrink-0"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      >
-        <span
-          className="text-[12px] font-semibold"
-          style={{ color: "var(--text-secondary)" }}
-        >
+      <div className="flex items-center justify-between px-4 py-3.5 flex-shrink-0 border-b border-[var(--border-subtle)]">
+        <span className="text-[12px] font-semibold text-[var(--text-secondary)]">
           Detalhes do serviço
         </span>
         <button
           onClick={onClose}
-          className="p-1 rounded-lg"
-          style={{ color: "var(--text-muted)" }}
+          className="p-1 rounded-lg text-[var(--text-muted)]"
         >
           <X size={15} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div
-          className="px-4 py-5"
-          style={{ borderBottom: "1px solid var(--border-subtle)" }}
-        >
+        <div className="px-4 py-5 border-b border-[var(--border-subtle)]">
           <div
             className="flex items-center justify-center rounded-xl mb-3"
             style={{
@@ -72,13 +62,7 @@ export function ServicoDetalhe({
           >
             <Scissors size={20} strokeWidth={1.8} />
           </div>
-          <span
-            className="block font-bold text-[15px] mb-1"
-            style={{
-              fontFamily: "var(--font-heading)",
-              color: "var(--text-primary)",
-            }}
-          >
+          <span className="block font-bold text-[15px] mb-1 font-heading text-[var(--text-primary)]">
             {s.nome}
           </span>
           <div className="flex items-center gap-2 mb-3">
@@ -102,13 +86,7 @@ export function ServicoDetalhe({
           </div>
         </div>
 
-        <div
-          className="grid grid-cols-2 divide-x"
-          style={{
-            borderBottom: "1px solid var(--border-subtle)",
-            borderColor: "var(--border-subtle)",
-          }}
-        >
+        <div className="grid grid-cols-2 divide-x border-b border-[var(--border-subtle)] divide-[var(--border-subtle)]">
           {[
             {
               label: "Preço",
@@ -126,26 +104,16 @@ export function ServicoDetalhe({
               <div
                 key={item.label}
                 className="flex items-center gap-2 px-4 py-3"
-                style={{ borderColor: "var(--border-subtle)" }}
               >
                 <Icon
                   size={14}
-                  style={{ color: "var(--text-muted)", flexShrink: 0 }}
+                  className="text-[var(--text-muted)] flex-shrink-0"
                 />
                 <div>
-                  <span
-                    className="block text-[10px] uppercase tracking-wider"
-                    style={{ color: "var(--text-muted)" }}
-                  >
+                  <span className="block text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                     {item.label}
                   </span>
-                  <span
-                    className="font-bold text-[14px]"
-                    style={{
-                      fontFamily: "var(--font-heading)",
-                      color: "var(--text-primary)",
-                    }}
-                  >
+                  <span className="font-bold text-[14px] font-heading text-[var(--text-primary)]">
                     {item.value}
                   </span>
                 </div>
@@ -155,26 +123,17 @@ export function ServicoDetalhe({
         </div>
       </div>
 
-      <div
-        className="flex gap-2 px-4 py-3 flex-shrink-0"
-        style={{ borderTop: "1px solid var(--border-subtle)" }}
-      >
+      <div className="flex gap-2 px-4 py-3 flex-shrink-0 border-t border-[var(--border-subtle)]">
         <button
           onClick={onEdit}
-          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold"
-          style={{ background: "var(--primary)", color: "#0D0D0D" }}
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-semibold bg-[var(--primary)] text-[#0D0D0D]"
         >
           <Edit2 size={13} /> Editar
         </button>
         <button
           type="button"
           onClick={onDelete}
-          className="px-3 flex items-center justify-center rounded-lg"
-          style={{
-            background: "rgba(255,77,79,0.08)",
-            border: "1px solid rgba(255,77,79,0.2)",
-            color: "var(--status-error)",
-          }}
+          className="px-3 flex items-center justify-center rounded-lg bg-[rgba(255,77,79,0.08)] border border-[rgba(255,77,79,0.2)] text-[var(--status-error)]"
         >
           <Trash2 size={14} />
         </button>

@@ -87,18 +87,9 @@ export function ServicosView() {
         ))}
       </div>
 
-      <div
-        className="flex flex-1 min-h-0 rounded-xl overflow-hidden"
-        style={{ border: "1px solid var(--border-default)" }}
-      >
-        <div
-          className="flex flex-col flex-1 min-w-0 overflow-hidden"
-          style={{ background: "var(--bg-card)" }}
-        >
-          <div
-            className="flex flex-col gap-2 px-4 py-3 flex-shrink-0"
-            style={{ borderBottom: "1px solid var(--border-subtle)" }}
-          >
+      <div className="flex flex-1 min-h-0 rounded-xl overflow-hidden border border-[var(--border-default)]">
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-[var(--bg-card)]">
+          <div className="flex flex-col gap-2 px-4 py-3 flex-shrink-0 border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-2">
               <div className="relative flex items-center flex-1 min-w-0">
                 <Search
@@ -135,12 +126,7 @@ export function ServicosView() {
                   setEditTarget(undefined);
                   setModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold flex-shrink-0"
-                style={{
-                  height: 32,
-                  background: "var(--primary)",
-                  color: "#0D0D0D",
-                }}
+                className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold flex-shrink-0 h-8 bg-[var(--primary)] text-[#0D0D0D]"
               >
                 <Plus size={13} strokeWidth={2.5} />
                 <span className="hidden sm:inline">Novo serviço</span>
@@ -200,14 +186,8 @@ export function ServicosView() {
             )}
           </div>
 
-          <div
-            className="px-4 py-2.5 flex-shrink-0"
-            style={{ borderTop: "1px solid var(--border-subtle)" }}
-          >
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+          <div className="px-4 py-2.5 flex-shrink-0 border-t border-[var(--border-subtle)]">
+            <span className="text-[11px] text-[var(--text-muted)]">
               {filtered.length} de {servicos.length} serviços
             </span>
           </div>
@@ -252,12 +232,7 @@ export function ServicosView() {
               onClick={() => setSelected(null)}
             />
             <motion.div
-              className="relative z-10 rounded-t-2xl overflow-hidden"
-              style={{
-                maxHeight: "78vh",
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-default)",
-              }}
+              className="relative z-10 rounded-t-2xl overflow-hidden max-h-[78vh] bg-[var(--bg-card)] border border-[var(--border-default)]"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}

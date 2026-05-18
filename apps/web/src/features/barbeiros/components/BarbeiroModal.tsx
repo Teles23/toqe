@@ -55,32 +55,15 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
       >
-        <div
-          className="pointer-events-auto w-full max-w-sm rounded-2xl overflow-hidden"
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-strong)",
-            boxShadow: "var(--shadow-xl)",
-          }}
-        >
-          <div
-            className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border-subtle)" }}
-          >
-            <span
-              className="font-bold text-[15px]"
-              style={{
-                fontFamily: "var(--font-heading)",
-                color: "var(--text-primary)",
-              }}
-            >
+        <div className="pointer-events-auto w-full max-w-sm rounded-2xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-strong)] shadow-[var(--shadow-xl)]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
+            <span className="font-bold text-[15px] font-heading text-[var(--text-primary)]">
               Convidar barbeiro
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-lg"
-              style={{ color: "var(--text-muted)" }}
+              className="p-1 rounded-lg text-[var(--text-muted)]"
             >
               <X size={16} />
             </button>
@@ -98,10 +81,7 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                   maxLength={100}
                 />
                 {errors.email && (
-                  <p
-                    className="text-[11px] mt-1"
-                    style={{ color: "var(--status-error)" }}
-                  >
+                  <p className="text-[11px] mt-1 text-[var(--status-error)]">
                     {errors.email.message}
                   </p>
                 )}
@@ -121,51 +101,35 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                         {...register("perfil")}
                         className="accent-[var(--primary)]"
                       />
-                      <span
-                        className="text-[12px]"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
+                      <span className="text-[12px] text-[var(--text-secondary)]">
                         {p.label}
                       </span>
                     </label>
                   ))}
                 </div>
                 {errors.perfil && (
-                  <p
-                    className="text-[11px] mt-1"
-                    style={{ color: "var(--status-error)" }}
-                  >
+                  <p className="text-[11px] mt-1 text-[var(--status-error)]">
                     {errors.perfil.message}
                   </p>
                 )}
               </div>
             </div>
 
-            <div
-              className="flex gap-2 px-5 py-4"
-              style={{ borderTop: "1px solid var(--border-subtle)" }}
-            >
+            <div className="flex gap-2 px-5 py-4 border-t border-[var(--border-subtle)]">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2 rounded-lg text-[13px] font-medium"
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--text-secondary)",
-                }}
+                className="flex-1 py-2 rounded-lg text-[13px] font-medium border border-[var(--border-strong)] text-[var(--text-secondary)]"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={convidar.isPending}
-                className="flex-1 py-2 rounded-lg text-[13px] font-semibold"
+                className="flex-1 py-2 rounded-lg text-[13px] font-semibold bg-[var(--primary)] text-[#0D0D0D]"
                 style={{
-                  background: "var(--primary)",
-                  color: "#0D0D0D",
                   opacity: convidar.isPending ? 0.6 : 1,
-                }}
+                }} /* CSS var dinâmico — não migrar */
               >
                 {convidar.isPending ? "Enviando..." : "Enviar convite"}
               </button>

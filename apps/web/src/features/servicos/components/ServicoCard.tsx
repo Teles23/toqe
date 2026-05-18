@@ -74,36 +74,21 @@ export function ServicoCard({ s, index, selected, onClick }: ServicoCardProps) {
         </div>
       </div>
 
-      <span
-        className="block font-semibold text-[13px] mb-0.5"
-        style={{
-          fontFamily: "var(--font-heading)",
-          color: "var(--text-primary)",
-        }}
-      >
+      <span className="block font-semibold text-[13px] mb-0.5 font-heading text-[var(--text-primary)]">
         {s.nome}
       </span>
 
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            <DollarSign size={11} style={{ color: "var(--text-muted)" }} />
-            <span
-              className="text-[13px] font-bold"
-              style={{
-                color: "var(--text-primary)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
+            <DollarSign size={11} className="text-[var(--text-muted)]" />
+            <span className="text-[13px] font-bold text-[var(--text-primary)] font-heading">
               {formatBRL(Number(s.precoBase ?? 0))}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <Clock size={11} style={{ color: "var(--text-muted)" }} />
-            <span
-              className="text-[12px]"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <Clock size={11} className="text-[var(--text-muted)]" />
+            <span className="text-[12px] text-[var(--text-secondary)]">
               {s.duracaoBase ?? 0}min
             </span>
           </div>

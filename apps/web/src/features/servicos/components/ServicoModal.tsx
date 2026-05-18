@@ -83,32 +83,15 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
       >
-        <div
-          className="pointer-events-auto w-full max-w-md rounded-2xl overflow-hidden"
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-strong)",
-            boxShadow: "var(--shadow-xl)",
-          }}
-        >
-          <div
-            className="flex items-center justify-between px-5 py-4"
-            style={{ borderBottom: "1px solid var(--border-subtle)" }}
-          >
-            <span
-              className="font-bold text-[15px]"
-              style={{
-                fontFamily: "var(--font-heading)",
-                color: "var(--text-primary)",
-              }}
-            >
+        <div className="pointer-events-auto w-full max-w-md rounded-2xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-strong)] shadow-[var(--shadow-xl)]">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
+            <span className="font-bold text-[15px] font-heading text-[var(--text-primary)]">
               {servico ? "Editar serviço" : "Novo serviço"}
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 rounded-lg"
-              style={{ color: "var(--text-muted)" }}
+              className="p-1 rounded-lg text-[var(--text-muted)]"
             >
               <X size={16} />
             </button>
@@ -117,14 +100,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="px-5 py-4 space-y-4">
               {errors.root && (
-                <p
-                  className="text-[12px] px-3 py-2 rounded-lg"
-                  style={{
-                    background: "rgba(255,77,79,0.08)",
-                    color: "var(--status-error)",
-                    border: "1px solid rgba(255,77,79,0.2)",
-                  }}
-                >
+                <p className="text-[12px] px-3 py-2 rounded-lg bg-[rgba(255,77,79,0.08)] text-[var(--status-error)] border border-[rgba(255,77,79,0.2)]">
                   {errors.root.message}
                 </p>
               )}
@@ -137,10 +113,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                   maxLength={100}
                 />
                 {errors.nome && (
-                  <p
-                    className="text-[11px] mt-1"
-                    style={{ color: "var(--status-error)" }}
-                  >
+                  <p className="text-[11px] mt-1 text-[var(--status-error)]">
                     {errors.nome.message}
                   </p>
                 )}
@@ -158,10 +131,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                     step={0.01}
                   />
                   {errors.precoBase && (
-                    <p
-                      className="text-[11px] mt-1"
-                      style={{ color: "var(--status-error)" }}
-                    >
+                    <p className="text-[11px] mt-1 text-[var(--status-error)]">
                       {errors.precoBase.message}
                     </p>
                   )}
@@ -185,17 +155,11 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                     }}
                   />
                   {errors.duracaoBase ? (
-                    <p
-                      className="text-[11px] mt-1"
-                      style={{ color: "var(--status-error)" }}
-                    >
+                    <p className="text-[11px] mt-1 text-[var(--status-error)]">
                       {errors.duracaoBase.message}
                     </p>
                   ) : (
-                    <p
-                      className="text-[11px] mt-1"
-                      style={{ color: "var(--text-muted)" }}
-                    >
+                    <p className="text-[11px] mt-1 text-[var(--text-muted)]">
                       Em minutos · múltiplo de 5 (ex: 30, 45, 60)
                     </p>
                   )}
@@ -209,54 +173,29 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                   placeholder="Descreva o serviço..."
                   rows={3}
                   maxLength={500}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    background: "var(--bg-secondary)",
-                    border: "1px solid var(--border-default)",
-                    borderRadius: 8,
-                    color: "var(--text-primary)",
-                    fontSize: 13,
-                    fontFamily: "var(--font-body)",
-                    outline: "none",
-                    resize: "vertical",
-                    lineHeight: 1.5,
-                  }}
+                  className="w-full px-3 py-2 bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-lg text-[var(--text-primary)] text-[13px] font-body outline-none resize-y leading-[1.5]"
                 />
-                <p
-                  className="text-[11px] mt-1 text-right"
-                  style={{ color: "var(--text-muted)" }}
-                >
+                <p className="text-[11px] mt-1 text-right text-[var(--text-muted)]">
                   {(descricaoValue as string).length}/500
                 </p>
               </div>
             </div>
 
-            <div
-              className="flex gap-2 px-5 py-4"
-              style={{ borderTop: "1px solid var(--border-subtle)" }}
-            >
+            <div className="flex gap-2 px-5 py-4 border-t border-[var(--border-subtle)]">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2 rounded-lg text-[13px] font-medium"
-                style={{
-                  background: "transparent",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--text-secondary)",
-                }}
+                className="flex-1 py-2 rounded-lg text-[13px] font-medium border border-[var(--border-strong)] text-[var(--text-secondary)]"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="flex-1 py-2 rounded-lg text-[13px] font-semibold"
+                className="flex-1 py-2 rounded-lg text-[13px] font-semibold bg-[var(--primary)] text-[#0D0D0D]"
                 style={{
-                  background: "var(--primary)",
-                  color: "#0D0D0D",
                   opacity: isPending ? 0.6 : 1,
-                }}
+                }} /* CSS var dinâmico — não migrar */
               >
                 {isPending
                   ? "Salvando..."
