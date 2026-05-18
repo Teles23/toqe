@@ -37,11 +37,11 @@ export class UsuarioService {
     });
   }
 
-  async findByEmail(email: string) {
+  findByEmail(email: string) {
     return this.prisma.usuario.findUnique({ where: { email } });
   }
 
-  async findById(codigo: number) {
+  findById(codigo: number) {
     return this.prisma.usuario.findUnique({ where: { codigo } });
   }
 

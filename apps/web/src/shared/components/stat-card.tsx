@@ -73,7 +73,7 @@ export default function StatCard({
       whileHover={onClick ? { y: -2 } : {}}
       whileTap={onClick ? { scale: 0.98 } : {}}
       onClick={onClick}
-      className="relative rounded-xl overflow-hidden"
+      className="tqe-stat-card relative rounded-xl overflow-hidden"
       style={{
         background: "var(--bg-card)",
         border: "1px solid var(--border-default)",
@@ -178,7 +178,7 @@ export default function StatCard({
         {/* Ícone */}
         {Icon && (
           <div
-            className="flex-shrink-0 flex items-center justify-center rounded-lg"
+            className="tqe-stat-icon flex-shrink-0 flex items-center justify-center rounded-lg"
             style={{
               width: 36,
               height: 36,

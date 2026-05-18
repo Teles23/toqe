@@ -81,7 +81,7 @@ export function BarbeiroCard({ b, selected, onClick }: BarbeiroCardProps) {
               {b.nome}
             </span>
             <span
-              className="text-[10px] font-semibold uppercase tracking-wider"
+              className="text-[10px] font-semibold uppercase tracking-wider flex-shrink-0 whitespace-nowrap"
               style={{ color: cfg.color }}
             >
               {cfg.label}

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { createServicoSchema, type CreateServicoInput } from "@toqe/contracts";
+import { useWatch } from "react-hook-form";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { useServicoMutations } from "../hooks/use-servicos";
 import type { ServicoAPI } from "../types/servico.types";
@@ -23,6 +24,9 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
     register,
     handleSubmit,
     reset,
+    control,
+    setValue,
+    setError,
     formState: { errors },
   } = useForm<CreateServicoInput>({
     resolver: zodResolver(createServicoSchema),
@@ -44,14 +48,23 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
   }, [servico, reset]);
 
   function onSubmit(data: CreateServicoInput) {
+    const duracaoArredondada = Math.round(data.duracaoBase / 5) * 5;
+    const payload = { ...data, duracaoBase: duracaoArredondada };
+    const onError = () =>
+      setError("root", { message: "Erro ao salvar. Tente novamente." });
+
     if (servico) {
-      update.mutate({ codigo: servico.codigo, data }, { onSuccess: onClose });
+      update.mutate(
+        { codigo: servico.codigo, data: payload },
+        { onSuccess: onClose, onError },
+      );
     } else {
-      create.mutate(data, { onSuccess: onClose });
+      create.mutate(payload, { onSuccess: onClose, onError });
     }
   }
 
   const isPending = create.isPending || update.isPending;
+  const descricaoValue = useWatch({ control, name: "descricao" }) ?? "";
 
   return (
     <>
@@ -103,12 +116,25 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="px-5 py-4 space-y-4">
+              {errors.root && (
+                <p
+                  className="text-[12px] px-3 py-2 rounded-lg"
+                  style={{
+                    background: "rgba(255,77,79,0.08)",
+                    color: "var(--status-error)",
+                    border: "1px solid rgba(255,77,79,0.2)",
+                  }}
+                >
+                  {errors.root.message}
+                </p>
+              )}
               <div>
                 <label className="tqe-label">Nome do serviço</label>
                 <input
                   {...register("nome")}
                   placeholder="Ex: Corte Clássico"
                   className="tqe-input"
+                  maxLength={100}
                 />
                 {errors.nome && (
                   <p
@@ -128,6 +154,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                     {...register("precoBase", { valueAsNumber: true })}
                     className="tqe-input"
                     min={0}
+                    max={9999.99}
                     step={0.01}
                   />
                   {errors.precoBase && (
@@ -146,14 +173,30 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                     {...register("duracaoBase", { valueAsNumber: true })}
                     className="tqe-input"
                     min={5}
+                    max={480}
                     step={5}
+                    onBlur={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val))
+                        setValue(
+                          "duracaoBase",
+                          Math.max(5, Math.round(val / 5) * 5),
+                        );
+                    }}
                   />
-                  {errors.duracaoBase && (
+                  {errors.duracaoBase ? (
                     <p
                       className="text-[11px] mt-1"
                       style={{ color: "var(--status-error)" }}
                     >
                       {errors.duracaoBase.message}
+                    </p>
+                  ) : (
+                    <p
+                      className="text-[11px] mt-1"
+                      style={{ color: "var(--text-muted)" }}
+                    >
+                      Em minutos · múltiplo de 5 (ex: 30, 45, 60)
                     </p>
                   )}
                 </div>
@@ -165,6 +208,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                   {...register("descricao")}
                   placeholder="Descreva o serviço..."
                   rows={3}
+                  maxLength={500}
                   style={{
                     width: "100%",
                     padding: "8px 12px",
@@ -179,6 +223,12 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
                     lineHeight: 1.5,
                   }}
                 />
+                <p
+                  className="text-[11px] mt-1 text-right"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {(descricaoValue as string).length}/500
+                </p>
               </div>
             </div>
 

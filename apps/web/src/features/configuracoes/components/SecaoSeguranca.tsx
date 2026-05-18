@@ -109,6 +109,7 @@ export function SecaoSeguranca() {
                 }
                 className="tqe-input"
                 placeholder="••••••••"
+                maxLength={128}
               />
             </div>
           ))}

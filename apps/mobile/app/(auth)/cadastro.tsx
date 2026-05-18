@@ -13,6 +13,7 @@ import {
 import { z } from "zod";
 
 import { api, ApiError } from "@/src/shared/api/api-client";
+import { maskTelefone } from "@/src/shared/utils/masks";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
 import { Button, FormErrorBox, FormInput } from "@/src/shared/ui";
@@ -117,6 +118,7 @@ export default function CadastroScreen() {
               autoCapitalize="words"
               autoComplete="name"
               textContentType="name"
+              maxLength={100}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -136,6 +138,7 @@ export default function CadastroScreen() {
               autoCapitalize="none"
               autoComplete="email"
               textContentType="emailAddress"
+              maxLength={100}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -151,12 +154,13 @@ export default function CadastroScreen() {
             <FormInput
               label="Telefone"
               hint="(opcional)"
-              placeholder="+55 11 99999-9999"
+              placeholder="(11) 99999-9999"
               keyboardType="phone-pad"
               autoComplete="tel"
               textContentType="telephoneNumber"
+              maxLength={20}
               onBlur={onBlur}
-              onChangeText={onChange}
+              onChangeText={(text) => onChange(maskTelefone(text))}
               value={value}
             />
           )}
@@ -172,6 +176,7 @@ export default function CadastroScreen() {
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
+              maxLength={128}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -190,6 +195,7 @@ export default function CadastroScreen() {
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
+              maxLength={128}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -48,10 +48,12 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
       clienteId: undefined,
       inicio: undefined,
       servicosIds: [],
+      observacao: "",
     },
   });
 
   const watchedBarbeiroId = watch("barbeiroId");
+  const observacaoValue = useWatch({ control, name: "observacao" }) ?? "";
   const watchedServicosIds = watch("servicosIds");
 
   // Calcula duração total baseada nos serviços selecionados
@@ -295,6 +297,35 @@ export function AgendamentoModal({ date, onClose }: AgendamentoModalProps) {
                     {errors.servicosIds.message}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="tqe-label">Observação (opcional)</label>
+                <textarea
+                  {...register("observacao")}
+                  placeholder="Informações adicionais..."
+                  rows={2}
+                  maxLength={500}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border-default)",
+                    borderRadius: 8,
+                    color: "var(--text-primary)",
+                    fontSize: 13,
+                    fontFamily: "var(--font-body)",
+                    outline: "none",
+                    resize: "vertical",
+                    lineHeight: 1.5,
+                  }}
+                />
+                <p
+                  className="text-[11px] mt-1 text-right"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {(observacaoValue as string).length}/500
+                </p>
               </div>
             </div>
 

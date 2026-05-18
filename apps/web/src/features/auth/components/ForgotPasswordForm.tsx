@@ -104,6 +104,7 @@ export function ForgotPasswordForm({
           placeholder="seu@email.com"
           className="tqe-input"
           autoComplete="email"
+          maxLength={100}
         />
         {errors.email && (
           <p

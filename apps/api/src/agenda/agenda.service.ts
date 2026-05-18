@@ -46,14 +46,14 @@ export class AgendaService {
     });
   }
 
-  async getJornada(barbeiroId: number) {
+  getJornada(barbeiroId: number) {
     return this.prisma.jornadaTrabalho.findMany({
       where: { barbeiroId },
       orderBy: { diaSemana: 'asc' },
     });
   }
 
-  async createBloqueio(
+  createBloqueio(
     barbeiroId: number,
     barCodigo: number,
     dto: CreateBloqueioDto,
@@ -69,7 +69,7 @@ export class AgendaService {
     });
   }
 
-  async getBloqueios(barbeiroId: number, dataInicio: string, dataFim: string) {
+  getBloqueios(barbeiroId: number, dataInicio: string, dataFim: string) {
     return this.prisma.bloqueioAgenda.findMany({
       where: {
         barbeiroId,

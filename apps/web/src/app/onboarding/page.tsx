@@ -23,6 +23,7 @@ import {
 } from "@toqe/contracts";
 import { api, tenantApi } from "@/shared/api/api-client";
 import { getInitial } from "@/shared/lib/utils";
+import { maskTelefone, maskSlug } from "@/shared/utils/masks";
 
 interface AccountData {
   nome: string;
@@ -228,6 +229,7 @@ function Passo1Conta({
             onChange={(e) => onChange("nome", e.target.value)}
             placeholder="João Silva"
             autoComplete="name"
+            maxLength={100}
           />
         </div>
 
@@ -239,6 +241,7 @@ function Passo1Conta({
             onChange={(e) => onChange("email", e.target.value)}
             placeholder="joao@barbearia.com"
             autoComplete="email"
+            maxLength={100}
           />
         </div>
 
@@ -252,6 +255,7 @@ function Passo1Conta({
                 onChange={(e) => onChange("senha", e.target.value)}
                 placeholder="Mín. 6 caracteres"
                 autoComplete="new-password"
+                maxLength={128}
                 style={{ paddingRight: 36 }}
               />
               <button
@@ -274,6 +278,7 @@ function Passo1Conta({
                 onChange={(e) => onChange("confirmarSenha", e.target.value)}
                 placeholder="Repita a senha"
                 autoComplete="new-password"
+                maxLength={128}
                 style={{ paddingRight: 36 }}
               />
               <button
@@ -314,13 +319,7 @@ function Passo1({
   const slugDisponivel = data.slug.length > 2;
 
   function normalizeSlug(value: string) {
-    onChange(
-      "slug",
-      value
-        .toLowerCase()
-        .replace(/[^a-z0-9-]/g, "")
-        .slice(0, 28),
-    );
+    onChange("slug", maskSlug(value).slice(0, 60));
   }
 
   return (
@@ -339,6 +338,7 @@ function Passo1({
             value={data.nome}
             onChange={(event) => onChange("nome", event.target.value)}
             placeholder="Ex: Barba do Zé"
+            maxLength={100}
           />
         </div>
 
@@ -357,8 +357,11 @@ function Passo1({
             <input
               type="tel"
               value={data.telefone}
-              onChange={(event) => onChange("telefone", event.target.value)}
-              placeholder="(00) 00000-0000"
+              onChange={(event) =>
+                onChange("telefone", maskTelefone(event.target.value))
+              }
+              placeholder="(11) 99999-9999"
+              maxLength={20}
             />
           </div>
         </div>
@@ -371,6 +374,7 @@ function Passo1({
               type="text"
               value={data.slug}
               onChange={(event) => normalizeSlug(event.target.value)}
+              maxLength={60}
             />
           </div>
           <div className="help">
@@ -599,6 +603,12 @@ function Passo4({
 
         <div className="ob-field">
           <label>Serviços</label>
+          <div className="svc-header">
+            <span>Nome do serviço</span>
+            <span>Preço (R$)</span>
+            <span>Duração (min)</span>
+            <span />
+          </div>
           <div className="svc-list">
             {servicos.map((servico, index) => (
               <div key={index} className="svc-row">
@@ -608,6 +618,7 @@ function Passo4({
                     onUpdateServico(index, "nome", event.target.value)
                   }
                   placeholder="Nome do serviço"
+                  maxLength={100}
                 />
                 <input
                   value={servico.preco}
@@ -617,6 +628,8 @@ function Passo4({
                   placeholder="0"
                   type="number"
                   aria-label="Preço"
+                  min={0}
+                  max={9999.99}
                 />
                 <input
                   value={servico.duracao}
@@ -630,6 +643,8 @@ function Passo4({
                   placeholder="30"
                   type="number"
                   aria-label="Duração"
+                  min={5}
+                  max={480}
                 />
                 <button
                   type="button"
@@ -729,6 +744,7 @@ function Passo5({
                     onUpdateBarbeiro(index, "nome", event.target.value)
                   }
                   placeholder="Nome do barbeiro"
+                  maxLength={100}
                 />
                 <input
                   value={barbeiro.email}
@@ -737,6 +753,7 @@ function Passo5({
                   }
                   placeholder="email@dominio.com"
                   type="email"
+                  maxLength={100}
                 />
                 <button
                   type="button"

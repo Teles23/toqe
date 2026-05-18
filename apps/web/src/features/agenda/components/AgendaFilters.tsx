@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import type { Barbeiro } from "../types/agenda.types";
 
 interface AgendaFiltersProps {
@@ -34,7 +33,7 @@ function FilterBtn({
   return (
     <button
       onClick={onClick}
-      className="px-2.5 py-1 rounded text-[11px] font-medium transition-all"
+      className="px-2.5 py-1 rounded text-[11px] font-medium transition-all flex-shrink-0 whitespace-nowrap"
       style={{
         background: active ? "var(--bg-hover)" : "transparent",
         border: `1px solid ${active ? "var(--border-strong)" : "transparent"}`,
@@ -57,8 +56,8 @@ export function AgendaFilters({
   onSearch,
 }: AgendaFiltersProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <div className="relative flex items-center">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+      <div className="relative flex items-center flex-shrink-0">
         <Search
           size={13}
           className="absolute left-2.5"
@@ -83,54 +82,45 @@ export function AgendaFilters({
         />
       </div>
 
-      <Filter size={13} style={{ color: "var(--text-muted)" }} />
-
-      <div className="flex gap-1">
-        {["Todos", ...barbeiros.map((b) => b.nome)].map((name) => (
-          <FilterBtn
-            key={name}
-            active={filterBarbeiro === name}
-            onClick={() => onBarbeiro(name)}
-          >
-            {name}
-          </FilterBtn>
-        ))}
-      </div>
-
       <div
-        className="self-stretch"
-        style={{ width: 1, background: "var(--border-subtle)" }}
-      />
-
-      <div className="flex gap-1">
-        {STATUS_OPTIONS.map((f) => (
-          <FilterBtn
-            key={f.key}
-            active={filterStatus === f.key}
-            onClick={() => onStatus(f.key)}
-          >
-            {f.label}
-          </FilterBtn>
-        ))}
-      </div>
-
-      <div className="flex-1" />
-
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.97 }}
-        className="flex items-center gap-1.5 px-3 rounded-lg font-semibold text-[12px]"
-        style={{
-          height: 32,
-          background: "var(--primary)",
-          color: "#0D0D0D",
-          fontFamily: "var(--font-body)",
-          boxShadow: "0 0 12px rgba(244,180,0,0.2)",
-        }}
+        className="flex items-center gap-2 overflow-x-auto"
+        style={{ scrollbarWidth: "none" }}
       >
-        <Plus size={13} strokeWidth={2.5} />
-        <span className="hidden sm:inline">Agendar</span>
-      </motion.button>
+        <Filter
+          size={13}
+          className="flex-shrink-0"
+          style={{ color: "var(--text-muted)" }}
+        />
+
+        <div className="flex gap-1">
+          {["Todos", ...barbeiros.map((b) => b.nome)].map((name) => (
+            <FilterBtn
+              key={name}
+              active={filterBarbeiro === name}
+              onClick={() => onBarbeiro(name)}
+            >
+              {name}
+            </FilterBtn>
+          ))}
+        </div>
+
+        <div
+          className="self-stretch flex-shrink-0"
+          style={{ width: 1, background: "var(--border-subtle)" }}
+        />
+
+        <div className="flex gap-1">
+          {STATUS_OPTIONS.map((f) => (
+            <FilterBtn
+              key={f.key}
+              active={filterStatus === f.key}
+              onClick={() => onStatus(f.key)}
+            >
+              {f.label}
+            </FilterBtn>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

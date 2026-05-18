@@ -33,7 +33,7 @@ export const createBloqueioSchema = z
     fim: z.string().datetime({ message: "Data/hora de fim inválida" }),
     motivo: z
       .string()
-      .max(200, "Motivo muito longo")
+      .max(100, "Motivo muito longo")
       .optional()
       .or(z.literal("")),
     recorrente: z.boolean().optional(),

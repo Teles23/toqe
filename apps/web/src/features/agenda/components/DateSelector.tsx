@@ -19,7 +19,7 @@ export function DateSelector({ selectedOffset, onChange }: DateSelectorProps) {
   });
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 min-w-0">
       <button
         className="p-1.5 rounded-lg transition-colors"
         style={{

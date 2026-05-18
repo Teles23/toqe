@@ -75,7 +75,7 @@ async function fillAndSubmit(opts: { senha?: string; confirma?: string } = {}) {
   const confirma = opts.confirma ?? senha;
   fireEvent.changeText(screen.getByLabelText("Nome"), "Carlos");
   fireEvent.changeText(screen.getByLabelText("E-mail"), "novo@toqe.com");
-  fireEvent.changeText(screen.getByLabelText("Telefone"), "+5511999999999");
+  fireEvent.changeText(screen.getByLabelText("Telefone"), "11999999999");
   fireEvent.changeText(screen.getByLabelText("Senha"), senha);
   fireEvent.changeText(screen.getByLabelText("Confirmar senha"), confirma);
   await act(async () => {
@@ -127,7 +127,7 @@ describe("CadastroScreen", () => {
         nome: "Carlos",
         email: "novo@toqe.com",
         senha: "senha123",
-        telefone: "+5511999999999",
+        telefone: "(11) 99999-9999",
       });
     });
     await waitFor(() => {

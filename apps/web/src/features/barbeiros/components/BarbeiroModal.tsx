@@ -95,6 +95,7 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                   type="email"
                   placeholder="barbeiro@email.com"
                   className="tqe-input"
+                  maxLength={100}
                 />
                 {errors.email && (
                   <p

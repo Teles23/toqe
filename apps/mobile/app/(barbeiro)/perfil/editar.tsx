@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 
 import { useEditarPerfil } from "@/src/shared/hooks/perfil/use-editar-perfil";
+import { maskTelefone } from "@/src/shared/utils/masks";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
 import { Button, FormErrorBox, FormInput, ScreenHeader } from "@/src/shared/ui";
@@ -77,6 +78,7 @@ export default function PerfilEditarScreen() {
               placeholder="Seu nome completo"
               autoCapitalize="words"
               autoComplete="name"
+              maxLength={100}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value ?? ""}
@@ -92,11 +94,12 @@ export default function PerfilEditarScreen() {
             <FormInput
               label="Telefone"
               hint="(opcional)"
-              placeholder="+55 11 99999-9999"
+              placeholder="(11) 99999-9999"
               keyboardType="phone-pad"
               autoComplete="tel"
+              maxLength={20}
               onBlur={onBlur}
-              onChangeText={onChange}
+              onChangeText={(text) => onChange(maskTelefone(text))}
               value={value ?? ""}
               error={errors.telefone?.message}
             />

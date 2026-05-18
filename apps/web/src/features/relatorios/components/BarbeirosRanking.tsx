@@ -32,9 +32,9 @@ export function BarbeirosRanking({ data }: BarbeirosRankingProps) {
         </span>
       </div>
 
-      {/* Header tabela */}
+      {/* Desktop table header */}
       <div
-        className="grid px-5 py-2"
+        className="hidden md:grid px-5 py-2"
         style={{
           gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
           borderBottom: "1px solid var(--border-subtle)",
@@ -60,9 +60,7 @@ export function BarbeirosRanking({ data }: BarbeirosRankingProps) {
           initial={{ opacity: 0, x: -6 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.05 }}
-          className="grid px-5 py-3.5 items-center"
           style={{
-            gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
             borderBottom:
               i < data.length - 1 ? "1px solid var(--border-subtle)" : "none",
             transition: "background 120ms",
@@ -75,13 +73,13 @@ export function BarbeirosRanking({ data }: BarbeirosRankingProps) {
             ((e.currentTarget as HTMLElement).style.background = "transparent")
           }
         >
-          <div className="flex items-center gap-2.5">
+          {/* Mobile card */}
+          <div className="flex items-center gap-3 px-4 py-3 md:hidden">
             <span
-              className="font-bold text-[11px] flex-shrink-0"
+              className="font-bold text-[11px] flex-shrink-0 w-4 text-center"
               style={{
                 color: i === 0 ? "var(--status-warning)" : "var(--text-muted)",
                 fontFamily: "var(--font-heading)",
-                width: 16,
               }}
             >
               {i + 1}
@@ -89,8 +87,8 @@ export function BarbeirosRanking({ data }: BarbeirosRankingProps) {
             <div
               className="flex items-center justify-center rounded-full font-bold text-xs flex-shrink-0"
               style={{
-                width: 28,
-                height: 28,
+                width: 32,
+                height: 32,
                 background: "rgba(77,163,255,0.1)",
                 color: "var(--status-info)",
                 fontFamily: "var(--font-heading)",
@@ -98,44 +96,111 @@ export function BarbeirosRanking({ data }: BarbeirosRankingProps) {
             >
               {b.nome[0]}
             </div>
-            <span
-              className="text-[13px] font-medium"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {b.nome}
-            </span>
+            <div className="flex-1 min-w-0">
+              <span
+                className="block text-[13px] font-medium truncate"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {b.nome}
+              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className="text-[11px]"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {b.atendimentos}x
+                </span>
+                <span
+                  className="text-[11px]"
+                  style={{ color: "var(--status-warning)" }}
+                >
+                  ★ {b.avaliacao.toFixed(1)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col items-end flex-shrink-0">
+              <span
+                className="text-[13px] font-semibold tabular-nums"
+                style={{
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-heading)",
+                }}
+              >
+                {formatBRL(b.faturamento / 1000)}k
+              </span>
+              <span
+                className="text-[11px] tabular-nums"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {formatBRL(b.ticketMedio)} ticket
+              </span>
+            </div>
           </div>
 
-          <span
-            className="text-[13px] tabular-nums"
-            style={{ color: "var(--text-secondary)" }}
+          {/* Desktop table row */}
+          <div
+            className="hidden md:grid px-5 py-3.5 items-center"
+            style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr" }}
           >
-            {b.atendimentos}x
-          </span>
-
-          <span
-            className="text-[13px] font-semibold tabular-nums"
-            style={{
-              color: "var(--text-primary)",
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            {formatBRL(b.faturamento / 1000)}k
-          </span>
-
-          <span
-            className="text-[13px] tabular-nums"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            {formatBRL(b.ticketMedio)}
-          </span>
-
-          <span
-            className="text-[13px]"
-            style={{ color: "var(--status-warning)" }}
-          >
-            ★ {b.avaliacao.toFixed(1)}
-          </span>
+            <div className="flex items-center gap-2.5">
+              <span
+                className="font-bold text-[11px] flex-shrink-0"
+                style={{
+                  color:
+                    i === 0 ? "var(--status-warning)" : "var(--text-muted)",
+                  fontFamily: "var(--font-heading)",
+                  width: 16,
+                }}
+              >
+                {i + 1}
+              </span>
+              <div
+                className="flex items-center justify-center rounded-full font-bold text-xs flex-shrink-0"
+                style={{
+                  width: 28,
+                  height: 28,
+                  background: "rgba(77,163,255,0.1)",
+                  color: "var(--status-info)",
+                  fontFamily: "var(--font-heading)",
+                }}
+              >
+                {b.nome[0]}
+              </div>
+              <span
+                className="text-[13px] font-medium"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {b.nome}
+              </span>
+            </div>
+            <span
+              className="text-[13px] tabular-nums"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {b.atendimentos}x
+            </span>
+            <span
+              className="text-[13px] font-semibold tabular-nums"
+              style={{
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              {formatBRL(b.faturamento / 1000)}k
+            </span>
+            <span
+              className="text-[13px] tabular-nums"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {formatBRL(b.ticketMedio)}
+            </span>
+            <span
+              className="text-[13px]"
+              style={{ color: "var(--status-warning)" }}
+            >
+              ★ {b.avaliacao.toFixed(1)}
+            </span>
+          </div>
         </motion.div>
       ))}
     </div>

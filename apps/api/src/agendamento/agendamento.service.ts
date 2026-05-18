@@ -122,7 +122,7 @@ export class AgendamentoService {
     return { itensData, totalDuration };
   }
 
-  async findAll(barCodigo: number, filtros: ListAgendamentoDto) {
+  findAll(barCodigo: number, filtros: ListAgendamentoDto) {
     const where: Prisma.AgendamentoWhereInput = { barCodigo };
 
     if (filtros.data) {

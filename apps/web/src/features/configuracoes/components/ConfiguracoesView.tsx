@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight, ArrowLeft } from "lucide-react";
 import { SECOES } from "../constants/configuracao.constants";
 import type { SecaoId } from "../types/configuracao.types";
 import { SecaoBarbearia } from "./SecaoBarbearia";
@@ -16,6 +17,7 @@ interface Props {
 
 export function ConfiguracoesView({ barCodigo }: Props) {
   const [secaoAtiva, setSecaoAtiva] = useState<SecaoId>("barbearia");
+  const [mobileShowContent, setMobileShowContent] = useState(false);
 
   const conteudo: Record<SecaoId, React.ReactNode> = {
     barbearia: <SecaoBarbearia barCodigo={barCodigo} />,
@@ -25,18 +27,25 @@ export function ConfiguracoesView({ barCodigo }: Props) {
     seguranca: <SecaoSeguranca />,
   };
 
+  const secaoLabel = SECOES.find((s) => s.id === secaoAtiva)?.label ?? "";
+
+  function handleSelectSecao(id: SecaoId) {
+    setSecaoAtiva(id);
+    setMobileShowContent(true);
+  }
+
   return (
     <div
-      className="max-w-5xl mx-auto flex rounded-xl overflow-hidden"
+      className="max-w-5xl mx-auto md:flex rounded-xl overflow-hidden"
       style={{
         border: "1px solid var(--border-default)",
         minHeight: "calc(100vh - 120px)",
       }}
     >
+      {/* Sidebar nav — full-width on mobile, 200px sidebar on desktop */}
       <div
-        className="flex-shrink-0 py-4"
+        className={`py-4 md:w-[200px] md:flex-shrink-0 ${mobileShowContent ? "hidden md:block" : "block"}`}
         style={{
-          width: 200,
           background: "var(--bg-secondary)",
           borderRight: "1px solid var(--border-subtle)",
         }}
@@ -55,7 +64,7 @@ export function ConfiguracoesView({ barCodigo }: Props) {
           return (
             <button
               key={s.id}
-              onClick={() => setSecaoAtiva(s.id)}
+              onClick={() => handleSelectSecao(s.id)}
               className="w-full flex items-center gap-3 px-4 py-2.5 relative"
               style={{
                 background: ativa ? "var(--bg-card)" : "transparent",
@@ -75,16 +84,34 @@ export function ConfiguracoesView({ barCodigo }: Props) {
               }}
             >
               <Icon size={15} strokeWidth={ativa ? 2.2 : 1.8} />
-              <span className="text-[13px] font-medium">{s.label}</span>
+              <span className="text-[13px] font-medium flex-1 text-left">
+                {s.label}
+              </span>
+              <ChevronRight
+                size={14}
+                className="md:hidden"
+                style={{ color: "var(--text-muted)" }}
+              />
             </button>
           );
         })}
       </div>
 
+      {/* Content panel — full-width on mobile when shown */}
       <div
-        className="flex-1 overflow-y-auto"
+        className={`flex-1 overflow-y-auto ${mobileShowContent ? "block" : "hidden md:block"}`}
         style={{ background: "var(--bg-card)" }}
       >
+        {/* Mobile back button */}
+        <button
+          onClick={() => setMobileShowContent(false)}
+          className="md:hidden flex items-center gap-2 px-4 pt-4 pb-2 text-[13px] font-medium"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          <ArrowLeft size={15} />
+          {secaoLabel}
+        </button>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={secaoAtiva}
@@ -92,7 +119,7 @@ export function ConfiguracoesView({ barCodigo }: Props) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="p-6"
+            className="p-6 pt-4 md:pt-6"
           >
             {conteudo[secaoAtiva]}
           </motion.div>

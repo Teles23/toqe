@@ -394,8 +394,7 @@ export default function Sidebar({
             transition={{ duration: 0.2 }}
             className="fixed inset-0 lg:hidden z-40"
             style={{
-              background: "rgba(0,0,0,0.6)",
-              backdropFilter: "blur(2px)",
+              background: "rgba(0,0,0,0.55)",
             }}
             onClick={onToggle}
           />

@@ -117,7 +117,7 @@ export class MembroBarbeariaService {
     );
   }
 
-  async findMembros(barCodigo: number) {
+  findMembros(barCodigo: number) {
     return this.prisma.membroBarbearia.findMany({
       where: { barCodigo },
       include: { usuario: { select: SELECT_USUARIO_PERFIL } },
