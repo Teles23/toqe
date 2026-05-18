@@ -14,7 +14,12 @@ import {
 import { ApiError } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormErrorBox, FormInput } from "@/src/shared/ui";
+import {
+  AmberButton,
+  FormErrorBox,
+  FormInput,
+  GhostButton,
+} from "@/src/shared/ui";
 import { loginSchema, type LoginInput } from "@toqe/contracts";
 
 export default function LoginScreen() {
@@ -79,32 +84,34 @@ export default function LoginScreen() {
           styles.inner,
           {
             paddingHorizontal: spacing.lg,
-            paddingTop: spacing.xxl + spacing.xl,
+            paddingTop: spacing.xxxl,
           },
         ]}
       >
-        <Text
-          style={[
-            {
-              ...typography.display,
-              color: palette.text,
-              marginBottom: spacing.xs,
-            },
-          ]}
-        >
-          Toqe
-        </Text>
-        <Text
-          style={[
-            {
-              ...typography.body,
-              color: palette.textMuted,
-              marginBottom: spacing.xl,
-            },
-          ]}
-        >
-          Entre na sua conta
-        </Text>
+        {/* Brand mark — monograma + nome + tagline (princípio "dark é o palco") */}
+        <View style={[styles.brand, { marginBottom: spacing.xxl }]}>
+          <Text
+            style={[
+              styles.monogram,
+              {
+                color: palette.primary,
+                textShadowColor: palette.primaryDim,
+              },
+            ]}
+            accessibilityLabel="Logotipo Toqe"
+          >
+            T
+          </Text>
+          <Text style={[typography.title, { color: palette.text }]}>toqe</Text>
+          <Text
+            style={[
+              typography.caption,
+              { color: palette.textMuted, marginTop: spacing.xs },
+            ]}
+          >
+            Sua barbearia. Seu ritmo.
+          </Text>
+        </View>
 
         <FormErrorBox error={errors.root?.message} />
 
@@ -147,35 +154,49 @@ export default function LoginScreen() {
           )}
         />
 
-        <View style={{ marginTop: spacing.sm }}>
-          <Button
+        <View style={{ marginTop: spacing.md }}>
+          <AmberButton
             label="Entrar"
             onPress={handleSubmit(onSubmit)}
             loading={isSubmitting}
           />
         </View>
 
-        <View style={{ marginTop: spacing.sm }}>
-          <Button
-            label="Entrar com Google"
-            variant="secondary"
-            onPress={onGoogle}
-            accessibilityLabel="Entrar com Google"
-          />
+        {/* Divider "ou" — separa CTAs principal e alternativo */}
+        <View
+          style={[styles.dividerRow, { marginVertical: spacing.lg }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          <View style={[styles.line, { backgroundColor: palette.border }]} />
+          <Text
+            style={[
+              typography.caption,
+              { color: palette.textMuted, marginHorizontal: spacing.md },
+            ]}
+          >
+            ou
+          </Text>
+          <View style={[styles.line, { backgroundColor: palette.border }]} />
         </View>
 
-        <View style={[styles.footer, { marginTop: spacing.lg }]}>
-          <Text style={{ ...typography.label, color: palette.textMuted }}>
+        <GhostButton
+          label="Entrar com Google"
+          onPress={onGoogle}
+          accessibilityLabel="Entrar com Google"
+        />
+
+        <View style={[styles.footer, { marginTop: spacing.xl }]}>
+          <Text style={[typography.label, { color: palette.textMuted }]}>
             Não tem uma conta?{" "}
           </Text>
           <Link href="/(auth)/cadastro" asChild>
             <Pressable accessibilityRole="link">
               <Text
-                style={{
-                  ...typography.label,
-                  fontWeight: "600",
-                  color: palette.primary,
-                }}
+                style={[
+                  typography.label,
+                  { color: palette.primary, fontFamily: "Inter_600SemiBold" },
+                ]}
               >
                 Cadastre-se
               </Text>
@@ -190,5 +211,18 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingBottom: 40 },
+  brand: { alignItems: "center" },
+  monogram: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 80,
+    lineHeight: 84,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  line: { flex: 1, height: 1 },
   footer: { flexDirection: "row", justifyContent: "center" },
 });

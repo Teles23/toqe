@@ -7,7 +7,13 @@ import { z } from "zod";
 import { ApiError } from "@/src/shared/api/api-client";
 import { useMudarSenha } from "@/src/shared/hooks/perfil/use-mudar-senha";
 import { useTheme } from "@/src/shared/theme";
-import { Button, FormErrorBox, FormInput, ScreenHeader } from "@/src/shared/ui";
+import {
+  AmberButton,
+  FormErrorBox,
+  FormInput,
+  GhostButton,
+  ScreenHeader,
+} from "@/src/shared/ui";
 
 // Schema local: estende o do backend com confirmação
 const senhaFormSchema = z
@@ -77,9 +83,8 @@ export default function PerfilSenhaScreen() {
       <ScreenHeader
         title="Mudar senha"
         right={
-          <Button
+          <GhostButton
             label="Voltar"
-            variant="secondary"
             onPress={() => router.back()}
             accessibilityLabel="Voltar"
           />
@@ -151,7 +156,7 @@ export default function PerfilSenhaScreen() {
         />
 
         <View style={{ marginTop: spacing.md }}>
-          <Button
+          <AmberButton
             label="Alterar senha"
             onPress={handleSubmit(onSubmit)}
             loading={isSubmitting}

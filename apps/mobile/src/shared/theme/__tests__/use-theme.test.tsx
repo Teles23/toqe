@@ -44,8 +44,12 @@ describe("useTheme", () => {
     mockedUseColorScheme.mockReturnValue("light");
     const { result } = renderHook(() => useTheme());
     expect(result.current.spacing.md).toBe(16);
-    expect(result.current.radius.md).toBe(10);
+    expect(result.current.radius.md).toBe(12);
     expect(result.current.typography.body.fontSize).toBe(16);
+    expect(result.current.typography.body.fontFamily).toBe("Inter_400Regular");
+    expect(result.current.typography.monoXL.fontFamily).toBe(
+      "JetBrainsMono_700Bold",
+    );
     expect(result.current.a11y.minTouch).toBe(44);
   });
 });
