@@ -32,8 +32,8 @@ export function ClienteCard({
     <div
       className="flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xs"
       style={{
-        width: 36,
-        height: 36,
+        width: 30,
+        height: 30,
         background: `${statusCfg.color}15`,
         color: statusCfg.color,
         fontFamily: "var(--font-heading)",
@@ -50,19 +50,20 @@ export function ClienteCard({
       exit={{ opacity: 0 }}
       transition={{ delay: index * 0.03 }}
       onClick={onClick}
-      onMouseEnter={(e) => {
-        if (!isSelected)
-          (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected)
-          (e.currentTarget as HTMLElement).style.background = "transparent";
-      }}
     >
       {/* Mobile card */}
       <div
         className="flex md:hidden items-center gap-3 px-4 py-3 cursor-pointer"
         style={sharedStyle}
+        onMouseEnter={(e) => {
+          if (!isSelected)
+            (e.currentTarget as HTMLElement).style.background =
+              "var(--bg-hover)";
+        }}
+        onMouseLeave={(e) => {
+          if (!isSelected)
+            (e.currentTarget as HTMLElement).style.background = "transparent";
+        }}
       >
         {avatar}
         <div className="flex-1 min-w-0">
@@ -72,12 +73,11 @@ export function ClienteCard({
           >
             {cliente.nome}
           </p>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             {cliente.ultimaVisita
               ? `Última visita: ${cliente.ultimaVisita}`
-              : "Sem visitas"}
-            {" · "}
-            {cliente.totalVisitas}x
+              : "Sem visitas"}{" "}
+            · {cliente.totalVisitas}x
           </p>
         </div>
         <span
@@ -92,21 +92,18 @@ export function ClienteCard({
       <div
         className="hidden md:flex items-center px-4 py-3 cursor-pointer"
         style={sharedStyle}
+        onMouseEnter={(e) => {
+          if (!isSelected)
+            (e.currentTarget as HTMLElement).style.background =
+              "var(--bg-hover)";
+        }}
+        onMouseLeave={(e) => {
+          if (!isSelected)
+            (e.currentTarget as HTMLElement).style.background = "transparent";
+        }}
       >
-        {/* Nome + avatar */}
         <div className="flex items-center gap-3 flex-[2] min-w-0">
-          <div
-            className="flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xs"
-            style={{
-              width: 30,
-              height: 30,
-              background: `${statusCfg.color}15`,
-              color: statusCfg.color,
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            {cliente.initial}
-          </div>
+          {avatar}
           <div className="min-w-0">
             <span
               className="block text-[13px] font-medium truncate"

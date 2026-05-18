@@ -139,12 +139,15 @@ export function ClientesView() {
             </div>
 
             {/* Filtros de status */}
-            <div className="flex gap-1">
+            <div
+              className="flex gap-1 overflow-x-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
               {(["todos", "ativo", "inativo", "novo"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setFilterStatus(s)}
-                  className="px-2.5 py-1 rounded text-[11px] font-medium capitalize transition-all"
+                  className="px-2.5 py-1 rounded text-[11px] font-medium capitalize transition-all flex-shrink-0 whitespace-nowrap"
                   style={{
                     background:
                       filterStatus === s ? "var(--bg-hover)" : "transparent",
@@ -197,7 +200,7 @@ export function ClientesView() {
             </button>
           </div>
 
-          {/* Header da tabela — só desktop */}
+          {/* Header da tabela — oculto em mobile */}
           <div
             className="hidden md:flex items-center px-4 py-2 flex-shrink-0"
             style={{

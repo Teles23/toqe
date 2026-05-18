@@ -11,7 +11,7 @@ export function DashboardSkeleton(): React.JSX.Element {
         ))}
       </div>
       <Skeleton className="h-44 rounded-xl" />
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
         <Skeleton className="h-64 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
       </div>

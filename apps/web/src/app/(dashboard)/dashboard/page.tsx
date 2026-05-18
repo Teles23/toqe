@@ -61,7 +61,7 @@ export default function DashboardPage(): React.JSX.Element {
         liveMetrics={data.liveMetrics}
         barbeiros={data.barbeiros}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
         <FaturamentoChart
           semana={data.faturamento.semana}
           mes={data.faturamento.mes}

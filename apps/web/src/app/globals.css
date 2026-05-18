@@ -2459,6 +2459,7 @@
 
 .tqe-onboarding .tqe-ob-btn {
   padding: 12px 22px;
+  min-height: 44px;
   border: 1px solid var(--ob-border-2);
   border-radius: 10px;
   background: transparent;
@@ -2554,6 +2555,12 @@
   .tqe-onboarding .svc-header,
   .tqe-onboarding .svc-row {
     grid-template-columns: 1fr 78px 78px 30px;
+  }
+
+  .tqe-onboarding .svc-header {
+    padding: 0 12px 4px;
+  }
+  .tqe-onboarding .svc-row {
     padding: 12px;
   }
 
