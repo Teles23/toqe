@@ -87,20 +87,11 @@ export function ClientesView() {
       </div>
 
       {/* Conteúdo principal */}
-      <div
-        className="flex flex-1 min-h-0 rounded-xl overflow-hidden"
-        style={{ border: "1px solid var(--border-default)" }}
-      >
+      <div className="flex flex-1 min-h-0 rounded-xl overflow-hidden border border-[var(--border-default)]">
         {/* Lista */}
-        <div
-          className="flex flex-col flex-1 min-w-0 overflow-hidden"
-          style={{ background: "var(--bg-card)" }}
-        >
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-[var(--bg-card)]">
           {/* Toolbar */}
-          <div
-            className="flex items-center gap-3 px-4 py-3 flex-shrink-0 flex-wrap"
-            style={{ borderBottom: "1px solid var(--border-subtle)" }}
-          >
+          <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 flex-wrap border-b border-[var(--border-subtle)]">
             {/* Search */}
             <div className="relative flex items-center flex-1 min-w-[160px]">
               <Search
@@ -189,12 +180,7 @@ export function ClientesView() {
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold ml-auto"
-              style={{
-                height: 32,
-                background: "var(--primary)",
-                color: "#0D0D0D",
-              }}
+              className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold ml-auto h-8 bg-[var(--primary)] text-[#0D0D0D]"
             >
               <Plus size={13} strokeWidth={2.5} /> Novo cliente
             </button>
