@@ -12,7 +12,7 @@ Backend NestJS 11 do `toqe`.
 - **JWT** (Passport) com refresh-token rotativo
 - **`nestjs-pino`** (logs JSON em prod, pretty em dev)
 - **`@nestjs/swagger`** (OpenAPI em `/docs`)
-- **class-validator** + **class-transformer** (DTOs — migrarão para `nestjs-zod` na Fase 2)
+- **`nestjs-zod`** (DTOs e validação — schemas Zod em `@toqe/contracts`)
 - **Sentry** (filtro de exceções 5xx)
 - **Resend** (email)
 
@@ -100,7 +100,7 @@ docker build -f apps/api/Dockerfile -t toqe-api .
 
 ## Convenções
 
-- DTOs com `class-validator` (migrarão para `nestjs-zod` na Fase 2 — schemas em `@toqe/contracts`).
+- DTOs com `nestjs-zod` (schemas Zod em `@toqe/contracts` — source of truth compartilhado front/back).
 - Multi-tenant: toda rota protegida exige `x-tenant-id`.
 - Logs estruturados via `nestjs-pino`; erros 5xx capturados pelo filtro Sentry em `src/observabilidade/sentry.filter.ts`.
 - Conventional Commits e fluxo descrito em [`/CONTRIBUTING.md`](../../CONTRIBUTING.md).
