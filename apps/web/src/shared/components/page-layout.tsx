@@ -39,7 +39,7 @@ export default function PageLayout({
         />
 
         <main
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto overflow-x-hidden min-w-0"
           style={noPadding ? undefined : { padding: "20px 24px" }}
         >
           {children}

@@ -1558,6 +1558,14 @@
   .tqe-search-input:focus {
     width: 200px;
   }
+
+  .tqe-stat-card {
+    padding: 10px 12px !important;
+  }
+
+  .tqe-stat-card .tqe-stat-icon {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {

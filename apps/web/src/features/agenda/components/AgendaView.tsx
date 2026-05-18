@@ -44,18 +44,21 @@ export function AgendaView() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
-        <DateSelector
-          selectedOffset={selectedOffset}
-          onChange={setSelectedOffset}
-        />
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <DateSelector
+            selectedOffset={selectedOffset}
+            onChange={setSelectedOffset}
+          />
+        </div>
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold"
+          className="flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-semibold flex-shrink-0"
           style={{ height: 32, background: "var(--primary)", color: "#0D0D0D" }}
         >
-          <Plus size={13} strokeWidth={2.5} /> Novo agendamento
+          <Plus size={13} strokeWidth={2.5} />
+          <span className="hidden sm:inline">Novo agendamento</span>
         </button>
       </div>
 

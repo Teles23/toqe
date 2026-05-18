@@ -16,8 +16,7 @@ import { useServicos, useServicoMutations } from "../hooks/use-servicos";
 import { ServicoCard } from "./ServicoCard";
 import { ServicoDetalhe } from "./ServicoDetalhe";
 import { ServicoModal } from "./ServicoModal";
-import { CATEGORIA_CONFIG } from "../constants/servico.constants";
-import type { Categoria, ServicoAPI } from "../types/servico.types";
+import type { ServicoAPI } from "../types/servico.types";
 import { LoadingSpinner } from "@/shared/components/loading-spinner";
 
 export function ServicosView() {
@@ -30,13 +29,13 @@ export function ServicosView() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ServicoAPI | undefined>();
   const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState<"todos" | Categoria>("todos");
+  const [filterAtivo, setFilterAtivo] = useState<"todos" | "ativo" | "inativo">(
+    "todos",
+  );
 
   const filtered = servicos.filter((s) => {
-    if (filterCat !== "todos") {
-      const cat = (s as unknown as { categoria?: string }).categoria;
-      if (cat !== filterCat) return false;
-    }
+    if (filterAtivo === "ativo" && !s.ativo) return false;
+    if (filterAtivo === "inativo" && s.ativo) return false;
     if (search && !s.nome.toLowerCase().includes(search.toLowerCase()))
       return false;
     return true;
@@ -131,39 +130,32 @@ export function ServicosView() {
               />
             </div>
 
-            <div className="flex gap-1 flex-wrap">
-              <button
-                onClick={() => setFilterCat("todos")}
-                className="px-2.5 py-1 rounded text-[11px] font-medium transition-all"
-                style={{
-                  background:
-                    filterCat === "todos" ? "var(--bg-hover)" : "transparent",
-                  border: `1px solid ${filterCat === "todos" ? "var(--border-strong)" : "transparent"}`,
-                  color:
-                    filterCat === "todos"
-                      ? "var(--text-primary)"
-                      : "var(--text-muted)",
-                }}
-              >
-                Todos
-              </button>
+            <div
+              className="flex gap-1 overflow-x-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
               {(
-                Object.entries(CATEGORIA_CONFIG) as [
-                  Categoria,
-                  (typeof CATEGORIA_CONFIG)[Categoria],
-                ][]
-              ).map(([key, cfg]) => (
+                [
+                  { key: "todos", label: "Todos" },
+                  { key: "ativo", label: "Ativos" },
+                  { key: "inativo", label: "Inativos" },
+                ] as const
+              ).map((f) => (
                 <button
-                  key={key}
-                  onClick={() => setFilterCat(key)}
-                  className="px-2.5 py-1 rounded text-[11px] font-medium transition-all"
+                  key={f.key}
+                  onClick={() => setFilterAtivo(f.key)}
+                  className="flex-shrink-0 whitespace-nowrap px-2.5 py-1 rounded text-[11px] font-medium transition-all"
                   style={{
-                    background: filterCat === key ? cfg.bg : "transparent",
-                    border: `1px solid ${filterCat === key ? cfg.color + "40" : "transparent"}`,
-                    color: filterCat === key ? cfg.color : "var(--text-muted)",
+                    background:
+                      filterAtivo === f.key ? "var(--bg-hover)" : "transparent",
+                    border: `1px solid ${filterAtivo === f.key ? "var(--border-strong)" : "transparent"}`,
+                    color:
+                      filterAtivo === f.key
+                        ? "var(--text-primary)"
+                        : "var(--text-muted)",
                   }}
                 >
-                  {cfg.label}
+                  {f.label}
                 </button>
               ))}
             </div>

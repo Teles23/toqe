@@ -197,9 +197,9 @@ export function ClientesView() {
             </button>
           </div>
 
-          {/* Header da tabela */}
+          {/* Header da tabela — só desktop */}
           <div
-            className="flex items-center px-4 py-2 flex-shrink-0"
+            className="hidden md:flex items-center px-4 py-2 flex-shrink-0"
             style={{
               background: "var(--bg-secondary)",
               borderBottom: "1px solid var(--border-subtle)",
