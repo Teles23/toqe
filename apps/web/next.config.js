@@ -13,6 +13,18 @@ const apiOrigin = process.env.NEXT_PUBLIC_API_URL
   ? new URL(process.env.NEXT_PUBLIC_API_URL).origin
   : "";
 
+// Origens externas necessárias para o Google Identity Services (GIS) usado
+// pelo `@react-oauth/google` no LoginForm:
+//   - script `gsi/client` é servido por `https://accounts.google.com`
+//   - botão renderizado em iframe vindo de `https://accounts.google.com`
+//   - avatares do usuário (após login) vivem em `*.googleusercontent.com`
+//   - One Tap pode chamar `oauth2.googleapis.com` no token exchange
+// Concentrados aqui para que o restante do CSP fique legível.
+const GOOGLE_AUTH_ORIGINS = [
+  "https://accounts.google.com",
+  "https://oauth2.googleapis.com",
+];
+
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
@@ -22,13 +34,21 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-* necessário para Next.js
+      // unsafe-* necessário para Next.js. Google Identity Services adiciona
+      // accounts.google.com (script gsi/client + fallback script-src-elem).
+      `script-src 'self' 'unsafe-eval' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
+      // script-src-elem explícito — alguns browsers exigem para o <script>
+      // injetado dinamicamente pelo @react-oauth/google.
+      `script-src-elem 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      // Avatares Google do usuário logado.
+      "img-src 'self' data: blob: https://*.googleusercontent.com https://accounts.google.com",
       "font-src 'self'",
       // apiOrigin cobre a URL da API (dev: localhost:3000, prod: domínio real)
       // ws://* wss://* necessários para o HMR do Next.js em dev
-      `connect-src 'self' ${apiOrigin} ws: wss: https://*.sentry.io`,
+      `connect-src 'self' ${apiOrigin} ws: wss: https://*.sentry.io ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
+      // O botão GIS é renderizado num iframe servido por accounts.google.com
+      `frame-src 'self' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       "frame-ancestors 'none'",
     ].join("; "),
   },
