@@ -5,9 +5,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import { useRouter } from "next/navigation";
 import { loginSchema, type LoginInput } from "@/features/auth/schemas";
 import { useLogin } from "@/features/auth/hooks/use-login";
-import { TwoFaRequiredError } from "@/features/auth/services/auth.service";
+import {
+  TwoFaRequiredError,
+  requestGoogleLogin,
+} from "@/features/auth/services/auth.service";
 import { AuthErrorBanner } from "./AuthErrorBanner";
 
 interface LoginFormProps {
@@ -33,6 +38,7 @@ export function LoginForm({
 }: LoginFormProps): React.JSX.Element {
   const [showPass, setShowPass] = useState(false);
   const login = useLogin();
+  const router = useRouter();
 
   const {
     register,
@@ -123,6 +129,32 @@ export function LoginForm({
       </div>
 
       <AuthErrorBanner message={apiError} />
+
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <>
+          <GoogleLogin
+            onSuccess={async (credentialResponse) => {
+              if (!credentialResponse.credential) return;
+              try {
+                await requestGoogleLogin(credentialResponse.credential);
+                router.push("/dashboard");
+              } catch (_err) {
+                // erro é mostrado via apiError já existente
+              }
+            }}
+            onError={() => {}}
+            theme="filled_black"
+            text="signin_with"
+            shape="rectangular"
+            width="100%"
+          />
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[var(--border-subtle)]" />
+            <span className="text-[11px] text-[var(--text-muted)]">ou</span>
+            <div className="flex-1 h-px bg-[var(--border-subtle)]" />
+          </div>
+        </>
+      )}
 
       {/* Submit */}
       <motion.button

@@ -13,8 +13,10 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { GoogleLogin } from "@react-oauth/google";
 import {
   createBarbeariaSchema,
   createServicoSchema,
@@ -206,12 +208,30 @@ function ColorSwatch({
 function Passo1Conta({
   data,
   onChange,
+  fieldErrors,
+  googleAuthed,
+  onGoogleSuccess,
 }: {
   data: AccountData;
   onChange: (key: keyof AccountData, value: string) => void;
+  fieldErrors: Record<string, string>;
+  googleAuthed: boolean;
+  onGoogleSuccess: (credential: string) => void;
 }) {
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  if (googleAuthed) {
+    return (
+      <>
+        <h1 className="ob-h1">Conta Google conectada.</h1>
+        <p className="ob-h1-sub">
+          Logado como <strong>{data.nome}</strong> ({data.email}). Continue para
+          configurar sua barbearia.
+        </p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -219,6 +239,30 @@ function Passo1Conta({
       <p className="ob-h1-sub">
         É rápido. Em seguida você configura tudo da barbearia.
       </p>
+
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <div className="ob-form" style={{ marginBottom: 0 }}>
+          <GoogleLogin
+            onSuccess={(credentialResponse) => {
+              if (credentialResponse.credential) {
+                onGoogleSuccess(credentialResponse.credential);
+              }
+            }}
+            onError={() => {}}
+            theme="filled_black"
+            text="signup_with"
+            shape="rectangular"
+            width="360"
+          />
+          <div className="flex items-center gap-3 my-4">
+            <div className="flex-1 h-px bg-[var(--border-subtle)]" />
+            <span className="text-[11px] text-[var(--text-muted)]">
+              ou cadastre com e-mail
+            </span>
+            <div className="flex-1 h-px bg-[var(--border-subtle)]" />
+          </div>
+        </div>
+      )}
 
       <div className="ob-form">
         <div className="ob-field">
@@ -230,7 +274,17 @@ function Passo1Conta({
             placeholder="João Silva"
             autoComplete="name"
             maxLength={100}
+            style={
+              fieldErrors.nome
+                ? { borderColor: "var(--status-error)" }
+                : undefined
+            }
           />
+          {fieldErrors.nome && (
+            <p className="text-[11px] mt-1 text-[var(--status-error)]">
+              {fieldErrors.nome}
+            </p>
+          )}
         </div>
 
         <div className="ob-field">
@@ -242,7 +296,17 @@ function Passo1Conta({
             placeholder="joao@barbearia.com"
             autoComplete="email"
             maxLength={100}
+            style={
+              fieldErrors.email
+                ? { borderColor: "var(--status-error)" }
+                : undefined
+            }
           />
+          {fieldErrors.email && (
+            <p className="text-[11px] mt-1 text-[var(--status-error)]">
+              {fieldErrors.email}
+            </p>
+          )}
         </div>
 
         <div className="ob-row cols-2">
@@ -257,6 +321,11 @@ function Passo1Conta({
                 autoComplete="new-password"
                 maxLength={128}
                 className="pr-9"
+                style={
+                  fieldErrors.senha
+                    ? { borderColor: "var(--status-error)" }
+                    : undefined
+                }
               />
               <button
                 type="button"
@@ -266,6 +335,11 @@ function Passo1Conta({
                 {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
             </div>
+            {fieldErrors.senha && (
+              <p className="text-[11px] mt-1 text-[var(--status-error)]">
+                {fieldErrors.senha}
+              </p>
+            )}
           </div>
 
           <div className="ob-field">
@@ -279,6 +353,11 @@ function Passo1Conta({
                 autoComplete="new-password"
                 maxLength={128}
                 className="pr-9"
+                style={
+                  fieldErrors.confirmarSenha
+                    ? { borderColor: "var(--status-error)" }
+                    : undefined
+                }
               />
               <button
                 type="button"
@@ -288,6 +367,11 @@ function Passo1Conta({
                 {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
             </div>
+            {fieldErrors.confirmarSenha && (
+              <p className="text-[11px] mt-1 text-[var(--status-error)]">
+                {fieldErrors.confirmarSenha}
+              </p>
+            )}
           </div>
         </div>
 
@@ -310,15 +394,60 @@ function Passo1Conta({
 function Passo1({
   data,
   onChange,
+  fieldErrors,
 }: {
   data: BarbeariaData;
   onChange: (key: keyof BarbeariaData, value: string) => void;
+  fieldErrors: Record<string, string>;
 }) {
   const slugDisponivel = data.slug.length > 2;
 
   function normalizeSlug(value: string) {
     onChange("slug", maskSlug(value).slice(0, 60));
   }
+
+  const onChangeRef = useRef(onChange);
+  const cidadeRef = useRef(data.cidade);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    cidadeRef.current = data.cidade;
+  });
+
+  useEffect(() => {
+    if (cidadeRef.current) return;
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&accept-language=pt-BR`,
+          );
+          const geo = (await res.json()) as {
+            address?: {
+              city?: string;
+              town?: string;
+              municipality?: string;
+              county?: string;
+              state_code?: string;
+            };
+          };
+          const addr = geo.address;
+          const city =
+            addr?.city ?? addr?.town ?? addr?.municipality ?? addr?.county;
+          const state = addr?.state_code;
+          if (city)
+            onChangeRef.current(
+              "cidade",
+              `${city}${state ? `, ${state}` : ""}`,
+            );
+        } catch {
+          // silencioso — campo fica em branco para o usuário preencher
+        }
+      },
+      () => {},
+      { timeout: 5000 },
+    );
+  }, []);
 
   return (
     <>
@@ -337,7 +466,17 @@ function Passo1({
             onChange={(event) => onChange("nome", event.target.value)}
             placeholder="Ex: Barba do Zé"
             maxLength={100}
+            style={
+              fieldErrors.nomeBarbearia
+                ? { borderColor: "var(--status-error)" }
+                : undefined
+            }
           />
+          {fieldErrors.nomeBarbearia && (
+            <p className="text-[11px] mt-1 text-[var(--status-error)]">
+              {fieldErrors.nomeBarbearia}
+            </p>
+          )}
         </div>
 
         <div className="ob-row cols-2">
@@ -373,23 +512,36 @@ function Passo1({
               value={data.slug}
               onChange={(event) => normalizeSlug(event.target.value)}
               maxLength={60}
+              style={
+                fieldErrors.slug
+                  ? { borderColor: "var(--status-error)" }
+                  : undefined
+              }
             />
           </div>
-          <div className="help">
-            <span
-              style={{ color: slugDisponivel ? "var(--green)" : "var(--red)" }}
-            >
-              ●
-            </span>{" "}
-            {slugDisponivel ? "Disponível" : "Escolha um slug maior"} · seus
-            clientes vão ver{" "}
-            <span
-              className="text-[var(--accent)]"
-              style={{ fontFamily: "JetBrains Mono" }}
-            >
-              toqe.app/{data.slug || "sua-barbearia"}
-            </span>
-          </div>
+          {fieldErrors.slug ? (
+            <p className="text-[11px] mt-1 text-[var(--status-error)]">
+              {fieldErrors.slug}
+            </p>
+          ) : (
+            <div className="help">
+              <span
+                style={{
+                  color: slugDisponivel ? "var(--green)" : "var(--red)",
+                }}
+              >
+                ●
+              </span>{" "}
+              {slugDisponivel ? "Disponível" : "Escolha um slug maior"} · seus
+              clientes vão ver{" "}
+              <span
+                className="text-[var(--accent)]"
+                style={{ fontFamily: "JetBrains Mono" }}
+              >
+                toqe.app/{data.slug || "sua-barbearia"}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -400,12 +552,23 @@ function Passo2({
   barbearia,
   data,
   onChange,
+  logoPreview,
+  onLogoChange,
 }: {
   barbearia: BarbeariaData;
   data: BrandingData;
   onChange: (key: keyof BrandingData, value: string) => void;
+  logoPreview: string | null;
+  onLogoChange: (file: File) => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const initial = getInitial(barbearia.nome, "B");
+
+  function handleFile(file: File) {
+    if (file.size > 2 * 1024 * 1024) return;
+    if (!file.type.startsWith("image/")) return;
+    onLogoChange(file);
+  }
 
   return (
     <>
@@ -433,12 +596,47 @@ function Passo2({
 
         <div className="ob-field">
           <label>Logotipo</label>
-          <button type="button" className="logo-dropzone">
-            <span className="logo-dropzone-icon">
-              <Camera size={22} />
-            </span>
-            <strong>Arraste seu logo aqui ou clique para escolher</strong>
-            <small>PNG ou SVG · até 2MB · ideal: quadrado 512x512</small>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/svg+xml,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
+            }}
+          />
+          <button
+            type="button"
+            className="logo-dropzone"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files[0];
+              if (file) handleFile(file);
+            }}
+          >
+            {logoPreview ? (
+              <Image
+                src={logoPreview}
+                alt="Logo preview"
+                width={200}
+                height={80}
+                unoptimized
+                style={{ maxHeight: 80, maxWidth: 200, objectFit: "contain" }}
+              />
+            ) : (
+              <>
+                <span className="logo-dropzone-icon">
+                  <Camera size={22} />
+                </span>
+                <strong>Arraste seu logo aqui ou clique para escolher</strong>
+                <small>
+                  PNG, SVG ou JPEG · até 2MB · ideal: quadrado 512×512
+                </small>
+              </>
+            )}
           </button>
           <div className="help">
             Opcional. Se não tiver, usamos a inicial do nome com sua cor.
@@ -453,9 +651,21 @@ function Passo2({
               style={{
                 background: `linear-gradient(135deg, ${data.cor}, ${data.cor}dd)`,
                 boxShadow: `0 4px 16px ${data.cor}40`,
+                overflow: "hidden",
               }}
             >
-              {initial}
+              {logoPreview ? (
+                <Image
+                  src={logoPreview}
+                  alt="Logo"
+                  width={64}
+                  height={64}
+                  unoptimized
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                initial
+              )}
             </div>
             <div>
               <div className="brand-preview-name">
@@ -807,7 +1017,7 @@ function Passo6({
         <div className="summary-card">
           <h4>
             Barbearia{" "}
-            <button type="button" className="edit" onClick={() => onGo(1)}>
+            <button type="button" className="edit" onClick={() => onGo(2)}>
               editar
             </button>
           </h4>
@@ -828,7 +1038,7 @@ function Passo6({
         <div className="summary-card">
           <h4>
             Identidade{" "}
-            <button type="button" className="edit" onClick={() => onGo(2)}>
+            <button type="button" className="edit" onClick={() => onGo(3)}>
               editar
             </button>
           </h4>
@@ -848,7 +1058,7 @@ function Passo6({
         <div className="summary-card">
           <h4>
             Funcionamento{" "}
-            <button type="button" className="edit" onClick={() => onGo(3)}>
+            <button type="button" className="edit" onClick={() => onGo(4)}>
               editar
             </button>
           </h4>
@@ -865,7 +1075,7 @@ function Passo6({
         <div className="summary-card">
           <h4>
             Serviços e equipe{" "}
-            <button type="button" className="edit" onClick={() => onGo(4)}>
+            <button type="button" className="edit" onClick={() => onGo(5)}>
               editar
             </button>
           </h4>
@@ -904,9 +1114,12 @@ function Passo6({
 export default function Onboarding(): React.JSX.Element {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [stepErrors, setStepErrors] = useState<string[]>([]);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [googleAuthed, setGoogleAuthed] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [account, setAccount] = useState<AccountData>({
     nome: "",
     email: "",
@@ -914,10 +1127,10 @@ export default function Onboarding(): React.JSX.Element {
     confirmarSenha: "",
   });
   const [barbearia, setBarbearia] = useState<BarbeariaData>({
-    nome: "Barbearia Urban",
-    slug: "urban",
-    cidade: "Salvador, BA",
-    telefone: "(71) 99999-0000",
+    nome: "",
+    slug: "",
+    cidade: "",
+    telefone: "",
   });
   const [branding, setBranding] = useState<BrandingData>({ cor: "#F4B400" });
   const [horarios, setHorarios] = useState<HorarioData[]>(DIAS_HORARIOS);
@@ -925,15 +1138,36 @@ export default function Onboarding(): React.JSX.Element {
   const [servicos, setServicos] = useState<ServicoData[]>(
     PRESETS_SERVICOS.basic,
   );
-  const [barbeiros, setBarbeiros] = useState<BarbeiroData[]>([
-    { nome: "Carlos Lima", email: "carlos@urban.com.br" },
-    { nome: "Felipe Souza", email: "felipe@urban.com.br" },
-  ]);
+  const [barbeiros, setBarbeiros] = useState<BarbeiroData[]>([]);
 
   function go(nextStep: number) {
     if (nextStep >= 1 && nextStep <= STEPS.length) {
       setStep(nextStep);
       document.querySelector(".ob-main")?.scrollIntoView({ block: "start" });
+    }
+  }
+
+  async function handleGoogleSuccess(credential: string) {
+    try {
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: credential }),
+      });
+      if (!res.ok) return;
+      // Decodifica payload do JWT para preencher nome/email na UI
+      const payload = JSON.parse(
+        atob(credential.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/")),
+      ) as { name?: string; email?: string };
+      setAccount((prev) => ({
+        ...prev,
+        nome: payload.name ?? prev.nome,
+        email: payload.email ?? prev.email,
+      }));
+      setGoogleAuthed(true);
+      go(2);
+    } catch {
+      // silencioso — usuário pode continuar com email/senha
     }
   }
 
@@ -987,43 +1221,51 @@ export default function Onboarding(): React.JSX.Element {
   }
 
   async function handleNext() {
-    setStepErrors([]);
+    setFieldErrors({});
     setPublishError("");
 
-    // ── Validação por step ──────────────────────────────────────────────────
-
-    // Step 1 — Criar conta
     if (step === 1) {
+      if (googleAuthed) {
+        go(step + 1);
+        return;
+      }
       const result = registerSchema.safeParse({
         nome: account.nome,
         email: account.email,
         senha: account.senha,
       });
       if (!result.success) {
-        setStepErrors(result.error.issues.map((i) => i.message));
+        const flat = result.error.flatten().fieldErrors;
+        setFieldErrors({
+          nome: flat.nome?.[0] ?? "",
+          email: flat.email?.[0] ?? "",
+          senha: flat.senha?.[0] ?? "",
+        });
         return;
       }
       if (account.senha !== account.confirmarSenha) {
-        setStepErrors(["As senhas não conferem"]);
+        setFieldErrors({ confirmarSenha: "As senhas não conferem" });
         return;
       }
     }
 
-    // Step 2 — Barbearia
     if (step === 2) {
       const result = createBarbeariaSchema.safeParse({
         nome: barbearia.nome,
         slug: barbearia.slug,
       });
       if (!result.success) {
-        setStepErrors(result.error.issues.map((i) => i.message));
+        const flat = result.error.flatten().fieldErrors;
+        setFieldErrors({
+          nomeBarbearia: flat.nome?.[0] ?? "",
+          slug: flat.slug?.[0] ?? "",
+        });
         return;
       }
     }
 
-    // Step 5 — Serviços
     if (step === 5) {
-      const erros: string[] = [];
+      const erros: Record<string, string> = {};
       servicos.forEach((s, idx) => {
         const r = createServicoSchema.safeParse({
           nome: s.nome,
@@ -1031,19 +1273,19 @@ export default function Onboarding(): React.JSX.Element {
           duracaoBase: s.duracao,
         });
         if (!r.success)
-          r.error.issues.forEach((i) =>
-            erros.push(`Serviço ${idx + 1}: ${i.message}`),
-          );
+          r.error.issues.forEach((i) => {
+            erros[`servico_${idx}_${i.path[0] as string}`] =
+              `Serviço ${idx + 1}: ${i.message}`;
+          });
       });
-      if (erros.length > 0) {
-        setStepErrors(erros);
+      if (Object.keys(erros).length > 0) {
+        setFieldErrors(erros);
         return;
       }
     }
 
-    // Step 6 — Equipe
     if (step === 6) {
-      const erros: string[] = [];
+      const erros: Record<string, string> = {};
       barbeiros.forEach((b, idx) => {
         if (!b.email) return;
         const r = convidarMembroSchema.safeParse({
@@ -1051,53 +1293,45 @@ export default function Onboarding(): React.JSX.Element {
           perfil: "barbeiro",
         });
         if (!r.success)
-          r.error.issues.forEach((i) =>
-            erros.push(`Barbeiro ${idx + 1}: ${i.message}`),
-          );
+          r.error.issues.forEach((i) => {
+            erros[`barbeiro_${idx}_email`] =
+              `Barbeiro ${idx + 1}: ${i.message}`;
+          });
       });
-      if (erros.length > 0) {
-        setStepErrors(erros);
+      if (Object.keys(erros).length > 0) {
+        setFieldErrors(erros);
         return;
       }
     }
 
-    // Avança para o próximo step
     if (step < STEPS.length) {
       go(step + 1);
       return;
     }
 
-    // ── Step 7 — Publicar ──────────────────────────────────────────────────
+    // Step 7 — Publicar
     setPublishing(true);
     try {
-      // 1. Criar conta na API
-      await api.post(
-        "/auth/register",
-        {
-          nome: account.nome,
-          email: account.email,
-          senha: account.senha,
-        },
-        { auth: false },
-      );
-
-      // 2. Login via BFF → seta cookies httpOnly
-      const loginRes = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: account.email, senha: account.senha }),
-      });
-      if (!loginRes.ok) {
-        const e = await loginRes.json().catch(() => ({}));
-        throw new Error(
-          (e as { message?: string }).message ?? "Erro ao autenticar",
+      if (!googleAuthed) {
+        await api.post(
+          "/auth/register",
+          { nome: account.nome, email: account.email, senha: account.senha },
+          { auth: false },
         );
+        const loginRes = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: account.email, senha: account.senha }),
+        });
+        if (!loginRes.ok) {
+          const e = await loginRes.json().catch(() => ({}));
+          throw new Error(
+            (e as { message?: string }).message ?? "Erro ao autenticar",
+          );
+        }
+        await new Promise((r) => setTimeout(r, 80));
       }
 
-      // Aguarda o cookie ser setado antes da próxima requisição
-      await new Promise((r) => setTimeout(r, 80));
-
-      // 3. Criar barbearia
       const bar = await api.post<{ codigo: number }>("/barbearias", {
         nome: barbearia.nome,
         slug: barbearia.slug,
@@ -1105,12 +1339,29 @@ export default function Onboarding(): React.JSX.Element {
 
       const t = tenantApi(bar.codigo);
 
-      // 4. Branding — cor de marca
       await api.put(`/barbearias/${bar.codigo}/tema`, {
         corPrimaria: branding.cor,
       });
 
-      // 5. Serviços (em paralelo)
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append("file", logoFile);
+        const accessToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("access_token="))
+          ?.split("=")[1];
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
+        await fetch(`${apiUrl}/barbearias/${bar.codigo}/logo`, {
+          method: "POST",
+          headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            "x-barbearia-codigo": String(bar.codigo),
+          },
+          body: formData,
+        }).catch(() => {});
+      }
+
       await Promise.all(
         servicos
           .filter((s) => s.nome.trim().length > 0)
@@ -1123,7 +1374,6 @@ export default function Onboarding(): React.JSX.Element {
           ),
       );
 
-      // 6. Convites de equipe (opcional — erros individuais não bloqueiam)
       await Promise.allSettled(
         barbeiros
           .filter((b) => b.email.trim().length > 0)
@@ -1238,16 +1488,28 @@ export default function Onboarding(): React.JSX.Element {
               <Passo1Conta
                 data={account}
                 onChange={(k, v) => setAccount((prev) => ({ ...prev, [k]: v }))}
+                fieldErrors={fieldErrors}
+                googleAuthed={googleAuthed}
+                onGoogleSuccess={handleGoogleSuccess}
               />
             )}
             {step === 2 && (
-              <Passo1 data={barbearia} onChange={updateBarbearia} />
+              <Passo1
+                data={barbearia}
+                onChange={updateBarbearia}
+                fieldErrors={fieldErrors}
+              />
             )}
             {step === 3 && (
               <Passo2
                 barbearia={barbearia}
                 data={branding}
                 onChange={updateBranding}
+                logoPreview={logoPreview}
+                onLogoChange={(file) => {
+                  setLogoFile(file);
+                  setLogoPreview(URL.createObjectURL(file));
+                }}
               />
             )}
             {step === 4 && (
@@ -1315,12 +1577,14 @@ export default function Onboarding(): React.JSX.Element {
                 {publishError}
               </div>
             )}
-            {/* Erros de validação Zod do step atual */}
-            {stepErrors.length > 0 && (
+            {/* Erros genéricos por campo (serviços/barbeiros) */}
+            {Object.values(fieldErrors).some(Boolean) && step >= 5 && (
               <div className="text-[var(--status-error)] text-[12px] max-w-[300px] text-right">
-                {stepErrors.map((e, i) => (
-                  <div key={i}>{e}</div>
-                ))}
+                {Object.values(fieldErrors)
+                  .filter(Boolean)
+                  .map((e, i) => (
+                    <div key={i}>{e}</div>
+                  ))}
               </div>
             )}
             {step !== STEPS.length && (
