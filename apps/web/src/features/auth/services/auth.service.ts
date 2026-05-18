@@ -175,6 +175,21 @@ export async function revokeAllSessions(): Promise<void> {
   }
 }
 
+export async function requestGoogleLogin(idToken: string): Promise<void> {
+  const res = await fetch("/api/auth/google", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+  if (!res.ok) {
+    const data = (await parseJsonSafe(res)) as { message?: string };
+    throw new AuthServiceError(
+      data.message ?? "Erro ao autenticar com Google",
+      res.status,
+    );
+  }
+}
+
 export async function request2FaSetup(): Promise<{
   qrCode: string;
   secret: string;
