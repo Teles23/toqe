@@ -159,12 +159,13 @@ Tarefas:
 
 ## 8. Status
 
-| Fase | Estado                                                     | PR  | Doc                                                            |
-| ---- | ---------------------------------------------------------- | --- | -------------------------------------------------------------- |
-| 1    | concluída                                                  | #1  | [11-fase-1-tooling-ci.md](./11-fase-1-tooling-ci.md)           |
-| 2    | concluída                                                  | #2  | [12-fase-2-contracts.md](./12-fase-2-contracts.md)             |
-| 3    | concluída (#3 #4 #5 #6 #7; fix de regressões em PR aberto) | —   | [13-fase-3-frontend-piloto.md](./13-fase-3-frontend-piloto.md) |
-| 4    | em execução (4a entregue; 4b-4e pendentes)                 | —   | [14-fase-4-replicacao-perf.md](./14-fase-4-replicacao-perf.md) |
-| 5    | pendente                                                   | —   | —                                                              |
+| Fase | Estado      | PR  | Doc                                                              |
+| ---- | ----------- | --- | ---------------------------------------------------------------- |
+| 1    | ✅ concluída | #1  | [11-fase-1-tooling-ci.md](./11-fase-1-tooling-ci.md)             |
+| 2    | ✅ concluída | #2  | [12-fase-2-contracts.md](./12-fase-2-contracts.md)               |
+| 3    | ✅ concluída | —   | [13-fase-3-frontend-piloto.md](./13-fase-3-frontend-piloto.md)   |
+| 4    | ✅ concluída | —   | [14-fase-4-replicacao-perf.md](./14-fase-4-replicacao-perf.md)   |
+| 5    | ✅ concluída | —   | [17-fase-5-docker-deploy.md](./17-fase-5-docker-deploy.md)       |
+| 6    | ✅ concluída | —   | [18-testes.md](./18-testes.md)                                   |
 
-Última atualização: 2026-05-11.
+Última atualização: 2026-05-18

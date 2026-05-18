@@ -61,15 +61,16 @@ pnpm build             # build de produção
 
 ## Status da reorganização arquitetural
 
-A reorganização está em andamento. Acompanhe em [`docs/10-arquitetura-reorganizacao.md`](./docs/10-arquitetura-reorganizacao.md).
+Todas as fases concluídas. Acompanhe em [`docs/10-arquitetura-reorganizacao.md`](./docs/10-arquitetura-reorganizacao.md).
 
-| Fase                                                    | Status      |
-| ------------------------------------------------------- | ----------- |
-| 1 — Tooling & CI                                        | em execução |
-| 2 — Packages compartilhados (`contracts`, `nestjs-zod`) | pendente    |
-| 3 — Reorganização do frontend + design tokens + RBAC    | pendente    |
-| 4 — Replicação + otimização de dev                      | pendente    |
-| 5 — Docker, deploy, observabilidade                     | pendente    |
+| Fase                                                    | Status        | Doc                                                                              |
+| ------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------- |
+| 1 — Tooling & CI                                        | ✅ concluída  | [docs/11-fase-1-tooling-ci.md](./docs/11-fase-1-tooling-ci.md)                   |
+| 2 — Packages compartilhados (`contracts`, `nestjs-zod`) | ✅ concluída  | [docs/12-fase-2-contracts.md](./docs/12-fase-2-contracts.md)                     |
+| 3 — Reorganização do frontend + design tokens + RBAC    | ✅ concluída  | [docs/13-fase-3-frontend-piloto.md](./docs/13-fase-3-frontend-piloto.md)         |
+| 4 — Replicação + otimização de dev                      | ✅ concluída  | [docs/14-fase-4-replicacao-perf.md](./docs/14-fase-4-replicacao-perf.md)         |
+| 5 — Docker, deploy, observabilidade                     | ✅ concluída  | [docs/17-fase-5-docker-deploy.md](./docs/17-fase-5-docker-deploy.md)             |
+| 6 — Testes                                              | ✅ concluída  | [docs/18-testes.md](./docs/18-testes.md)                                         |
 
 ## Licença
 
