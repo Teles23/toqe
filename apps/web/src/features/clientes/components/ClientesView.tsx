@@ -187,13 +187,7 @@ export function ClientesView() {
           </div>
 
           {/* Header da tabela — oculto em mobile */}
-          <div
-            className="hidden md:flex items-center px-4 py-2 flex-shrink-0"
-            style={{
-              background: "var(--bg-secondary)",
-              borderBottom: "1px solid var(--border-subtle)",
-            }}
-          >
+          <div className="hidden md:flex items-center px-4 py-2 flex-shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-subtle)]">
             {[
               "Cliente",
               "Última visita",
@@ -239,14 +233,8 @@ export function ClientesView() {
           </div>
 
           {/* Footer */}
-          <div
-            className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"
-            style={{ borderTop: "1px solid var(--border-subtle)" }}
-          >
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--text-muted)" }}
-            >
+          <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0 border-t border-[var(--border-subtle)]">
+            <span className="text-[11px] text-[var(--text-muted)]">
               {filtered.length} de {clientes.length} clientes
             </span>
           </div>

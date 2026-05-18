@@ -256,13 +256,12 @@ function Passo1Conta({
                 placeholder="Mín. 6 caracteres"
                 autoComplete="new-password"
                 maxLength={128}
-                style={{ paddingRight: 36 }}
+                className="pr-9"
               />
               <button
                 type="button"
                 onClick={() => setShowPass((p) => !p)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-                style={{ color: "var(--text-muted)" }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
               >
                 {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -279,13 +278,12 @@ function Passo1Conta({
                 placeholder="Repita a senha"
                 autoComplete="new-password"
                 maxLength={128}
-                style={{ paddingRight: 36 }}
+                className="pr-9"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirm((p) => !p)}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-                style={{ color: "var(--text-muted)" }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
               >
                 {showConfirm ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
@@ -295,11 +293,11 @@ function Passo1Conta({
 
         <div className="help">
           Ao criar sua conta, você concorda com os{" "}
-          <a href="#" style={{ color: "var(--status-info)" }}>
+          <a href="#" className="text-[var(--status-info)]">
             Termos de Uso
           </a>{" "}
           e{" "}
-          <a href="#" style={{ color: "var(--status-info)" }}>
+          <a href="#" className="text-[var(--status-info)]">
             Política de Privacidade
           </a>
           .
@@ -386,7 +384,8 @@ function Passo1({
             {slugDisponivel ? "Disponível" : "Escolha um slug maior"} · seus
             clientes vão ver{" "}
             <span
-              style={{ color: "var(--accent)", fontFamily: "JetBrains Mono" }}
+              className="text-[var(--accent)]"
+              style={{ fontFamily: "JetBrains Mono" }}
             >
               toqe.app/{data.slug || "sua-barbearia"}
             </span>
@@ -1312,27 +1311,13 @@ export default function Onboarding(): React.JSX.Element {
           <div className="ob-nav-right">
             {/* Erro de publicação */}
             {publishError && (
-              <div
-                style={{
-                  color: "var(--status-error)",
-                  fontSize: 12,
-                  maxWidth: 300,
-                  textAlign: "right",
-                }}
-              >
+              <div className="text-[var(--status-error)] text-[12px] max-w-[300px] text-right">
                 {publishError}
               </div>
             )}
             {/* Erros de validação Zod do step atual */}
             {stepErrors.length > 0 && (
-              <div
-                style={{
-                  color: "var(--status-error)",
-                  fontSize: 12,
-                  maxWidth: 300,
-                  textAlign: "right",
-                }}
-              >
+              <div className="text-[var(--status-error)] text-[12px] max-w-[300px] text-right">
                 {stepErrors.map((e, i) => (
                   <div key={i}>{e}</div>
                 ))}

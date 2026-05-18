@@ -32,19 +32,10 @@ export function AgendaSlotEmpty() {
       animate={{ opacity: 1 }}
       className="flex flex-col items-center justify-center py-16 gap-3"
     >
-      <div
-        className="flex items-center justify-center rounded-xl"
-        style={{
-          width: 48,
-          height: 48,
-          background: "var(--bg-hover)",
-          border: "1px solid var(--border-default)",
-          color: "var(--text-muted)",
-        }}
-      >
+      <div className="flex items-center justify-center rounded-xl w-12 h-12 bg-[var(--bg-hover)] border border-[var(--border-default)] text-[var(--text-muted)]">
         <CalendarEmpty size={20} />
       </div>
-      <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
+      <span className="text-[13px] text-[var(--text-muted)]">
         Nenhum agendamento encontrado
       </span>
     </motion.div>
@@ -103,18 +94,12 @@ export function AgendaSlot({
           >
             {slot.time}
           </span>
-          <span
-            className="text-[10px] mt-0.5"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <span className="text-[10px] mt-0.5 text-[var(--text-muted)]">
             {slot.endTime}
           </span>
         </div>
 
-        <div
-          className="self-stretch flex-shrink-0 rounded-full"
-          style={{ width: 1, background: "var(--border-subtle)" }}
-        />
+        <div className="self-stretch flex-shrink-0 rounded-full w-px bg-[var(--border-subtle)]" />
 
         {!isBlocked && !isAvailable && (
           <div
@@ -134,13 +119,8 @@ export function AgendaSlot({
 
         {(isBlocked || isAvailable) && (
           <div
-            className="flex-shrink-0 flex items-center justify-center rounded-full"
-            style={{
-              width: 30,
-              height: 30,
-              background: "var(--bg-hover)",
-              color: "var(--text-muted)",
-            }}
+            className="flex-shrink-0 flex items-center justify-center rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)]"
+            style={{ width: 30, height: 30 }}
           >
             {isAvailable ? <Plus size={13} /> : <Ban size={13} />}
           </div>
@@ -162,35 +142,22 @@ export function AgendaSlot({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span
-              className="text-[11px] truncate"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <span className="text-[11px] truncate text-[var(--text-secondary)]">
               {slot.service}
             </span>
-            <span style={{ color: "var(--border-default)" }}>·</span>
-            <span
-              className="text-[11px] truncate"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <span className="text-[var(--border-default)]">·</span>
+            <span className="text-[11px] truncate text-[var(--text-secondary)]">
               {slot.duration}min
             </span>
           </div>
 
           {isActive && slot.progressPct !== undefined && (
-            <div className="mt-2" style={{ maxWidth: 160 }}>
-              <div
-                style={{
-                  height: 2,
-                  borderRadius: 2,
-                  background: "var(--border-default)",
-                }}
-              >
+            <div className="mt-2 max-w-[160px]">
+              <div className="h-0.5 rounded-sm bg-[var(--border-default)]">
                 <motion.div
-                  className="h-full rounded-full"
+                  className="h-full rounded-full bg-[var(--status-success)]"
                   style={{
-                    background: "var(--status-success)",
-                    width: `${slot.progressPct}%`,
+                    width: `${slot.progressPct}%` /* CSS var dinâmico — não migrar */,
                   }}
                   animate={{ width: `${slot.progressPct}%` }}
                   transition={{ duration: 0.8, ease: "linear" }}
@@ -206,35 +173,19 @@ export function AgendaSlot({
           {!isBlocked && (
             <div className="flex items-center gap-1">
               <div
-                className="flex items-center justify-center rounded-full text-[9px] font-bold"
-                style={{
-                  width: 16,
-                  height: 16,
-                  background: "var(--bg-hover)",
-                  color: "var(--text-secondary)",
-                  fontFamily: "var(--font-heading)",
-                  border: "1px solid var(--border-default)",
-                }}
+                className="flex items-center justify-center rounded-full text-[9px] font-bold bg-[var(--bg-hover)] text-[var(--text-secondary)] font-heading border border-[var(--border-default)]"
+                style={{ width: 16, height: 16 }}
               >
                 {slot.barbeiroInitial}
               </div>
-              <span
-                className="text-[11px]"
-                style={{ color: "var(--text-muted)" }}
-              >
+              <span className="text-[11px] text-[var(--text-muted)]">
                 {slot.barbeiro}
               </span>
             </div>
           )}
 
           {isActive && countdown && (
-            <span
-              className="text-[11px] font-mono font-medium tabular-nums"
-              style={{
-                color: "var(--status-success)",
-                letterSpacing: "0.04em",
-              }}
-            >
+            <span className="text-[11px] font-mono font-medium tabular-nums text-[var(--status-success)] tracking-[0.04em]">
               {countdown}
             </span>
           )}
@@ -245,12 +196,7 @@ export function AgendaSlot({
                 e.stopPropagation();
                 onEncaixar();
               }}
-              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded transition-all opacity-0 group-hover:opacity-100"
-              style={{
-                background: "rgba(29,185,84,0.1)",
-                color: "var(--status-success)",
-                border: "1px solid rgba(29,185,84,0.2)",
-              }}
+              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded transition-all opacity-0 group-hover:opacity-100 bg-[rgba(29,185,84,0.1)] text-[var(--status-success)] border border-[rgba(29,185,84,0.2)]"
             >
               Encaixar
             </button>

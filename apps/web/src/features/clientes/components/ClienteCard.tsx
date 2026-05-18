@@ -67,23 +67,17 @@ export function ClienteCard({
       >
         {avatar}
         <div className="flex-1 min-w-0">
-          <p
-            className="text-[13px] font-semibold truncate"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <p className="text-[13px] font-semibold truncate text-[var(--text-primary)]">
             {cliente.nome}
           </p>
-          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+          <p className="text-[11px] text-[var(--text-secondary)]">
             {cliente.ultimaVisita
               ? `Última visita: ${cliente.ultimaVisita}`
               : "Sem visitas"}{" "}
             · {cliente.totalVisitas}x
           </p>
         </div>
-        <span
-          className="text-[13px] font-semibold flex-shrink-0"
-          style={{ color: "var(--primary)", fontFamily: "var(--font-heading)" }}
-        >
+        <span className="text-[13px] font-semibold flex-shrink-0 text-[var(--primary)] font-heading">
           {formatBRL(cliente.totalGasto)}
         </span>
       </div>
@@ -105,10 +99,7 @@ export function ClienteCard({
         <div className="flex items-center gap-3 flex-[2] min-w-0">
           {avatar}
           <div className="min-w-0">
-            <span
-              className="block text-[13px] font-medium truncate"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <span className="block text-[13px] font-medium truncate text-[var(--text-primary)]">
               {cliente.nome}
             </span>
             <span
@@ -120,39 +111,24 @@ export function ClienteCard({
           </div>
         </div>
 
-        <span
-          className="flex-1 text-[12px]"
-          style={{ color: "var(--text-secondary)" }}
-        >
+        <span className="flex-1 text-[12px] text-[var(--text-secondary)]">
           {cliente.ultimaVisita ?? "—"}
         </span>
 
-        <span
-          className="flex-1 text-[12px] text-right tabular-nums"
-          style={{ color: "var(--text-primary)" }}
-        >
+        <span className="flex-1 text-[12px] text-right tabular-nums text-[var(--text-primary)]">
           {cliente.totalVisitas}x
         </span>
 
-        <span
-          className="flex-1 text-[12px] text-right font-semibold tabular-nums"
-          style={{
-            color: "var(--text-primary)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
+        <span className="flex-1 text-[12px] text-right font-semibold tabular-nums text-[var(--text-primary)] font-heading">
           {formatBRL(cliente.totalGasto)}
         </span>
 
-        <span
-          className="flex-1 text-[12px] text-right truncate"
-          style={{ color: "var(--text-secondary)" }}
-        >
+        <span className="flex-1 text-[12px] text-right truncate text-[var(--text-secondary)]">
           {cliente.servicoFav ?? "—"}
         </span>
 
-        <div style={{ width: 32, textAlign: "right" }}>
-          <ChevronRight size={13} style={{ color: "var(--text-muted)" }} />
+        <div className="w-8 text-right">
+          <ChevronRight size={13} className="text-[var(--text-muted)]" />
         </div>
       </div>
     </motion.div>
