@@ -14,6 +14,8 @@ import {
   requestGoogleLogin,
 } from "@/features/auth/services/auth.service";
 import { AuthErrorBanner } from "./AuthErrorBanner";
+import { api } from "@/shared/api/api-client";
+import type { UsuarioMe } from "@toqe/shared";
 
 interface LoginFormProps {
   onForgotPassword: () => void;
@@ -37,6 +39,7 @@ export function LoginForm({
   onTwoFaRequired,
 }: LoginFormProps): React.JSX.Element {
   const [showPass, setShowPass] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
   const login = useLogin();
   const router = useRouter();
 
@@ -132,22 +135,65 @@ export function LoginForm({
 
       {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
         <>
-          <GoogleLogin
-            onSuccess={async (credentialResponse) => {
-              if (!credentialResponse.credential) return;
-              try {
-                await requestGoogleLogin(credentialResponse.credential);
-                router.push("/dashboard");
-              } catch (_err) {
-                // erro é mostrado via apiError já existente
-              }
-            }}
-            onError={() => {}}
-            theme="filled_black"
-            text="signin_with"
-            shape="rectangular"
-            width="100%"
-          />
+          <div className="relative">
+            <div className={loadingGoogle ? "opacity-0" : "opacity-100"}>
+              <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                  if (!credentialResponse.credential) return;
+                  setLoadingGoogle(true);
+                  try {
+                    await requestGoogleLogin(credentialResponse.credential);
+
+                    // Valida se o usuário pertence a alguma barbearia
+                    const me = await api.get<UsuarioMe>("/usuarios/me");
+                    if (me.barbearias && me.barbearias.length === 0) {
+                      // Se não tiver barbearia, manda para o onboarding
+                      router.push("/onboarding");
+                    } else {
+                      router.push("/dashboard");
+                    }
+                  } catch (_err) {
+                    setLoadingGoogle(false);
+                    // erro é mostrado via apiError já existente
+                  }
+                }}
+                onError={() => {}}
+                theme="filled_black"
+                text="continue_with"
+                shape="pill"
+                type="standard"
+                size="large"
+                logo_alignment="left"
+              />
+            </div>
+            {loadingGoogle && (
+              <div className="absolute inset-0 bg-[var(--bg-secondary)] flex items-center justify-center rounded-full z-10 border border-[var(--border-default)]">
+                <span className="text-[var(--text-primary)] text-sm font-medium flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-4 w-4 text-[var(--status-info)]"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l1-2.647z"
+                    ></path>
+                  </svg>
+                  Carregando...
+                </span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-[var(--border-subtle)]" />
             <span className="text-[11px] text-[var(--text-muted)]">ou</span>

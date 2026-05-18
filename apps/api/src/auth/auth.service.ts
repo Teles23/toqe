@@ -33,6 +33,11 @@ export class AuthService {
     return this.usuarioService.create(dto);
   }
 
+  async checkEmailExists(email: string): Promise<boolean> {
+    const user = await this.usuarioService.findByEmail(email);
+    return !!user;
+  }
+
   /**
    * Autentica via Google ID token.
    * - Verifica o token via GoogleTokenVerifier (DI)

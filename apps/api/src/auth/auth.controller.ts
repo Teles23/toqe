@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -45,6 +46,14 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'E-mail já está em uso.' })
   register(@Body() dto: CreateUserDto) {
     return this.authService.register(dto);
+  }
+
+  @Get('check-email')
+  @ApiOperation({ summary: 'Verifica se um e-mail já está cadastrado' })
+  @ApiResponse({ status: 200, description: 'Retorna se o e-mail existe.' })
+  async checkEmail(@Query('email') email: string) {
+    const exists = await this.authService.checkEmailExists(email);
+    return { exists };
   }
 
   @Post('login')

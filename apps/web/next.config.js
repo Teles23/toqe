@@ -46,7 +46,7 @@ const securityHeaders = [
       "font-src 'self'",
       // apiOrigin cobre a URL da API (dev: localhost:3000, prod: domínio real)
       // ws://* wss://* necessários para o HMR do Next.js em dev
-      `connect-src 'self' ${apiOrigin} ws: wss: https://*.sentry.io ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
+      `connect-src 'self' ${apiOrigin} https://toqe.duckdns.org ws: wss: https://*.sentry.io https://nominatim.openstreetmap.org ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       // O botão GIS é renderizado num iframe servido por accounts.google.com
       `frame-src 'self' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       "frame-ancestors 'none'",
