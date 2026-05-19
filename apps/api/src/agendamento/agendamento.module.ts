@@ -9,5 +9,6 @@ import { AgendaModule } from '../agenda/agenda.module';
   imports: [PrismaModule, NotificacaoModule, AgendaModule],
   controllers: [AgendamentoController],
   providers: [AgendamentoService],
+  exports: [AgendamentoService],
 })
 export class AgendamentoModule {}

@@ -111,6 +111,7 @@ export default [
       // Configurado a nível de config (não por arquivo) para manter rastreabilidade.
       "src/features/agenda/components/**/*.tsx",
       "src/features/barbeiros/components/**/*.tsx",
+      "src/features/booking/components/**/*.tsx",
       "src/features/clientes/components/**/*.tsx",
       "src/features/configuracoes/components/**/*.tsx",
       "src/features/relatorios/components/**/*.tsx",

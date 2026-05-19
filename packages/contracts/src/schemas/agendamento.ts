@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { criarClienteRapidoSchema } from "./auth";
 
 export const tipoAgendamentoSchema = z.enum(["AGENDADO", "WALK_IN", "ENCAIXE"]);
 
@@ -33,6 +34,31 @@ export const createAgendamentoSchema = z.object({
     .or(z.literal("")),
 });
 
+// Booking público (sem autenticação) — cliente é criado/reaproveitado pelo
+// próprio fluxo. `barbeiroId` aceita 0 para "qualquer barbeiro disponível"
+// (o service escolhe um automaticamente). `servicosIds` reusa as regras do
+// schema autenticado.
+export const createPublicAgendamentoSchema = z.object({
+  barbeiroId: z
+    .number({ invalid_type_error: "Selecione um barbeiro" })
+    .int()
+    .min(0, "Barbeiro inválido"),
+
+  inicio: z.string().datetime({ message: "Data/hora de início inválida" }),
+
+  servicosIds: z
+    .array(z.number().int().positive())
+    .min(1, "Selecione ao menos um serviço"),
+
+  cliente: criarClienteRapidoSchema,
+
+  observacao: z
+    .string()
+    .max(500, "Observação muito longa")
+    .optional()
+    .or(z.literal("")),
+});
+
 export const patchStatusAgendamentoSchema = z.object({
   status: z.enum(["confirmado", "cancelado", "concluido", "no_show"], {
     errorMap: () => ({ message: "Status inválido" }),
@@ -53,6 +79,9 @@ export const listAgendamentoSchema = z.object({
 
 export type TipoAgendamento = z.infer<typeof tipoAgendamentoSchema>;
 export type CreateAgendamentoInput = z.infer<typeof createAgendamentoSchema>;
+export type CreatePublicAgendamentoInput = z.infer<
+  typeof createPublicAgendamentoSchema
+>;
 export type PatchStatusAgendamentoInput = z.infer<
   typeof patchStatusAgendamentoSchema
 >;

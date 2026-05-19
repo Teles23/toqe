@@ -26,6 +26,67 @@ describe('MembroBarbeariaService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
+  describe('findOrCreateCliente', () => {
+    const dto = { nome: 'João', email: 'joao@x.com' };
+
+    it('reaproveita usuário+membro existentes (cliente recorrente)', async () => {
+      const usuario = { codigo: 99, email: dto.email };
+      const membroExistente = {
+        usrCodigo: 99,
+        barCodigo: 1,
+        perfil: 'cliente',
+        usuario: { codigo: 99, nome: 'João', email: dto.email },
+      };
+      mockPrisma.usuario.findUnique.mockResolvedValue(usuario);
+      mockPrisma.membroBarbearia.findUnique
+        .mockResolvedValueOnce({ usrCodigo: 99 }) // upsertClienteUsuario
+        .mockResolvedValueOnce(membroExistente); // re-busca para retornar com include
+
+      const result = await service.findOrCreateCliente(1, dto);
+      expect(result).toBe(membroExistente);
+      expect(mockPrisma.membroBarbearia.create).not.toHaveBeenCalled();
+    });
+
+    it('cria usuário + membro quando email novo', async () => {
+      mockPrisma.usuario.findUnique.mockResolvedValue(null);
+      mockPrisma.usuario.create.mockResolvedValue({
+        codigo: 200,
+        email: dto.email,
+      });
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        usrCodigo: 200,
+        barCodigo: 1,
+        perfil: 'cliente',
+        usuario: { codigo: 200, nome: dto.nome, email: dto.email },
+      });
+
+      const result = await service.findOrCreateCliente(1, dto);
+      expect(result).toHaveProperty('perfil', 'cliente');
+      expect(mockPrisma.usuario.create).toHaveBeenCalled();
+      expect(mockPrisma.membroBarbearia.create).toHaveBeenCalled();
+    });
+
+    it('cria membro quando usuário já existe mas nunca foi cliente', async () => {
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 50,
+        email: dto.email,
+      });
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        usrCodigo: 50,
+        barCodigo: 1,
+        perfil: 'cliente',
+        usuario: { codigo: 50, nome: dto.nome, email: dto.email },
+      });
+
+      const result = await service.findOrCreateCliente(1, dto);
+      expect(result).toHaveProperty('perfil', 'cliente');
+      expect(mockPrisma.usuario.create).not.toHaveBeenCalled();
+      expect(mockPrisma.membroBarbearia.create).toHaveBeenCalled();
+    });
+  });
+
   describe('convidarMembro', () => {
     it('convida membro com sucesso', async () => {
       mockPrisma.usuario.findUnique.mockResolvedValue({

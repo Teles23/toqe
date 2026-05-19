@@ -165,6 +165,52 @@ export class MembroBarbeariaService {
   }
 
   async criarCliente(barCodigo: number, dto: CriarClienteRapidoDto) {
+    const { usuario, jaEraMembro } = await this.upsertClienteUsuario(
+      barCodigo,
+      dto,
+    );
+
+    if (jaEraMembro)
+      throw new ConflictException('Usuário já é cliente desta barbearia');
+
+    return this.prisma.membroBarbearia.create({
+      data: { barCodigo, usrCodigo: usuario.codigo, perfil: 'cliente' },
+      include: {
+        usuario: { select: { codigo: true, nome: true, email: true } },
+      },
+    });
+  }
+
+  /**
+   * Versão idempotente usada pelo fluxo de booking público.
+   *
+   * Diferente de `criarCliente`, NÃO lança se o usuário já estiver vinculado
+   * à barbearia — apenas retorna o membro existente. Permite que clientes
+   * recorrentes voltem a agendar sem fricção.
+   */
+  async findOrCreateCliente(barCodigo: number, dto: CriarClienteRapidoDto) {
+    const { usuario } = await this.upsertClienteUsuario(barCodigo, dto);
+
+    const jaMembro = await this.prisma.membroBarbearia.findUnique({
+      where: { barCodigo_usrCodigo: { barCodigo, usrCodigo: usuario.codigo } },
+      include: {
+        usuario: { select: { codigo: true, nome: true, email: true } },
+      },
+    });
+    if (jaMembro) return jaMembro;
+
+    return this.prisma.membroBarbearia.create({
+      data: { barCodigo, usrCodigo: usuario.codigo, perfil: 'cliente' },
+      include: {
+        usuario: { select: { codigo: true, nome: true, email: true } },
+      },
+    });
+  }
+
+  private async upsertClienteUsuario(
+    barCodigo: number,
+    dto: CriarClienteRapidoDto,
+  ) {
     let usuario = await this.prisma.usuario.findUnique({
       where: { email: dto.email },
     });
@@ -182,17 +228,10 @@ export class MembroBarbeariaService {
       });
     }
 
-    const jaEMembro = await this.prisma.membroBarbearia.findUnique({
+    const jaEraMembro = await this.prisma.membroBarbearia.findUnique({
       where: { barCodigo_usrCodigo: { barCodigo, usrCodigo: usuario.codigo } },
     });
-    if (jaEMembro)
-      throw new ConflictException('Usuário já é cliente desta barbearia');
 
-    return this.prisma.membroBarbearia.create({
-      data: { barCodigo, usrCodigo: usuario.codigo, perfil: 'cliente' },
-      include: {
-        usuario: { select: { codigo: true, nome: true, email: true } },
-      },
-    });
+    return { usuario, jaEraMembro: jaEraMembro !== null };
   }
 }
