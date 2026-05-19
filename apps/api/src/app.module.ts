@@ -15,6 +15,7 @@ import { BarbeariaModule } from './barbearia/barbearia.module';
 import { ServicoModule } from './servico/servico.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { AgendamentoModule } from './agendamento/agendamento.module';
+import { PublicoModule } from './publico/publico.module';
 import { NotificacaoModule } from './notificacao/notificacao.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { RelatorioModule } from './relatorio/relatorio.module';
@@ -52,6 +53,7 @@ import { PushTokenModule } from './push-token/push-token.module';
     ServicoModule,
     AgendaModule,
     AgendamentoModule,
+    PublicoModule,
     NotificacaoModule,
     DashboardModule,
     RelatorioModule,

@@ -245,6 +245,50 @@ export const handlers = [
     HttpResponse.json({ ok: true }),
   ),
 
+  // ── Booking público (`/publico/*`, sem autenticação) ───────────────────
+  http.get(`${BASE}/publico/:slug`, ({ params }) =>
+    HttpResponse.json({
+      codigo: 1,
+      nome: "Barbearia Mock",
+      slug: params.slug,
+      ativo: true,
+      timezone: "America/Sao_Paulo",
+      tema: { logoUrl: null, corPrimaria: null },
+    }),
+  ),
+  http.get(`${BASE}/publico/:slug/servicos`, () =>
+    HttpResponse.json([
+      { codigo: 1, nome: "Corte", precoBase: 60, duracaoBase: 30 },
+      { codigo: 2, nome: "Barba", precoBase: 45, duracaoBase: 25 },
+    ]),
+  ),
+  http.get(`${BASE}/publico/:slug/barbeiros`, () =>
+    HttpResponse.json([
+      { codigo: 10, nome: "Carlos", avatarUrl: null },
+      { codigo: 11, nome: "Felipe", avatarUrl: null },
+    ]),
+  ),
+  http.get(`${BASE}/publico/:slug/slots`, () =>
+    HttpResponse.json([
+      { horario: "09:00", barbeiroId: 10 },
+      { horario: "09:30", barbeiroId: 10 },
+      { horario: "14:00", barbeiroId: 10 },
+    ]),
+  ),
+  http.post(`${BASE}/publico/:slug/agendamentos`, () =>
+    HttpResponse.json(
+      {
+        codigo: 999,
+        inicio: "2026-05-20T09:00:00.000Z",
+        fim: "2026-05-20T09:30:00.000Z",
+        barbeiro: { codigo: 10, nome: "Carlos" },
+        cliente: { codigo: 50, nome: "João", email: "joao@x.com" },
+        barbearia: { codigo: 1, nome: "Barbearia Mock" },
+      },
+      { status: 201 },
+    ),
+  ),
+
   // ── Legacy handlers (usados em setup.spec.ts com fetch relativo) ─────────
   http.get("/barbearia", () =>
     HttpResponse.json({ codigo: 1, nome: "BarberShop", slug: "barbershop" }),
