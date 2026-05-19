@@ -21,16 +21,18 @@
 
 :root {
   /* ── Superfícies ────────────────────────────────────────── */
-  --bg-base: #0d0d0d;
-  --bg-secondary: #151515;
-  --bg-card: #1b1b1b;
-  --bg-hover: #232323;
-  --bg-elevated: #202020;
+  /* Paleta alinhada com os protótipos do redesign (Urban Flow v2):
+     tons mais profundos para reforçar contraste com o dourado. */
+  --bg-base: #0a0a0a;
+  --bg-secondary: #0f0f0f;
+  --bg-card: #131313;
+  --bg-hover: #181818;
+  --bg-elevated: #181818;
 
   /* ── Bordas ─────────────────────────────────────────────── */
-  --border-default: #2a2a2a;
-  --border-subtle: #222222;
-  --border-strong: #333333;
+  --border-default: #1f1f1f;
+  --border-subtle: #181818;
+  --border-strong: #2a2a2a;
 
   /* ── Status (hierarquia de cor) ─────────────────────────── */
   --status-success: #1db954;
@@ -66,23 +68,23 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ── Mapeamento para shadcn/Radix ───────────────────────── */
-  --background: #0d0d0d;
+  --background: #0a0a0a;
   --foreground: #f0f0f0;
-  --card: #1b1b1b;
+  --card: #131313;
   --card-foreground: #f0f0f0;
-  --popover: #1b1b1b;
+  --popover: #131313;
   --popover-foreground: #f0f0f0;
   --primary: #f4b400;
-  --primary-foreground: #0d0d0d;
-  --secondary: #1b1b1b;
+  --primary-foreground: #0a0a0a;
+  --secondary: #131313;
   --secondary-foreground: #f0f0f0;
-  --muted: #232323;
+  --muted: #181818;
   --muted-foreground: #888888;
-  --accent: #232323;
+  --accent: #181818;
   --accent-foreground: #f0f0f0;
   --destructive: #ff4d4f;
-  --border: #2a2a2a;
-  --input: #1b1b1b;
+  --border: #1f1f1f;
+  --input: #131313;
   --ring: #4da3ff;
   --radius: 10px;
 }
