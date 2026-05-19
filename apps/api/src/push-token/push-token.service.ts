@@ -13,10 +13,12 @@ export class PushTokenService {
     });
   }
 
-  findByUser(usrCodigo: number): Promise<string[]> {
-    return this.prisma.pushToken
-      .findMany({ where: { usrCodigo }, select: { token: true } })
-      .then((rows) => rows.map((r) => r.token));
+  async findByUser(usrCodigo: number): Promise<string[]> {
+    const rows = await this.prisma.pushToken.findMany({
+      where: { usrCodigo },
+      select: { token: true },
+    });
+    return rows.map((r: { token: string }) => r.token);
   }
 
   deleteToken(usrCodigo: number, token: string) {
