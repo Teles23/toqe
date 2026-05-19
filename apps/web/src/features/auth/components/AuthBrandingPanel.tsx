@@ -2,14 +2,12 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Scissors } from "lucide-react";
 
 /**
  * Painel direito das telas de autenticação (login/onboarding).
  *
- * Conteúdo puramente decorativo: logo + headline editorial + mini-card
- * ilustrativo de agenda. Não contém dados reais nem nomes de
- * barbearias/clientes inventados — apenas rótulos demonstrativos.
+ * Conteúdo decorativo: depoimento (merchandising) + mini-card ilustrativo
+ * de agenda do dia. Sem logo (já aparece na coluna esquerda).
  *
  * Sem lógica de negócio. A página raiz orquestra a composição.
  */
@@ -66,54 +64,62 @@ export function AuthBrandingPanel(): React.JSX.Element {
         }}
       />
 
-      {/* Logo no topo */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="relative z-10 flex items-center gap-3"
-      >
-        <div
-          className="flex items-center justify-center rounded-xl bg-[var(--primary)]"
-          style={{
-            width: 38,
-            height: 38,
-            boxShadow: "0 0 20px rgba(244,180,0,0.3)",
-          }}
-        >
-          <Scissors size={17} color="#0D0D0D" strokeWidth={2.5} />
-        </div>
-        <span className="font-bold text-[20px] font-heading tracking-[-0.03em] text-[var(--text-primary)]">
-          Toqe
-        </span>
-      </motion.div>
+      {/* Espaçador superior — mantém o conteúdo verticalmente centralizado */}
+      <div className="relative z-10" />
 
-      {/* Conteúdo central */}
+      {/* Conteúdo central — depoimento + agenda */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10"
       >
-        <h2
-          className="font-heading font-semibold mb-2 text-[var(--text-primary)]"
+        <blockquote
+          className="font-heading font-semibold mb-7 text-[var(--text-primary)]"
           style={{
-            fontSize: "2rem",
+            fontSize: "1.75rem",
             letterSpacing: "-0.03em",
-            lineHeight: 1.15,
-            maxWidth: 460,
+            lineHeight: 1.2,
+            maxWidth: 480,
           }}
         >
-          A operação da sua barbearia,{" "}
-          <span className="text-[var(--primary)]">no ritmo certo</span>.
-        </h2>
-        <p
-          className="text-[14px] mb-8 text-[var(--text-secondary)]"
-          style={{ maxWidth: 460, lineHeight: 1.5 }}
-        >
-          Agenda, equipe, caixa e clientes num só lugar — sem caderno, sem
-          planilha, sem retrabalho.
-        </p>
+          “Saí de 3 cadernos e 2 apps diferentes pro{" "}
+          <span
+            style={{
+              background:
+                "linear-gradient(transparent 75%, rgba(244,180,0,0.25) 75%)",
+              padding: "0 2px",
+              color: "var(--primary)",
+            }}
+          >
+            Toqe
+          </span>
+          . Em uma semana, o caixa fechou sozinho pela primeira vez em 12 anos.”
+        </blockquote>
+
+        <div className="flex items-center gap-3 mb-9">
+          <div
+            className="flex items-center justify-center rounded-full border font-heading font-bold text-[16px] text-[var(--primary)]"
+            style={{
+              width: 42,
+              height: 42,
+              background:
+                "linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%)",
+              borderColor: "var(--border-default)",
+            }}
+            aria-hidden="true"
+          >
+            M
+          </div>
+          <div>
+            <div className="text-[13px] font-semibold text-[var(--text-primary)]">
+              Marcus Andrade
+            </div>
+            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+              Dono · Barbearia Urban · Salvador, BA
+            </div>
+          </div>
+        </div>
 
         <DemoAgendaCard />
       </motion.div>
@@ -134,20 +140,40 @@ export function AuthBrandingPanel(): React.JSX.Element {
 }
 
 // ─── Mini-card ilustrativo de agenda ─────────────────────────────────────────
-// Dados demonstrativos: sem nomes reais, sem barbearias inventadas.
-// Serve apenas para sugerir o que o produto faz visualmente.
+// Conteúdo de merchandising: nomes e horários representativos do produto.
 
 interface DemoSlot {
   hora: string;
-  servico: string;
+  cliente: string;
+  barbeiro: string;
   estado: "concluido" | "atual" | "agendado";
 }
 
 const DEMO_SLOTS: readonly DemoSlot[] = [
-  { hora: "09:00", servico: "Corte", estado: "concluido" },
-  { hora: "09:30", servico: "Corte + Barba", estado: "atual" },
-  { hora: "10:00", servico: "Corte", estado: "agendado" },
-  { hora: "10:30", servico: "Barba", estado: "agendado" },
+  {
+    hora: "09:00",
+    cliente: "João Silva",
+    barbeiro: "Carlos",
+    estado: "concluido",
+  },
+  {
+    hora: "09:30",
+    cliente: "Pedro Santos",
+    barbeiro: "Carlos",
+    estado: "atual",
+  },
+  {
+    hora: "10:00",
+    cliente: "Rafael Lima",
+    barbeiro: "Felipe",
+    estado: "agendado",
+  },
+  {
+    hora: "10:30",
+    cliente: "Bruno Alves",
+    barbeiro: "Lucas",
+    estado: "agendado",
+  },
 ];
 
 function statusColor(estado: DemoSlot["estado"]): string {
@@ -159,7 +185,7 @@ function statusColor(estado: DemoSlot["estado"]): string {
 function DemoAgendaCard(): React.JSX.Element {
   return (
     <div
-      className="rounded-2xl overflow-hidden border max-w-[360px]"
+      className="rounded-2xl overflow-hidden border max-w-[400px]"
       style={{
         background: "rgba(19,19,19,0.7)",
         borderColor: "var(--border-default)",
@@ -170,7 +196,7 @@ function DemoAgendaCard(): React.JSX.Element {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--primary)]">
-          Agenda do dia
+          Agenda — Quarta, 06 mai
         </span>
         <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-[0.15em] text-[var(--status-success)]">
           <span
@@ -187,7 +213,7 @@ function DemoAgendaCard(): React.JSX.Element {
       </div>
 
       {/* Linhas */}
-      <div className="p-3 space-y-1.5">
+      <div className="p-3 space-y-1">
         {DEMO_SLOTS.map((slot) => {
           const isAtual = slot.estado === "atual";
           const cor = statusColor(slot.estado);
@@ -218,12 +244,15 @@ function DemoAgendaCard(): React.JSX.Element {
                 }}
               />
               <span className="flex-1 text-[12px] text-[var(--text-primary)]">
-                {slot.servico}
+                {slot.cliente}
                 {isAtual && (
                   <span className="ml-1.5 text-[var(--text-muted)]">
                     · agora
                   </span>
                 )}
+              </span>
+              <span className="text-[10px] text-[var(--text-muted)]">
+                {slot.barbeiro}
               </span>
             </div>
           );
