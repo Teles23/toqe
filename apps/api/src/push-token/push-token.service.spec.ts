@@ -26,10 +26,11 @@ describe('PushTokenService', () => {
       void service.upsertToken(1, 'ExponentPushToken[xxx]', 'ios');
       expect(mockPrisma.pushToken.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
+          create: {
             usrCodigo: 1,
             token: 'ExponentPushToken[xxx]',
-          }),
+            plataforma: 'ios',
+          },
         }),
       );
     });

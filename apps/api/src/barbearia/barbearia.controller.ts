@@ -29,6 +29,7 @@ import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
 import { CriarClienteRapidoDto } from './dto/criar-cliente-rapido.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
+import { UpsertHorariosDto } from './dto/upsert-horarios.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -202,6 +203,37 @@ export class BarbeariaController {
     @Headers('x-tenant-id') _tenantId: string,
   ) {
     return this.temaService.upsertTema(barCodigo, dto);
+  }
+
+  @Get(':barCodigo/horarios')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({
+    summary: 'Retorna os horários de funcionamento da barbearia',
+  })
+  @ApiResponse({ status: 200, description: 'Horários retornados.' })
+  getHorarios(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.getHorarios(barCodigo);
+  }
+
+  @Put(':barCodigo/horarios')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({
+    summary: 'Atualiza (upsert) os horários de funcionamento da barbearia',
+  })
+  @ApiResponse({ status: 200, description: 'Horários atualizados.' })
+  upsertHorarios(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Body() dto: UpsertHorariosDto,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.barbeariaService.upsertHorarios(barCodigo, dto);
   }
 
   @Delete(':barCodigo/membros/:usrCodigo')

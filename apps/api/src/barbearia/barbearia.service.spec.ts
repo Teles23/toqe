@@ -74,9 +74,7 @@ describe('BarbeariaService', () => {
       const result = await service.findPublico();
       expect(result).toEqual(mockList);
       expect(mockPrisma.barbearia.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ ativo: true }),
-        }),
+        expect.objectContaining({ where: { ativo: true } }),
       );
     });
 
@@ -85,10 +83,82 @@ describe('BarbeariaService', () => {
       await service.findPublico('barber');
       expect(mockPrisma.barbearia.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: {
+            ativo: true,
             nome: { contains: 'barber', mode: 'insensitive' },
-          }),
+          },
         }),
+      );
+    });
+  });
+
+  describe('getHorarios', () => {
+    it('retorna horários da barbearia ordenados por diaSemana', async () => {
+      const barbearia = { codigo: 1, nome: 'BS', slug: 'bs', tema: null };
+      const horarios = [
+        {
+          codigo: 1,
+          barCodigo: 1,
+          diaSemana: 1,
+          aberto: true,
+          abertura: '09:00',
+          fechamento: '19:00',
+        },
+        {
+          codigo: 2,
+          barCodigo: 1,
+          diaSemana: 2,
+          aberto: true,
+          abertura: '09:00',
+          fechamento: '19:00',
+        },
+      ];
+      mockPrisma.barbearia.findUnique.mockResolvedValue(barbearia);
+      mockPrisma.horarioFuncionamento.findMany.mockResolvedValue(horarios);
+
+      const result = await service.getHorarios(1);
+      expect(result).toEqual(horarios);
+      expect(mockPrisma.horarioFuncionamento.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { barCodigo: 1 } }),
+      );
+    });
+
+    it('lança NotFoundException se barbearia não existe', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue(null);
+      await expect(service.getHorarios(99)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('upsertHorarios', () => {
+    it('faz upsert de todos os dias enviados e retorna lista atualizada', async () => {
+      const barbearia = { codigo: 1, nome: 'BS', slug: 'bs', tema: null };
+      const horarioSalvo = {
+        codigo: 1,
+        barCodigo: 1,
+        diaSemana: 1,
+        aberto: true,
+        abertura: '09:00',
+        fechamento: '19:00',
+      };
+
+      mockPrisma.barbearia.findUnique.mockResolvedValue(barbearia);
+      mockPrisma.$transaction.mockResolvedValue([horarioSalvo]);
+      mockPrisma.horarioFuncionamento.findMany.mockResolvedValue([
+        horarioSalvo,
+      ]);
+
+      const dto = [
+        { diaSemana: 1, aberto: true, abertura: '09:00', fechamento: '19:00' },
+      ];
+      const result = await service.upsertHorarios(1, dto as never);
+      expect(result).toEqual([horarioSalvo]);
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('lança NotFoundException se barbearia não existe', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue(null);
+      await expect(service.upsertHorarios(99, [] as never)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
