@@ -30,6 +30,7 @@ export const handlers = [
     HttpResponse.json({ message: "Senha redefinida com sucesso." }),
   ),
   http.post("/api/auth/change-password", () => HttpResponse.json({ ok: true })),
+  http.get("/api/auth/check-email", () => HttpResponse.json({ exists: false })),
 
   // ── Sessões ──────────────────────────────────────────────────────────────
   http.get("/api/auth/sessions", () =>
@@ -227,8 +228,69 @@ export const handlers = [
     }),
   ),
   http.get(`${BASE}/barbearias/:barCodigo/horarios`, () =>
-    HttpResponse.json([]),
+    HttpResponse.json([
+      {
+        codigo: 1,
+        barCodigo: 1,
+        diaSemana: 1,
+        aberto: true,
+        abertura: "09:00",
+        fechamento: "19:00",
+      },
+      {
+        codigo: 2,
+        barCodigo: 1,
+        diaSemana: 2,
+        aberto: true,
+        abertura: "09:00",
+        fechamento: "19:00",
+      },
+      {
+        codigo: 3,
+        barCodigo: 1,
+        diaSemana: 3,
+        aberto: true,
+        abertura: "09:00",
+        fechamento: "19:00",
+      },
+      {
+        codigo: 4,
+        barCodigo: 1,
+        diaSemana: 4,
+        aberto: true,
+        abertura: "09:00",
+        fechamento: "19:00",
+      },
+      {
+        codigo: 5,
+        barCodigo: 1,
+        diaSemana: 5,
+        aberto: true,
+        abertura: "09:00",
+        fechamento: "19:00",
+      },
+      {
+        codigo: 6,
+        barCodigo: 1,
+        diaSemana: 6,
+        aberto: true,
+        abertura: "08:00",
+        fechamento: "18:00",
+      },
+      {
+        codigo: 7,
+        barCodigo: 1,
+        diaSemana: 0,
+        aberto: false,
+        abertura: "09:00",
+        fechamento: "18:00",
+      },
+    ]),
   ),
+  http.put(`${BASE}/barbearias/:barCodigo/horarios`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(body);
+  }),
   http.get(`${BASE}/barbearias/:barCodigo/notificacoes`, () =>
     HttpResponse.json({
       novoAgendamento: true,

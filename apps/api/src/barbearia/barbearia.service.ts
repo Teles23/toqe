@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
+import { UpsertHorariosDto } from './dto/upsert-horarios.dto';
 
 @Injectable()
 export class BarbeariaService {
@@ -68,5 +69,45 @@ export class BarbeariaService {
       where: { codigo: barCodigo },
       data: dto,
     });
+  }
+
+  /** Retorna os horários de funcionamento da barbearia (um por dia da semana). */
+  async getHorarios(barCodigo: number) {
+    await this.findOne(barCodigo);
+    return this.prisma.horarioFuncionamento.findMany({
+      where: { barCodigo },
+      orderBy: { diaSemana: 'asc' },
+    });
+  }
+
+  /**
+   * Substitui em bloco os horários de funcionamento.
+   * Cada entrada identifica um dia (0=Dom … 6=Sáb); dias ausentes não são
+   * tocados. Dias presentes são criados ou atualizados via upsert.
+   */
+  async upsertHorarios(barCodigo: number, dto: UpsertHorariosDto) {
+    await this.findOne(barCodigo);
+
+    await this.prisma.$transaction(
+      dto.map((h) =>
+        this.prisma.horarioFuncionamento.upsert({
+          where: { barCodigo_diaSemana: { barCodigo, diaSemana: h.diaSemana } },
+          create: {
+            barCodigo,
+            diaSemana: h.diaSemana,
+            aberto: h.aberto,
+            abertura: h.abertura,
+            fechamento: h.fechamento,
+          },
+          update: {
+            aberto: h.aberto,
+            abertura: h.abertura,
+            fechamento: h.fechamento,
+          },
+        }),
+      ),
+    );
+
+    return this.getHorarios(barCodigo);
   }
 }

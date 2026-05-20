@@ -33,6 +33,7 @@ interface AccountData {
   email: string;
   senha: string;
   confirmarSenha: string;
+  telefone: string;
 }
 
 interface BarbeariaData {
@@ -40,6 +41,8 @@ interface BarbeariaData {
   slug: string;
   cidade: string;
   telefone: string;
+  // true quando o usuário editou o slug manualmente (não regerar automático)
+  slugEditado: boolean;
 }
 
 interface BrandingData {
@@ -415,6 +418,28 @@ function Passo1Conta({
           </div>
         </div>
 
+        <div className="ob-field">
+          <label>
+            Telefone{" "}
+            <span
+              style={{
+                color: "var(--text-muted)",
+                fontWeight: 400,
+                textTransform: "lowercase",
+              }}
+            >
+              (opcional)
+            </span>
+          </label>
+          <input
+            type="tel"
+            value={data.telefone}
+            onChange={(e) => onChange("telefone", maskTelefone(e.target.value))}
+            placeholder="(11) 99999-9999"
+            maxLength={20}
+          />
+        </div>
+
         <div className="help">
           Ao criar sua conta, você concorda com os{" "}
           <a href="#" className="text-[var(--status-info)]">
@@ -447,13 +472,22 @@ function Passo1({
   fieldErrors,
 }: {
   data: BarbeariaData;
-  onChange: (key: keyof BarbeariaData, value: string) => void;
+  onChange: (key: keyof BarbeariaData, value: string | boolean) => void;
   fieldErrors: Record<string, string>;
 }) {
   const slugDisponivel = data.slug.length > 2;
 
   function normalizeSlug(value: string) {
     onChange("slug", maskSlug(value).slice(0, 60));
+    onChange("slugEditado", true);
+  }
+
+  function handleNomeChange(value: string) {
+    onChange("nome", value);
+    // Auto-gera slug apenas enquanto o usuário não editou manualmente
+    if (!data.slugEditado) {
+      onChange("slug", maskSlug(value).slice(0, 40));
+    }
   }
 
   const onChangeRef = useRef(onChange);
@@ -515,7 +549,7 @@ function Passo1({
           <input
             type="text"
             value={data.nome}
-            onChange={(event) => onChange("nome", event.target.value)}
+            onChange={(event) => handleNomeChange(event.target.value)}
             placeholder="Ex: Barba do Zé"
             maxLength={100}
             style={
@@ -927,13 +961,152 @@ function Passo4({
   );
 }
 
+function AcceptancePreview({
+  barNome,
+  accentColor,
+  barbeiroNome,
+}: {
+  barNome: string;
+  accentColor: string;
+  barbeiroNome: string;
+}) {
+  const [aceiteStep, setAceiteStep] = useState<0 | 1 | 2>(0);
+  const initial = getInitial(barNome, "B");
+
+  return (
+    <div className="ob-acceptance-mini">
+      <div className="ob-acceptance-browser-bar">
+        <div className="ob-browser-dots">
+          <span style={{ background: "#ff6b6b" }} />
+          <span style={{ background: "#ffd43b" }} />
+          <span style={{ background: "#51cf66" }} />
+        </div>
+        <span className="ob-browser-url">toqe.app/convite?token=abc123</span>
+        <span
+          className="ob-badge ob-badge-current"
+          style={{ marginLeft: "auto" }}
+        >
+          TELA DO BARBEIRO
+        </span>
+      </div>
+
+      {aceiteStep === 0 && (
+        <div className="ob-acceptance-step">
+          <div
+            className="ob-acceptance-mark"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
+              boxShadow: `0 4px 16px ${accentColor}40`,
+            }}
+          >
+            {initial}
+          </div>
+          <h3 className="ob-acceptance-title">{barNome}</h3>
+          <div className="ob-acceptance-badge">✦ Convite de barbeiro</div>
+          <p className="ob-acceptance-desc">
+            <strong>{barNome}</strong> convidou você para integrar a equipe como{" "}
+            <strong style={{ color: accentColor }}>barbeiro</strong>.
+          </p>
+          <div className="ob-acceptance-actions">
+            <button
+              type="button"
+              className="ob-acceptance-confirm"
+              style={{
+                background: accentColor,
+                boxShadow: `0 4px 14px ${accentColor}35`,
+              }}
+              onClick={() => setAceiteStep(1)}
+            >
+              Aceitar convite →
+            </button>
+            <button type="button" className="ob-acceptance-reject">
+              Rejeitar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {aceiteStep === 1 && (
+        <div className="ob-acceptance-step">
+          <p className="ob-acceptance-form-title">Criar sua conta</p>
+          <input
+            className="c-input"
+            placeholder="Seu nome completo"
+            defaultValue={barbeiroNome}
+            readOnly
+          />
+          <input
+            className="c-input"
+            type="email"
+            placeholder="seu@email.com"
+            readOnly
+          />
+          <input
+            className="c-input"
+            type="password"
+            placeholder="Criar senha (mín. 6 chars)"
+            readOnly
+          />
+          <button
+            type="button"
+            className="ob-acceptance-confirm"
+            style={{ background: "var(--status-info)" }}
+            onClick={() => setAceiteStep(2)}
+          >
+            Criar conta e aceitar →
+          </button>
+          <div className="ob-acceptance-login-link">
+            Já tem conta?{" "}
+            <span style={{ color: "var(--status-info)", cursor: "pointer" }}>
+              Entrar
+            </span>
+          </div>
+        </div>
+      )}
+
+      {aceiteStep === 2 && (
+        <div className="ob-acceptance-step ob-acceptance-done">
+          <div className="ob-acceptance-check">
+            <Check size={22} strokeWidth={3} />
+          </div>
+          <h3 className="ob-acceptance-title">Acesso liberado!</h3>
+          <p className="ob-acceptance-desc">
+            Você agora faz parte da equipe da <strong>{barNome}</strong>. Baixe
+            o app para começar a receber agendamentos.
+          </p>
+          <div className="ob-acceptance-stores">
+            {["App Store", "Google Play"].map((s) => (
+              <div key={s} className="ob-acceptance-store-btn">
+                {s}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="ob-acceptance-restart"
+            onClick={() => setAceiteStep(0)}
+          >
+            ← Recomeçar preview
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Passo5({
   barbeiros,
+  euSouBarbeiro,
+  onSetEuSouBarbeiro,
   onAddBarbeiro,
   onUpdateBarbeiro,
   onRemoveBarbeiro,
+  barbeariaNome,
+  accentColor,
 }: {
   barbeiros: BarbeiroData[];
+  euSouBarbeiro: boolean;
+  onSetEuSouBarbeiro: (v: boolean) => void;
   onAddBarbeiro: () => void;
   onUpdateBarbeiro: (
     index: number,
@@ -941,25 +1114,33 @@ function Passo5({
     value: string,
   ) => void;
   onRemoveBarbeiro: (index: number) => void;
+  barbeariaNome: string;
+  accentColor: string;
 }) {
-  const [isBarbeiro, setIsBarbeiro] = useState(true);
+  const [showAcceptance, setShowAcceptance] = useState(false);
+  const previewBarbeiro = barbeiros.find((b) => b.nome) ?? {
+    nome: "Carlos Lima",
+    email: "carlos@email.com",
+  };
+
+  const barNome = barbeariaNome || "Barbearia Urban";
 
   return (
     <>
       <h1 className="ob-h1">Quem mais corta com você?</h1>
       <p className="ob-h1-sub">
-        Convide os barbeiros pelo e-mail. Eles recebem um link mágico, sem
+        Convide os barbeiros pelo e-mail. Eles recebem um link de acesso, sem
         precisar de senha pra começar.
       </p>
 
-      <div className="ob-form">
+      <div className="ob-form" style={{ maxWidth: 640 }}>
         <div className="ob-field">
           <label>Você mesmo é barbeiro?</label>
           <div className="pick-grid pick-grid-2">
             <button
               type="button"
-              className={`pick ${isBarbeiro ? "sel" : ""}`}
-              onClick={() => setIsBarbeiro(true)}
+              className={`pick ${euSouBarbeiro ? "sel" : ""}`}
+              onClick={() => onSetEuSouBarbeiro(true)}
             >
               <div className="pick-icon">●</div>
               <div className="pick-body">
@@ -968,7 +1149,7 @@ function Passo5({
                   Você aparece na agenda como barbeiro
                 </div>
               </div>
-              {isBarbeiro && (
+              {euSouBarbeiro && (
                 <span className="pick-check">
                   <Check size={12} strokeWidth={3} />
                 </span>
@@ -976,15 +1157,15 @@ function Passo5({
             </button>
             <button
               type="button"
-              className={`pick ${!isBarbeiro ? "sel" : ""}`}
-              onClick={() => setIsBarbeiro(false)}
+              className={`pick ${!euSouBarbeiro ? "sel" : ""}`}
+              onClick={() => onSetEuSouBarbeiro(false)}
             >
               <div className="pick-icon">○</div>
               <div className="pick-body">
                 <div className="pick-title">Não, só administro</div>
                 <div className="pick-desc">Só vê o painel, não atende</div>
               </div>
-              {!isBarbeiro && (
+              {!euSouBarbeiro && (
                 <span className="pick-check">
                   <Check size={12} strokeWidth={3} />
                 </span>
@@ -998,7 +1179,16 @@ function Passo5({
           <div className="barber-list">
             {barbeiros.map((barbeiro, index) => (
               <div key={index} className="barber-row">
-                <div className="barber-avatar">{getInitial(barbeiro.nome)}</div>
+                <div
+                  className="barber-avatar"
+                  style={{
+                    background: `${accentColor}18`,
+                    borderColor: `${accentColor}35`,
+                    color: accentColor,
+                  }}
+                >
+                  {getInitial(barbeiro.nome)}
+                </div>
                 <input
                   value={barbeiro.nome}
                   onChange={(event) =>
@@ -1035,21 +1225,103 @@ function Passo5({
             confirmação deles.
           </div>
         </div>
+
+        {/* Invite preview section */}
+        <div className="ob-invite-preview">
+          <div className="ob-invite-header">
+            <span className="ob-invite-label">
+              Como o convite chega para o barbeiro
+            </span>
+            <span className="ob-badge ob-badge-planned">
+              MAGIC LINK · EM BREVE
+            </span>
+            <span className="ob-badge ob-badge-current">ATUAL: POR E-MAIL</span>
+          </div>
+
+          <div className="ob-invite-cards">
+            {/* WhatsApp preview */}
+            <div className="ob-invite-card">
+              <div className="ob-invite-card-label">Via WhatsApp</div>
+              <div className="ob-wapp-bubble">
+                <div className="ob-wapp-sender">
+                  Toqe · Convite de barbearia
+                </div>
+                <div>Olá {previewBarbeiro.nome}! 👋</div>
+                <div className="ob-wapp-body">
+                  Você foi convidado para integrar a equipe da{" "}
+                  <strong>{barNome}</strong> como barbeiro no Toqe.
+                </div>
+                <div className="ob-wapp-cta">
+                  Clique para aceitar e configurar seu acesso:
+                </div>
+                <span className="ob-wapp-link">
+                  → toqe.app/convite?token=abc123
+                </span>
+                <div className="ob-wapp-meta">Toqe · agora ✓✓</div>
+              </div>
+            </div>
+
+            {/* Email preview */}
+            <div className="ob-invite-card">
+              <div className="ob-invite-card-label">Via E-mail</div>
+              <div className="ob-email-preview">
+                <div className="ob-email-meta">
+                  De: noreply@toqe.app · Para: {previewBarbeiro.email}
+                </div>
+                <div className="ob-email-subject">
+                  Você foi convidado para a equipe
+                </div>
+                <div className="ob-email-body">
+                  Olá {previewBarbeiro.nome}!{" "}
+                  <strong style={{ color: accentColor }}>{barNome}</strong>{" "}
+                  convidou você como <strong>barbeiro</strong>.
+                </div>
+                <div className="ob-email-cta-wrap">
+                  <span
+                    className="ob-email-cta"
+                    style={{ background: accentColor }}
+                  >
+                    Aceitar convite →
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Toggle acceptance preview */}
+          <button
+            type="button"
+            className="ob-acceptance-toggle"
+            onClick={() => setShowAcceptance((v) => !v)}
+          >
+            {showAcceptance
+              ? "▲ Ocultar"
+              : "▼ Ver o que o barbeiro vê ao clicar no link"}
+          </button>
+
+          {showAcceptance && (
+            <AcceptancePreview
+              barNome={barNome}
+              accentColor={accentColor}
+              barbeiroNome={previewBarbeiro.nome}
+            />
+          )}
+        </div>
       </div>
     </>
   );
 }
 
 function Passo6({
+  account,
   barbearia,
-  branding,
   horarios,
   servicos,
   barbeiros,
   onGo,
 }: {
+  account: AccountData;
   barbearia: BarbeariaData;
-  branding: BrandingData;
   horarios: HorarioData[];
   servicos: ServicoData[];
   barbeiros: BarbeiroData[];
@@ -1068,6 +1340,23 @@ function Passo6({
       <div className="summary-grid">
         <div className="summary-card">
           <h4>
+            Conta{" "}
+            <button type="button" className="edit" onClick={() => onGo(1)}>
+              editar
+            </button>
+          </h4>
+          <div className="summary-line">
+            <span className="k">Nome</span>
+            <span className="v">{account.nome || "—"}</span>
+          </div>
+          <div className="summary-line">
+            <span className="k">E-mail</span>
+            <span className="v">{account.email || "—"}</span>
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <h4>
             Barbearia{" "}
             <button type="button" className="edit" onClick={() => onGo(2)}>
               editar
@@ -1075,35 +1364,15 @@ function Passo6({
           </h4>
           <div className="summary-line">
             <span className="k">Nome</span>
-            <span className="v">{barbearia.nome || "-"}</span>
+            <span className="v">{barbearia.nome || "—"}</span>
           </div>
           <div className="summary-line">
             <span className="k">Cidade</span>
-            <span className="v">{barbearia.cidade || "-"}</span>
+            <span className="v">{barbearia.cidade || "—"}</span>
           </div>
           <div className="summary-line">
             <span className="k">Link</span>
-            <span className="v">toqe.app/{barbearia.slug || "-"}</span>
-          </div>
-        </div>
-
-        <div className="summary-card">
-          <h4>
-            Identidade{" "}
-            <button type="button" className="edit" onClick={() => onGo(3)}>
-              editar
-            </button>
-          </h4>
-          <div className="summary-line">
-            <span className="k">Cor de marca</span>
-            <span className="v color-summary">
-              <span style={{ background: branding.cor }} />
-              {branding.cor}
-            </span>
-          </div>
-          <div className="summary-line">
-            <span className="k">Logotipo</span>
-            <span className="v muted">não enviado · usaremos inicial</span>
+            <span className="v">toqe.app/{barbearia.slug || "—"}</span>
           </div>
         </div>
 
@@ -1118,22 +1387,31 @@ function Passo6({
             <div key={horario.key} className="summary-line">
               <span className="k">{horario.label}</span>
               <span className="v">
-                {horario.abertura} - {horario.fechamento}
+                {horario.abertura}–{horario.fechamento}
               </span>
             </div>
           ))}
+          {diasAbertos.length > 3 && (
+            <div
+              style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}
+            >
+              +{diasAbertos.length - 3} dias
+            </div>
+          )}
         </div>
 
         <div className="summary-card">
           <h4>
-            Serviços e equipe{" "}
-            <button type="button" className="edit" onClick={() => onGo(5)}>
+            Equipe{" "}
+            <button type="button" className="edit" onClick={() => onGo(6)}>
               editar
             </button>
           </h4>
           <div className="summary-line">
             <span className="k">Serviços</span>
-            <span className="v">{servicos.length} cadastrados</span>
+            <span className="v">
+              {servicos.filter((s) => s.nome).length} cadastrados
+            </span>
           </div>
           <div className="summary-line">
             <span className="k">Barbeiros</span>
@@ -1141,7 +1419,7 @@ function Passo6({
           </div>
           <div className="summary-line">
             <span className="k">Plano</span>
-            <span className="v accent">Free · 30 dias do Basic grátis</span>
+            <span className="v accent">Free · 30 dias Basic grátis</span>
           </div>
         </div>
       </div>
@@ -1154,8 +1432,8 @@ function Passo6({
           <h4>Tudo certo pra ir ao ar</h4>
           <p>
             Ao publicar, seu link{" "}
-            <span>toqe.app/{barbearia.slug || "urban"}</span> fica acessível e
-            seus clientes já podem agendar.
+            <span>toqe.app/{barbearia.slug || "sua-barbearia"}</span> fica
+            acessível e seus clientes já podem agendar.
           </p>
         </div>
       </div>
@@ -1172,17 +1450,20 @@ export default function Onboarding(): React.JSX.Element {
   const [googleAuthed, setGoogleAuthed] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [euSouBarbeiro, setEuSouBarbeiro] = useState(true);
   const [account, setAccount] = useState<AccountData>({
     nome: "",
     email: "",
     senha: "",
     confirmarSenha: "",
+    telefone: "",
   });
   const [barbearia, setBarbearia] = useState<BarbeariaData>({
     nome: "",
     slug: "",
     cidade: "",
     telefone: "",
+    slugEditado: false,
   });
   const [branding, setBranding] = useState<BrandingData>({ cor: "#F4B400" });
   const [horarios, setHorarios] = useState<HorarioData[]>(DIAS_HORARIOS);
@@ -1195,7 +1476,10 @@ export default function Onboarding(): React.JSX.Element {
   function go(nextStep: number) {
     if (nextStep >= 1 && nextStep <= STEPS.length) {
       setStep(nextStep);
-      document.querySelector(".ob-main")?.scrollIntoView({ block: "start" });
+      const el = document.querySelector(".ob-main");
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "start" });
+      }
     }
   }
 
@@ -1223,7 +1507,7 @@ export default function Onboarding(): React.JSX.Element {
     }
   }
 
-  function updateBarbearia(key: keyof BarbeariaData, value: string) {
+  function updateBarbearia(key: keyof BarbeariaData, value: string | boolean) {
     setBarbearia((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -1374,7 +1658,12 @@ export default function Onboarding(): React.JSX.Element {
       if (!googleAuthed) {
         await api.post(
           "/auth/register",
-          { nome: account.nome, email: account.email, senha: account.senha },
+          {
+            nome: account.nome,
+            email: account.email,
+            senha: account.senha,
+            ...(account.telefone ? { telefone: account.telefone } : {}),
+          },
           { auth: false },
         );
         const loginRes = await fetch("/api/auth/login", {
@@ -1401,6 +1690,26 @@ export default function Onboarding(): React.JSX.Element {
       await api.put(`/barbearias/${bar.codigo}/tema`, {
         corPrimaria: branding.cor,
       });
+
+      // Salva horários de funcionamento
+      const DIA_MAP: Record<string, number> = {
+        seg: 1,
+        ter: 2,
+        qua: 3,
+        qui: 4,
+        sex: 5,
+        sab: 6,
+        dom: 0,
+      };
+      await api.put(
+        `/barbearias/${bar.codigo}/horarios`,
+        horarios.map((h) => ({
+          diaSemana: DIA_MAP[h.key] ?? 1,
+          aberto: h.aberto,
+          abertura: h.abertura,
+          fechamento: h.fechamento,
+        })),
+      );
 
       if (logoFile) {
         const formData = new FormData();
@@ -1596,6 +1905,8 @@ export default function Onboarding(): React.JSX.Element {
             {step === 6 && (
               <Passo5
                 barbeiros={barbeiros}
+                euSouBarbeiro={euSouBarbeiro}
+                onSetEuSouBarbeiro={setEuSouBarbeiro}
                 onAddBarbeiro={() =>
                   setBarbeiros((prev) => [...prev, { nome: "", email: "" }])
                 }
@@ -1605,12 +1916,14 @@ export default function Onboarding(): React.JSX.Element {
                     prev.filter((_, itemIndex) => itemIndex !== index),
                   )
                 }
+                barbeariaNome={barbearia.nome}
+                accentColor={branding.cor}
               />
             )}
             {step === 7 && (
               <Passo6
+                account={account}
                 barbearia={barbearia}
-                branding={branding}
                 horarios={horarios}
                 servicos={servicos}
                 barbeiros={barbeiros}

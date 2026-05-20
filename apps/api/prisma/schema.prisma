@@ -91,6 +91,7 @@ model Barbearia {
   barbeirosServ  BarbeiroServico[]
   tema           TemaTenant?
   preferencias   NotificacaoPreferencia[]
+  horarios       HorarioFuncionamento[]
 
   @@map("TQE_BARBEARIA")
 }
@@ -266,4 +267,18 @@ model PushToken {
 
   @@unique([usrCodigo, token])
   @@map("TQE_PUSH_TOKEN")
+}
+
+model HorarioFuncionamento {
+  codigo     Int      @id @default(autoincrement()) @map("TQE_HFN_CODIGO")
+  barCodigo  Int      @map("TQE_HFN_BAR_CODIGO")
+  diaSemana  Int      @map("TQE_HFN_DIA_SEMANA") @db.SmallInt // 0=Dom, 1=Seg … 6=Sab
+  aberto     Boolean  @default(true) @map("TQE_HFN_ABERTO")
+  abertura   String   @map("TQE_HFN_ABERTURA") @db.VarChar(5)   // "09:00"
+  fechamento String   @map("TQE_HFN_FECHAMENTO") @db.VarChar(5) // "18:00"
+
+  barbearia  Barbearia @relation(fields: [barCodigo], references: [codigo], onDelete: Cascade)
+
+  @@unique([barCodigo, diaSemana])
+  @@map("TQE_HORARIO_FUNCIONAMENTO")
 }

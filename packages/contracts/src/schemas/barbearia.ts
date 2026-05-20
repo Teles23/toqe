@@ -78,6 +78,30 @@ export const updateTemaSchema = z.object({
     .optional(),
 });
 
+// ─── Horário de funcionamento ─────────────────────────────────────────────────
+
+const horarioTimeSchema = z
+  .string()
+  .regex(/^\d{2}:\d{2}$/, "Horário deve ser no formato HH:MM");
+
+export const horarioFuncionamentoSchema = z.object({
+  // 0 = Domingo … 6 = Sábado
+  diaSemana: z.number().int().min(0).max(6),
+  aberto: z.boolean(),
+  abertura: horarioTimeSchema,
+  fechamento: horarioTimeSchema,
+});
+
+export const upsertHorariosSchema = z
+  .array(horarioFuncionamentoSchema)
+  .min(1, "Informe ao menos um dia")
+  .max(7, "Máximo de 7 dias");
+
+export type HorarioFuncionamentoInput = z.infer<
+  typeof horarioFuncionamentoSchema
+>;
+export type UpsertHorariosInput = z.infer<typeof upsertHorariosSchema>;
+
 export type CreateBarbeariaInput = z.infer<typeof createBarbeariaSchema>;
 export type UpdateBarbeariaInput = z.infer<typeof updateBarbeariaSchema>;
 export type ConvidarMembroInput = z.infer<typeof convidarMembroSchema>;

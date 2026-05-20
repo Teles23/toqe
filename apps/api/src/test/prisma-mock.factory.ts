@@ -24,6 +24,7 @@ export function createPrismaMock() {
     temaTenant: makeMethods(),
     notificacaoPreferencia: makeMethods(),
     pushToken: makeMethods(),
+    horarioFuncionamento: makeMethods(),
     jornadaTrabalho: makeMethods(),
     bloqueioAgenda: makeMethods(),
     planoLimite: makeMethods(),

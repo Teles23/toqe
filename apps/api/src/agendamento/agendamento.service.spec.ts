@@ -220,11 +220,11 @@ describe('AgendamentoService', () => {
       mockPrisma.agendamento.findMany.mockResolvedValue([mockAgendamento]);
       const result = await service.meusAgendamentos(20, barCodigo);
       expect(result).toEqual([mockAgendamento]);
-      expect(mockPrisma.agendamento.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ clienteId: 20, barCodigo }),
-        }),
-      );
+      const [callArg] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: { clienteId: number; barCodigo: number } },
+      ];
+      expect(callArg.where.clienteId).toBe(20);
+      expect(callArg.where.barCodigo).toBe(barCodigo);
     });
   });
 
