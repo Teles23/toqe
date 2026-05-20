@@ -660,6 +660,51 @@
     border-radius: 10px;
   }
 
+  /* Wrapper para inputs com ícone/affix em linha — usado nas telas de autenticação */
+  .tqe-input-affix {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 4px 0 14px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: 11px;
+    transition:
+      border-color 150ms var(--ease-snappy),
+      box-shadow 150ms var(--ease-snappy),
+      background 150ms var(--ease-snappy);
+  }
+
+  .tqe-input-affix:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-card);
+  }
+
+  .tqe-input-affix:focus-within {
+    border-color: var(--primary);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 3px rgba(244, 180, 0, 0.08);
+  }
+
+  /* Input "nu" usado dentro de .tqe-input-affix */
+  .tqe-input-bare {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 0;
+  }
+
+  .tqe-input-bare::placeholder {
+    color: var(--text-muted);
+  }
+
   /* Select */
   .tqe-select {
     appearance: none;
