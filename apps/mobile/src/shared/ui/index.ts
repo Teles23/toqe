@@ -18,6 +18,10 @@ export {
 } from "./TimeDisplay";
 export { SkeletonBox, type SkeletonBoxProps } from "./SkeletonBox";
 export { BottomSheet, type BottomSheetProps } from "./BottomSheet";
+export {
+  TenantSwitcherSheet,
+  type TenantSwitcherSheetProps,
+} from "./TenantSwitcherSheet";
 export { CountdownTimer, type CountdownTimerProps } from "./CountdownTimer";
 export {
   QuickActionBar,

@@ -310,3 +310,32 @@ Total: **88 suites · 512 tests** — todos passando
 ### Cobertura de testes — v7
 
 Total: **90 suites · 518 tests** — todos passando
+
+---
+
+## Extensão — Sprint 3: Fluxo Multi-Tenant + Perfil/Settings (2026-05-21)
+
+**Branch:** `feat/mobile-sprint3-perfil-tenant`  
+**Design source:** `C:\...\Design system-handoff\design-system\project` — `flow-perfil.jsx`, `flow-shared-1.jsx`, HTMLs de fluxo  
+**Doc completo:** `docs/48-mobile-sprint3-multi-tenant-qr.md`
+
+### Telas implementadas
+
+| Tela/Componente          | Arquivo                                                             | Descrição                                                                                   |
+| ------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Editar perfil            | `(barbeiro)/perfil/editar.tsx` ← re-exportado por `(cliente)`       | Avatar 80×80 amber + botão edit 28×28, campos `#171717`, badge VERIFICADO verde, CTA sticky |
+| Trocar senha             | `(barbeiro)/perfil/senha.tsx` ← re-exportado por `(cliente)`        | Info box amber, 4 requisitos inline com ✓ verde/cinza, CTA disabled                         |
+| 2FA setup                | `(barbeiro)/perfil/2fa.tsx` ← re-exportado por `(cliente)`          | 3 passos: intro hero 🛡 + benefits, QR 160×160, 6 inputs 42×54 mono                         |
+| Notificações             | `(barbeiro)/perfil/notificacoes.tsx` ← re-exportado por `(cliente)` | Matriz 3 canais × 4 tipos, switches amber, auto-save                                        |
+| SplashTenantPicker       | `app/index.tsx`                                                     | Cards amber 54×54 para multi-tenant, botão dashed "+ Entrar em outra"                       |
+| TenantSwitcherSheet      | `src/shared/ui/TenantSwitcherSheet.tsx`                             | Bottom sheet com checkmark e bg amber na ativa                                              |
+| HeaderComTenant pill     | `home.tsx` + `agendamentos/index.tsx`                               | Pill 22×22 interativo, abre TenantSwitcherSheet                                             |
+| EmptyClienteSemBarbearia | `home.tsx`                                                          | ✂ 72px hero, 2 CTAs: buscar + QR, footer hint                                               |
+| QR Scan                  | `(cliente)/buscar/qr.tsx`                                           | Frame 4 cantos amber 260×260, hint JetBrainsMono                                            |
+| Login sent state         | `(auth)/login.tsx`                                                  | ✉ 80×80 amber, pulse dot animado, "Reenviar link"                                           |
+| Fila barbeiro            | `(barbeiro)/fila.tsx`                                               | Seção `#ef44441a` com dot pulsante vermelho, WalkInCard, pull-to-refresh                    |
+| ConfirmacaoReserva       | `(cliente)/agendar/index.tsx`                                       | Círculo `#22c55e20` + ✓ 32px, ticket card `#171717` amber data                              |
+
+### Cobertura de testes — Sprint 3
+
+Total: **90 suites · 518 tests** — todos passando

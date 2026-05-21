@@ -9,7 +9,12 @@ import { useProximoAgendamento } from "@/src/shared/hooks/cliente/use-proximo-ag
 import { useProximosSlots } from "@/src/shared/hooks/cliente/use-proximos-slots";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, Card, SkeletonBox } from "@/src/shared/ui";
+import {
+  AmberButton,
+  Card,
+  SkeletonBox,
+  TenantSwitcherSheet,
+} from "@/src/shared/ui";
 
 // ─── QuickBook internal state ─────────────────────────────────────────────────
 type QuickView =
@@ -334,8 +339,10 @@ export default function ClienteHomeScreen() {
   const { barbearia, barbearias } = useAuth();
   const { data: proximo } = useProximoAgendamento();
   const { data: agendamentos } = useAgendamentosMeus();
+  const [showSwitcher, setShowSwitcher] = useState(false);
 
   const semBarbearias = barbearias.length === 0;
+  const letraBarbearia = barbearia?.nome?.trim()[0]?.toUpperCase() ?? "?";
 
   return (
     <View
@@ -358,21 +365,29 @@ export default function ClienteHomeScreen() {
         <View style={{ flex: 1 }}>
           <Text
             style={[
-              { fontFamily: "Sora_700Bold", fontSize: 22, lineHeight: 28 },
+              { fontFamily: "Sora_700Bold", fontSize: 24, lineHeight: 30 },
               { color: palette.text },
             ]}
           >
             Início
           </Text>
+          {/* Pill de tenant — só aparece quando há barbearia ativa */}
           {barbearia ? (
-            <Text
-              style={[
-                typography.caption,
-                { color: palette.textMuted, marginTop: 2 },
-              ]}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Barbearia ativa: ${barbearia.nome}. Toque para trocar`}
+              onPress={() => setShowSwitcher(true)}
+              style={styles.tenantPill}
             >
-              {barbearia.nome}
-            </Text>
+              {/* Mini logo */}
+              <View style={styles.pillLogoMini}>
+                <Text style={styles.pillLogoLetter}>{letraBarbearia}</Text>
+              </View>
+              <Text style={styles.pillNome} numberOfLines={1}>
+                {barbearia.nome}
+              </Text>
+              <Text style={styles.pillSwap}>⇅</Text>
+            </Pressable>
           ) : null}
         </View>
         <Pressable
@@ -398,31 +413,29 @@ export default function ClienteHomeScreen() {
         }}
       >
         {semBarbearias ? (
-          <View
-            testID="home-sem-barbearia"
-            style={[
-              styles.emptyBox,
-              {
-                backgroundColor: palette.surface,
-                borderColor: palette.border,
-                borderRadius: radius.lg,
-                padding: spacing.xl,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                typography.subheading,
-                { color: palette.text, textAlign: "center" },
-              ]}
-            >
-              Conecte-se a uma barbearia para começar.
+          /* EmptyClienteSemBarbearia — pixel-accurate */
+          <View testID="home-sem-barbearia" style={styles.emptyBarbearia}>
+            <Text style={styles.emptyIcon}>✂</Text>
+            <Text style={styles.emptyLine1}>Bem-vindo ao</Text>
+            <Text style={styles.emptyBrand}>Toqe.</Text>
+            <Text style={styles.emptySubtitle}>
+              Encontre e agende em barbearias perto de você
             </Text>
-            <View style={{ height: spacing.md }} />
             <AmberButton
-              label="Buscar barbearia"
+              label="Buscar barbearias"
               onPress={() => router.push("/(cliente)/buscar")}
             />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Tenho um código QR"
+              onPress={() => router.push("/(cliente)/buscar/qr" as never)}
+              style={styles.emptyQrBtn}
+            >
+              <Text style={styles.emptyQrBtnText}>Tenho um código QR</Text>
+            </Pressable>
+            <Text style={styles.emptyFooter}>
+              Ou peça um convite ao seu barbeiro
+            </Text>
           </View>
         ) : (
           <>
@@ -524,6 +537,12 @@ export default function ClienteHomeScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* TenantSwitcherSheet */}
+      <TenantSwitcherSheet
+        visible={showSwitcher}
+        onClose={() => setShowSwitcher(false)}
+      />
     </View>
   );
 }
@@ -541,6 +560,97 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  // ── Tenant pill
+  tenantPill: {
+    marginTop: 6,
+    backgroundColor: "#171717",
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignSelf: "flex-start",
+  },
+  pillLogoMini: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pillLogoLetter: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 9,
+    color: "#0d0d0d",
+  },
+  pillNome: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "700",
+    color: "#f5f5f5",
+    maxWidth: 160,
+  },
+  pillSwap: {
+    fontSize: 10,
+    color: "#666666",
+  },
+  // ── EmptyClienteSemBarbearia
+  emptyBarbearia: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+  },
+  emptyIcon: {
+    fontSize: 72,
+    marginBottom: 24,
+  },
+  emptyLine1: {
+    fontSize: 16,
+    color: "#888888",
+    textAlign: "center",
+  },
+  emptyBrand: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 32,
+    color: "#f5f5f5",
+    textAlign: "center",
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#888888",
+    textAlign: "center",
+    marginBottom: 40,
+    lineHeight: 20,
+  },
+  emptyQrBtn: {
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    width: "100%",
+  },
+  emptyQrBtnText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: "#888888",
+  },
+  emptyFooter: {
+    fontSize: 11,
+    color: "#444444",
+    textAlign: "center",
+    marginTop: 24,
   },
   emptyBox: {
     borderWidth: 1,

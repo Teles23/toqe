@@ -13,7 +13,9 @@ import {
 } from "react-native";
 
 import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
+import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
+import { TenantSwitcherSheet } from "@/src/shared/ui";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 
 // ─── Status colors ────────────────────────────────────────────────────────────
@@ -163,9 +165,12 @@ type Tab = "proximos" | "historico";
 
 export default function ClienteAgendamentosScreen() {
   const { palette } = useTheme();
+  const { barbearia } = useAuth();
   const { data, isLoading, isError, isRefetching, refetch } =
     useAgendamentosMeus();
   const [tab, setTab] = useState<Tab>("proximos");
+  const [showSwitcher, setShowSwitcher] = useState(false);
+  const letraBarbearia = barbearia?.nome?.trim()[0]?.toUpperCase() ?? "?";
 
   const proximos = useMemo(() => {
     if (!data) return [];
@@ -244,9 +249,28 @@ export default function ClienteAgendamentosScreen() {
     >
       {/* ── Header ── */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: palette.text }]}>
-          Minha agenda
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.headerTitle, { color: palette.text }]}>
+            Minha agenda
+          </Text>
+          {/* Tenant pill */}
+          {barbearia ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Barbearia ativa: ${barbearia.nome}. Toque para trocar`}
+              onPress={() => setShowSwitcher(true)}
+              style={styles.tenantPill}
+            >
+              <View style={styles.pillLogoMini}>
+                <Text style={styles.pillLogoLetter}>{letraBarbearia}</Text>
+              </View>
+              <Text style={styles.pillNome} numberOfLines={1}>
+                {barbearia.nome}
+              </Text>
+              <Text style={styles.pillSwap}>⇅</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <Pressable
           onPress={() => router.push("/(cliente)/home" as never)}
           accessibilityRole="button"
@@ -256,6 +280,11 @@ export default function ClienteAgendamentosScreen() {
           <Text style={[styles.addBtnText, { color: palette.primary }]}>+</Text>
         </Pressable>
       </View>
+
+      <TenantSwitcherSheet
+        visible={showSwitcher}
+        onClose={() => setShowSwitcher(false)}
+      />
 
       {/* ── Segmented tabs ── */}
       <View style={styles.tabsWrap}>
@@ -328,6 +357,44 @@ const styles = StyleSheet.create({
     fontFamily: "Sora_700Bold",
     fontSize: 24,
     letterSpacing: -0.6,
+  },
+  // ── Tenant pill
+  tenantPill: {
+    marginTop: 6,
+    backgroundColor: "#171717",
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignSelf: "flex-start",
+  },
+  pillLogoMini: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pillLogoLetter: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 9,
+    color: "#0d0d0d",
+  },
+  pillNome: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "700",
+    color: "#f5f5f5",
+    maxWidth: 160,
+  },
+  pillSwap: {
+    fontSize: 10,
+    color: "#666666",
   },
   addBtn: {
     width: 44,

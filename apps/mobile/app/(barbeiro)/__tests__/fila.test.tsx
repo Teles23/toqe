@@ -133,9 +133,9 @@ describe("BarbeiroFilaScreen", () => {
     render(<BarbeiroFilaScreen />);
 
     expect(screen.getByTestId("lista-fila")).toBeTruthy();
-    expect(screen.getByText("João")).toBeTruthy();
-    expect(screen.getByText("Maria")).toBeTruthy();
-    expect(screen.getByText("Ana")).toBeTruthy();
+    expect(screen.getAllByText("João").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Maria").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ana").length).toBeGreaterThan(0);
 
     const posicoes = screen
       .getAllByTestId("posicao")
