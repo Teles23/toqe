@@ -11,20 +11,26 @@ import {
 } from "react-native";
 
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
+import { useToggleServico } from "@/src/shared/hooks/barbeiro/use-toggle-servico";
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton } from "@/src/shared/ui";
 
 /**
- * Sub-tela de serviços e preços (Phase 1 — local toggle state only).
- * Exibe os serviços da barbearia com preços base.
- * Salvar chama apenas router.back().
+ * Sub-tela de serviços e preços.
+ * Toggle persiste via PUT /servicos/:codigo com { ativo }.
  */
 export default function ServicosScreen() {
   const { palette, spacing, typography, radius } = useTheme();
   const { data: servicos, isLoading } = useServicos();
+  const {
+    mutate: toggleMutate,
+    isPending: isTogglePending,
+    variables: toggleVariables,
+  } = useToggleServico();
 
-  // Local toggle state indexed by codigo
+  // Optimistic local state: sobrescreve valor do servidor enquanto a mutation não invalida
   const [ativos, setAtivos] = useState<Record<number, boolean>>({});
+  const [erro, setErro] = useState<string | null>(null);
 
   const isAtivo = useCallback(
     (codigo: number, defaultAtivo: boolean) => {
@@ -33,9 +39,24 @@ export default function ServicosScreen() {
     [ativos],
   );
 
-  const toggleServico = useCallback((codigo: number, value: boolean) => {
-    setAtivos((prev) => ({ ...prev, [codigo]: value }));
-  }, []);
+  const handleToggle = useCallback(
+    (codigo: number, value: boolean) => {
+      // Atualização otimista — reverte se a API falhar
+      setAtivos((prev) => ({ ...prev, [codigo]: value }));
+      setErro(null);
+      toggleMutate(
+        { codigo, ativo: value },
+        {
+          onError: (e) => {
+            // Reverte estado otimista
+            setAtivos((prev) => ({ ...prev, [codigo]: !value }));
+            setErro(e.message ?? "Erro ao atualizar serviço.");
+          },
+        },
+      );
+    },
+    [toggleMutate],
+  );
 
   const count = servicos?.length ?? 0;
 
@@ -150,8 +171,12 @@ export default function ServicosScreen() {
 
                   {/* Toggle */}
                   <Switch
+                    testID={`servico-toggle-${s.codigo}`}
                     value={ativo}
-                    onValueChange={(val) => toggleServico(s.codigo, val)}
+                    onValueChange={(val) => handleToggle(s.codigo, val)}
+                    disabled={
+                      isTogglePending && toggleVariables?.codigo === s.codigo
+                    }
                     trackColor={{
                       false: palette.border,
                       true: palette.primary,
@@ -192,7 +217,26 @@ export default function ServicosScreen() {
           },
         ]}
       >
-        <AmberButton label="Salvar" onPress={() => router.back()} />
+        {erro ? (
+          <Text
+            testID="servicos-error"
+            style={[
+              typography.caption,
+              {
+                color: palette.danger,
+                marginBottom: spacing.sm,
+                textAlign: "center",
+              },
+            ]}
+          >
+            {erro}
+          </Text>
+        ) : null}
+        <AmberButton
+          testID="btn-salvar-servicos"
+          label="Concluir"
+          onPress={() => router.back()}
+        />
       </View>
     </View>
   );

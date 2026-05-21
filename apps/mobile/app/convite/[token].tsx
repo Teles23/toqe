@@ -11,6 +11,8 @@ import {
 } from "react-native";
 
 import { useConvite } from "@/src/shared/hooks/cliente/use-convite";
+import { useAceitarConvite } from "@/src/shared/hooks/use-aceitar-convite";
+import { ApiError } from "@/src/shared/api/api-client";
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton } from "@/src/shared/ui";
 
@@ -29,10 +31,12 @@ export default function ConviteTokenScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
 
   const { data, isLoading, isError } = useConvite(token);
+  const { mutate: aceitarConvite } = useAceitarConvite();
 
   const [view, setView] = useState<ConviteView | null>(null);
   const [nome, setNome] = useState("");
   const [senha, setSenha] = useState("");
+  const [erroConvite, setErroConvite] = useState<string | null>(null);
 
   // Derive current view
   const resolvedView: ConviteView = (() => {
@@ -49,10 +53,26 @@ export default function ConviteTokenScreen() {
     return "landing";
   })();
 
-  const handleAccept = async () => {
+  const handleAccept = () => {
+    setErroConvite(null);
     setView("accepting");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setView("success");
+    aceitarConvite(
+      { token: token!, nome: nome || undefined, senha: senha || undefined },
+      {
+        onSuccess: () => setView("success"),
+        onError: (e) => {
+          const status = e instanceof ApiError ? e.status : 0;
+          const msg =
+            status === 409
+              ? "Convite já utilizado."
+              : status === 404
+                ? "Convite expirado ou não encontrado."
+                : (e.message ?? "Erro ao aceitar convite. Tente novamente.");
+          setErroConvite(msg);
+          setView("form");
+        },
+      },
+    );
   };
 
   // ─── Loading ─────────────────────────────────────────────────────────────────
@@ -312,6 +332,22 @@ export default function ConviteTokenScreen() {
             ]}
           />
         </View>
+
+        {erroConvite ? (
+          <Text
+            testID="convite-error"
+            style={[
+              typography.caption,
+              {
+                color: palette.danger,
+                marginBottom: spacing.md,
+                textAlign: "center",
+              },
+            ]}
+          >
+            {erroConvite}
+          </Text>
+        ) : null}
 
         <AmberButton
           testID="btn-aceitar"

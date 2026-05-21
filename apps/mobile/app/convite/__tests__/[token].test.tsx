@@ -19,6 +19,11 @@ jest.mock("@/src/shared/hooks/cliente/use-convite", () => ({
   useConvite: jest.fn(),
 }));
 
+const mockAceitarMutate = jest.fn();
+jest.mock("@/src/shared/hooks/use-aceitar-convite", () => ({
+  useAceitarConvite: () => ({ mutate: mockAceitarMutate }),
+}));
+
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 import { router } from "expo-router";
@@ -42,6 +47,7 @@ describe("ConviteTokenScreen", () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockUseConvite.mockReset();
+    mockAceitarMutate.mockReset();
     (router.back as jest.Mock).mockReset();
   });
 
@@ -148,18 +154,24 @@ describe("ConviteTokenScreen", () => {
     expect(screen.getByTestId("convite-accepting")).toBeTruthy();
   });
 
-  it("10. mostra convite-success após aceitar (setTimeout de 1s)", async () => {
+  it("10. mostra convite-success quando mutate chama onSuccess", async () => {
     mockUseConvite.mockReturnValue({
       data: validConvite,
       isLoading: false,
       isError: false,
     });
+    // Simula mutate que chama onSuccess imediatamente
+    mockAceitarMutate.mockImplementation(
+      (_input: unknown, callbacks: { onSuccess?: () => void }) => {
+        callbacks?.onSuccess?.();
+      },
+    );
+
     render(<ConviteTokenScreen />);
     fireEvent.press(screen.getByText("Aceitar convite"));
-    fireEvent.press(screen.getByTestId("btn-aceitar"));
 
     await act(async () => {
-      jest.advanceTimersByTime(1100);
+      fireEvent.press(screen.getByTestId("btn-aceitar"));
     });
 
     expect(screen.getByTestId("convite-success")).toBeTruthy();

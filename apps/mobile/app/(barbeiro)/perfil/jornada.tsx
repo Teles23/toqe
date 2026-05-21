@@ -9,12 +9,15 @@ import {
   View,
 } from "react-native";
 
+import { useSalvarJornada } from "@/src/shared/hooks/barbeiro/use-salvar-jornada";
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton } from "@/src/shared/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface DiaJornada {
+  /** 0 = domingo, 1 = segunda … 6 = sábado (padrão ISO/API) */
+  diaSemana: number;
   dia: string;
   diaShort: string;
   abre: string | null;
@@ -26,14 +29,23 @@ interface DiaJornada {
 
 const INITIAL_JORNADA: DiaJornada[] = [
   {
+    diaSemana: 1,
     dia: "Segunda",
     diaShort: "SEG",
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
   },
-  { dia: "Terça", diaShort: "TER", abre: "09:00", fecha: "18:00", ativo: true },
   {
+    diaSemana: 2,
+    dia: "Terça",
+    diaShort: "TER",
+    abre: "09:00",
+    fecha: "18:00",
+    ativo: true,
+  },
+  {
+    diaSemana: 3,
     dia: "Quarta",
     diaShort: "QUA",
     abre: "09:00",
@@ -41,39 +53,73 @@ const INITIAL_JORNADA: DiaJornada[] = [
     ativo: true,
   },
   {
+    diaSemana: 4,
     dia: "Quinta",
     diaShort: "QUI",
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
   },
-  { dia: "Sexta", diaShort: "SEX", abre: "09:00", fecha: "18:00", ativo: true },
   {
+    diaSemana: 5,
+    dia: "Sexta",
+    diaShort: "SEX",
+    abre: "09:00",
+    fecha: "18:00",
+    ativo: true,
+  },
+  {
+    diaSemana: 6,
     dia: "Sábado",
     diaShort: "SAB",
     abre: "08:00",
     fecha: "17:00",
     ativo: true,
   },
-  { dia: "Domingo", diaShort: "DOM", abre: null, fecha: null, ativo: false },
+  {
+    diaSemana: 0,
+    dia: "Domingo",
+    diaShort: "DOM",
+    abre: null,
+    fecha: null,
+    ativo: false,
+  },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 /**
- * Sub-tela de jornada de trabalho (Phase 1 — local state only).
- * O PUT /me/jornada está pendente para Phase 2.
- * Salvar chama apenas router.back().
+ * Sub-tela de jornada de trabalho.
+ * Salvar persiste via POST /agenda/jornada/:barbeiroId por dia ativo.
  */
 export default function JornadaScreen() {
   const { palette, spacing, typography, radius } = useTheme();
   const [jornada, setJornada] = useState<DiaJornada[]>(INITIAL_JORNADA);
+  const [erro, setErro] = useState<string | null>(null);
+  const { mutate, isPending } = useSalvarJornada();
 
   const toggleDia = useCallback((index: number, value: boolean) => {
     setJornada((prev) =>
       prev.map((d, i) => (i === index ? { ...d, ativo: value } : d)),
     );
   }, []);
+
+  const handleSalvar = useCallback(() => {
+    setErro(null);
+    mutate(
+      jornada.map((d) => ({
+        dia: d.diaSemana,
+        inicio: d.abre ?? "09:00",
+        fim: d.fecha ?? "18:00",
+        ativo: d.ativo,
+      })),
+      {
+        onSuccess: () => router.back(),
+        onError: (e) =>
+          setErro(e.message ?? "Erro ao salvar jornada. Tente novamente."),
+      },
+    );
+  }, [jornada, mutate]);
 
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
@@ -271,7 +317,27 @@ export default function JornadaScreen() {
           },
         ]}
       >
-        <AmberButton label="Salvar mudanças" onPress={() => router.back()} />
+        {erro ? (
+          <Text
+            testID="jornada-error"
+            style={[
+              typography.caption,
+              {
+                color: palette.danger,
+                marginBottom: spacing.sm,
+                textAlign: "center",
+              },
+            ]}
+          >
+            {erro}
+          </Text>
+        ) : null}
+        <AmberButton
+          testID="btn-salvar-jornada"
+          label="Salvar mudanças"
+          onPress={handleSalvar}
+          loading={isPending}
+        />
       </View>
     </View>
   );
