@@ -2,6 +2,8 @@
 
 import React from "react";
 import { useAuth } from "@/shared/hooks/use-auth";
+import { RequireRole } from "@/shared/components/RequireRole";
+import { Perfil } from "@/shared/config/roles";
 import { useDashboardOverview } from "@/features/dashboard/hooks/use-dashboard-overview";
 import { MetricsGrid } from "@/features/dashboard/components/MetricsGrid";
 import { LiveStatusCard } from "@/features/dashboard/components/LiveStatusCard";
@@ -22,7 +24,7 @@ import { DashboardSkeleton } from "@/features/dashboard/components/DashboardSkel
  * com 6 seções inline e arrays mockados; agora é um shell de ~60
  * linhas.
  */
-export default function DashboardPage(): React.JSX.Element {
+function DashboardContent(): React.JSX.Element {
   const { barbearia } = useAuth();
   const { data, isPending, isError, error, refetch } = useDashboardOverview(
     barbearia?.codigo ?? null,
@@ -71,5 +73,20 @@ export default function DashboardPage(): React.JSX.Element {
       <ServicosPopulares servicos={data.servicos} />
       <AcoesRapidas />
     </div>
+  );
+}
+
+export default function DashboardPage(): React.JSX.Element {
+  return (
+    <RequireRole
+      roles={[
+        Perfil.DONO,
+        Perfil.GERENTE,
+        Perfil.BARBEIRO,
+        Perfil.RECEPCIONISTA,
+      ]}
+    >
+      <DashboardContent />
+    </RequireRole>
   );
 }

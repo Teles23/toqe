@@ -65,7 +65,10 @@ describe('AgendaService', () => {
   });
 
   describe('getAvailableSlots', () => {
+    const MEMBRO_TENANT = { usrCodigo: 5, barCodigo: 1, perfil: 'barbeiro' };
+
     it('retorna slots livres sem conflitos', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
       mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
         inicio: '09:00',
@@ -88,6 +91,7 @@ describe('AgendaService', () => {
     });
 
     it('retorna lista vazia quando barbeiro nao tem jornada no dia', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
       mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(null);
 
@@ -102,6 +106,7 @@ describe('AgendaService', () => {
     });
 
     it('exclui slots ocupados por agendamentos existentes', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
       mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
         inicio: '09:00',
@@ -129,6 +134,7 @@ describe('AgendaService', () => {
     });
 
     it('exclui slots durante horario de almoco', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
       mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 60 });
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
         inicio: '09:00',
@@ -152,11 +158,20 @@ describe('AgendaService', () => {
       expect(result).not.toContain('12:00');
     });
 
-    it('lanca erro quando barbearia nao existe', async () => {
-      mockPrisma.barbearia.findUnique.mockResolvedValue(null);
+    it('lanca NotFoundException quando barbeiro nao pertence ao tenant', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
 
       await expect(
         service.getAvailableSlots(5, 999, '2025-01-06T15:00:00', 30),
+      ).rejects.toThrow('Barbeiro não encontrado nesta barbearia');
+    });
+
+    it('lanca erro quando barbearia nao existe (barbeiro valido)', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
+      mockPrisma.barbearia.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getAvailableSlots(5, 1, '2025-01-06T15:00:00', 30),
       ).rejects.toThrow('Barbearia not found');
     });
   });

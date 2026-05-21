@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
@@ -46,9 +46,10 @@ export class AgendaService {
     });
   }
 
-  getJornada(barbeiroId: number) {
+  getJornada(barbeiroId: number, barCodigo: number) {
+    // barCodigo garante isolamento de tenant: barbeiroId de outro tenant retorna []
     return this.prisma.jornadaTrabalho.findMany({
-      where: { barbeiroId },
+      where: { barbeiroId, barCodigo },
       orderBy: { diaSemana: 'asc' },
     });
   }
@@ -69,10 +70,17 @@ export class AgendaService {
     });
   }
 
-  getBloqueios(barbeiroId: number, dataInicio: string, dataFim: string) {
+  getBloqueios(
+    barbeiroId: number,
+    barCodigo: number,
+    dataInicio: string,
+    dataFim: string,
+  ) {
+    // barCodigo garante isolamento de tenant
     return this.prisma.bloqueioAgenda.findMany({
       where: {
         barbeiroId,
+        barCodigo,
         inicio: { gte: new Date(dataInicio) },
         fim: { lte: new Date(dataFim) },
       },
@@ -87,6 +95,18 @@ export class AgendaService {
   ) {
     const targetDate = new Date(dateStr);
     const dayOfWeek = getDay(targetDate);
+
+    // Valida que barbeiroId pertence ao tenant (barCodigo) — impede cross-tenant leak
+    const membroDoTenant = await this.prisma.membroBarbearia.findFirst({
+      where: {
+        usrCodigo: barbeiroId,
+        barCodigo,
+        perfil: { in: ['barbeiro', 'dono', 'gerente'] },
+      },
+    });
+    if (!membroDoTenant) {
+      throw new NotFoundException('Barbeiro não encontrado nesta barbearia');
+    }
 
     const barbearia = await this.prisma.barbearia.findUnique({
       where: { codigo: barCodigo },

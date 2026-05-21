@@ -101,20 +101,22 @@ describe('MembroBarbeariaService', () => {
         usuario: { codigo: 5, nome: 'X', email: 'x@x.com' },
       });
 
-      const result = await service.convidarMembro(1, {
-        email: 'x@x.com',
-        perfil: PerfilMembro.BARBEIRO,
-      });
+      const result = await service.convidarMembro(
+        1,
+        { email: 'x@x.com', perfil: PerfilMembro.BARBEIRO },
+        'dono',
+      );
       expect(result).toHaveProperty('perfil', 'barbeiro');
     });
 
     it('lança NotFoundException se usuário não existe', async () => {
       mockPrisma.usuario.findUnique.mockResolvedValue(null);
       await expect(
-        service.convidarMembro(1, {
-          email: 'nope@x.com',
-          perfil: PerfilMembro.BARBEIRO,
-        }),
+        service.convidarMembro(
+          1,
+          { email: 'nope@x.com', perfil: PerfilMembro.BARBEIRO },
+          'dono',
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -125,10 +127,11 @@ describe('MembroBarbeariaService', () => {
         usrCodigo: 5,
       });
       await expect(
-        service.convidarMembro(1, {
-          email: 'x@x.com',
-          perfil: PerfilMembro.BARBEIRO,
-        }),
+        service.convidarMembro(
+          1,
+          { email: 'x@x.com', perfil: PerfilMembro.BARBEIRO },
+          'dono',
+        ),
       ).rejects.toThrow(ConflictException);
     });
   });

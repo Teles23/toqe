@@ -94,7 +94,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading: false,
       }));
       return true;
-    } catch {
+    } catch (e) {
+      // 401 (token inválido / usuário inativo): limpa tokens e redireciona
+      // para login em vez de deixar o app preso em estado indefinido.
+      if (e instanceof ApiError && e.status === 401) {
+        await TokenStorage.clearTokens();
+        setState((prev) => ({ ...prev, loading: false }));
+        router.replace("/(auth)/login");
+        return false;
+      }
       setState((prev) => ({ ...prev, loading: false }));
       return false;
     }

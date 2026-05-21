@@ -53,5 +53,10 @@ export function isPublicRoute(pathname: string): boolean {
   ) {
     return true;
   }
+  // Booking público (ex: /b/minha-barbearia/...)
+  if (pathname.startsWith("/b/")) return true;
+  // Portal do super admin — RequireSuperAdmin controla o acesso client-side;
+  // o proxy não pode validar o claim superAdmin (não está no cookie)
+  if (pathname.startsWith("/admin")) return true;
   return false;
 }

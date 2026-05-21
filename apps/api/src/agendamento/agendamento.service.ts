@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -205,8 +206,10 @@ export class AgendamentoService {
     barCodigo: number,
   ) {
     await this.findOne(codigo, barCodigo);
+    // Inclui barCodigo no update para evitar TOCTOU: garante que o registro
+    // continua sendo do mesmo tenant mesmo com concorrência
     const atualizado = await this.prisma.agendamento.update({
-      where: { codigo },
+      where: { codigo, barCodigo },
       data: { status: dto.status },
       include: INCLUDE_COMPLETO,
     });
@@ -217,8 +220,19 @@ export class AgendamentoService {
     return atualizado;
   }
 
-  async cancel(codigo: number, barCodigo: number) {
+  async cancel(codigo: number, barCodigo: number, callerUserId?: number) {
     const agendamento = await this.findOne(codigo, barCodigo);
+
+    // Cliente só pode cancelar seus próprios agendamentos
+    if (callerUserId !== undefined) {
+      const clienteCodigo = (agendamento.cliente as { codigo: number } | null)
+        ?.codigo;
+      if (clienteCodigo !== callerUserId) {
+        throw new ForbiddenException(
+          'Você só pode cancelar seus próprios agendamentos',
+        );
+      }
+    }
 
     if (
       (agendamento.status as StatusAgendamento) === StatusAgendamento.CANCELADO
@@ -226,10 +240,26 @@ export class AgendamentoService {
       throw new BadRequestException('Agendamento já está cancelado');
     }
 
+    // Inclui barCodigo no update para garantir isolamento (TOCTOU)
     return this.prisma.agendamento.update({
-      where: { codigo },
+      where: { codigo, barCodigo },
       data: { status: StatusAgendamento.CANCELADO },
       include: INCLUDE_COMPLETO,
     });
+  }
+
+  async findOneForCliente(
+    codigo: number,
+    barCodigo: number,
+    callerUserId: number,
+  ) {
+    const agendamento = await this.findOne(codigo, barCodigo);
+    const clienteCodigo = (agendamento.cliente as { codigo: number } | null)
+      ?.codigo;
+    if (clienteCodigo !== callerUserId) {
+      // Retorna 404 em vez de 403: não revela que o agendamento existe
+      throw new NotFoundException('Agendamento não encontrado');
+    }
+    return agendamento;
   }
 }

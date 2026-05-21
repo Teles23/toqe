@@ -39,20 +39,30 @@ describe('AgendaController', () => {
     it('delega para agendaService.upsertJornada com barbeiroId e barCodigo convertidos', () => {
       const dto = { diaSemana: 1, inicio: '09:00', fim: '18:00' };
       mockAgendaService.upsertJornada.mockResolvedValue({});
+      const req = { user: { sub: 5, perfil: 'barbeiro' } } as never;
 
-      void controller.configurarJornada(5, '3', dto as never);
+      void controller.configurarJornada(5, '3', dto as never, req);
 
       expect(mockAgendaService.upsertJornada).toHaveBeenCalledWith(5, 3, dto);
+    });
+
+    it('lança ForbiddenException se barbeiro tenta alterar jornada de outro', () => {
+      const dto = { diaSemana: 1, inicio: '09:00', fim: '18:00' };
+      const req = { user: { sub: 99, perfil: 'barbeiro' } } as never;
+
+      expect(() =>
+        controller.configurarJornada(5, '3', dto as never, req),
+      ).toThrow('Barbeiro só pode configurar sua própria jornada de trabalho');
     });
   });
 
   describe('obterJornada', () => {
-    it('delega para agendaService.getJornada com barbeiroId', () => {
+    it('delega para agendaService.getJornada com barbeiroId e barCodigo', () => {
       mockAgendaService.getJornada.mockResolvedValue([]);
 
-      void controller.obterJornada(5);
+      void controller.obterJornada(5, '3');
 
-      expect(mockAgendaService.getJornada).toHaveBeenCalledWith(5);
+      expect(mockAgendaService.getJornada).toHaveBeenCalledWith(5, 3);
     });
   });
 
@@ -63,10 +73,23 @@ describe('AgendaController', () => {
         fim: '2024-06-01T13:00:00Z',
       };
       mockAgendaService.createBloqueio.mockResolvedValue({ codigo: 1 });
+      const req = { user: { sub: 5, perfil: 'dono' } } as never;
 
-      void controller.criarBloqueio(5, '3', dto as never);
+      void controller.criarBloqueio(5, '3', dto as never, req);
 
       expect(mockAgendaService.createBloqueio).toHaveBeenCalledWith(5, 3, dto);
+    });
+
+    it('lança ForbiddenException se barbeiro tenta bloquear agenda de outro', () => {
+      const dto = {
+        inicio: '2024-06-01T12:00:00Z',
+        fim: '2024-06-01T13:00:00Z',
+      };
+      const req = { user: { sub: 99, perfil: 'barbeiro' } } as never;
+
+      expect(() => controller.criarBloqueio(5, '3', dto as never, req)).toThrow(
+        'Barbeiro só pode bloquear sua própria agenda',
+      );
     });
   });
 

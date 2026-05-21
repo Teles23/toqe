@@ -2,6 +2,7 @@
 // Use import direto do submódulo (`@toqe/contracts/schemas/auth`) quando quiser
 // minimizar bundle no frontend; este barrel é conveniente para o backend.
 
+export * from "./admin";
 export * from "./agenda";
 export * from "./agendamento";
 export * from "./auth";
