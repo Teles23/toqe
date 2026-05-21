@@ -18,6 +18,7 @@ import { AgendamentoService } from './agendamento.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
+import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -178,6 +179,28 @@ export class AgendamentoController {
       codigo,
       Number(barCodigo),
       callerUserId,
+    );
+  }
+
+  @Post(':codigo/avaliacao')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Avalia um agendamento concluído (nota 1-5)' })
+  @ApiResponse({ status: 200, description: 'Avaliação registrada.' })
+  @ApiResponse({ status: 400, description: 'Agendamento não está concluído.' })
+  @ApiResponse({ status: 404, description: 'Agendamento não encontrado.' })
+  @ApiResponse({ status: 409, description: 'Agendamento já foi avaliado.' })
+  avaliar(
+    @Param('codigo', ParseIntPipe) codigo: number,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Body() dto: CreateAvaliacaoDto,
+    @Request() req: TenantRequest,
+  ) {
+    return this.agendamentoService.avaliarAgendamento(
+      codigo,
+      Number(barCodigo),
+      req.user.sub,
+      dto,
     );
   }
 }

@@ -26,6 +26,11 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// useBarbeiroStats — retorna undefined por padrão (stats não carregadas)
+jest.mock("@/src/shared/hooks/barbeiro/use-barbeiro-stats", () => ({
+  useBarbeiroStats: () => ({ data: undefined, isLoading: false }),
+}));
+
 import { Alert } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";

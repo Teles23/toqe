@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
@@ -261,5 +262,45 @@ export class AgendamentoService {
       throw new NotFoundException('Agendamento não encontrado');
     }
     return agendamento;
+  }
+
+  async avaliarAgendamento(
+    codigo: number,
+    barCodigo: number,
+    callerUserId: number,
+    dto: CreateAvaliacaoDto,
+  ) {
+    const agendamento = await this.findOne(codigo, barCodigo);
+
+    const clienteCodigo = (agendamento.cliente as { codigo: number } | null)
+      ?.codigo;
+    if (clienteCodigo !== callerUserId) {
+      throw new NotFoundException('Agendamento não encontrado');
+    }
+
+    if (
+      (agendamento.status as StatusAgendamento) !== StatusAgendamento.CONCLUIDO
+    ) {
+      throw new BadRequestException(
+        'Só é possível avaliar agendamentos concluídos',
+      );
+    }
+
+    const jaAvaliado = await this.prisma.avaliacaoAgendamento.findUnique({
+      where: { agendamentoCodigo: codigo },
+    });
+    if (jaAvaliado) {
+      throw new ConflictException('Este agendamento já foi avaliado');
+    }
+
+    await this.prisma.avaliacaoAgendamento.create({
+      data: {
+        agendamentoCodigo: codigo,
+        nota: dto.nota,
+        comentario: dto.comentario,
+      },
+    });
+
+    return { sucesso: true };
   }
 }

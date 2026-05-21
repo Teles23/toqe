@@ -26,12 +26,96 @@ jest.mock("@/src/shared/hooks/barbeiro/use-agendamento-atual", () => ({
   useAgendamentoAtual: jest.fn().mockReturnValue({ data: null }),
 }));
 
+jest.mock("@/src/shared/hooks/barbeiro/use-criar-bloqueio", () => ({
+  useCriarBloqueio: jest.fn(),
+}));
+
+// Stubs leves para sheets testados em arquivo próprio
+jest.mock("@/src/features/barbeiro/ActionMenuSheet", () => {
+  const RN = jest.requireActual("react-native");
+  return {
+    ActionMenuSheet: ({
+      visible,
+      onWalkin,
+      onBloqueio,
+    }: {
+      visible: boolean;
+      onClose: () => void;
+      onWalkin: () => void;
+      onBloqueio: () => void;
+    }) =>
+      visible ? (
+        <RN.View testID="action-menu-sheet">
+          <RN.Text testID="menu-walkin-btn" onPress={onWalkin}>
+            walk-in
+          </RN.Text>
+          <RN.Text testID="menu-bloqueio-btn" onPress={onBloqueio}>
+            bloqueio
+          </RN.Text>
+        </RN.View>
+      ) : null,
+  };
+});
+
+jest.mock("@/src/features/barbeiro/AppointmentDetailSheet", () => {
+  const RN = jest.requireActual("react-native");
+  return {
+    AppointmentDetailSheet: ({
+      visible,
+      agendamento,
+      onAction,
+    }: {
+      visible: boolean;
+      agendamento: { codigo: number; cliente: { nome: string } } | null;
+      onClose: () => void;
+      onAction: (a: string) => void;
+    }) =>
+      visible && agendamento ? (
+        <RN.View testID="detail-sheet">
+          <RN.Text>{agendamento.cliente.nome}</RN.Text>
+          <RN.Text
+            testID="action-aceitar-btn"
+            onPress={() => onAction("aceitar")}
+          >
+            aceitar
+          </RN.Text>
+        </RN.View>
+      ) : null,
+  };
+});
+
+jest.mock("@/src/features/barbeiro/BloqueioSheet", () => {
+  const RN = jest.requireActual("react-native");
+  return {
+    BloqueioSheet: ({
+      visible,
+    }: {
+      visible: boolean;
+      onClose: () => void;
+      onConfirm: (d: unknown) => void;
+    }) => (visible ? <RN.View testID="bloqueio-sheet" /> : null),
+  };
+});
+
+jest.mock("@/src/features/barbeiro/AdicionarWalkInModal", () => {
+  const RN = jest.requireActual("react-native");
+  return {
+    AdicionarWalkInModal: ({
+      visible,
+    }: {
+      visible: boolean;
+      onClose: () => void;
+    }) => (visible ? <RN.View testID="walkin-modal" /> : null),
+  };
+});
+
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { addDays, format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import React from "react";
 
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
+import { useCriarBloqueio } from "@/src/shared/hooks/barbeiro/use-criar-bloqueio";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import type { AgendamentoResponse } from "@toqe/shared";
 
@@ -42,6 +126,9 @@ const mockUseAgendaDia = useAgendaDia as jest.MockedFunction<
 >;
 const mockUseUpdateStatus = useUpdateStatus as jest.MockedFunction<
   typeof useUpdateStatus
+>;
+const mockUseCriarBloqueio = useCriarBloqueio as jest.MockedFunction<
+  typeof useCriarBloqueio
 >;
 
 function makeAgendamento(
@@ -85,6 +172,11 @@ describe("BarbeiroAgendaScreen", () => {
     mockUseUpdateStatus.mockReturnValue({
       mutate: jest.fn(),
     } as unknown as ReturnType<typeof useUpdateStatus>);
+    mockUseCriarBloqueio.mockReset();
+    mockUseCriarBloqueio.mockReturnValue({
+      mutate: jest.fn(),
+      isPending: false,
+    } as unknown as ReturnType<typeof useCriarBloqueio>);
   });
 
   it("mostra loading state inicial", () => {
@@ -192,5 +284,97 @@ describe("BarbeiroAgendaScreen", () => {
     render(<BarbeiroAgendaScreen />);
     const hojeShort = format(new Date(), "EEE, dd 'de' MMM", { locale: ptBR });
     expect(screen.getByText(new RegExp(hojeShort))).toBeTruthy();
+  });
+
+  it("FAB está presente na tela", () => {
+    mockUseAgendaDia.mockReturnValue(mockQueryResult({ data: [] }));
+    render(<BarbeiroAgendaScreen />);
+    expect(screen.getByTestId("fab-adicionar")).toBeTruthy();
+  });
+
+  it("FAB abre ActionMenuSheet ao pressionar", () => {
+    mockUseAgendaDia.mockReturnValue(mockQueryResult({ data: [] }));
+    render(<BarbeiroAgendaScreen />);
+    expect(screen.queryByTestId("action-menu-sheet")).toBeNull();
+    fireEvent.press(screen.getByTestId("fab-adicionar"));
+    expect(screen.getByTestId("action-menu-sheet")).toBeTruthy();
+  });
+
+  it("action menu → walk-in abre AdicionarWalkInModal", () => {
+    mockUseAgendaDia.mockReturnValue(mockQueryResult({ data: [] }));
+    render(<BarbeiroAgendaScreen />);
+    fireEvent.press(screen.getByTestId("fab-adicionar"));
+    fireEvent.press(screen.getByTestId("menu-walkin-btn"));
+    expect(screen.getByTestId("walkin-modal")).toBeTruthy();
+  });
+
+  it("action menu → bloqueio abre BloqueioSheet", () => {
+    mockUseAgendaDia.mockReturnValue(mockQueryResult({ data: [] }));
+    render(<BarbeiroAgendaScreen />);
+    fireEvent.press(screen.getByTestId("fab-adicionar"));
+    fireEvent.press(screen.getByTestId("menu-bloqueio-btn"));
+    expect(screen.getByTestId("bloqueio-sheet")).toBeTruthy();
+  });
+
+  it("tap em agendamento abre AppointmentDetailSheet", () => {
+    mockUseAgendaDia.mockReturnValue(
+      mockQueryResult({
+        data: [
+          makeAgendamento({
+            codigo: 5,
+            cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+          }),
+        ],
+      }),
+    );
+    render(<BarbeiroAgendaScreen />);
+    expect(screen.queryByTestId("detail-sheet")).toBeNull();
+    fireEvent.press(screen.getByTestId("agenda-row-5"));
+    expect(screen.getByTestId("detail-sheet")).toBeTruthy();
+    // "Pedro" aparece tanto na row quanto no sheet stub — verifica via getAllByText
+    expect(screen.getAllByText("Pedro").length).toBeGreaterThan(0);
+  });
+
+  it("stats strip exibe contadores quando há agendamentos", () => {
+    mockUseAgendaDia.mockReturnValue(
+      mockQueryResult({
+        data: [
+          makeAgendamento({ codigo: 1, status: "concluido" }),
+          makeAgendamento({ codigo: 2, status: "pendente" }),
+        ],
+      }),
+    );
+    render(<BarbeiroAgendaScreen />);
+    expect(screen.getByTestId("stats-strip")).toBeTruthy();
+    // Pelo menos um dos contadores "1" deve estar presente
+    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("stats strip não aparece quando lista vazia", () => {
+    mockUseAgendaDia.mockReturnValue(mockQueryResult({ data: [] }));
+    render(<BarbeiroAgendaScreen />);
+    expect(screen.queryByTestId("stats-strip")).toBeNull();
+  });
+
+  it("ação aceitar no detail sheet chama updateStatus com 'confirmado'", () => {
+    const mutateFn = jest.fn();
+    mockUseUpdateStatus.mockReturnValue({
+      mutate: mutateFn,
+    } as unknown as ReturnType<typeof useUpdateStatus>);
+    mockUseAgendaDia.mockReturnValue(
+      mockQueryResult({
+        data: [
+          makeAgendamento({
+            codigo: 8,
+            status: "pendente",
+            cliente: { usrCodigo: 42, nome: "Lucas", telefone: null },
+          }),
+        ],
+      }),
+    );
+    render(<BarbeiroAgendaScreen />);
+    fireEvent.press(screen.getByTestId("agenda-row-8"));
+    fireEvent.press(screen.getByTestId("action-aceitar-btn"));
+    expect(mutateFn).toHaveBeenCalledWith({ codigo: 8, status: "confirmado" });
   });
 });

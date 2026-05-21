@@ -1,154 +1,324 @@
-import { addDays, format, isSameDay, isToday, subDays } from "date-fns";
+/**
+ * BarbeiroAgendaScreen — Agenda do Dia (Urban Flow v2).
+ *
+ * Redesign pixel-accurate do protótipo Claude Design:
+ *  - Header: dia da semana (Sora 700 24px capitalize) + data (📅 12px #888888) + botão filtro 44×44
+ *  - Nav prev/next: 40×40 borderRadius 20 bg #1c1c1c border #262626
+ *  - Stats strip: concluídos · pendentes · próximo
+ *  - Lista densa com AgendaRow (coluna de horário 48px + dot de status + dados)
+ *  - Divider "AGORA" com dot âmbar pulsante
+ *  - FAB amber 56×56 bottom:80 right:18 com shadow âmbar
+ *  - Tap na linha → AppointmentDetailSheet (ações por status)
+ */
+
+import {
+  addDays,
+  format,
+  isSameDay,
+  isToday,
+  parseISO,
+  subDays,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { AgendamentoCard } from "@/src/features/barbeiro/AgendamentoCard";
+import { ActionMenuSheet } from "@/src/features/barbeiro/ActionMenuSheet";
+import { AgendaRow } from "@/src/features/barbeiro/AgendaRow";
+import { AppointmentDetailSheet } from "@/src/features/barbeiro/AppointmentDetailSheet";
+import { BloqueioSheet } from "@/src/features/barbeiro/BloqueioSheet";
+import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInModal";
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
-import { useAgendamentoAtual } from "@/src/shared/hooks/barbeiro/use-agendamento-atual";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
+import { useCriarBloqueio } from "@/src/shared/hooks/barbeiro/use-criar-bloqueio";
 import { useTheme } from "@/src/shared/theme";
-import { DataListWrapper, ScreenHeader } from "@/src/shared/ui";
-import type { StatusAgendamento } from "@toqe/shared";
+import { DataListWrapper } from "@/src/shared/ui";
+import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
+
+import type { DetailAction } from "@/src/features/barbeiro/AppointmentDetailSheet";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Determina se um agendamento está no passado em relação ao momento atual. */
+function isPast(apt: AgendamentoResponse): boolean {
+  return parseISO(apt.fim) < new Date();
+}
+
+// ─── Sub-componentes ──────────────────────────────────────────────────────────
+
+function StatsStrip({ apts }: { apts: AgendamentoResponse[] }) {
+  const { palette } = useTheme();
+
+  const concluidos = apts.filter((a) => a.status === "concluido").length;
+  const pendentes = apts.filter((a) => a.status === "pendente").length;
+  const proxima = apts.find((a) => a.status === "confirmado" && !isPast(a));
+
+  return (
+    <View testID="stats-strip" style={statsStyles.strip}>
+      <View style={statsStyles.item}>
+        <View style={[statsStyles.dot, { backgroundColor: palette.success }]} />
+        <Text style={[statsStyles.num, { color: palette.text }]}>
+          {concluidos}
+        </Text>
+        <Text style={[statsStyles.label, { color: "#888888" }]}>
+          {concluidos === 1 ? "atendido" : "atendidos"}
+        </Text>
+      </View>
+
+      <View style={statsStyles.item}>
+        <View style={[statsStyles.dot, { backgroundColor: "#F4B400" }]} />
+        <Text style={[statsStyles.num, { color: palette.text }]}>
+          {pendentes}
+        </Text>
+        <Text style={[statsStyles.label, { color: "#888888" }]}>
+          {pendentes === 1 ? "pendente" : "pendentes"}
+        </Text>
+      </View>
+
+      {proxima && (
+        <View style={[statsStyles.item, { marginLeft: "auto" }]}>
+          <Text
+            style={[statsStyles.label, { color: "#F4B400", fontWeight: "600" }]}
+          >
+            ⏱ próx · {format(parseISO(proxima.inicio), "HH:mm")}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const statsStyles = StyleSheet.create({
+  strip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingHorizontal: 22,
+    paddingBottom: 8,
+    flexShrink: 0,
+  },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  num: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+  },
+  label: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+  },
+});
+
+function NowDivider() {
+  const timeStr = format(new Date(), "HH:mm");
+  return (
+    <View testID="now-divider" style={nowStyles.wrap}>
+      <View style={nowStyles.line} />
+      <View style={nowStyles.pill}>
+        <View style={nowStyles.dot} />
+        <Text style={nowStyles.text}>AGORA · {timeStr}</Text>
+      </View>
+      <View style={nowStyles.line} />
+    </View>
+  );
+}
+
+const nowStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginVertical: 10,
+    paddingHorizontal: 4,
+  },
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#F4B40055",
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: "#F4B4001a",
+    borderRadius: 100,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#F4B400",
+  },
+  text: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 9,
+    color: "#F4B400",
+    letterSpacing: 1.5 * 0.09,
+    textTransform: "uppercase",
+  },
+});
+
+// ─── Tela principal ───────────────────────────────────────────────────────────
 
 export default function BarbeiroAgendaScreen() {
-  const { palette, spacing, radius, typography, a11y } = useTheme();
+  const { palette, spacing } = useTheme();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data, isLoading, isRefetching, refetch, isError } =
     useAgendaDia(selectedDate);
-  const updateStatus = useUpdateStatus();
-  const { data: atual } = useAgendamentoAtual();
 
-  const handleChangeStatus = useCallback(
-    (codigo: number, status: Exclude<StatusAgendamento, "pendente">) => {
-      updateStatus.mutate({ codigo, status });
-    },
-    [updateStatus],
+  const updateStatus = useUpdateStatus();
+  const criarBloqueio = useCriarBloqueio();
+
+  const [selectedApt, setSelectedApt] = useState<AgendamentoResponse | null>(
+    null,
   );
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [walkinOpen, setWalkinOpen] = useState(false);
+  const [bloqueioOpen, setBloqueioOpen] = useState(false);
 
   const goPrev = useCallback(() => setSelectedDate((d) => subDays(d, 1)), []);
   const goNext = useCallback(() => setSelectedDate((d) => addDays(d, 1)), []);
   const goToday = useCallback(() => setSelectedDate(new Date()), []);
 
-  const dayLabel = isToday(selectedDate)
-    ? `Hoje · ${format(selectedDate, "EEE, dd 'de' MMM", { locale: ptBR })}`
-    : format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
+  // Determinação do "próximo" agendamento — o primeiro confirmado no futuro
+  const nextAptId = data?.find(
+    (a) => a.status === "confirmado" && !isPast(a),
+  )?.codigo;
 
-  const navBtnStyle = ({ pressed }: { pressed: boolean }) => [
-    {
-      width: a11y.minTouch,
-      height: a11y.minTouch,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      backgroundColor: palette.surface,
-      borderColor: palette.borderStrong,
-      alignItems: "center" as const,
-      justifyContent: "center" as const,
+  // Índice onde inserir o divider "AGORA" (para hoje)
+  const nowDividerIndex =
+    isSameDay(selectedDate, new Date()) && data
+      ? data.findLastIndex((a) => isPast(a))
+      : -1;
+
+  const handleRowTap = useCallback((apt: AgendamentoResponse) => {
+    setSelectedApt(apt);
+    setDetailOpen(true);
+  }, []);
+
+  const handleDetailAction = useCallback(
+    (action: DetailAction) => {
+      if (!selectedApt) return;
+
+      type UpdatableStatus = Exclude<StatusAgendamento, "pendente">;
+      const statusMap: Partial<Record<DetailAction, UpdatableStatus>> = {
+        aceitar: "confirmado",
+        iniciar: "confirmado",
+        concluir: "concluido",
+        no_show: "no_show",
+      };
+
+      const newStatus = statusMap[action];
+      if (newStatus) {
+        updateStatus.mutate({ codigo: selectedApt.codigo, status: newStatus });
+      }
+
+      setDetailOpen(false);
     },
-    pressed && styles.pressed,
-  ];
-
-  const dayNav = (
-    <View style={[styles.dayNav, { gap: spacing.sm }]}>
-      <Pressable
-        onPress={goPrev}
-        accessibilityRole="button"
-        accessibilityLabel="Dia anterior"
-        style={navBtnStyle}
-      >
-        <Text style={[styles.navArrow, { color: palette.text }]}>‹</Text>
-      </Pressable>
-
-      <Pressable
-        onPress={goToday}
-        accessibilityRole="button"
-        accessibilityLabel="Ir para hoje"
-        style={({ pressed }) => [
-          {
-            flex: 1,
-            height: a11y.minTouch,
-            borderRadius: radius.md,
-            borderWidth: 1,
-            backgroundColor: palette.surface,
-            borderColor: palette.borderStrong,
-            alignItems: "center" as const,
-            justifyContent: "center" as const,
-            paddingHorizontal: 12,
-          },
-          pressed && styles.pressed,
-        ]}
-      >
-        <Text
-          style={[
-            typography.label,
-            { color: palette.text, textAlign: "center" },
-          ]}
-          numberOfLines={1}
-        >
-          {dayLabel}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        onPress={goNext}
-        accessibilityRole="button"
-        accessibilityLabel="Próximo dia"
-        style={navBtnStyle}
-      >
-        <Text style={[styles.navArrow, { color: palette.text }]}>›</Text>
-      </Pressable>
-    </View>
+    [selectedApt, updateStatus],
   );
+
+  const handleBloqueioConfirm = useCallback(
+    (bloqueioData: {
+      motivo: string;
+      duration: number;
+      recorrente: boolean;
+    }) => {
+      criarBloqueio.mutate(bloqueioData, {
+        onSettled: () => setBloqueioOpen(false),
+      });
+    },
+    [criarBloqueio],
+  );
+
+  // ── Header: dia da semana + data + botão filtro ──────────────────────────
+  // hojeShort é o formato curto esperado pelos testes: "qui, 21 de mai"
+  const hojeShort = format(selectedDate, "EEE, dd 'de' MMM", { locale: ptBR });
+  const diaSemana = isToday(selectedDate)
+    ? "Hoje"
+    : format(selectedDate, "EEEE", { locale: ptBR });
 
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
-      <ScreenHeader title="Agenda" subheader={dayNav} />
+      {/* Header */}
+      <View style={[styles.headerWrap, { paddingHorizontal: spacing.md }]}>
+        {/* Linha superior: dia da semana + botão filtro */}
+        <View style={styles.headerTop}>
+          {/* Nav prev */}
+          <Pressable
+            onPress={goPrev}
+            accessibilityRole="button"
+            accessibilityLabel="Dia anterior"
+            style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
+          >
+            <Text style={[styles.navArrow, { color: palette.text }]}>‹</Text>
+          </Pressable>
 
-      {atual ? (
-        <View
-          style={{
-            marginHorizontal: spacing.md,
-            marginBottom: spacing.sm,
-            padding: spacing.sm + 2,
-            backgroundColor: palette.primary + "20",
-            borderRadius: radius.md,
-            borderLeftWidth: 3,
-            borderLeftColor: palette.primary,
-          }}
-          testID="card-agora"
-        >
-          <Text
-            style={{
-              ...typography.label,
-              color: palette.primary,
-              fontSize: 11,
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-            }}
+          {/* Centro: dia da semana + data curta — tap volta para hoje */}
+          <Pressable
+            onPress={goToday}
+            accessibilityRole="button"
+            accessibilityLabel="Ir para hoje"
+            style={({ pressed }) => [
+              styles.centerBtn,
+              pressed && styles.pressed,
+            ]}
           >
-            Em atendimento agora
-          </Text>
-          <Text
-            style={{
-              ...typography.bodyBold,
-              color: palette.text,
-              marginTop: 2,
-            }}
-            numberOfLines={1}
-          >
-            {atual.cliente.nome}
-          </Text>
-          <Text
-            style={{ ...typography.caption, color: palette.textMuted }}
-            numberOfLines={1}
-          >
-            {atual.itens[0]?.servico.nome ?? "Serviço"}
-          </Text>
+            <Text style={styles.dayName} numberOfLines={1}>
+              {diaSemana}
+            </Text>
+            <View style={styles.dateRow}>
+              <Text style={styles.dateIcon}>📅</Text>
+              {/* hojeShort inclui dia abreviado + data: "qui, 21 de mai" */}
+              <Text style={styles.dateText} numberOfLines={1}>
+                {hojeShort}
+              </Text>
+            </View>
+          </Pressable>
+
+          {/* Nav next + filtro */}
+          <View style={styles.rightBtns}>
+            <Pressable
+              onPress={goNext}
+              accessibilityRole="button"
+              accessibilityLabel="Próximo dia"
+              style={({ pressed }) => [
+                styles.navBtn,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.navArrow, { color: palette.text }]}>›</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Filtrar agenda"
+              style={({ pressed }) => [
+                styles.filterBtn,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.filterIcon}>≡</Text>
+            </Pressable>
+          </View>
         </View>
-      ) : null}
+      </View>
 
+      {/* Stats strip — só quando há dados */}
+      {data && data.length > 0 && <StatsStrip apts={data} />}
+
+      {/* Lista principal */}
       <DataListWrapper
         testID="lista-agendamentos"
         data={data}
@@ -156,6 +326,10 @@ export default function BarbeiroAgendaScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.md,
+          paddingBottom: 120,
+        }}
         emptyMessage={
           isSameDay(selectedDate, new Date())
             ? "Sem agendamentos para hoje."
@@ -163,24 +337,164 @@ export default function BarbeiroAgendaScreen() {
         }
         errorMessage="Não foi possível carregar a agenda. Puxe para tentar novamente."
         keyExtractor={(item) => String(item.codigo)}
-        renderItem={({ item }) => (
-          <AgendamentoCard
-            agendamento={item}
-            onChangeStatus={handleChangeStatus}
-          />
+        renderItem={({ item, index }) => (
+          <>
+            {/* Divider "AGORA" entre passado e futuro */}
+            {index === nowDividerIndex + 1 && nowDividerIndex >= 0 && (
+              <NowDivider />
+            )}
+            <AgendaRow
+              agendamento={item}
+              onPress={() => handleRowTap(item)}
+              isNext={item.codigo === nextAptId}
+              dim={isPast(item) && item.status === "concluido"}
+            />
+          </>
         )}
+      />
+
+      {/* FAB */}
+      <Pressable
+        testID="fab-adicionar"
+        onPress={() => setMenuOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Adicionar walk-in ou bloqueio"
+        style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.9 : 1 }]}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </Pressable>
+
+      {/* Sheets */}
+      <ActionMenuSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onWalkin={() => setWalkinOpen(true)}
+        onBloqueio={() => setBloqueioOpen(true)}
+      />
+
+      <AppointmentDetailSheet
+        agendamento={selectedApt}
+        visible={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onAction={handleDetailAction}
+      />
+
+      <BloqueioSheet
+        visible={bloqueioOpen}
+        onClose={() => setBloqueioOpen(false)}
+        onConfirm={handleBloqueioConfirm}
+        loading={criarBloqueio.isPending}
+      />
+
+      <AdicionarWalkInModal
+        visible={walkinOpen}
+        onClose={() => setWalkinOpen(false)}
       />
     </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  dayNav: { flexDirection: "row", alignItems: "center" },
+  headerWrap: {
+    paddingTop: 10,
+    paddingBottom: 8,
+    flexShrink: 0,
+  },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingBottom: 4,
+  },
+  centerBtn: {
+    flex: 1,
+    alignItems: "flex-start",
+    paddingHorizontal: 4,
+  },
+  dayName: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 24,
+    color: "#f5f5f5",
+    textTransform: "capitalize",
+    letterSpacing: -0.6,
+    lineHeight: 28,
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+  },
+  dateIcon: {
+    fontSize: 12,
+    color: "#888888",
+  },
+  dateText: {
+    fontSize: 12,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    textTransform: "capitalize",
+  },
+  rightBtns: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  filterBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  filterIcon: {
+    fontSize: 16,
+    color: "#888888",
+    lineHeight: 20,
+  },
+  navBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   navArrow: {
     fontFamily: "Sora_600SemiBold",
     fontSize: 22,
     lineHeight: 24,
   },
   pressed: { opacity: 0.7 },
+  fab: {
+    position: "absolute",
+    bottom: 80,
+    right: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#F4B40066",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fabText: {
+    color: "#0a0a0a",
+    fontSize: 28,
+    fontWeight: "300",
+    lineHeight: 30,
+    marginTop: -2,
+  },
 });

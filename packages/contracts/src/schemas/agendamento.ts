@@ -86,3 +86,14 @@ export type PatchStatusAgendamentoInput = z.infer<
   typeof patchStatusAgendamentoSchema
 >;
 export type ListAgendamentoInput = z.infer<typeof listAgendamentoSchema>;
+
+export const createAvaliacaoSchema = z.object({
+  nota: z
+    .number({ invalid_type_error: "Nota deve ser um número" })
+    .int()
+    .min(1, "Nota mínima é 1")
+    .max(5, "Nota máxima é 5"),
+  comentario: z.string().max(1000, "Comentário muito longo").optional(),
+});
+
+export type CreateAvaliacaoInput = z.infer<typeof createAvaliacaoSchema>;

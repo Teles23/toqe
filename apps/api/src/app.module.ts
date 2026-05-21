@@ -23,6 +23,8 @@ import { ObservabilidadeModule } from './observabilidade/observabilidade.module'
 import { HealthModule } from './health/health.module';
 import { PushTokenModule } from './push-token/push-token.module';
 import { AdminModule } from './admin/admin.module';
+import { MeModule } from './me/me.module';
+import { ConviteModule } from './convite/convite.module';
 
 @Module({
   imports: [
@@ -61,6 +63,8 @@ import { AdminModule } from './admin/admin.module';
     HealthModule,
     PushTokenModule,
     AdminModule,
+    MeModule,
+    ConviteModule,
   ],
   controllers: [AppController],
   providers: [

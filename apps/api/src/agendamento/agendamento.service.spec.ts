@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { AgendamentoService } from './agendamento.service';
@@ -254,5 +255,73 @@ describe('AgendamentoService', () => {
       const result = await service.agendamentoAtual(10, barCodigo);
       expect(result).toBeNull();
     });
+  });
+
+  describe('avaliarAgendamento', () => {
+    const concluido = { ...mockAgendamento, status: 'concluido' };
+
+    it('cria avaliação com sucesso', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(concluido);
+      mockPrisma.avaliacaoAgendamento.findUnique.mockResolvedValue(null);
+      mockPrisma.avaliacaoAgendamento.create.mockResolvedValue({});
+
+      const result = await service.avaliarAgendamento(1, barCodigo, 20, {
+        nota: 5,
+        comentario: 'Ótimo!',
+      });
+
+      expect(result).toEqual({ sucesso: true });
+      expect(mockPrisma.avaliacaoAgendamento.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ nota: 5 }) as { nota: number },
+        }),
+      );
+    });
+
+    it('lança NotFoundException quando agendamento não pertence ao cliente', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...concluido,
+        cliente: { codigo: 999 }, // outro cliente
+      });
+
+      await expect(
+        service.avaliarAgendamento(1, barCodigo, 20, { nota: 4 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lança BadRequestException quando status não é concluido', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...mockAgendamento,
+        status: 'confirmado',
+      });
+
+      await expect(
+        service.avaliarAgendamento(1, barCodigo, 20, { nota: 3 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lança ConflictException quando avaliação já existe', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(concluido);
+      mockPrisma.avaliacaoAgendamento.findUnique.mockResolvedValue({
+        codigo: 1,
+      });
+
+      await expect(
+        service.avaliarAgendamento(1, barCodigo, 20, { nota: 5 }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('lança NotFoundException quando agendamento não existe', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.avaliarAgendamento(999, barCodigo, 20, { nota: 5 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // Força a importação do ForbiddenException para ser usável se necessário
+  it('módulo importa ForbiddenException sem erros', () => {
+    expect(ForbiddenException).toBeDefined();
   });
 });
