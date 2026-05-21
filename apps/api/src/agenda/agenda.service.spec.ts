@@ -175,4 +175,75 @@ describe('AgendaService', () => {
       ).rejects.toThrow('Barbearia not found');
     });
   });
+
+  describe('getProximosSlots', () => {
+    const barCodigo = 1;
+
+    const setupMocks = () => {
+      mockPrisma.membroBarbearia.findMany.mockResolvedValue([
+        { usrCodigo: 5, usuario: { codigo: 5, nome: 'João' } },
+      ]);
+      mockPrisma.servico.findFirst.mockResolvedValue({
+        nome: 'Corte',
+        duracaoBase: 30,
+        precoBase: { toNumber: () => 40 },
+      });
+      // Para cada chamada interna de getAvailableSlots precisamos configurar os mocks
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
+        usrCodigo: 5,
+        barCodigo,
+        perfil: 'barbeiro',
+      });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
+        inicio: '09:00',
+        fim: '10:00',
+        almocoIni: null,
+        almocoFim: null,
+      });
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
+    };
+
+    it('retorna slots disponíveis com metadados do barbeiro e serviço', async () => {
+      setupMocks();
+
+      const result = await service.getProximosSlots(barCodigo, 7);
+
+      expect(result.barbeiroNome).toBe('João');
+      expect(result.barbeiroInicial).toBe('J');
+      expect(result.servicoNome).toBe('Corte');
+      expect(result.servicoDuracao).toBe(30);
+      expect(result.slots.length).toBeGreaterThan(0);
+      expect(result.slots[0]).toHaveProperty('hora');
+      expect(result.slots[0]).toHaveProperty('dia');
+    });
+
+    it('lança NotFoundException quando não há barbeiros', async () => {
+      mockPrisma.membroBarbearia.findMany.mockResolvedValue([]);
+
+      await expect(service.getProximosSlots(barCodigo, 7)).rejects.toThrow(
+        'Nenhum barbeiro ativo nesta barbearia',
+      );
+    });
+
+    it('lança NotFoundException quando não há slots disponíveis', async () => {
+      mockPrisma.membroBarbearia.findMany.mockResolvedValue([
+        { usrCodigo: 5, usuario: { codigo: 5, nome: 'João' } },
+      ]);
+      mockPrisma.servico.findFirst.mockResolvedValue(null);
+      // barbeiro sem jornada configurada → getAvailableSlots retorna []
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
+        usrCodigo: 5,
+        barCodigo,
+        perfil: 'barbeiro',
+      });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(null);
+
+      await expect(service.getProximosSlots(barCodigo, 1)).rejects.toThrow(
+        'Nenhum slot disponível nos próximos dias',
+      );
+    });
+  });
 });

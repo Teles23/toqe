@@ -10,6 +10,7 @@ import {
   Query,
   Request,
   ForbiddenException,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { AgendaService } from './agenda.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
@@ -25,6 +26,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiSecurity,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Agenda')
@@ -115,5 +117,26 @@ export class AgendaController {
       data,
       duracao,
     );
+  }
+
+  @Get('proximos')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
+  @ApiOperation({
+    summary:
+      'Retorna os próximos slots disponíveis na barbearia (até 6 slots nos próximos N dias)',
+  })
+  @ApiQuery({
+    name: 'dias',
+    required: false,
+    type: Number,
+    description: 'Número de dias a considerar (padrão: 7)',
+  })
+  @ApiResponse({ status: 200, description: 'Slots disponíveis retornados.' })
+  @ApiResponse({ status: 404, description: 'Nenhum slot disponível.' })
+  async obterProximosSlots(
+    @Headers('x-tenant-id') barCodigo: string,
+    @Query('dias', new DefaultValuePipe(7), ParseIntPipe) dias: number,
+  ) {
+    return this.agendaService.getProximosSlots(Number(barCodigo), dias);
   }
 }

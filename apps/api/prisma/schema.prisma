@@ -94,6 +94,7 @@ model Barbearia {
   tema           TemaTenant?
   preferencias   NotificacaoPreferencia[]
   horarios       HorarioFuncionamento[]
+  convites       ConviteBarbearia[]
 
   @@map("TQE_BARBEARIA")
 }
@@ -187,14 +188,27 @@ model Agendamento {
   observacao  String?  @map("TQE_AGD_OBSERVACAO") @db.Text
   criadoEm    DateTime @default(now()) @map("TQE_AGD_CRIADO_EM") @db.Timestamptz
 
-  barbearia Barbearia         @relation(fields: [barCodigo], references: [codigo])
-  barbeiro  Usuario           @relation("AgendamentosBarbeiro", fields: [barbeiroId], references: [codigo])
-  cliente   Usuario           @relation("AgendamentosCliente", fields: [clienteId], references: [codigo])
-  itens     AgendamentoItem[]
+  barbearia  Barbearia              @relation(fields: [barCodigo], references: [codigo])
+  barbeiro   Usuario                @relation("AgendamentosBarbeiro", fields: [barbeiroId], references: [codigo])
+  cliente    Usuario                @relation("AgendamentosCliente", fields: [clienteId], references: [codigo])
+  itens      AgendamentoItem[]
+  avaliacao  AvaliacaoAgendamento?
 
   // partial unique index gerenciado via migration SQL (exclui WALK_IN)
   // ver migration 20260516_walkin_partial_unique
   @@map("TQE_AGENDAMENTO")
+}
+
+model AvaliacaoAgendamento {
+  codigo            Int         @id @default(autoincrement()) @map("TQE_AVL_CODIGO")
+  agendamentoCodigo Int         @unique @map("TQE_AVL_AGD_CODIGO")
+  nota              Int         @map("TQE_AVL_NOTA") @db.SmallInt
+  comentario        String?     @map("TQE_AVL_COMENTARIO") @db.Text
+  criadoEm          DateTime    @default(now()) @map("TQE_AVL_CRIADO_EM") @db.Timestamptz
+
+  agendamento       Agendamento @relation(fields: [agendamentoCodigo], references: [codigo])
+
+  @@map("TQE_AVALIACAO_AGENDAMENTO")
 }
 
 model AgendamentoItem {
@@ -285,4 +299,19 @@ model HorarioFuncionamento {
 
   @@unique([barCodigo, diaSemana])
   @@map("TQE_HORARIO_FUNCIONAMENTO")
+}
+
+model ConviteBarbearia {
+  codigo       Int       @id @default(autoincrement()) @map("TQE_CVT_CODIGO")
+  token        String    @unique @default(cuid()) @map("TQE_CVT_TOKEN") @db.VarChar(36)
+  barCodigo    Int       @map("TQE_CVT_BAR_CODIGO")
+  email        String    @map("TQE_CVT_EMAIL") @db.VarChar(100)
+  perfil       String    @default("barbeiro") @map("TQE_CVT_PERFIL") @db.VarChar(20)
+  criadoEm    DateTime  @default(now()) @map("TQE_CVT_CRIADO_EM") @db.Timestamptz
+  expiresAt    DateTime  @map("TQE_CVT_EXPIRES_AT") @db.Timestamptz
+  usadoEm     DateTime? @map("TQE_CVT_USADO_EM") @db.Timestamptz
+
+  barbearia    Barbearia @relation(fields: [barCodigo], references: [codigo])
+
+  @@map("TQE_CONVITE_BARBEARIA")
 }

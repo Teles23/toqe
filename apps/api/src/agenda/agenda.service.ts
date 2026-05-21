@@ -5,6 +5,7 @@ import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
 import { isTimeOverlap } from '../common/utils/date.utils';
 import {
+  addDays,
   addMinutes,
   parse,
   format,
@@ -173,5 +174,96 @@ export class AgendaService {
     }
 
     return availableSlots;
+  }
+
+  /**
+   * Retorna os próximos slots disponíveis nos próximos `dias` dias para a barbearia.
+   * Itera por barbeiro e dia até encontrar até 6 slots disponíveis.
+   */
+  async getProximosSlots(
+    barCodigo: number,
+    dias: number,
+  ): Promise<{
+    barbeiroNome: string;
+    barbeiroInicial: string;
+    servicoNome: string;
+    servicoDuracao: number;
+    servicoPreco: number;
+    slots: { inicio: string; hora: string; dia: string }[];
+  }> {
+    const barbeiros = await this.prisma.membroBarbearia.findMany({
+      where: { barCodigo, perfil: { in: ['barbeiro', 'dono', 'gerente'] } },
+      include: { usuario: { select: { codigo: true, nome: true } } },
+      orderBy: { usuario: { nome: 'asc' } },
+    });
+
+    if (barbeiros.length === 0) {
+      throw new NotFoundException('Nenhum barbeiro ativo nesta barbearia');
+    }
+
+    // Busca o primeiro serviço ativo para referência
+    const servico = await this.prisma.servico.findFirst({
+      where: { barCodigo, ativo: true },
+      orderBy: { codigo: 'asc' },
+    });
+
+    const servicoNome = servico?.nome ?? 'Corte';
+    const servicoDuracao = servico?.duracaoBase ?? 30;
+    const servicoPreco = servico?.precoBase
+      ? Number(servico.precoBase) * 100
+      : 0;
+
+    const hoje = new Date();
+    const slots: { inicio: string; hora: string; dia: string }[] = [];
+    const MAX_SLOTS = 6;
+
+    for (
+      let diaOffset = 0;
+      diaOffset <= dias && slots.length < MAX_SLOTS;
+      diaOffset++
+    ) {
+      const targetDate = addDays(startOfDay(hoje), diaOffset);
+      const dateStr = format(targetDate, 'yyyy-MM-dd');
+      const diaLabel =
+        diaOffset === 0 ? 'Hoje' : diaOffset === 1 ? 'Amanhã' : dateStr;
+
+      for (const membro of barbeiros) {
+        if (slots.length >= MAX_SLOTS) break;
+
+        const horariosDisponiveis = await this.getAvailableSlots(
+          membro.usuario.codigo,
+          barCodigo,
+          dateStr,
+          servicoDuracao,
+        );
+
+        for (const horario of horariosDisponiveis) {
+          if (slots.length >= MAX_SLOTS) break;
+          const [hora, minuto] = horario.split(':').map(Number);
+          const inicioDate = new Date(targetDate);
+          inicioDate.setHours(hora, minuto, 0, 0);
+          slots.push({
+            inicio: inicioDate.toISOString(),
+            hora: horario,
+            dia: diaLabel,
+          });
+        }
+      }
+    }
+
+    if (slots.length === 0) {
+      throw new NotFoundException('Nenhum slot disponível nos próximos dias');
+    }
+
+    const primeiroBarbeiro = barbeiros[0].usuario;
+
+    return {
+      barbeiroNome: primeiroBarbeiro.nome,
+      barbeiroInicial: primeiroBarbeiro.nome.charAt(0).toUpperCase(),
+      servicoNome,
+      servicoDuracao,
+      servicoPreco: Math.round(servicoPreco),
+      slots,
+    };
   }
 }
