@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   timeCol: {
-    width: 52,
+    width: 48,
     flexShrink: 0,
     alignItems: "flex-end",
     paddingTop: 2,

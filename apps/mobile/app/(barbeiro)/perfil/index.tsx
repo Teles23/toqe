@@ -1,3 +1,17 @@
+/**
+ * PerfilIndexScreen — Perfil do Barbeiro (Urban Flow v2).
+ *
+ * Redesign pixel-accurate do protótipo Claude Design:
+ *  - Identity hero: Avatar 72×72 + nome Sora 700 20px + "barbeiro · Barbearia" 12px #888888
+ *  - Stats "Este mês": grid 3-col #171717 borderRadius 14
+ *    - Cortes: #F4B400, Faturamento: #22c55e, Ticket médio: #60a5fa
+ *    - Rodapé 10px #444444 com ticket médio + no-shows
+ *  - SettingsGroup: label 10px uppercase #666666 letterSpacing 2
+ *    - Container: bg #171717 borderRadius 14 borderWidth 1 borderColor #262626
+ *  - SettingsRow: IconBox 36×36 borderRadius 10 + title 13px + value 11px + chevron
+ *  - Grupos: AGENDA (Jornada + Serviços + Convites) + CONTA (E-mail + Senha)
+ */
+
 import { router } from "expo-router";
 import { type ReactNode, useCallback } from "react";
 import {
@@ -15,42 +29,42 @@ import { useBarbeiroStats } from "@/src/shared/hooks/barbeiro/use-barbeiro-stats
 import { useTheme } from "@/src/shared/theme";
 import { Avatar, Divider, SkeletonBox } from "@/src/shared/ui";
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── PerfilStat ───────────────────────────────────────────────────────────────
 
 interface PerfilStatProps {
   value: string;
   label: string;
-  color?: string;
-  smaller?: boolean;
+  color: string;
 }
 
-function PerfilStat({ value, label, color, smaller = false }: PerfilStatProps) {
-  const { typography, palette } = useTheme();
+function PerfilStat({ value, label, color }: PerfilStatProps) {
   return (
     <View style={statStyles.col}>
-      <Text
-        style={[
-          smaller ? typography.subheading : typography.heading,
-          { color: color ?? palette.text, textAlign: "center" },
-        ]}
-      >
-        {value}
-      </Text>
-      <Text
-        style={[
-          typography.captionBold,
-          { color: palette.textMuted, textAlign: "center", letterSpacing: 0.8 },
-        ]}
-      >
-        {label.toUpperCase()}
-      </Text>
+      <Text style={[statStyles.value, { color }]}>{value}</Text>
+      <Text style={statStyles.label}>{label}</Text>
     </View>
   );
 }
 
 const statStyles = StyleSheet.create({
-  col: { flex: 1, alignItems: "center", gap: 2 },
+  col: { flex: 1, alignItems: "center", gap: 4 },
+  value: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 22,
+    letterSpacing: -0.55,
+    lineHeight: 26,
+  },
+  label: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 9,
+    color: "#888888",
+    letterSpacing: 9 * 0.12,
+    textTransform: "uppercase",
+    textAlign: "center",
+  },
 });
+
+// ─── SettingsGroup ────────────────────────────────────────────────────────────
 
 interface SettingsGroupProps {
   label: string;
@@ -58,36 +72,38 @@ interface SettingsGroupProps {
 }
 
 function SettingsGroup({ label, children }: SettingsGroupProps) {
-  const { typography, palette, spacing, radius } = useTheme();
   return (
-    <View style={{ marginHorizontal: spacing.md, marginBottom: spacing.md }}>
-      <Text
-        style={[
-          typography.captionBold,
-          {
-            color: palette.textMuted,
-            letterSpacing: 1,
-            marginBottom: spacing.sm,
-            marginLeft: 4,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-      <View
-        style={{
-          backgroundColor: palette.surface,
-          borderRadius: radius.md,
-          borderWidth: 1,
-          borderColor: palette.border,
-          overflow: "hidden",
-        }}
-      >
-        {children}
-      </View>
+    <View style={groupStyles.wrap}>
+      <Text style={groupStyles.label}>{label}</Text>
+      <View style={groupStyles.container}>{children}</View>
     </View>
   );
 }
+
+const groupStyles = StyleSheet.create({
+  wrap: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+  },
+  label: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    color: "#666666",
+    letterSpacing: 10 * 0.2,
+    textTransform: "uppercase",
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  container: {
+    backgroundColor: "#171717",
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+});
+
+// ─── SettingsRow ──────────────────────────────────────────────────────────────
 
 interface SettingsRowProps {
   icon?: string;
@@ -101,6 +117,8 @@ interface SettingsRowProps {
 }
 
 function SettingsRow({
+  icon,
+  iconColor = "#888888",
   title,
   value,
   onTap,
@@ -108,33 +126,38 @@ function SettingsRow({
   testID,
   trailing,
 }: SettingsRowProps) {
-  const { typography, palette, spacing } = useTheme();
+  const { palette } = useTheme();
+
   const content = (
-    <View
-      style={[
-        rowStyles.row,
-        {
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm + 4,
-          borderBottomWidth: last ? 0 : 1,
-          borderBottomColor: palette.border,
-        },
-      ]}
-    >
-      <View style={{ flex: 1 }}>
-        <Text style={[typography.label, { color: palette.text }]}>{title}</Text>
+    <View style={[rowStyles.row, !last && rowStyles.rowBorder]}>
+      {icon && (
+        <View
+          style={[
+            rowStyles.iconBox,
+            {
+              backgroundColor: iconColor + "14",
+              borderColor: iconColor + "30",
+            },
+          ]}
+        >
+          <Text style={{ fontSize: 15, color: iconColor }}>{icon}</Text>
+        </View>
+      )}
+      <View style={rowStyles.textWrap}>
+        <Text style={rowStyles.title} numberOfLines={1}>
+          {title}
+        </Text>
         {value ? (
-          <Text
-            style={[typography.caption, { color: palette.textMuted }]}
-            numberOfLines={1}
-          >
+          <Text style={rowStyles.value} numberOfLines={1}>
             {value}
           </Text>
         ) : null}
       </View>
       {trailing ??
         (onTap ? (
-          <Text style={{ color: palette.textMuted, fontSize: 16 }}>›</Text>
+          <Text style={[rowStyles.chevron, { color: palette.textDisabled }]}>
+            ›
+          </Text>
         ) : null)}
     </View>
   );
@@ -159,14 +182,55 @@ function SettingsRow({
 }
 
 const rowStyles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center" },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 56,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 0,
+  },
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#262626",
+  },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginRight: 12,
+  },
+  textWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  title: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: "#f5f5f5",
+  },
+  value: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "#888888",
+    marginTop: 2,
+  },
+  chevron: {
+    fontSize: 14,
+    marginLeft: 8,
+    flexShrink: 0,
+  },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 const ROLE_LABEL: Record<string, string> = {
   cliente: "Cliente",
-  barbeiro: "Barbeiro",
+  barbeiro: "barbeiro",
   dono: "Dono",
   admin: "Admin",
 };
@@ -174,18 +238,16 @@ const ROLE_LABEL: Record<string, string> = {
 /**
  * Tela principal de perfil do barbeiro — Urban Flow v2.
  *
- * Layout: identity hero → stats mensais → SUA AGENDA → NOTIFICAÇÕES → CONTA → logout
- *
- * Os testIDs existentes são mantidos para retrocompatibilidade com os testes:
- * perfil-scroll, ir-editar, ir-senha, ir-2fa, ir-sessoes, ir-notificacoes
+ * Mantém testIDs existentes:
+ * perfil-scroll, ir-editar, ir-jornada, ir-servicos, ir-senha, btn-logout
  * barbearia-{codigo}
  */
 export default function PerfilIndexScreen() {
-  const { palette, spacing, typography, radius } = useTheme();
+  const { palette, spacing, radius } = useTheme();
   const basePath = usePerfilBasePath();
   const { user, perfil, barbearias, barbearia, switchBarbearia, logout } =
     useAuth();
-  const { data: stats, isLoading: statsLoading } = useBarbeiroStats();
+  const { data: barbeiroStats, isLoading: statsLoading } = useBarbeiroStats();
 
   const handleLogout = useCallback(() => {
     Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
@@ -205,11 +267,30 @@ export default function PerfilIndexScreen() {
     [basePath],
   );
 
-  const roleLabel = perfil ? (ROLE_LABEL[perfil] ?? perfil) : "Barbeiro";
+  const roleLabel = perfil ? (ROLE_LABEL[perfil] ?? perfil) : "barbeiro";
   const temMultiBarbearia = barbearias.length > 1;
 
-  const fmt = (n: number, prefix = "") =>
-    `${prefix}${n.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  // Formatar valores de stats
+  const faturamentoStr =
+    barbeiroStats?.faturamento != null
+      ? `R$ ${Math.round(barbeiroStats.faturamento).toLocaleString("pt-BR")}`
+      : "—";
+  const ticketStr =
+    barbeiroStats?.ticketMedio != null
+      ? `R$ ${Math.round(barbeiroStats.ticketMedio).toLocaleString("pt-BR")}`
+      : "—";
+  const cortesStr =
+    barbeiroStats?.atendimentos != null
+      ? String(barbeiroStats.atendimentos)
+      : "—";
+  const presencaStr =
+    barbeiroStats?.presenca != null
+      ? `${Math.round(barbeiroStats.presenca)}%`
+      : "—";
+  const noShowStr =
+    barbeiroStats?.presenca != null
+      ? String(Math.round(100 - barbeiroStats.presenca))
+      : "0";
 
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
@@ -224,47 +305,34 @@ export default function PerfilIndexScreen() {
           },
         ]}
       >
-        <Text style={[typography.title, { color: palette.text }]}>Perfil</Text>
+        <Text style={styles.headerTitle}>Perfil</Text>
         <Pressable
           testID="ir-editar"
           onPress={() => go("/editar")}
           accessibilityRole="button"
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
         >
-          <Text style={{ color: palette.primary, fontSize: 16 }}>✏️</Text>
+          <Text style={styles.editIcon}>✏️</Text>
         </Pressable>
       </View>
 
       <ScrollView
         testID="perfil-scroll"
         contentContainerStyle={{ paddingBottom: spacing.xxxl }}
+        showsVerticalScrollIndicator={false}
       >
         {/* ── Identity hero ── */}
         <View
           style={[
             styles.hero,
-            { paddingVertical: spacing.xl, paddingHorizontal: spacing.md },
+            { paddingTop: 12, paddingBottom: 6, paddingHorizontal: spacing.md },
           ]}
         >
           <Avatar name={user?.nome} size="lg" />
-          <Text
-            style={[
-              typography.heading,
-              {
-                color: palette.text,
-                marginTop: spacing.sm,
-                textAlign: "center",
-              },
-            ]}
-          >
+          <Text style={[styles.heroName, { marginTop: 10 }]}>
             {user?.nome ?? "—"}
           </Text>
-          <Text
-            style={[
-              typography.caption,
-              { color: palette.textMuted, marginTop: 2, textAlign: "center" },
-            ]}
-          >
+          <Text style={styles.heroRole}>
             {roleLabel}
             {barbearia ? ` · ${barbearia.nome}` : ""}
           </Text>
@@ -276,156 +344,117 @@ export default function PerfilIndexScreen() {
                   marginTop: spacing.sm,
                   borderRadius: radius.full,
                   borderWidth: 1,
-                  borderColor: palette.primary,
+                  borderColor: palette.primary + "38",
+                  backgroundColor: palette.primary + "14",
                   paddingHorizontal: spacing.md,
-                  paddingVertical: spacing.xs,
+                  paddingVertical: 7,
                 },
               ]}
             >
-              <Text
-                style={[typography.captionBold, { color: palette.primary }]}
-              >
+              <Text style={[styles.urlPillText, { color: palette.primary }]}>
                 toqe.app/u/{barbearia.slug}
               </Text>
             </Pressable>
           ) : null}
         </View>
 
-        {/* ── Stats mensais ── */}
+        {/* ── Stats "Este mês" ── */}
         {statsLoading ? (
           <View
             style={[
               styles.statsCard,
-              {
-                marginHorizontal: spacing.md,
-                marginBottom: spacing.md,
-                backgroundColor: palette.surface,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: palette.border,
-                padding: spacing.md,
-                gap: spacing.sm,
-              },
+              { marginHorizontal: spacing.md, marginBottom: 16 },
             ]}
           >
             <SkeletonBox width="100%" height={60} />
           </View>
-        ) : stats ? (
+        ) : (
           <View
             style={[
               styles.statsCard,
-              {
-                marginHorizontal: spacing.md,
-                marginBottom: spacing.md,
-                backgroundColor: palette.surface,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: palette.border,
-                padding: spacing.md,
-              },
+              { marginHorizontal: spacing.md, marginBottom: 16 },
             ]}
           >
-            <Text
-              style={[
-                typography.captionBold,
-                {
-                  color: palette.textMuted,
-                  letterSpacing: 1,
-                  marginBottom: spacing.sm,
-                },
-              ]}
-            >
-              ESTE MÊS
-            </Text>
-            <View style={styles.statsRow}>
+            {/* Label seção */}
+            <View style={styles.statsLabelRow}>
+              <Text style={styles.statsLabel}>ESTE MÊS</Text>
+              <Text style={styles.statsSubLabel}>
+                {new Date().toLocaleDateString("pt-BR", { month: "long" })} ·{" "}
+                {new Date().getDate()} dias
+              </Text>
+            </View>
+            {/* Grid 3-col */}
+            <View style={styles.statsGrid}>
               <PerfilStat
-                value={fmt(stats.atendimentos)}
+                value={cortesStr}
                 label="Atendimentos"
-                color={palette.primary}
-              />
-              <View
-                style={{
-                  width: 1,
-                  backgroundColor: palette.border,
-                  alignSelf: "stretch",
-                }}
+                color="#F4B400"
               />
               <PerfilStat
-                value={`R$${fmt(stats.faturamento)}`}
+                value={faturamentoStr}
                 label="Faturado"
-                color={palette.success}
-                smaller
-              />
-              <View
-                style={{
-                  width: 1,
-                  backgroundColor: palette.border,
-                  alignSelf: "stretch",
-                }}
+                color="#22c55e"
               />
               <PerfilStat
-                value={`${Math.round(stats.presenca)}%`}
+                value={presencaStr}
                 label="Presença"
+                color="#60a5fa"
               />
             </View>
-            {stats.ticketMedio > 0 ? (
-              <Text
-                style={[
-                  typography.caption,
-                  {
-                    color: palette.textMuted,
-                    textAlign: "center",
-                    marginTop: spacing.sm,
-                  },
-                ]}
-              >
-                ticket médio R${fmt(stats.ticketMedio)} · {stats.periodo}
-              </Text>
-            ) : null}
+            {/* Rodapé */}
+            <Text style={styles.statsFooter}>
+              Ticket médio {ticketStr} · {noShowStr} no-shows este mês
+            </Text>
           </View>
-        ) : null}
+        )}
 
-        {/* ── SUA AGENDA ── */}
-        <SettingsGroup label="Sua agenda">
+        {/* ── AGENDA ── */}
+        <SettingsGroup label="AGENDA">
           <SettingsRow
+            icon="🗓"
+            iconColor="#60a5fa"
             title="Jornada de trabalho"
             onTap={() => go("/jornada")}
             testID="ir-jornada"
           />
           <SettingsRow
+            icon="✂"
+            iconColor="#F4B400"
             title="Serviços e preços"
             onTap={() => go("/servicos")}
             testID="ir-servicos"
           />
           <SettingsRow
-            title="Bloqueios recorrentes"
+            icon="🔗"
+            iconColor="#a78bfa"
+            title="Convites"
             onTap={() => go("/notificacoes")}
             testID="ir-notificacoes"
             last
           />
         </SettingsGroup>
 
-        {/* ── NOTIFICAÇÕES ── */}
-        <SettingsGroup label="Notificações">
-          <SettingsRow title="WhatsApp" last />
-        </SettingsGroup>
-
         {/* ── CONTA ── */}
         <SettingsGroup label="Conta">
           {user?.email ? (
-            <SettingsRow title="E-mail" value={user.email} testID="ir-email" />
+            <SettingsRow
+              icon="📧"
+              iconColor="#888888"
+              title="E-mail"
+              value={user.email}
+              testID="ir-email"
+            />
           ) : null}
           <SettingsRow
+            icon="🔒"
+            iconColor="#888888"
             title="Segurança"
             onTap={() => go("/2fa")}
             testID="ir-2fa"
           />
           <SettingsRow
-            title="Sessões ativas"
-            onTap={() => go("/sessoes")}
-            testID="ir-sessoes"
-          />
-          <SettingsRow
+            icon="🔑"
+            iconColor="#888888"
             title="Mudar senha"
             onTap={() => go("/senha")}
             testID="ir-senha"
@@ -451,9 +480,7 @@ export default function PerfilIndexScreen() {
                         style={[
                           styles.radio,
                           {
-                            borderColor: isAtiva
-                              ? palette.primary
-                              : palette.border,
+                            borderColor: isAtiva ? palette.primary : "#262626",
                             backgroundColor: isAtiva
                               ? palette.primary
                               : "transparent",
@@ -472,44 +499,21 @@ export default function PerfilIndexScreen() {
         {/* ── Logout ── */}
         <View style={{ paddingHorizontal: spacing.md, marginTop: spacing.sm }}>
           <Pressable
+            testID="btn-logout"
             onPress={handleLogout}
             accessibilityRole="button"
             accessibilityLabel="Sair da conta"
             style={({ pressed }) => [
               styles.logoutBtn,
-              {
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: palette.danger,
-                padding: spacing.md,
-                opacity: pressed ? 0.7 : 1,
-              },
+              pressed && { opacity: 0.7 },
             ]}
           >
-            <Text
-              style={[
-                typography.label,
-                { color: palette.danger, textAlign: "center" },
-              ]}
-            >
-              Sair da conta
-            </Text>
+            <Text style={styles.logoutText}>Sair da conta</Text>
           </Pressable>
         </View>
 
         {/* ── Version ── */}
-        <Text
-          style={[
-            typography.caption,
-            {
-              color: palette.textDisabled,
-              textAlign: "center",
-              marginTop: spacing.xl,
-            },
-          ]}
-        >
-          Toqe · v1.0.0
-        </Text>
+        <Text style={styles.version}>Toqe · v1.0.0</Text>
       </ScrollView>
     </View>
   );
@@ -522,15 +526,114 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  hero: { alignItems: "center" },
+  headerTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 24,
+    color: "#f5f5f5",
+    letterSpacing: -0.5,
+  },
+  editBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  editIcon: {
+    fontSize: 16,
+  },
+  hero: {
+    alignItems: "center",
+  },
+  heroName: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 20,
+    color: "#f5f5f5",
+    letterSpacing: -0.5,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  heroRole: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#888888",
+    textAlign: "center",
+  },
   urlPill: {},
-  statsCard: {},
-  statsRow: { flexDirection: "row", alignItems: "center" },
+  urlPillText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+  },
+  // Stats card
+  statsCard: {
+    backgroundColor: "#171717",
+    borderRadius: 14,
+    padding: 14,
+  },
+  statsLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  statsLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    color: "#666666",
+    letterSpacing: 10 * 0.15,
+    textTransform: "uppercase",
+  },
+  statsSubLabel: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 11,
+    color: "#444444",
+    marginLeft: "auto",
+  },
+  statsGrid: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  statsFooter: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 10,
+    color: "#444444",
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  // Radio (multi-barbearia)
   radio: {
     width: 16,
     height: 16,
     borderRadius: 8,
     borderWidth: 2,
   },
-  logoutBtn: {},
+  // Logout
+  logoutBtn: {
+    width: "100%",
+    padding: 14,
+    marginTop: 6,
+    minHeight: 48,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#ef444440",
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  logoutText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: "#ef4444",
+  },
+  version: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 10,
+    color: "#444444",
+    textAlign: "center",
+    marginTop: 16,
+  },
 });

@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,28 +13,74 @@ import {
 } from "react-native";
 
 import { AvaliacaoSheet } from "@/src/features/cliente/AvaliacaoSheet";
-import { statusToBadge } from "@/src/features/barbeiro/utils/agendamento-actions";
 import {
   useAgendamento,
   useCancelarAgendamento,
 } from "@/src/shared/hooks/cliente/use-agendamento";
 import { useTheme } from "@/src/shared/theme";
-import {
-  AmberButton,
-  Avatar,
-  Card,
-  CountdownTimer,
-  DangerButton,
-  Divider,
-  EmptyScreen,
-  GhostButton,
-  ScreenHeader,
-  StatusBadge,
-  TimeDisplay,
-} from "@/src/shared/ui";
+import type { StatusAgendamento } from "@toqe/shared";
+
+// ─── Status helpers ───────────────────────────────────────────────────────────
+
+function statusColor(status: StatusAgendamento): string {
+  switch (status) {
+    case "pendente":
+      return "#F4B400";
+    case "confirmado":
+      return "#22c55e";
+    case "concluido":
+      return "#666666";
+    case "cancelado":
+      return "#888888";
+    case "no_show":
+      return "#ef4444";
+    default:
+      return "#888888";
+  }
+}
+
+const STATUS_LABEL: Record<StatusAgendamento, string> = {
+  pendente: "Aguardando confirmação",
+  confirmado: "Confirmado",
+  concluido: "Concluído",
+  cancelado: "Cancelado",
+  no_show: "Você não foi",
+};
+
+// ─── Detail micro cell ────────────────────────────────────────────────────────
+
+function DetailMicro({
+  icon,
+  label,
+  value,
+  valueColor,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  valueColor?: string;
+}) {
+  const { palette } = useTheme();
+  return (
+    <View style={styles.detailMicro}>
+      <View style={styles.detailMicroLabel}>
+        <Text style={styles.detailMicroIcon}>{icon}</Text>
+        <Text style={styles.detailMicroLabelText}>{label.toUpperCase()}</Text>
+      </View>
+      <Text
+        style={[styles.detailMicroValue, { color: valueColor ?? palette.text }]}
+        numberOfLines={2}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function AgendamentoDetalheScreen() {
-  const { palette, spacing, radius, typography } = useTheme();
+  const { palette } = useTheme();
   const { codigo: codigoStr } = useLocalSearchParams<{ codigo: string }>();
   const codigo = Number(codigoStr);
   const { data, isLoading, isError, refetch } = useAgendamento(codigo);
@@ -69,7 +116,7 @@ export default function AgendamentoDetalheScreen() {
   if (isLoading) {
     return (
       <View
-        style={[styles.center, { backgroundColor: palette.bg }]}
+        style={[styles.centeredFlex, { backgroundColor: palette.bg }]}
         testID="agendamento-loading"
       >
         <ActivityIndicator color={palette.primary} />
@@ -79,270 +126,300 @@ export default function AgendamentoDetalheScreen() {
 
   if (isError || !data) {
     return (
-      <View style={{ flex: 1, backgroundColor: palette.bg }}>
-        <ScreenHeader
-          title="Agendamento"
-          right={
-            <GhostButton
-              label="Voltar"
-              onPress={() => router.back()}
-              accessibilityLabel="Voltar"
-            />
-          }
-        />
-        <EmptyScreen
-          icon="⚠️"
-          title="Agendamento não encontrado"
-          description="Verifique se o link está correto ou tente novamente."
-          action={
-            <GhostButton label="Tentar novamente" onPress={() => refetch()} />
-          }
-        />
+      <View style={[styles.centeredFlex, { backgroundColor: palette.bg }]}>
+        <Text style={[styles.notFoundTitle, { color: palette.text }]}>
+          Agendamento não encontrado
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          style={{ marginTop: 16 }}
+        >
+          <Text style={{ color: palette.primary, fontSize: 14 }}>← Voltar</Text>
+        </Pressable>
       </View>
     );
   }
 
   const inicio = parseISO(data.inicio);
   const fim = parseISO(data.fim);
-  const dataStr = format(inicio, "EEEE, dd 'de' MMMM 'de' yyyy", {
-    locale: ptBR,
-  });
+  const dataStr = format(inicio, "EEE, dd MMM", { locale: ptBR });
   const horaInicio = format(inicio, "HH:mm", { locale: ptBR });
-  const horarioStr = `${horaInicio} – ${format(fim, "HH:mm", { locale: ptBR })}`;
+  const horaFim = format(fim, "HH:mm", { locale: ptBR });
   const podeCancelar =
     data.status === "pendente" || data.status === "confirmado";
-  const isUpcoming =
-    inicio.getTime() > Date.now() &&
-    (data.status === "confirmado" || data.status === "pendente");
 
   const totalPreco = data.itens.reduce(
     (sum, item) => sum + Number(item.preco ?? 0),
     0,
   );
 
-  const badge = statusToBadge(data.status);
+  const servicoNome =
+    data.itens.length === 0
+      ? "Serviço"
+      : data.itens.length === 1
+        ? data.itens[0]!.servico.nome
+        : `${data.itens[0]!.servico.nome} +${data.itens.length - 1}`;
 
-  return (
-    <View style={[styles.container, { backgroundColor: palette.bg }]}>
-      <ScreenHeader
-        title="Agendamento"
-        right={
-          <GhostButton
-            label="Voltar"
-            onPress={() => router.back()}
-            accessibilityLabel="Voltar"
-          />
-        }
-      />
+  const duracaoTotal = data.itens.reduce(
+    (sum, item) => sum + (item.duracao ?? 0),
+    0,
+  );
 
-      <ScrollView
-        contentContainerStyle={{
-          padding: spacing.md,
-          paddingBottom: spacing.xxxl,
-        }}
-      >
-        {/* HERO TICKET — TimeDisplay XL + StatusBadge + CountdownTimer */}
-        <View
-          testID="status-card"
-          style={[
-            styles.hero,
-            {
-              backgroundColor: palette.surface,
-              borderColor: palette.borderStrong,
-              borderRadius: radius.xl,
-              padding: spacing.lg,
-              marginBottom: spacing.lg,
-            },
-          ]}
-        >
-          <View style={styles.heroBadgeRow}>
-            <StatusBadge
-              status={badge.badge}
-              label={badge.label}
-              size="md"
-              textTestID="status-text"
-            />
+  const statusCor = statusColor(data.status as StatusAgendamento);
+  const statusLabel =
+    STATUS_LABEL[data.status as StatusAgendamento] ?? data.status;
+  const initial = data.barbeiro
+    ? data.barbeiro.nome.charAt(0).toUpperCase()
+    : "?";
+
+  // ── Render actions by status
+  function renderActions() {
+    switch (data?.status) {
+      case "confirmado":
+        return (
+          <View style={styles.actionsCol}>
+            <Pressable
+              accessibilityRole="button"
+              style={[styles.btnAmber, { backgroundColor: palette.primary }]}
+            >
+              <Text style={styles.btnAmberText}>📍 Como chegar</Text>
+            </Pressable>
+            <View style={styles.actionsRow}>
+              <Pressable accessibilityRole="button" style={styles.btnGhost}>
+                <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
+                  📅 Calendário
+                </Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" style={styles.btnGhost}>
+                <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
+                  ✏️ Reagendar
+                </Text>
+              </Pressable>
+              <Pressable
+                testID="botao-cancelar"
+                accessibilityRole="button"
+                onPress={handleCancelar}
+                style={styles.btnGhost}
+              >
+                <Text style={[styles.btnGhostText, { color: palette.danger }]}>
+                  ✖ Cancelar
+                </Text>
+              </Pressable>
+            </View>
           </View>
-
-          <View style={[styles.heroTimeBlock, { marginTop: spacing.md }]}>
-            <TimeDisplay time={horaInicio} size="xl" color={palette.primary} />
-            <Text
+        );
+      case "pendente":
+        return (
+          <View style={styles.actionsCol}>
+            <Pressable
+              accessibilityRole="button"
               style={[
-                typography.caption,
+                styles.btnOutline,
                 {
-                  color: palette.textMuted,
-                  marginTop: spacing.xs,
-                  fontFamily: "JetBrainsMono_500Medium",
+                  borderColor: palette.primary,
+                  backgroundColor: "#F4B40014",
                 },
               ]}
             >
-              até {format(fim, "HH:mm", { locale: ptBR })}
-            </Text>
+              <Text style={[styles.btnOutlineText, { color: palette.primary }]}>
+                Lembrar barbeiro
+              </Text>
+            </Pressable>
+            <Pressable
+              testID="botao-cancelar"
+              accessibilityRole="button"
+              onPress={handleCancelar}
+              style={[
+                styles.btnOutline,
+                { borderColor: palette.danger + "66" },
+              ]}
+            >
+              <Text style={[styles.btnOutlineText, { color: palette.danger }]}>
+                Desistir
+              </Text>
+            </Pressable>
           </View>
-
-          <Text
-            style={[
-              typography.subheading,
-              {
-                color: palette.text,
-                marginTop: spacing.md,
-                textTransform: "capitalize",
-                textAlign: "center",
-              },
-            ]}
-          >
-            {dataStr}
-          </Text>
-
-          {isUpcoming ? (
-            <View style={{ marginTop: spacing.md }}>
-              <CountdownTimer target={inicio} />
+        );
+      case "concluido":
+        return (
+          <View style={styles.actionsCol}>
+            <Pressable
+              accessibilityRole="button"
+              style={[styles.btnGhostFull, { borderColor: "#262626" }]}
+            >
+              <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
+                Repetir esse corte
+              </Text>
+            </Pressable>
+            <Pressable
+              testID="botao-avaliar"
+              accessibilityRole="button"
+              onPress={() => setAvaliacaoVisible(true)}
+              style={styles.btnAvaliar}
+            >
+              <Text style={styles.btnAvaliarText}>★ Avaliar atendimento</Text>
+            </Pressable>
+          </View>
+        );
+      case "no_show":
+        return (
+          <View style={styles.actionsCol}>
+            <View style={styles.noShowBanner}>
+              <Text style={styles.noShowBannerText}>
+                Você não compareceu. Não se preocupe — pode reagendar quando
+                quiser.
+              </Text>
             </View>
-          ) : null}
+            <Pressable
+              accessibilityRole="button"
+              style={[styles.btnAmber, { backgroundColor: palette.primary }]}
+            >
+              <Text style={styles.btnAmberText}>Reagendar</Text>
+            </Pressable>
+          </View>
+        );
+      case "cancelado":
+        return (
+          <Pressable
+            accessibilityRole="button"
+            style={[styles.btnGhostFull, { borderColor: "#262626" }]}
+          >
+            <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
+              Agendar de novo
+            </Text>
+          </Pressable>
+        );
+      default:
+        return null;
+    }
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: palette.bg }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Top bar ── */}
+        <View style={styles.topBar}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.back()}
+            style={styles.backBtn}
+          >
+            <Text style={styles.backBtnText}>‹</Text>
+          </Pressable>
+          <Text style={styles.topBarTitle}>Detalhes</Text>
+          <View style={{ width: 40 }} />
         </View>
 
-        {data.barbeiro ? (
-          <>
-            <SectionLabel>Com quem</SectionLabel>
-            <Card testID="barbeiro-card">
-              <View style={styles.row}>
-                <Avatar
-                  uri={data.barbeiro.avatarUrl}
-                  name={data.barbeiro.nome}
-                  size="md"
-                />
-                <View style={[styles.info, { marginLeft: spacing.md }]}>
-                  <Text
-                    style={[typography.bodyBold, { color: palette.text }]}
-                    numberOfLines={1}
-                  >
-                    {data.barbeiro.nome}
-                  </Text>
-                  <Text
-                    style={[
-                      typography.caption,
-                      { color: palette.textMuted, marginTop: 2 },
-                    ]}
-                  >
-                    Barbeiro
-                  </Text>
-                </View>
-              </View>
-            </Card>
-            <View style={{ height: spacing.sm }} />
-          </>
-        ) : null}
-
-        <SectionLabel>Quando</SectionLabel>
-        <Card testID="data-card">
-          <Text
-            style={[
-              typography.bodyMedium,
-              { color: palette.text, textTransform: "capitalize" },
-            ]}
+        {/* ── Status badge ── */}
+        <View style={styles.statusRow}>
+          <View
+            testID="status-card"
+            style={[styles.statusBadge, { backgroundColor: statusCor + "1a" }]}
           >
+            <View style={[styles.statusDot, { backgroundColor: statusCor }]} />
+            <Text
+              testID="status-text"
+              style={[styles.statusBadgeText, { color: statusCor }]}
+            >
+              {statusLabel}
+            </Text>
+          </View>
+        </View>
+
+        {/* ── Hero date/time ── */}
+        <View style={styles.heroSection}>
+          <Text style={[styles.heroDate, { color: palette.text }]}>
             {dataStr}
           </Text>
-          <Text
-            style={[
-              {
-                fontFamily: "JetBrainsMono_500Medium",
-                fontSize: 18,
-                lineHeight: 24,
-              },
-              { color: palette.primary, marginTop: 2 },
-            ]}
-          >
-            {horarioStr}
+          <Text style={[styles.heroHora, { color: palette.primary }]}>
+            {horaInicio}
           </Text>
-        </Card>
+        </View>
 
-        <View style={{ height: spacing.sm }} />
-
-        <SectionLabel>Serviços</SectionLabel>
-        <Card testID="servicos-card">
-          {data.itens.map((item, idx) => (
-            <View key={item.codigo}>
-              {idx > 0 ? <Divider /> : null}
-              <View
-                style={{
-                  paddingVertical: spacing.sm,
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={[typography.body, { color: palette.text, flex: 1 }]}
-                  numberOfLines={1}
-                >
-                  {item.servico.nome}
-                </Text>
-                <Text
-                  style={[typography.caption, { color: palette.textMuted }]}
-                >
-                  {item.duracao}min
-                </Text>
-              </View>
+        {/* ── Service card ── */}
+        <View testID="barbeiro-card" style={styles.serviceCard}>
+          {/* Barbeiro row */}
+          <View style={styles.serviceCardTop}>
+            <View style={styles.serviceIcon}>
+              <Text style={styles.serviceIconText}>✂</Text>
             </View>
-          ))}
-          {totalPreco > 0 ? (
-            <>
-              <Divider />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.serviceName, { color: palette.text }]}>
+                {servicoNome}
+              </Text>
+              <Text style={styles.barbeiroName}>
+                {data.barbeiro?.nome ?? "Barbeiro"}
+              </Text>
+            </View>
+            {data.barbeiro && (
               <View
-                style={{
-                  paddingTop: spacing.sm,
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
+                style={[
+                  styles.barbeiroAvatar,
+                  { backgroundColor: palette.primary },
+                ]}
               >
-                <Text
-                  style={[
-                    typography.label,
-                    { color: palette.textMuted, textTransform: "uppercase" },
-                  ]}
-                >
-                  Total
-                </Text>
-                <Text
-                  style={[
-                    {
-                      fontFamily: "JetBrainsMono_500Medium",
-                      fontSize: 16,
-                      lineHeight: 22,
-                    },
-                    { color: palette.text },
-                  ]}
-                >
-                  R$ {totalPreco.toFixed(2).replace(".", ",")}
-                </Text>
+                <Text style={styles.barbeiroAvatarLetter}>{initial}</Text>
               </View>
-            </>
-          ) : null}
-        </Card>
+            )}
+          </View>
 
-        {data.status === "concluido" ? (
-          <View style={{ marginTop: spacing.xl }}>
-            <AmberButton
-              label="Avaliar"
-              onPress={() => setAvaliacaoVisible(true)}
-              testID="botao-avaliar"
+          {/* Divider */}
+          <View style={styles.cardDivider} />
+
+          {/* Micro grid */}
+          <View style={styles.microGrid}>
+            <DetailMicro
+              icon="⏱"
+              label="Duração"
+              value={`${duracaoTotal}min`}
+            />
+            <DetailMicro
+              icon="💰"
+              label="Total"
+              value={
+                totalPreco > 0
+                  ? `R$ ${totalPreco.toFixed(2).replace(".", ",")}`
+                  : "—"
+              }
+              valueColor={palette.primary}
             />
           </View>
-        ) : null}
+        </View>
 
+        {/* ── Location card (future) ── */}
         {podeCancelar ? (
-          <View style={{ marginTop: spacing.xl }}>
-            <DangerButton
-              label="Cancelar agendamento"
-              onPress={handleCancelar}
-              loading={cancelar.isPending}
-              testID="botao-cancelar"
-            />
+          <View style={styles.locationCard}>
+            <View style={styles.locationIcon}>
+              <Text style={{ fontSize: 18 }}>📍</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.locationTitle, { color: palette.text }]}>
+                Barbearia
+              </Text>
+              <Text style={styles.locationAddress} numberOfLines={1}>
+                Rua da Barbearia
+              </Text>
+            </View>
           </View>
         ) : null}
+
+        {/* ── Hora de saída ── */}
+        <View style={styles.horarioRow}>
+          <Text style={styles.horarioLabel}>Término previsto:</Text>
+          <Text style={[styles.horarioValue, { color: palette.primary }]}>
+            {horaFim}
+          </Text>
+        </View>
       </ScrollView>
+
+      {/* ── Sticky actions ── */}
+      <View style={[styles.actionsArea, { borderTopColor: "#262626" }]}>
+        {renderActions()}
+      </View>
 
       <AvaliacaoSheet
         visible={avaliacaoVisible}
@@ -356,48 +433,308 @@ export default function AgendamentoDetalheScreen() {
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  const { palette, spacing } = useTheme();
-  return (
-    <Text
-      style={[
-        styles.sectionLabel,
-        {
-          color: palette.textMuted,
-          marginBottom: 6,
-          marginTop: spacing.xs,
-        },
-      ]}
-    >
-      {children}
-    </Text>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: {
+  container: {
+    flex: 1,
+  },
+  centeredFlex: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  hero: {
+  notFoundTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
+  },
+  scrollContent: {
+    paddingBottom: 120,
+  },
+  // ── Top bar
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backBtnText: {
+    color: "#aaaaaa",
+    fontSize: 22,
+    lineHeight: 26,
+  },
+  topBarTitle: {
+    fontSize: 11,
+    color: "#666666",
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+  },
+  // ── Status badge
+  statusRow: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    alignSelf: "flex-start",
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 5,
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.8,
+  },
+  // ── Hero
+  heroSection: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  heroDate: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 32,
+    letterSpacing: -0.8,
+    lineHeight: 36,
+  },
+  heroHora: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 32,
+    letterSpacing: -0.8,
+    lineHeight: 36,
+    marginTop: 2,
+  },
+  // ── Service card
+  serviceCard: {
+    backgroundColor: "#1c1c1c",
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  serviceCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+  },
+  serviceIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    backgroundColor: "#F4B40014",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  serviceIconText: {
+    fontSize: 18,
+  },
+  serviceName: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+  },
+  barbeiroName: {
+    fontSize: 12,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+  barbeiroAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  barbeiroAvatarLetter: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
+    color: "#0d0d0d",
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: "#262626",
+    marginBottom: 14,
+  },
+  microGrid: {
+    flexDirection: "row",
+    gap: 14,
+  },
+  detailMicro: {
+    flex: 1,
+    minWidth: 0,
+  },
+  detailMicroLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 4,
+  },
+  detailMicroIcon: {
+    fontSize: 11,
+    color: "#666666",
+  },
+  detailMicroLabelText: {
+    fontSize: 9,
+    letterSpacing: 1.2,
+    color: "#888888",
+    fontFamily: "Inter_600SemiBold",
+  },
+  detailMicroValue: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // ── Location card
+  locationCard: {
+    backgroundColor: "#1c1c1c",
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  locationIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 11,
+    backgroundColor: "#3b82f61a",
+    borderWidth: 1,
+    borderColor: "#3b82f640",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  locationTitle: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  locationAddress: {
+    fontSize: 11,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+  // ── Horário row
+  horarioRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    marginTop: 4,
+  },
+  horarioLabel: {
+    fontSize: 12,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+  },
+  horarioValue: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 12,
+  },
+  // ── Actions
+  actionsArea: {
+    borderTopWidth: 1,
+    padding: 14,
+    paddingBottom: 18,
+  },
+  actionsCol: {
+    gap: 8,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  btnAmber: {
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnAmberText: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 15,
+    color: "#0d0d0d",
+  },
+  btnGhost: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  btnGhostFull: {
+    height: 48,
+    borderRadius: 24,
     borderWidth: 1,
     alignItems: "center",
+    justifyContent: "center",
   },
-  heroBadgeRow: {
-    alignSelf: "center",
+  btnGhostText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
   },
-  heroTimeBlock: {
+  btnOutline: {
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
     alignItems: "center",
+    justifyContent: "center",
   },
-  row: { flexDirection: "row", alignItems: "center" },
-  info: { flex: 1 },
-  sectionLabel: {
-    fontFamily: "Inter_600SemiBold",
+  btnOutlineText: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 14,
+  },
+  btnAvaliar: {
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#F4B40038",
+    backgroundColor: "#F4B40014",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  btnAvaliarText: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 14,
+    color: "#F4B400",
+  },
+  noShowBanner: {
+    padding: 10,
+    backgroundColor: "#ef444410",
+    borderWidth: 1,
+    borderColor: "#ef444430",
+    borderRadius: 10,
+  },
+  noShowBannerText: {
     fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
+    color: "#fca5a5",
+    fontFamily: "Inter_400Regular",
+    lineHeight: 16,
   },
 });

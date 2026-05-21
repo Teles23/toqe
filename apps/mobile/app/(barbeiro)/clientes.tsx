@@ -1,23 +1,31 @@
 /**
  * BarbeiroClientesScreen — Clientes (Urban Flow v2).
  *
- * Redesign fiel ao protótipo Claude Design `dTVtmzWT4ykmhzZusl4Mog`:
- *  - Header: "Clientes" + total count + botão + (AdicionarWalkInModal)
- *  - Search pill + filtros chips horizontais
+ * Redesign pixel-accurate do protótipo Claude Design:
+ *  - Header: "Clientes" (Sora 700 24px) + total count + botão + (AdicionarWalkInModal)
+ *  - Search pill 44px height, borderRadius 22, bg #1c1c1c, border #262626
+ *  - Filtros chips horizontais com estados ativo/inativo corretos
  *  - Rows de cliente com Avatar + nome + visitas + última visita
  *  - Tap → ClienteDetalhe (modal full-screen)
  */
 
 import { differenceInDays, parseISO } from "date-fns";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInModal";
 import { ClienteCard } from "@/src/features/barbeiro/ClienteCard";
 import { ClienteDetalhe } from "@/src/features/barbeiro/ClienteDetalhe";
 import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
 import { useTheme } from "@/src/shared/theme";
-import { DataListWrapper, SearchInput } from "@/src/shared/ui";
+import { DataListWrapper } from "@/src/shared/ui";
 import type { ClienteAPI } from "@toqe/contracts";
 
 // ─── Filtros ──────────────────────────────────────────────────────────────────
@@ -63,7 +71,7 @@ function normalize(s: string): string {
 // ─── Tela ─────────────────────────────────────────────────────────────────────
 
 export default function BarbeiroClientesScreen() {
-  const { palette, spacing, radius, typography } = useTheme();
+  const { palette, spacing } = useTheme();
 
   const { data, isLoading, isError, isRefetching, refetch } =
     useClientesDaBarbearia();
@@ -122,18 +130,12 @@ export default function BarbeiroClientesScreen() {
         ]}
       >
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: palette.text }]}>
-            Clientes
-          </Text>
+          <Text style={styles.headerTitle}>Clientes</Text>
           {data && (
-            <Text
-              style={[
-                typography.caption,
-                { color: palette.textMuted, marginTop: 2 },
-              ]}
-            >
-              {data.length} no total
-            </Text>
+            <View style={styles.headerSubRow}>
+              <Text style={styles.headerSubIcon}>👤</Text>
+              <Text style={styles.headerSubText}>{data.length} no total</Text>
+            </View>
           )}
         </View>
         <Pressable
@@ -141,39 +143,44 @@ export default function BarbeiroClientesScreen() {
           onPress={() => setWalkinOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Adicionar cliente"
-          style={({ pressed }) => [
-            styles.addBtn,
-            {
-              backgroundColor: palette.surfaceHigh,
-              borderColor: palette.borderStrong,
-              borderRadius: radius.full,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
+          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
         >
           <Text style={[styles.addBtnText, { color: palette.primary }]}>+</Text>
         </Pressable>
       </View>
 
       {/* Search + filtros */}
-      <View
-        style={[
-          styles.searchWrap,
-          { paddingHorizontal: spacing.md, gap: spacing.sm },
-        ]}
-      >
-        <SearchInput
-          value={busca}
-          onChangeText={setBusca}
-          placeholder="Buscar por nome ou e-mail"
-          testID="clientes-busca"
-        />
+      <View style={[styles.searchWrap, { paddingHorizontal: spacing.md }]}>
+        {/* Search pill — design: height 44, borderRadius 22, bg #1c1c1c, border #262626 */}
+        <View style={styles.searchContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            testID="clientes-busca"
+            value={busca}
+            onChangeText={setBusca}
+            placeholder="Buscar por nome ou e-mail"
+            placeholderTextColor="#666666"
+            style={styles.searchInput}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {busca.length > 0 && (
+            <Pressable
+              onPress={() => setBusca("")}
+              accessibilityRole="button"
+              accessibilityLabel="Limpar busca"
+              style={styles.searchClear}
+            >
+              <Text style={styles.searchClearText}>✕</Text>
+            </Pressable>
+          )}
+        </View>
 
         {/* Filter chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 6 }}
+          contentContainerStyle={styles.chipsContainer}
         >
           {FILTERS.map((f) => {
             const active = filter === f.id && !f.disabled;
@@ -187,25 +194,15 @@ export default function BarbeiroClientesScreen() {
                 accessibilityState={{ checked: active, disabled: f.disabled }}
                 style={({ pressed }) => [
                   styles.chip,
-                  {
-                    backgroundColor: active
-                      ? palette.primary + "1c"
-                      : palette.surfaceHigh,
-                    borderColor: active
-                      ? palette.primary
-                      : palette.borderStrong,
-                    borderRadius: radius.full,
-                    opacity: f.disabled ? 0.4 : pressed ? 0.7 : 1,
-                  },
+                  active ? styles.chipActive : styles.chipInactive,
+                  f.disabled && styles.chipDisabled,
+                  pressed && !f.disabled && styles.pressed,
                 ]}
               >
                 <Text
                   style={[
-                    typography.caption,
-                    {
-                      color: active ? palette.primary : palette.textMuted,
-                      fontWeight: active ? "700" : "500",
-                    },
+                    styles.chipText,
+                    active ? styles.chipTextActive : styles.chipTextInactive,
                   ]}
                 >
                   {f.label}
@@ -216,7 +213,7 @@ export default function BarbeiroClientesScreen() {
         </ScrollView>
 
         {/* Ordenação */}
-        <View style={[styles.sortRow, { gap: spacing.sm }]}>
+        <View style={styles.sortRow}>
           <SortButton
             active={sort === "nome"}
             label="Nome"
@@ -236,12 +233,8 @@ export default function BarbeiroClientesScreen() {
       {data && data.length > 0 ? (
         <Text
           style={[
-            typography.caption,
-            {
-              color: palette.textMuted,
-              paddingHorizontal: spacing.lg,
-              paddingTop: spacing.sm,
-            },
+            styles.countText,
+            { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
           ]}
           testID="clientes-contagem"
         >
@@ -298,7 +291,6 @@ function SortButton({
   onPress: () => void;
   testID?: string;
 }) {
-  const { palette, radius, typography } = useTheme();
   return (
     <Pressable
       testID={testID}
@@ -307,21 +299,15 @@ function SortButton({
       accessibilityLabel={`Ordenar por ${label}`}
       accessibilityState={{ selected: active }}
       style={({ pressed }) => [
-        {
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          borderRadius: radius.full,
-          borderWidth: 1,
-          backgroundColor: active ? palette.primary : palette.surface,
-          borderColor: active ? palette.primary : palette.borderStrong,
-        },
-        pressed && { opacity: 0.7 },
+        styles.sortBtn,
+        active ? styles.sortBtnActive : styles.sortBtnInactive,
+        pressed && styles.pressed,
       ]}
     >
       <Text
         style={[
-          typography.captionBold,
-          { color: active ? palette.primaryOn : palette.text },
+          styles.sortBtnText,
+          active ? styles.sortBtnTextActive : styles.sortBtnTextInactive,
         ]}
       >
         {label}
@@ -334,6 +320,7 @@ function SortButton({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  pressed: { opacity: 0.7 },
   header: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -343,31 +330,153 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: "Sora_700Bold",
     fontSize: 24,
+    color: "#f5f5f5",
     letterSpacing: -0.5,
-    lineHeight: 30,
+    lineHeight: 28,
+  },
+  headerSubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+  },
+  headerSubIcon: {
+    fontSize: 12,
+    color: "#888888",
+  },
+  headerSubText: {
+    fontSize: 12,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
   },
   addBtn: {
     width: 44,
     height: 44,
+    borderRadius: 22,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
   },
   addBtnText: {
     fontSize: 24,
     fontWeight: "300",
-    lineHeight: 26,
+    lineHeight: 28,
     marginTop: -2,
   },
   searchWrap: {
     paddingBottom: 8,
+    gap: 10,
+  },
+  // Search pill
+  searchContainer: {
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    flexDirection: "row",
+    alignItems: "center",
+    position: "relative",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: 14,
+    fontSize: 14,
+    color: "#666666",
+    zIndex: 1,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    paddingLeft: 40,
+    paddingRight: 14,
+    color: "#f5f5f5",
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+  },
+  searchClear: {
+    position: "absolute",
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchClearText: {
+    fontSize: 13,
+    color: "#888888",
+  },
+  // Chips
+  chipsContainer: {
+    gap: 6,
+    paddingBottom: 2,
   },
   chip: {
-    paddingHorizontal: 12,
+    flexShrink: 0,
     paddingVertical: 7,
+    paddingHorizontal: 12,
     minHeight: 34,
+    borderRadius: 100,
     borderWidth: 1,
     justifyContent: "center",
   },
-  sortRow: { flexDirection: "row" },
+  chipActive: {
+    backgroundColor: "#F4B4001c",
+    borderColor: "#F4B400",
+  },
+  chipInactive: {
+    backgroundColor: "#1c1c1c",
+    borderColor: "#262626",
+  },
+  chipDisabled: {
+    opacity: 0.4,
+  },
+  chipText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+  },
+  chipTextActive: {
+    color: "#F4B400",
+  },
+  chipTextInactive: {
+    color: "#888888",
+  },
+  // Sort row
+  sortRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  sortBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 100,
+    borderWidth: 1,
+  },
+  sortBtnActive: {
+    backgroundColor: "#F4B400",
+    borderColor: "#F4B400",
+  },
+  sortBtnInactive: {
+    backgroundColor: "transparent",
+    borderColor: "#262626",
+  },
+  sortBtnText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+  },
+  sortBtnTextActive: {
+    color: "#0a0a0a",
+  },
+  sortBtnTextInactive: {
+    color: "#f5f5f5",
+  },
+  // Count
+  countText: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#888888",
+  },
 });

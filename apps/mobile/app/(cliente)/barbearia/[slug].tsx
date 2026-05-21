@@ -10,16 +10,15 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { useBarbeariaPublica } from "@/src/shared/hooks/use-barbearia-publica";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, Avatar } from "@/src/shared/ui";
 
 export default function BarbeariaPublicaScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { palette, spacing, typography, radius } = useTheme();
+  const { palette } = useTheme();
   const { data, isLoading } = useBarbeariaPublica(slug);
 
   if (isLoading) {
     return (
-      <View style={[styles.centered, { backgroundColor: palette.bg }]}>
+      <View style={[styles.centeredFlex, { backgroundColor: palette.bg }]}>
         <ActivityIndicator
           color={palette.primary}
           size="large"
@@ -33,20 +32,18 @@ export default function BarbeariaPublicaScreen() {
     return (
       <View
         testID="barbearia-nao-encontrada"
-        style={[styles.centered, { backgroundColor: palette.bg }]}
+        style={[styles.centeredFlex, { backgroundColor: palette.bg }]}
       >
-        <Text style={{ ...typography.heading, color: palette.text }}>
+        <Text style={[styles.notFoundTitle, { color: palette.text }]}>
           Barbearia não encontrada
         </Text>
         <Pressable
           testID="btn-voltar-barbearia"
           accessibilityRole="button"
           onPress={() => router.back()}
-          style={{ marginTop: spacing.md }}
+          style={{ marginTop: 16 }}
         >
-          <Text style={{ ...typography.label, color: palette.primary }}>
-            ← Voltar
-          </Text>
+          <Text style={{ color: palette.primary, fontSize: 14 }}>← Voltar</Text>
         </Pressable>
       </View>
     );
@@ -56,229 +53,392 @@ export default function BarbeariaPublicaScreen() {
     router.push(`/(cliente)/agendar?slug=${slug}` as never);
   }
 
+  const initial = data.nome.charAt(0).toUpperCase();
+
   return (
     <View
       testID="barbearia-detalhe"
-      style={{ flex: 1, backgroundColor: palette.bg }}
+      style={[styles.container, { backgroundColor: palette.bg }]}
     >
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: spacing.xxl + spacing.sm,
-            paddingHorizontal: spacing.md,
-            paddingBottom: spacing.md,
-            borderBottomWidth: 1,
-            borderColor: palette.border,
-          },
-        ]}
-      >
+      {/* ── Top bar (absolute) ── */}
+      <View style={styles.topBar}>
         <Pressable
           testID="btn-voltar-barbearia"
           accessibilityRole="button"
           onPress={() => router.back()}
-          style={[
-            styles.backBtn,
-            {
-              backgroundColor: palette.surface,
-              borderRadius: radius.full,
-              marginRight: spacing.md,
-            },
-          ]}
+          style={styles.topBarBtn}
         >
-          <Text style={{ ...typography.body, color: palette.text }}>‹</Text>
+          <Text style={styles.topBarBtnText}>‹</Text>
         </Pressable>
-        <Text
-          style={{
-            fontFamily: "Sora_700Bold",
-            fontSize: 20,
-            lineHeight: 28,
-            color: palette.text,
-            flex: 1,
-          }}
-          numberOfLines={1}
-        >
-          {data.nome}
-        </Text>
+        <Pressable accessibilityRole="button" style={styles.topBarBtn}>
+          <Text style={styles.topBarBtnText}>☆</Text>
+        </Pressable>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: spacing.xxxl + spacing.xl }}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo / Avatar */}
-        <View style={[styles.centered, { paddingVertical: spacing.xl }]}>
-          <Avatar
-            name={data.nome}
-            uri={data.tema?.logoUrl ?? undefined}
-            size="xl"
-          />
-
-          {/* Rating */}
-          {data.ratingMedio != null && data.ratingMedio > 0 && (
-            <Text
-              style={{
-                ...typography.bodyBold,
-                color: palette.primary,
-                marginTop: spacing.sm,
-              }}
-            >
-              ★ {data.ratingMedio.toFixed(1)}
-            </Text>
-          )}
+        {/* ── Hero block ── */}
+        <View style={[styles.hero, { backgroundColor: palette.primary }]}>
+          <Text style={styles.heroWatermark}>✂</Text>
         </View>
 
-        {/* Description */}
-        {data.descricao ? (
-          <View
-            style={{ paddingHorizontal: spacing.md, marginBottom: spacing.lg }}
-          >
-            <Text
-              style={{
-                ...typography.body,
-                color: palette.textMuted,
-                textAlign: "center",
-              }}
+        {/* ── Body card (overlaps hero) ── */}
+        <View style={[styles.bodyCard, { backgroundColor: palette.bg }]}>
+          {/* Logo overlapping */}
+          <View style={styles.logoWrap}>
+            <View
+              style={[
+                styles.logoBox,
+                { backgroundColor: palette.primary, borderColor: palette.bg },
+              ]}
             >
-              {data.descricao}
-            </Text>
+              <Text style={styles.logoLetter}>{initial}</Text>
+            </View>
           </View>
-        ) : null}
 
-        {/* Serviços count chip */}
-        <View style={[styles.section, { paddingHorizontal: spacing.md }]}>
-          <Text
-            style={{
-              ...typography.captionBold,
-              color: palette.textMuted,
-              letterSpacing: 1,
-              marginBottom: spacing.sm,
-            }}
-          >
-            SERVIÇOS
-          </Text>
-          <View
-            style={[
-              styles.chip,
-              {
-                backgroundColor: palette.primaryDim,
-                borderRadius: radius.full,
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.xs,
-                alignSelf: "flex-start",
-              },
-            ]}
-          >
-            <Text style={{ ...typography.label, color: palette.primary }}>
-              {data.servicoCount}{" "}
-              {data.servicoCount === 1 ? "serviço" : "serviços"} disponíveis
+          {/* Name + rating */}
+          <View style={styles.nameSection}>
+            <Text style={[styles.barbeariaNome, { color: palette.text }]}>
+              {data.nome}
             </Text>
+            {data.ratingMedio != null && data.ratingMedio > 0 ? (
+              <View style={styles.ratingRow}>
+                <Text style={[styles.ratingStar, { color: palette.primary }]}>
+                  {`★ ${data.ratingMedio.toFixed(1)}`}
+                </Text>
+                <Text style={styles.ratingLabel}>{" · avaliações"}</Text>
+              </View>
+            ) : null}
           </View>
+
+          {/* Info card */}
+          <View style={styles.infoCard}>
+            {/* Endereço */}
+            <View style={styles.infoLine}>
+              <Text style={styles.infoIcon}>📍</Text>
+              <Text style={styles.infoText} numberOfLines={1}>
+                {data.endereco ?? "Endereço não informado"}
+              </Text>
+            </View>
+            {/* Horário */}
+            <View style={styles.infoLine}>
+              <Text style={styles.infoIcon}>🕐</Text>
+              <Text style={styles.infoText}>Horários disponíveis</Text>
+            </View>
+            {/* Telefone */}
+            {data.telefone ? (
+              <View style={styles.infoLine}>
+                <Text style={styles.infoIcon}>📞</Text>
+                <Text style={styles.infoText}>{data.telefone}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Sobre */}
+          {data.descricao ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>SOBRE</Text>
+              <View style={styles.sobreCard}>
+                <Text style={styles.sobreText}>{data.descricao}</Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Profissionais */}
+          {data.barbeiros.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>PROFISSIONAIS</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.profScroll}
+              >
+                {data.barbeiros.map((b) => {
+                  const bInitial = b.nome.charAt(0).toUpperCase();
+                  return (
+                    <View key={b.usrCodigo} style={styles.profCard}>
+                      <View
+                        style={[
+                          styles.profAvatar,
+                          { backgroundColor: palette.primary },
+                        ]}
+                      >
+                        <Text style={styles.profAvatarLetter}>{bInitial}</Text>
+                      </View>
+                      <Text
+                        style={[styles.profName, { color: palette.text }]}
+                        numberOfLines={1}
+                      >
+                        {b.nome.split(" ")[0]}
+                      </Text>
+                      <Text style={styles.profRatingNum}>nota —</Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {/* Spacer for CTA */}
+          <View style={{ height: 80 }} />
         </View>
-
-        {/* Barbeiros */}
-        {data.barbeiros.length > 0 && (
-          <View style={[styles.section, { paddingHorizontal: spacing.md }]}>
-            <Text
-              style={{
-                ...typography.captionBold,
-                color: palette.textMuted,
-                letterSpacing: 1,
-                marginBottom: spacing.sm,
-              }}
-            >
-              BARBEIROS
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {data.barbeiros.map((b) => (
-                <View
-                  key={b.usrCodigo}
-                  style={[
-                    styles.barbeiroChip,
-                    {
-                      backgroundColor: palette.surface,
-                      borderRadius: radius.md,
-                      borderWidth: 1,
-                      borderColor: palette.border,
-                      padding: spacing.sm,
-                      marginRight: spacing.sm,
-                      alignItems: "center",
-                    },
-                  ]}
-                >
-                  <Avatar
-                    name={b.nome}
-                    uri={b.avatarUrl ?? undefined}
-                    size="sm"
-                  />
-                  <Text
-                    style={{
-                      ...typography.caption,
-                      color: palette.text,
-                      marginTop: spacing.xs,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {b.nome.split(" ")[0]}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
       </ScrollView>
 
-      {/* Reservar button */}
-      <View
-        style={[
-          styles.footer,
-          {
-            backgroundColor: palette.bg,
-            borderTopWidth: 1,
-            borderColor: palette.border,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.md,
-          },
-        ]}
-      >
-        <AmberButton
-          label="Reservar"
+      {/* ── CTA fixo ── */}
+      <View style={styles.ctaWrap}>
+        <Pressable
           testID="btn-reservar"
+          accessibilityRole="button"
           onPress={handleReservar}
-        />
+          style={({ pressed }) => [
+            styles.ctaBtn,
+            { backgroundColor: palette.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <Text style={styles.ctaBtnText}>Reservar horário</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  centered: {
-    alignItems: "center",
-    justifyContent: "center",
-    flex: 0,
+  container: {
+    flex: 1,
   },
   centeredFlex: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
+  notFoundTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
+  // ── Top bar
+  topBar: {
+    position: "absolute",
+    top: 16,
+    left: 18,
+    right: 18,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    zIndex: 2,
+  },
+  topBarBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
+  topBarBtnText: {
+    color: "#ffffff",
+    fontSize: 22,
+    lineHeight: 26,
+  },
+  // ── Scroll
+  scrollContent: {
+    flexGrow: 1,
+  },
+  // ── Hero
+  hero: {
+    height: 200,
+    overflow: "hidden",
+    position: "relative",
+  },
+  heroWatermark: {
+    position: "absolute",
+    right: 20,
+    bottom: -20,
+    fontSize: 120,
+    opacity: 0.15,
+    color: "#0d0d0d",
+    transform: [{ rotate: "-10deg" }],
+  },
+  // ── Body card
+  bodyCard: {
+    marginTop: -60,
+    borderRadius: 20,
+    paddingBottom: 24,
+    position: "relative",
+    zIndex: 1,
+  },
+  // ── Logo
+  logoWrap: {
+    alignItems: "center",
+    marginTop: -40,
+    marginBottom: 12,
+  },
+  logoBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 3,
+  },
+  logoLetter: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 32,
+    color: "#0d0d0d",
+  },
+  // ── Name section
+  nameSection: {
+    alignItems: "center",
+    paddingHorizontal: 18,
+    marginBottom: 14,
+  },
+  barbeariaNome: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 20,
+    letterSpacing: -0.5,
+    textAlign: "center",
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  ratingStar: {
+    fontSize: 12,
+  },
+  ratingNum: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 12,
+    color: "#f5f5f5",
+  },
+  ratingDot: {
+    fontSize: 12,
+    color: "#444444",
+  },
+  ratingLabel: {
+    fontSize: 12,
+    color: "#888888",
+  },
+  // ── Info card
+  infoCard: {
+    marginHorizontal: 16,
+    marginBottom: 14,
+    backgroundColor: "#171717",
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderRadius: 14,
+    padding: 14,
+    gap: 10,
+  },
+  infoLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  infoIcon: {
+    fontSize: 14,
+    width: 18,
+    textAlign: "center",
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#aaaaaa",
+    fontFamily: "Inter_400Regular",
+  },
+  // ── Sections
   section: {
-    marginBottom: 24,
+    marginHorizontal: 16,
+    marginBottom: 14,
   },
-  chip: {},
-  barbeiroChip: {
-    minWidth: 64,
+  sectionLabel: {
+    fontSize: 10,
+    color: "#666666",
+    letterSpacing: 1.5,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+    marginBottom: 8,
+    paddingHorizontal: 4,
   },
-  footer: {},
+  sobreCard: {
+    backgroundColor: "#171717",
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderRadius: 14,
+    padding: 14,
+  },
+  sobreText: {
+    fontSize: 12,
+    color: "#aaaaaa",
+    lineHeight: 18,
+    fontFamily: "Inter_400Regular",
+  },
+  // ── Profissionais
+  profScroll: {
+    gap: 10,
+    paddingBottom: 6,
+  },
+  profCard: {
+    width: 104,
+    padding: 12,
+    backgroundColor: "#171717",
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  profAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profAvatarLetter: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
+    color: "#0d0d0d",
+  },
+  profName: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  profRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 4,
+  },
+  profRatingStar: {
+    fontSize: 9,
+  },
+  profRatingNum: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 9,
+    color: "#888888",
+  },
+  // ── CTA fixo
+  ctaWrap: {
+    position: "absolute",
+    bottom: 18,
+    left: 16,
+    right: 16,
+    zIndex: 10,
+  },
+  ctaBtn: {
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaBtnText: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 15,
+    color: "#0d0d0d",
+  },
 });

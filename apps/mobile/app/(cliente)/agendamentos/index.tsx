@@ -18,28 +18,25 @@ import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 
 // ─── Status colors ────────────────────────────────────────────────────────────
 
-function statusColor(
-  status: StatusAgendamento,
-  palette: ReturnType<typeof useTheme>["palette"],
-): string {
+function statusColor(status: StatusAgendamento): string {
   switch (status) {
     case "pendente":
-      return "#f4b400";
+      return "#F4B400";
     case "confirmado":
       return "#22c55e";
     case "concluido":
-      return palette.textDisabled;
+      return "#666666";
     case "cancelado":
-      return palette.textMuted;
+      return "#888888";
     case "no_show":
       return "#ef4444";
     default:
-      return palette.textMuted;
+      return "#888888";
   }
 }
 
-const STATUS_LABEL: Record<StatusAgendamento, string> = {
-  pendente: "Pendente",
+const STATUS_SHORT: Record<StatusAgendamento, string> = {
+  pendente: "Aguardando",
   confirmado: "Confirmado",
   concluido: "Concluído",
   cancelado: "Cancelado",
@@ -49,66 +46,55 @@ const STATUS_LABEL: Record<StatusAgendamento, string> = {
 // ─── DateTile ─────────────────────────────────────────────────────────────────
 
 function DateTile({ inicio }: { inicio: string }) {
-  const { palette, typography, radius } = useTheme();
+  const { palette } = useTheme();
   const date = parseISO(inicio);
-  const dia = format(date, "EEE", { locale: ptBR });
+  const future = isFuture(date);
+  const dia = format(date, "EEE", { locale: ptBR }).slice(0, 3);
   const num = format(date, "d");
   const mes = format(date, "MMM", { locale: ptBR });
 
   return (
     <View
       style={[
-        dateTileStyles.tile,
-        {
-          width: 56,
-          backgroundColor: palette.surface,
-          borderRadius: radius.sm,
-          borderWidth: 1,
-          borderColor: palette.border,
-          paddingVertical: 6,
-          alignItems: "center",
-          justifyContent: "center",
-          marginRight: 12,
-        },
+        styles.dateTile,
+        future ? styles.dateTileFuture : styles.dateTilePast,
       ]}
     >
       <Text
         style={[
-          typography.captionBold,
-          { color: palette.textMuted, textTransform: "uppercase" },
+          styles.dateTileDia,
+          { color: future ? palette.primary : "#444444" },
         ]}
       >
-        {dia}
+        {dia.toUpperCase()}
       </Text>
       <Text
-        style={[typography.heading, { color: palette.primary, lineHeight: 28 }]}
+        style={[
+          styles.dateTileNum,
+          { color: future ? palette.text : "#aaaaaa" },
+        ]}
       >
         {num}
       </Text>
       <Text
-        style={[
-          typography.captionBold,
-          { color: palette.textMuted, textTransform: "uppercase" },
-        ]}
+        style={[styles.dateTileMes, { color: future ? "#444444" : "#333333" }]}
       >
-        {mes}
+        {mes.toUpperCase()}
       </Text>
     </View>
   );
 }
 
-const dateTileStyles = StyleSheet.create({ tile: {} });
-
 // ─── ClienteAptRow ────────────────────────────────────────────────────────────
 
 function ClienteAptRow({ item }: { item: AgendamentoResponse }) {
-  const { palette, typography, spacing, radius } = useTheme();
+  const { palette } = useTheme();
   const inicio = parseISO(item.inicio);
   const horaStr = format(inicio, "HH:mm");
   const isCanceled = item.status === "cancelado" || item.status === "no_show";
   const isConcluido = item.status === "concluido";
   const showPill = item.status === "pendente" || item.status === "confirmado";
-  const cor = statusColor(item.status, palette);
+  const cor = statusColor(item.status);
 
   const servico =
     item.itens.length === 0
@@ -124,45 +110,17 @@ function ClienteAptRow({ item }: { item: AgendamentoResponse }) {
         router.push(`/(cliente)/agendamentos/${item.codigo}` as never)
       }
       accessibilityRole="button"
-      style={({ pressed }) => [
-        rowStyles.row,
-        {
-          backgroundColor: pressed ? palette.surfaceHigh : palette.surface,
-          borderRadius: radius.md,
-          borderWidth: 1,
-          borderColor: palette.border,
-          padding: spacing.md,
-          marginBottom: spacing.sm,
-          opacity: isCanceled ? 0.55 : 1,
-        },
-      ]}
+      style={[styles.row, { opacity: isCanceled ? 0.55 : 1 }]}
     >
       <DateTile inicio={item.inicio} />
 
       <View style={{ flex: 1 }}>
         {/* Hora + serviço */}
-        <View style={rowStyles.horaRow}>
+        <View style={styles.horaRow}>
+          <Text style={styles.horaText}>{horaStr}</Text>
+          <Text style={styles.horaDot}>·</Text>
           <Text
-            style={[
-              typography.mono,
-              { color: palette.text, fontFamily: "JetBrainsMono_400Regular" },
-            ]}
-          >
-            {horaStr}
-          </Text>
-          <Text
-            style={[
-              typography.caption,
-              { color: palette.textMuted, marginLeft: 6 },
-            ]}
-          >
-            ·
-          </Text>
-          <Text
-            style={[
-              typography.label,
-              { color: palette.text, marginLeft: 6, flexShrink: 1 },
-            ]}
+            style={[styles.servicoText, { color: palette.textMuted }]}
             numberOfLines={1}
           >
             {servico}
@@ -171,71 +129,40 @@ function ClienteAptRow({ item }: { item: AgendamentoResponse }) {
 
         {/* Barbeiro */}
         {item.barbeiro ? (
-          <Text
-            style={[
-              typography.caption,
-              { color: palette.textMuted, marginTop: 2 },
-            ]}
-            numberOfLines={1}
-          >
-            {item.barbeiro.nome}
+          <Text style={styles.barbeiroText} numberOfLines={1}>
+            com {item.barbeiro.nome}
           </Text>
         ) : null}
 
         {/* Status pill */}
         {showPill ? (
-          <View style={[rowStyles.pill, { marginTop: 4 }]}>
-            <View
-              style={[rowStyles.dot, { backgroundColor: cor, marginRight: 5 }]}
-            />
-            <Text style={[typography.captionBold, { color: cor }]}>
-              {STATUS_LABEL[item.status]}
+          <View style={[styles.statusBadge, { backgroundColor: cor + "1a" }]}>
+            <View style={[styles.statusDot, { backgroundColor: cor }]} />
+            <Text style={[styles.statusBadgeText, { color: cor }]}>
+              {STATUS_SHORT[item.status].toUpperCase()}
             </Text>
           </View>
         ) : null}
 
-        {/* Avaliar chip for concluido not yet rated */}
+        {/* Avaliar chip */}
         {isConcluido ? (
-          <View style={[rowStyles.pill, { marginTop: 4 }]}>
-            <Text
-              style={[
-                typography.captionBold,
-                {
-                  color: palette.primaryOn,
-                  backgroundColor: palette.primary,
-                  borderRadius: radius.full,
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  overflow: "hidden",
-                },
-              ]}
-            >
-              AVALIAR
-            </Text>
+          <View style={styles.avaliarChip}>
+            <Text style={styles.avaliarChipText}>★ AVALIAR</Text>
           </View>
         ) : null}
       </View>
+
+      <Text style={styles.rowChevron}>›</Text>
     </Pressable>
   );
 }
-
-const rowStyles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center" },
-  horaRow: { flexDirection: "row", alignItems: "center" },
-  pill: { flexDirection: "row", alignItems: "center" },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-});
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 type Tab = "proximos" | "historico";
 
 export default function ClienteAgendamentosScreen() {
-  const { palette, spacing, typography, radius } = useTheme();
+  const { palette } = useTheme();
   const { data, isLoading, isError, isRefetching, refetch } =
     useAgendamentosMeus();
   const [tab, setTab] = useState<Tab>("proximos");
@@ -264,7 +191,7 @@ export default function ClienteAgendamentosScreen() {
     if (isLoading) {
       return (
         <View
-          style={contentStyles.center}
+          style={styles.contentCenter}
           testID="lista-meus-agendamentos-loading"
         >
           <ActivityIndicator color={palette.primary} />
@@ -273,13 +200,8 @@ export default function ClienteAgendamentosScreen() {
     }
     if (isError) {
       return (
-        <View style={contentStyles.center}>
-          <Text
-            style={[
-              typography.body,
-              { color: palette.textMuted, textAlign: "center" },
-            ]}
-          >
+        <View style={styles.contentCenter}>
+          <Text style={styles.emptyText}>
             Não foi possível carregar seus agendamentos.
           </Text>
         </View>
@@ -287,13 +209,8 @@ export default function ClienteAgendamentosScreen() {
     }
     if (currentList.length === 0) {
       return (
-        <View style={contentStyles.center}>
-          <Text
-            style={[
-              typography.body,
-              { color: palette.textMuted, textAlign: "center" },
-            ]}
-          >
+        <View style={styles.contentCenter}>
+          <Text style={styles.emptyText}>
             {tab === "proximos"
               ? "Nenhum agendamento futuro."
               : "Nenhum agendamento no histórico."}
@@ -303,141 +220,89 @@ export default function ClienteAgendamentosScreen() {
     }
     return (
       <ScrollView
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: 40 }}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
         }
       >
-        {currentList.map((item) => (
-          <ClienteAptRow key={item.codigo} item={item} />
+        {currentList.map((item, i) => (
+          <View
+            key={item.codigo}
+            style={[i < currentList.length - 1 ? styles.rowSeparator : null]}
+          >
+            <ClienteAptRow item={item} />
+          </View>
         ))}
       </ScrollView>
     );
-  }, [
-    isLoading,
-    isError,
-    currentList,
-    tab,
-    palette,
-    typography,
-    spacing,
-    isRefetching,
-    refetch,
-  ]);
+  }, [isLoading, isError, currentList, tab, palette, isRefetching, refetch]);
 
   return (
     <View
       testID="lista-meus-agendamentos"
-      style={[screenStyles.container, { backgroundColor: palette.bg }]}
+      style={[styles.container, { backgroundColor: palette.bg }]}
     >
       {/* ── Header ── */}
-      <View
-        style={[
-          screenStyles.header,
-          {
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.lg,
-            paddingBottom: spacing.sm,
-          },
-        ]}
-      >
-        <Text style={[typography.title, { color: palette.text }]}>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: palette.text }]}>
           Minha agenda
         </Text>
         <Pressable
           onPress={() => router.push("/(cliente)/home" as never)}
           accessibilityRole="button"
           accessibilityLabel="Novo agendamento"
-          style={({ pressed }) => [
-            screenStyles.addBtn,
-            {
-              backgroundColor: palette.primary,
-              borderRadius: radius.full,
-              width: 32,
-              height: 32,
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: pressed ? 0.75 : 1,
-            },
-          ]}
+          style={styles.addBtn}
         >
-          <Text
-            style={{ color: palette.primaryOn, fontSize: 18, lineHeight: 20 }}
-          >
-            +
-          </Text>
+          <Text style={[styles.addBtnText, { color: palette.primary }]}>+</Text>
         </Pressable>
       </View>
 
       {/* ── Segmented tabs ── */}
-      <View
-        style={[
-          screenStyles.tabs,
-          {
-            paddingHorizontal: spacing.md,
-            marginBottom: spacing.sm,
-          },
-        ]}
-      >
-        <Pressable
-          testID="tab-proximos"
-          onPress={() => setTab("proximos")}
-          style={[
-            screenStyles.tabBtn,
-            {
-              borderRadius: radius.sm,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.xs + 2,
-              backgroundColor:
-                tab === "proximos" ? palette.primary : palette.surface,
-              marginRight: spacing.sm,
-              borderWidth: 1,
-              borderColor:
-                tab === "proximos" ? palette.primary : palette.border,
-            },
-          ]}
-        >
-          <Text
+      <View style={styles.tabsWrap}>
+        <View style={styles.tabsContainer}>
+          <Pressable
+            testID="tab-proximos"
+            onPress={() => setTab("proximos")}
             style={[
-              typography.captionBold,
-              {
-                color:
-                  tab === "proximos" ? palette.primaryOn : palette.textMuted,
-              },
+              styles.tabBtn,
+              tab === "proximos"
+                ? { backgroundColor: palette.primary }
+                : { backgroundColor: "transparent" },
             ]}
           >
-            Próximos · {proximos.length}
-          </Text>
-        </Pressable>
-        <Pressable
-          testID="tab-historico"
-          onPress={() => setTab("historico")}
-          style={[
-            screenStyles.tabBtn,
-            {
-              borderRadius: radius.sm,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.xs + 2,
-              backgroundColor:
-                tab === "historico" ? palette.primary : palette.surface,
-              borderWidth: 1,
-              borderColor:
-                tab === "historico" ? palette.primary : palette.border,
-            },
-          ]}
-        >
-          <Text
+            <Text
+              style={[
+                styles.tabBtnText,
+                {
+                  color: tab === "proximos" ? "#0d0d0d" : "#aaaaaa",
+                },
+              ]}
+            >
+              Próximos · {proximos.length}
+            </Text>
+          </Pressable>
+          <Pressable
+            testID="tab-historico"
+            onPress={() => setTab("historico")}
             style={[
-              typography.captionBold,
-              {
-                color:
-                  tab === "historico" ? palette.primaryOn : palette.textMuted,
-              },
+              styles.tabBtn,
+              tab === "historico"
+                ? { backgroundColor: palette.primary }
+                : { backgroundColor: "transparent" },
             ]}
           >
-            Histórico · {historico.length}
-          </Text>
-        </Pressable>
+            <Text
+              style={[
+                styles.tabBtnText,
+                {
+                  color: tab === "historico" ? "#0d0d0d" : "#aaaaaa",
+                },
+              ]}
+            >
+              Histórico · {historico.length}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* ── Content ── */}
@@ -446,23 +311,200 @@ export default function ClienteAgendamentosScreen() {
   );
 }
 
-const screenStyles = StyleSheet.create({
-  container: { flex: 1 },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  // ── Header
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
-  addBtn: {},
-  tabs: { flexDirection: "row" },
-  tabBtn: {},
-});
-
-const contentStyles = StyleSheet.create({
-  center: {
+  headerTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 24,
+    letterSpacing: -0.6,
+  },
+  addBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addBtnText: {
+    fontSize: 22,
+    lineHeight: 26,
+  },
+  // ── Tabs
+  tabsWrap: {
+    paddingHorizontal: 22,
+    paddingBottom: 14,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    backgroundColor: "#1c1c1c",
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 40,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabBtnText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // ── Row
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  rowSeparator: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#262626",
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  // ── Date tile
+  dateTile: {
+    width: 56,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    flexShrink: 0,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 0,
+  },
+  dateTileFuture: {
+    backgroundColor: "#F4B40014",
+    borderColor: "#F4B40038",
+  },
+  dateTilePast: {
+    backgroundColor: "#1c1c1c",
+    borderColor: "#262626",
+  },
+  dateTileDia: {
+    fontSize: 9,
+    letterSpacing: 1,
+    fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
+  },
+  dateTileNum: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
+    letterSpacing: -0.36,
+    lineHeight: 22,
+    marginTop: 2,
+  },
+  dateTileMes: {
+    fontSize: 9,
+    marginTop: 2,
+    fontFamily: "Inter_400Regular",
+    textTransform: "uppercase",
+  },
+  // ── Row body
+  horaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 3,
+  },
+  horaText: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 13,
+    color: "#f5f5f5",
+    fontWeight: "700",
+  },
+  horaDot: {
+    color: "#444444",
+    fontSize: 11,
+    marginHorizontal: 5,
+  },
+  servicoText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    flexShrink: 1,
+  },
+  barbeiroText: {
+    fontSize: 11,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    marginBottom: 3,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    marginTop: 4,
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  statusBadgeText: {
+    fontSize: 9,
+    fontFamily: "Inter_700Bold" as never,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+  avaliarChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    marginTop: 4,
+    backgroundColor: "#F4B40014",
+  },
+  avaliarChipText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#F4B400",
+    letterSpacing: 0.8,
+  },
+  rowChevron: {
+    fontSize: 16,
+    color: "#444444",
+    flexShrink: 0,
+  },
+  // ── States
+  contentCenter: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
   },
 });
