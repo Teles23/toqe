@@ -196,6 +196,75 @@ Utilitário exportado: `roundToNext15(now: Date): Date`
 | `convite-success`             | Convite    | Sucesso                   |
 | `btn-aceitar`                 | Convite    | Aceitar convite           |
 
-### Cobertura de testes
+### Cobertura de testes — Design v4+v5
 
 Total: **84 suites · 482 tests** — todos passando
+
+---
+
+## Extensão — Design v6 (fluxo completo cliente, 2026-05-21)
+
+**Design bundle:** `h/pcdJqXIMwxAnS5h2u5Ls5g` — protótipos `Toqe App Cliente.html` + `Toqe App Barbeiro.html`
+
+Objetivo: fluxo completo de ponta a ponta para o cliente — descoberta → detalhe → agendamento → avaliação.
+
+### Novas Telas
+
+| Tela                    | Arquivo                                   | Descrição                                                       |
+| ----------------------- | ----------------------------------------- | --------------------------------------------------------------- |
+| **Buscar v2**           | `app/(cliente)/buscar.tsx`                | "Descobrir" header, search, FlatList com navegação para detalhe |
+| **Barbearia Pública**   | `app/(cliente)/barbearia/[slug].tsx`      | Landing pública: avatar, rating, barbeiros, botão "Reservar"    |
+| **Agendar (4 passos)**  | `app/(cliente)/agendar/index.tsx`         | Serviço → Barbeiro → Data → Horário → Confirmação               |
+| **Avaliar agendamento** | `src/features/cliente/AvaliacaoSheet.tsx` | Bottom sheet 5 estrelas + comentário opcional                   |
+
+### Modificações
+
+| Arquivo                                                  | Mudança                                                             |
+| -------------------------------------------------------- | ------------------------------------------------------------------- |
+| `app/(cliente)/agendamentos/[codigo].tsx`                | Botão "Avaliar" quando status=concluido + integração AvaliacaoSheet |
+| `app/(cliente)/agendamentos/__tests__/[codigo].test.tsx` | Mocks adicionados para useAuth + useAvaliarAgendamento              |
+
+### Novos Hooks
+
+| Hook                    | Endpoint                               | Descrição                                 |
+| ----------------------- | -------------------------------------- | ----------------------------------------- |
+| `useBarbeariaPublica`   | `GET /publico/:slug`                   | Detalhe público de uma barbearia por slug |
+| `useAvaliarAgendamento` | `POST /agendamentos/:codigo/avaliacao` | Mutation para submeter avaliação          |
+
+### Endpoints usados no fluxo de agendamento
+
+| Endpoint                           | Uso                         |
+| ---------------------------------- | --------------------------- |
+| `GET /publico/:slug/servicos`      | Lista de serviços (step 0)  |
+| `GET /publico/:slug/barbeiros`     | Lista de barbeiros (step 1) |
+| `GET /publico/:slug/slots?...`     | Slots disponíveis (step 3)  |
+| `POST /publico/:slug/agendamentos` | Confirmar reserva           |
+
+### TestIDs novos (v6)
+
+| TestID                      | Tela                | Descrição                         |
+| --------------------------- | ------------------- | --------------------------------- |
+| `buscar-input`              | Buscar              | Campo de busca                    |
+| `lista-barbearias-publicas` | Buscar              | FlatList de barbearias            |
+| `buscar-empty`              | Buscar              | Estado vazio                      |
+| `barbearia-detalhe`         | Barbearia detalhe   | Container principal               |
+| `barbearia-nao-encontrada`  | Barbearia detalhe   | Estado 404                        |
+| `btn-voltar-barbearia`      | Barbearia detalhe   | Botão voltar                      |
+| `btn-reservar`              | Barbearia detalhe   | Botão "Reservar"                  |
+| `progress-bar`              | Agendar             | Barra de progresso 4 segmentos    |
+| `step-servico`              | Agendar             | Step 0 — seleção de serviço       |
+| `step-barbeiro`             | Agendar             | Step 1 — seleção de barbeiro      |
+| `step-data`                 | Agendar             | Step 2 — seleção de data          |
+| `step-horario`              | Agendar             | Step 3 — seleção de horário       |
+| `agendar-btn-voltar`        | Agendar             | Voltar / step anterior            |
+| `agendar-btn-continuar`     | Agendar             | CTA "Continuar" / "Confirmar"     |
+| `agendar-confirmado`        | Agendar             | Estado de sucesso                 |
+| `avaliacao-sheet`           | Avaliação           | BottomSheet de avaliação          |
+| `star-{1..5}`               | Avaliação           | Botões de estrela                 |
+| `input-comentario`          | Avaliação           | Campo de comentário (após rating) |
+| `btn-enviar-avaliacao`      | Avaliação           | Botão enviar                      |
+| `botao-avaliar`             | Agendamento detalhe | Abre AvaliacaoSheet               |
+
+### Cobertura de testes — Design v6
+
+Total: **88 suites · 512 tests** — todos passando
