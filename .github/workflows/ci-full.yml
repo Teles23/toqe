@@ -78,12 +78,14 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           TESTCONTAINERS_RYUK_DISABLED: true
+          JWT_SECRET: ci-integration-test-secret
 
       - name: Test — Security
         run: pnpm --filter api test:security
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
           TESTCONTAINERS_RYUK_DISABLED: true
+          JWT_SECRET: ci-integration-test-secret
 
       - name: Validate seed
         run: |
