@@ -13,6 +13,7 @@
  * sem alterar a estrutura de rotas do Expo Router.
  */
 
+import { Feather } from "@expo/vector-icons";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useCallback, useState } from "react";
@@ -20,13 +21,13 @@ import {
   Linking,
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/src/shared/theme";
 import { Avatar } from "@/src/shared/ui";
@@ -56,6 +57,7 @@ export function ClienteDetalhe({
   proximoAgendamento,
 }: ClienteDetalheProps) {
   const { palette, spacing, typography, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [editingNote, setEditingNote] = useState(false);
   const [note, setNote] = useState("");
 
@@ -105,7 +107,7 @@ export function ClienteDetalhe({
       onRequestClose={onClose}
       testID="cliente-detalhe-modal"
     >
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.bg }]}>
+      <View style={[styles.safeArea, { backgroundColor: palette.bg }]}>
         {/* Top bar */}
         <View
           style={[
@@ -113,6 +115,8 @@ export function ClienteDetalhe({
             {
               borderBottomColor: palette.border,
               paddingHorizontal: spacing.md,
+              paddingTop: insets.top + 8,
+              height: 56 + insets.top,
             },
           ]}
         >
@@ -199,29 +203,29 @@ export function ClienteDetalhe({
           {/* Quick actions */}
           <View style={styles.quickActions}>
             <QuickAction
-              emoji="📅"
+              icon="calendar"
               label="Agendar"
               iconBgColor="#F4B40014"
-              emojiColor="#F4B400"
+              iconColor="#F4B400"
               onPress={() => {
                 /* Phase 2: navegar para booking */
               }}
               testID="qa-agendar"
             />
             <QuickAction
-              emoji="📞"
+              icon="phone"
               label="Ligar"
               iconBgColor="#3b82f61a"
-              emojiColor="#3b82f6"
+              iconColor="#3b82f6"
               onPress={handleLigar}
               testID="qa-ligar"
               disabled={!cliente.telefone}
             />
             <QuickAction
-              emoji="💬"
+              icon="message-circle"
               label="WhatsApp"
               iconBgColor="#22c55e1a"
-              emojiColor="#22c55e"
+              iconColor="#22c55e"
               onPress={handleWhatsApp}
               testID="qa-whatsapp"
               disabled={!cliente.telefone}
@@ -327,11 +331,14 @@ export function ClienteDetalhe({
             ]}
           >
             <View style={styles.notesHeader}>
-              <Text
-                style={[styles.sectionLabel, { color: palette.textDisabled }]}
-              >
-                ✏ NOTAS DO BARBEIRO
-              </Text>
+              <View style={styles.sectionLabelRow}>
+                <Feather name="edit-2" size={12} color={palette.textDisabled} />
+                <Text
+                  style={[styles.sectionLabel, { color: palette.textDisabled }]}
+                >
+                  NOTAS DO BARBEIRO
+                </Text>
+              </View>
               <Pressable
                 testID="btn-editar-nota"
                 onPress={() => setEditingNote((v) => !v)}
@@ -386,11 +393,14 @@ export function ClienteDetalhe({
           {/* Histórico */}
           <View>
             <View style={styles.historicHeader}>
-              <Text
-                style={[styles.sectionLabel, { color: palette.textDisabled }]}
-              >
-                🕐 HISTÓRICO
-              </Text>
+              <View style={styles.sectionLabelRow}>
+                <Feather name="clock" size={12} color={palette.textDisabled} />
+                <Text
+                  style={[styles.sectionLabel, { color: palette.textDisabled }]}
+                >
+                  HISTÓRICO
+                </Text>
+              </View>
               <Text
                 style={[
                   typography.caption,
@@ -453,7 +463,7 @@ export function ClienteDetalhe({
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -461,18 +471,18 @@ export function ClienteDetalhe({
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 
 function QuickAction({
-  emoji,
+  icon,
   label,
   iconBgColor,
-  emojiColor,
+  iconColor,
   onPress,
   disabled,
   testID,
 }: {
-  emoji: string;
+  icon: keyof typeof Feather.glyphMap;
   label: string;
   iconBgColor: string;
-  emojiColor: string;
+  iconColor: string;
   onPress: () => void;
   disabled?: boolean;
   testID?: string;
@@ -498,7 +508,7 @@ function QuickAction({
       <View
         style={[styles.quickActionIconBox, { backgroundColor: iconBgColor }]}
       >
-        <Text style={{ fontSize: 18, color: emojiColor }}>{emoji}</Text>
+        <Feather name={icon} size={18} color={iconColor} />
       </View>
       <Text style={styles.quickActionLabel}>{label}</Text>
     </Pressable>
@@ -652,7 +662,7 @@ function HistoryRow({
             accessibilityLabel="Repetir agendamento"
             style={styles.repeatBtn}
           >
-            <Text style={styles.repeatIcon}>↺</Text>
+            <Feather name="rotate-ccw" size={14} color="#F4B400" />
           </Pressable>
         </View>
       </View>
@@ -832,6 +842,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.4,
   },
+  sectionLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   notesCard: {
     padding: 14,
     borderWidth: 1,
@@ -922,9 +937,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-  },
-  repeatIcon: {
-    fontSize: 14,
-    color: "#F4B400",
   },
 });

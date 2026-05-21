@@ -148,7 +148,7 @@ export default function BarbeiroClientesScreen() {
           accessibilityLabel="Adicionar cliente"
           style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
         >
-          <Text style={[styles.addBtnText, { color: palette.primary }]}>+</Text>
+          <Feather name="plus" size={20} color={palette.primary} />
         </Pressable>
       </View>
 
@@ -156,7 +156,12 @@ export default function BarbeiroClientesScreen() {
       <View style={[styles.searchWrap, { paddingHorizontal: spacing.md }]}>
         {/* Search pill — design: height 44, borderRadius 22, bg #1c1c1c, border #262626 */}
         <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Feather
+            name="search"
+            size={16}
+            color="#666666"
+            style={styles.searchIcon}
+          />
           <TextInput
             testID="clientes-busca"
             value={busca}
@@ -174,7 +179,7 @@ export default function BarbeiroClientesScreen() {
               accessibilityLabel="Limpar busca"
               style={styles.searchClear}
             >
-              <Text style={styles.searchClearText}>✕</Text>
+              <Feather name="x" size={14} color="#888888" />
             </Pressable>
           )}
         </View>
@@ -358,12 +363,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  addBtnText: {
-    fontSize: 24,
-    fontWeight: "300",
-    lineHeight: 28,
-    marginTop: -2,
-  },
   searchWrap: {
     paddingBottom: 8,
     gap: 10,
@@ -382,8 +381,6 @@ const styles = StyleSheet.create({
   searchIcon: {
     position: "absolute",
     left: 14,
-    fontSize: 14,
-    color: "#666666",
     zIndex: 1,
   },
   searchInput: {
