@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useConvite } from "@/src/shared/hooks/cliente/use-convite";
 import { useAceitarConvite } from "@/src/shared/hooks/use-aceitar-convite";
@@ -28,6 +29,7 @@ type ConviteView =
 
 export default function ConviteTokenScreen() {
   const { palette, spacing, radius, typography } = useTheme();
+  const insets = useSafeAreaInsets();
   const { token } = useLocalSearchParams<{ token: string }>();
 
   const { data, isLoading, isError } = useConvite(token);
@@ -202,6 +204,7 @@ export default function ConviteTokenScreen() {
         style={{ flex: 1, backgroundColor: palette.bg }}
         contentContainerStyle={{
           padding: spacing.xl,
+          paddingTop: insets.top + spacing.lg,
           paddingBottom: spacing.xxxl,
         }}
       >
@@ -321,6 +324,7 @@ export default function ConviteTokenScreen() {
       style={{ flex: 1, backgroundColor: palette.bg }}
       contentContainerStyle={{
         padding: spacing.xl,
+        paddingTop: insets.top + spacing.lg,
         paddingBottom: spacing.xxxl,
       }}
     >

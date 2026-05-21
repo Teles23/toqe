@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 
 import {
@@ -65,6 +66,7 @@ function BarbeariaRow({ item }: { item: BarbeariaPublica }) {
 
 export default function ClienteBuscarScreen() {
   const { palette } = useTheme();
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
   const {
     data = [],
@@ -78,7 +80,7 @@ export default function ClienteBuscarScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Pressable
           onPress={() => router.back()}
           accessibilityRole="button"

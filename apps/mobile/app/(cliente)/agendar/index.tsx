@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { api } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
@@ -97,6 +98,7 @@ function parseDateParts(dateStr: string): DateParts {
 
 export default function AgendarScreen() {
   const { palette, spacing, typography } = useTheme();
+  const insets = useSafeAreaInsets();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { user } = useAuth();
 
@@ -281,7 +283,7 @@ export default function AgendarScreen() {
           styles.header,
           {
             paddingHorizontal: spacing.md,
-            paddingTop: spacing.md,
+            paddingTop: insets.top + spacing.sm,
             paddingBottom: spacing.sm,
             borderBottomColor: palette.border,
           },

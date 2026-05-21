@@ -1,17 +1,11 @@
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSalvarJornada } from "@/src/shared/hooks/barbeiro/use-salvar-jornada";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton } from "@/src/shared/ui";
+import { AmberButton, ScreenHeader } from "@/src/shared/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -152,6 +146,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
  */
 export default function JornadaScreen() {
   const { palette, spacing, typography, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [jornada, setJornada] = useState<DiaJornada[]>(INITIAL_JORNADA);
   const [erro, setErro] = useState<string | null>(null);
   const { mutate, isPending } = useSalvarJornada();
@@ -182,35 +177,7 @@ export default function JornadaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* ── Top bar ── */}
-      <View
-        style={[
-          styles.topBar,
-          {
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.lg,
-            paddingBottom: spacing.sm,
-            borderBottomWidth: 1,
-            borderBottomColor: palette.border,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 4 })}
-        >
-          <Text style={{ color: palette.primary, fontSize: 20 }}>‹</Text>
-        </Pressable>
-        <Text
-          style={[
-            typography.subheading,
-            { color: palette.text, flex: 1, marginLeft: spacing.sm },
-          ]}
-        >
-          Jornada de trabalho
-        </Text>
-      </View>
+      <ScreenHeader title="Jornada de trabalho" onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={{
@@ -336,6 +303,7 @@ export default function JornadaScreen() {
           styles.stickyBottom,
           {
             padding: spacing.md,
+            paddingBottom: insets.bottom + spacing.md,
             borderTopWidth: 1,
             borderTopColor: palette.border,
             backgroundColor: palette.bg,
@@ -370,7 +338,6 @@ export default function JornadaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center" },
   card: {},
   cardHeader: { flexDirection: "row", alignItems: "center" },
   dayPill: {

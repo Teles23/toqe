@@ -12,10 +12,12 @@ import {
   View,
 } from "react-native";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 import { useToggleServico } from "@/src/shared/hooks/barbeiro/use-toggle-servico";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton } from "@/src/shared/ui";
+import { AmberButton, ScreenHeader } from "@/src/shared/ui";
 
 const ACCENT = "#F4B400";
 
@@ -94,6 +96,7 @@ const priceChipStyles = StyleSheet.create({
  */
 export default function ServicosScreen() {
   const { palette, spacing, typography, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const { data: servicos, isLoading } = useServicos();
   const {
     mutate: toggleMutate,
@@ -136,50 +139,33 @@ export default function ServicosScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* ── Top bar ── */}
-      <View
-        style={[
-          styles.topBar,
-          {
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.lg,
-            paddingBottom: spacing.sm,
-            borderBottomWidth: 1,
-            borderBottomColor: palette.border,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 4 })}
-        >
-          <Text style={{ color: palette.primary, fontSize: 20 }}>‹</Text>
-        </Pressable>
-        <View style={{ flex: 1, marginLeft: spacing.sm }}>
-          <Text style={[typography.subheading, { color: palette.text }]}>
-            Serviços e preços
-          </Text>
-          {count > 0 ? (
-            <Text style={[typography.caption, { color: palette.textMuted }]}>
-              {count} {count === 1 ? "serviço" : "serviços"}
-            </Text>
-          ) : null}
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Adicionar serviço"
-          onPress={() =>
-            Alert.alert(
-              "Em breve",
-              "Cadastro de novos serviços chega numa próxima atualização.",
-            )
-          }
-          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.7 }]}
-        >
-          <Feather name="plus" size={18} color={ACCENT} />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="Serviços e preços"
+        subtitle={
+          count > 0
+            ? `${count} ${count === 1 ? "serviço" : "serviços"}`
+            : undefined
+        }
+        onBack={() => router.back()}
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar serviço"
+            onPress={() =>
+              Alert.alert(
+                "Em breve",
+                "Cadastro de novos serviços chega numa próxima atualização.",
+              )
+            }
+            style={({ pressed }) => [
+              styles.addBtn,
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Feather name="plus" size={18} color={ACCENT} />
+          </Pressable>
+        }
+      />
 
       {/* ── List ── */}
       {isLoading ? (
@@ -334,6 +320,7 @@ export default function ServicosScreen() {
           styles.stickyBottom,
           {
             padding: spacing.md,
+            paddingBottom: insets.bottom + spacing.md,
             borderTopWidth: 1,
             borderTopColor: palette.border,
             backgroundColor: palette.bg,
@@ -367,7 +354,6 @@ export default function ServicosScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center" },
   addBtn: {
     width: 40,
     height: 40,

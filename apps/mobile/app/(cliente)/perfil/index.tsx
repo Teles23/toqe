@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePerfilBasePath } from "@/src/features/perfil/use-perfil-base-path";
 import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
@@ -160,6 +161,7 @@ function SettingsGroup({ children }: { children: React.ReactNode }) {
 
 export default function ClientePerfilScreen() {
   const { palette } = useTheme();
+  const insets = useSafeAreaInsets();
   const basePath = usePerfilBasePath();
   const { user, barbearias, barbearia, switchBarbearia, logout } = useAuth();
   const { data } = useAgendamentosMeus();
@@ -193,7 +195,7 @@ export default function ClientePerfilScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Text style={[styles.headerTitle, { color: palette.text }]}>
           Perfil
         </Text>

@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
 import { useBarbeariaPublica } from "@/src/shared/hooks/use-barbearia-publica";
@@ -14,6 +15,7 @@ import { useTheme } from "@/src/shared/theme";
 export default function BarbeariaPublicaScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { palette } = useTheme();
+  const insets = useSafeAreaInsets();
   const { data, isLoading } = useBarbeariaPublica(slug);
 
   if (isLoading) {
@@ -61,7 +63,7 @@ export default function BarbeariaPublicaScreen() {
       style={[styles.container, { backgroundColor: palette.bg }]}
     >
       {/* ── Top bar (absolute) ── */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { top: insets.top + 8 }]}>
         <Pressable
           testID="btn-voltar-barbearia"
           accessibilityRole="button"

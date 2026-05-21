@@ -13,10 +13,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useEditarPerfil } from "@/src/shared/hooks/perfil/use-editar-perfil";
 import { maskTelefone } from "@/src/shared/utils/masks";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { ScreenHeader } from "@/src/shared/ui";
 import { updateUsuarioSchema, type UpdateUsuarioInput } from "@toqe/contracts";
 
 const AMBER = "#F4B400";
@@ -29,6 +31,7 @@ const FG3 = "#888888";
 
 export default function PerfilEditarScreen() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const editar = useEditarPerfil();
 
   const {
@@ -70,17 +73,11 @@ export default function PerfilEditarScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Editar perfil</Text>
-      </View>
+      <ScreenHeader
+        title="Editar perfil"
+        onBack={() => router.back()}
+        border={false}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -183,7 +180,7 @@ export default function PerfilEditarScreen() {
       </ScrollView>
 
       {/* CTA sticky */}
-      <View style={styles.ctaWrapper}>
+      <View style={[styles.ctaWrapper, { bottom: insets.bottom + 18 }]}>
         <Pressable
           testID="btn-salvar"
           onPress={handleSubmit(onSubmit)}
@@ -206,33 +203,6 @@ export default function PerfilEditarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backArrow: {
-    fontSize: 18,
-    color: FG,
-  },
-  headerTitle: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 18,
-    color: FG,
-    letterSpacing: -0.45,
   },
   scroll: {
     paddingHorizontal: 16,
@@ -307,7 +277,8 @@ const styles = StyleSheet.create({
   fieldInput: {
     fontSize: 15,
     color: FG,
-    height: 30,
+    minHeight: 40,
+    paddingVertical: 8,
     fontFamily: "Inter_400Regular",
   },
   fieldError: {
@@ -318,7 +289,7 @@ const styles = StyleSheet.create({
   emailRow: {
     flexDirection: "row",
     alignItems: "center",
-    height: 30,
+    minHeight: 40,
   },
   emailValue: {
     flex: 1,

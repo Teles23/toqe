@@ -18,6 +18,7 @@ import {
   use2faSetup,
 } from "@/src/shared/hooks/perfil/use-2fa";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { ScreenHeader } from "@/src/shared/ui";
 
 const AMBER = "#F4B400";
 const CARD = "#171717";
@@ -146,17 +147,10 @@ export default function Perfil2faScreen() {
   if (enabled) {
     return (
       <View style={[styles.container, { backgroundColor: BG }]}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar"
-          >
-            <Text style={styles.backArrow}>←</Text>
-          </Pressable>
-          <Text style={styles.headerTitle}>Verificação em 2 passos</Text>
-        </View>
+        <ScreenHeader
+          title="Verificação em 2 passos"
+          onBack={() => router.back()}
+        />
 
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -215,20 +209,11 @@ export default function Perfil2faScreen() {
   return (
     <View style={[styles.container, { backgroundColor: BG }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => (step === 0 ? router.back() : setStep((s) => s - 1))}
-          style={styles.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Verificação em 2 passos</Text>
-          <Text style={styles.headerStep}>Passo {step + 1}/3</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Verificação em 2 passos"
+        subtitle={`Passo ${step + 1}/3`}
+        onBack={() => (step === 0 ? router.back() : setStep((s) => s - 1))}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -422,39 +407,6 @@ function BenefitRow({ emoji, text }: { emoji: string; text: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backArrow: {
-    fontSize: 18,
-    color: FG,
-  },
-  headerTitle: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 18,
-    color: FG,
-    letterSpacing: -0.45,
-  },
-  headerStep: {
-    fontFamily: "JetBrainsMono_400Regular",
-    fontSize: 11,
-    color: FG3,
-    marginTop: 1,
   },
   scroll: {
     paddingHorizontal: 22,

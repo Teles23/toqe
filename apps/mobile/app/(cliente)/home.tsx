@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
 import { useProximoAgendamento } from "@/src/shared/hooks/cliente/use-proximo-agendamento";
@@ -375,6 +376,7 @@ function StatsGrid({ visitas }: { visitas: number }) {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function ClienteHomeScreen() {
   const { palette, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const { barbearia, barbearias } = useAuth();
   const { data: agendamentos } = useAgendamentosMeus();
   const [showSwitcher, setShowSwitcher] = useState(false);
@@ -387,7 +389,12 @@ export default function ClienteHomeScreen() {
       testID="home-header"
     >
       {/* Header */}
-      <View style={[styles.header, { paddingHorizontal: spacing.md }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingHorizontal: spacing.md, paddingTop: insets.top + 10 },
+        ]}
+      >
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Início</Text>
           {barbearia ? (

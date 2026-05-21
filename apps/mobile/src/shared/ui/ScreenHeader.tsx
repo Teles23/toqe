@@ -1,31 +1,44 @@
+import { Feather } from "@expo/vector-icons";
 import { ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/src/shared/theme";
 
 export interface ScreenHeaderProps {
   /** Título principal exibido no topo */
   title: string;
+  /** Subtítulo opcional (linha menor sob o título) */
+  subtitle?: string;
+  /** Se fornecido, renderiza um botão "voltar" 40×40 à esquerda do título */
+  onBack?: () => void;
   /** Slot opcional à direita do título (ex: botão de ação) */
   right?: ReactNode;
   /** Slot opcional abaixo do título (ex: navegador de dia, busca, filtros) */
   subheader?: ReactNode;
+  /** Mostra a borda inferior (default: true) */
+  border?: boolean;
   testID?: string;
 }
 
 /**
- * Header padrão de tela — substitui o padrão repetido em agenda/fila.
- * paddingTop: spacing.xxl + spacing.sm (cobre status bar + respiro)
- * paddingBottom: spacing.md
- * Border inferior 1px na cor do tema.
+ * Header padrão de tela — fonte única do cabeçalho (DRY).
+ *
+ * Aplica safe-area real via `useSafeAreaInsets()` (o título nunca cola na
+ * status bar / notch). Com `onBack`, vira header de subtela (botão voltar +
+ * título 18px); sem `onBack`, header de topo (título 24px).
  */
 export function ScreenHeader({
   title,
+  subtitle,
+  onBack,
   right,
   subheader,
+  border = true,
   testID,
 }: ScreenHeaderProps) {
   const { palette, spacing, typography } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
@@ -34,24 +47,52 @@ export function ScreenHeader({
         styles.container,
         {
           paddingHorizontal: spacing.lg - 4,
-          paddingTop: spacing.xxl + spacing.sm,
+          paddingTop: insets.top + spacing.sm,
           paddingBottom: spacing.md,
+          borderBottomWidth: border ? 1 : 0,
           borderColor: palette.border,
         },
       ]}
     >
       <View style={styles.row}>
-        <Text
-          style={{
-            ...typography.heading,
-            fontSize: 24,
-            color: palette.text,
-            flex: 1,
-          }}
-          numberOfLines={1}
-        >
-          {title}
-        </Text>
+        {onBack ? (
+          <Pressable
+            testID="screen-header-back"
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.backBtn,
+              {
+                backgroundColor: palette.surface,
+                borderColor: palette.border,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
+          >
+            <Feather name="chevron-left" size={20} color={palette.text} />
+          </Pressable>
+        ) : null}
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            style={{
+              ...typography.heading,
+              fontSize: onBack ? 18 : 24,
+              color: palette.text,
+            }}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text style={[styles.subtitle, { color: palette.textMuted }]}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+
         {right ? <View style={styles.right}>{right}</View> : null}
       </View>
 
@@ -63,15 +104,26 @@ export function ScreenHeader({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderBottomWidth: 1,
-  },
+  container: {},
   row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 12,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  subtitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    marginTop: 2,
   },
   right: {
-    marginLeft: 12,
+    marginLeft: 0,
   },
 });

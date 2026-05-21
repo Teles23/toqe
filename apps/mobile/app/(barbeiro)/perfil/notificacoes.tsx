@@ -2,7 +2,6 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -14,6 +13,7 @@ import {
   useAtualizarPreferenciasNotificacao,
   useNotificacaoPreferencias,
 } from "@/src/shared/hooks/perfil/use-notificacao-preferencias";
+import { ScreenHeader } from "@/src/shared/ui";
 
 const AMBER = "#F4B400";
 const CARD = "#171717";
@@ -129,20 +129,11 @@ export default function PerfilNotificacoesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: BG }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Notificações</Text>
-          <Text style={styles.headerSubtitle}>Escolha como ser avisado</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Notificações"
+        subtitle="Escolha como ser avisado"
+        onBack={() => router.back()}
+      />
 
       {isLoading ? (
         <View style={styles.center} testID="notif-loading">
@@ -222,39 +213,6 @@ export default function PerfilNotificacoesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backArrow: {
-    fontSize: 18,
-    color: FG,
-  },
-  headerTitle: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 18,
-    color: FG,
-    letterSpacing: -0.45,
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    color: FG4,
-    marginTop: 1,
-    fontFamily: "Inter_400Regular",
   },
   center: {
     flex: 1,

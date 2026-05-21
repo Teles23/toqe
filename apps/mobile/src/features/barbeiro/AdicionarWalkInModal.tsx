@@ -24,6 +24,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useCriarWalkIn } from "@/src/shared/hooks/barbeiro/use-criar-walk-in";
@@ -42,6 +43,7 @@ interface Props {
 
 export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
   const { palette, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { data: servicos = [] } = useServicos();
   const criarWalkIn = useCriarWalkIn();
@@ -145,6 +147,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
           </View>
 
           <ScrollView
+            style={styles.scroll}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{
               paddingHorizontal: spacing.lg,
@@ -169,6 +172,11 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
             {/* Serviço — chips */}
             <View>
               <Text style={styles.fieldLabel}>SERVIÇO</Text>
+              {ativos.length === 0 ? (
+                <Text style={styles.emptyHint}>
+                  Nenhum serviço ativo. Ative serviços em Perfil › Serviços.
+                </Text>
+              ) : null}
               <View style={styles.grid2}>
                 {ativos.map((s) => {
                   const active = s.codigo === servicoId;
@@ -248,7 +256,11 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
           <View
             style={[
               styles.footer,
-              { paddingHorizontal: spacing.lg, borderTopColor: palette.border },
+              {
+                paddingHorizontal: spacing.lg,
+                paddingBottom: insets.bottom + 18,
+                borderTopColor: palette.border,
+              },
             ]}
           >
             <AmberButton
@@ -274,7 +286,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 10,
-    paddingBottom: 8,
+  },
+  scroll: {
+    flexShrink: 1,
+  },
+  emptyHint: {
+    fontSize: 12,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    marginBottom: 4,
   },
   dragHandle: {
     width: 36,

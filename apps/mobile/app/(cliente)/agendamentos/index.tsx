@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
 import { useAuth } from "@/src/shared/hooks/use-auth";
@@ -165,6 +166,7 @@ type Tab = "proximos" | "historico";
 
 export default function ClienteAgendamentosScreen() {
   const { palette } = useTheme();
+  const insets = useSafeAreaInsets();
   const { barbearia } = useAuth();
   const { data, isLoading, isError, isRefetching, refetch } =
     useAgendamentosMeus();
@@ -248,7 +250,7 @@ export default function ClienteAgendamentosScreen() {
       style={[styles.container, { backgroundColor: palette.bg }]}
     >
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerTitle, { color: palette.text }]}>
             Minha agenda
