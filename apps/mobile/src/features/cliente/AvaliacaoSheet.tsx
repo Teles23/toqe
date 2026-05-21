@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +22,7 @@ export interface AvaliacaoSheetProps {
   barbeiroNome?: string;
   servicoNome?: string;
   onSuccess?: () => void;
+  minutosAtras?: number;
 }
 
 const RATING_LABELS = [
@@ -32,6 +34,8 @@ const RATING_LABELS = [
   "Perfeito! 💈",
 ];
 
+const STAR_COLOR = "#F4B400";
+
 // ─── Componente ───────────────────────────────────────────────────────────────
 
 export function AvaliacaoSheet({
@@ -41,16 +45,36 @@ export function AvaliacaoSheet({
   barbeiroNome,
   servicoNome,
   onSuccess,
+  minutosAtras,
 }: AvaliacaoSheetProps) {
   const { palette, spacing, typography, radius } = useTheme();
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");
   const avaliar = useAvaliarAgendamento();
 
+  // Animated values — one per star, all start at scale 1.0
+  const starScales = useRef(
+    Array.from({ length: 5 }, () => new Animated.Value(1.0)),
+  ).current;
+
   function handleClose() {
     setNota(0);
     setComentario("");
     onClose();
+  }
+
+  function handleStarPress(i: number) {
+    setNota(i);
+
+    // Stars 1..i spring to 1.15 (selected), stars i+1..5 spring back to 1.0
+    const animations = starScales.map((val, idx) =>
+      Animated.spring(val, {
+        toValue: idx < i ? 1.15 : 1.0,
+        useNativeDriver: true,
+        bounciness: 12,
+      }),
+    );
+    Animated.parallel(animations).start();
   }
 
   async function handleEnviar() {
@@ -69,6 +93,9 @@ export function AvaliacaoSheet({
       // erro tratado pelo caller via query state
     }
   }
+
+  const commentPlaceholder =
+    nota >= 4 ? "O que foi incrível? Nos conta!" : "O que podemos melhorar?";
 
   return (
     <BottomSheet
@@ -109,26 +136,40 @@ export function AvaliacaoSheet({
           </Text>
         ) : null}
 
+        {/* Subtítulo — há X minutos */}
+        {minutosAtras !== undefined ? (
+          <Text style={[typography.caption, styles.minutosAtras]}>
+            Há {minutosAtras} minutos
+          </Text>
+        ) : null}
+
         {/* Estrelas */}
         <View style={[styles.starsRow, { marginTop: spacing.lg }]}>
           {[1, 2, 3, 4, 5].map((i) => (
-            <Pressable
+            <Animated.View
               key={i}
-              testID={`star-${i}`}
-              accessibilityRole="button"
-              accessibilityLabel={`Nota ${i}`}
-              onPress={() => setNota(i)}
-              style={styles.starBtn}
+              style={{ transform: [{ scale: starScales[i - 1] }] }}
             >
-              <Text
-                style={[
-                  styles.starText,
-                  { color: i <= nota ? palette.primary : palette.border },
-                ]}
+              <Pressable
+                testID={`star-${i}`}
+                accessibilityRole="button"
+                accessibilityLabel={`Nota ${i}`}
+                onPress={() => handleStarPress(i)}
+                style={styles.starBtn}
               >
-                ★
-              </Text>
-            </Pressable>
+                <Text
+                  style={[
+                    styles.starText,
+                    {
+                      color: STAR_COLOR,
+                      opacity: i <= nota ? 1 : 0.35,
+                    },
+                  ]}
+                >
+                  ★
+                </Text>
+              </Pressable>
+            </Animated.View>
           ))}
         </View>
 
@@ -154,7 +195,7 @@ export function AvaliacaoSheet({
             testID="input-comentario"
             value={comentario}
             onChangeText={setComentario}
-            placeholder="Deixe um comentário opcional..."
+            placeholder={commentPlaceholder}
             placeholderTextColor={palette.textMuted}
             multiline
             maxLength={280}
@@ -192,6 +233,11 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  minutosAtras: {
+    color: "#666666",
+    textAlign: "center",
+    marginTop: 2,
+  },
   starsRow: {
     flexDirection: "row",
     justifyContent: "center",
@@ -204,7 +250,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   starText: {
-    fontSize: 36,
+    fontSize: 32,
   },
   commentInput: {
     borderWidth: 1,

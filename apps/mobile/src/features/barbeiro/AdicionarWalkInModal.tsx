@@ -50,7 +50,7 @@ interface Props {
 }
 
 export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
-  const { palette, spacing, typography } = useTheme();
+  const { palette, spacing } = useTheme();
   const { data: barbeiros = [] } = useBarbeirosDaBarbearia();
   const { data: servicos = [] } = useServicos();
   const criarWalkIn = useCriarWalkIn();
@@ -114,51 +114,45 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
           onPress={handleClose}
           accessibilityLabel="Fechar"
         />
-        <View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: palette.bg,
-              borderColor: palette.border,
-              paddingTop: spacing.md,
-              paddingBottom: spacing.xl,
-            },
-          ]}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingHorizontal: spacing.lg,
-              marginBottom: spacing.md,
-            }}
-          >
-            <Text style={{ ...typography.heading, color: palette.text }}>
-              Adicionar à fila
-            </Text>
+        <View style={styles.sheet}>
+          {/* Drag handle */}
+          <View style={styles.dragHandle} />
+
+          {/* Header row */}
+          <View style={styles.headerRow}>
+            <View style={styles.headerTitles}>
+              <Text style={[styles.headerTitle, { color: palette.text }]}>
+                Novo Walk-in
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                Inserir cliente sem agendamento
+              </Text>
+            </View>
             <Pressable
               onPress={handleClose}
               accessibilityRole="button"
-              accessibilityLabel="Cancelar"
-              hitSlop={12}
+              accessibilityLabel="Fechar"
+              hitSlop={8}
+              style={styles.closeBtn}
             >
-              <Text
-                style={{
-                  ...typography.body,
-                  color: palette.primary,
-                  fontWeight: "600",
-                }}
-              >
-                Cancelar
-              </Text>
+              <Text style={styles.closeBtnText}>{"×"}</Text>
             </Pressable>
           </View>
 
           <ScrollView
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingHorizontal: spacing.lg }}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.lg,
+              paddingBottom: spacing.xl,
+            }}
           >
+            {/* Info box */}
+            <View style={styles.infoBox}>
+              <Text style={styles.infoBoxText}>
+                Será inserido como WALK_IN na fila de atendimento
+              </Text>
+            </View>
+
             <FormErrorBox error={errors.root?.message} />
 
             <Controller
@@ -254,7 +248,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
 
             <View style={{ marginTop: spacing.sm }}>
               <AmberButton
-                label="Adicionar à fila"
+                label="Atender agora →"
                 onPress={handleSubmit(onSubmit)}
                 loading={isSubmitting}
               />
@@ -271,8 +265,67 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject },
   sheet: {
     maxHeight: "92%",
-    borderTopWidth: 1,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: "#0d0d0d",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#333333",
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  headerTitles: {
+    flex: 1,
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: "#888888",
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#171717",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closeBtnText: {
+    fontSize: 18,
+    color: "#888888",
+    lineHeight: 22,
+    textAlign: "center",
+  },
+  infoBox: {
+    backgroundColor: "rgba(34,197,94,0.06)",
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.15)",
+    marginBottom: 16,
+  },
+  infoBoxText: {
+    fontSize: 11,
+    color: "#22c55e",
+    lineHeight: 16,
   },
 });

@@ -86,7 +86,7 @@ describe("AdicionarWalkInModal", () => {
 
   it("não renderiza quando visible=false", () => {
     render(<AdicionarWalkInModal visible={false} onClose={jest.fn()} />);
-    expect(screen.queryByText(/Adicionar à fila/)).toBeNull();
+    expect(screen.queryByText(/Atender agora/)).toBeNull();
   });
 
   it("renderiza todos os campos quando visible=true", () => {
@@ -101,7 +101,7 @@ describe("AdicionarWalkInModal", () => {
   it("validação Zod impede submit sem campos obrigatórios", async () => {
     render(<AdicionarWalkInModal visible onClose={jest.fn()} />);
     await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Adicionar à fila" }));
+      fireEvent.press(screen.getByRole("button", { name: "Atender agora →" }));
     });
 
     await waitFor(() => {
@@ -127,7 +127,7 @@ describe("AdicionarWalkInModal", () => {
     fireEvent.press(screen.getByTestId("select-servico-option-1"));
 
     await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Adicionar à fila" }));
+      fireEvent.press(screen.getByRole("button", { name: "Atender agora →" }));
     });
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
@@ -153,7 +153,7 @@ describe("AdicionarWalkInModal", () => {
     fireEvent.press(screen.getByTestId("select-servico-option-1"));
 
     await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Adicionar à fila" }));
+      fireEvent.press(screen.getByRole("button", { name: "Atender agora →" }));
     });
 
     await waitFor(() => {

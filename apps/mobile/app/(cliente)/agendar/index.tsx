@@ -7,13 +7,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 
 import { api } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, Avatar } from "@/src/shared/ui";
+import { AmberButton, Avatar, GhostButton } from "@/src/shared/ui";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,8 @@ interface Barbeiro {
   usrCodigo: number;
   nome: string;
   avatarUrl: string | null;
+  nota?: number | null;
+  disponivel?: boolean;
 }
 
 interface Slot {
@@ -54,29 +57,46 @@ function getNext7Days(): string[] {
   return days;
 }
 
-function formatDateChip(dateStr: string): string {
+function getDayOfWeek(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const names = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+  return names[date.getDay()];
+}
+
+interface DateParts {
+  day: string;
+  dayName: string;
+  month: string;
+}
+
+function parseDateParts(dateStr: string): DateParts {
   const [, m, d] = dateStr.split("-");
   const months = [
-    "Jan",
-    "Fev",
-    "Mar",
-    "Abr",
-    "Mai",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Set",
-    "Out",
-    "Nov",
-    "Dez",
+    "jan",
+    "fev",
+    "mar",
+    "abr",
+    "mai",
+    "jun",
+    "jul",
+    "ago",
+    "set",
+    "out",
+    "nov",
+    "dez",
   ];
-  return `${d}/${months[parseInt(m, 10) - 1]}`;
+  return {
+    day: d,
+    dayName: getDayOfWeek(dateStr),
+    month: months[parseInt(m, 10) - 1],
+  };
 }
 
 // ─── Tela principal ───────────────────────────────────────────────────────────
 
 export default function AgendarScreen() {
-  const { palette, spacing, radius, typography } = useTheme();
+  const { palette, spacing, typography } = useTheme();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { user } = useAuth();
 
@@ -207,96 +227,45 @@ export default function AgendarScreen() {
         ]}
       >
         {/* Ícone de sucesso */}
-        <View
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            backgroundColor: "#22c55e20",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: spacing.lg,
-          }}
-        >
-          <Text style={{ fontSize: 32, color: "#22c55e" }}>✓</Text>
+        <View style={styles.successIcon}>
+          <Text style={styles.successIconText}>✓</Text>
         </View>
 
-        <Text
-          style={{
-            fontFamily: "Sora_700Bold",
-            fontSize: 22,
-            color: palette.text,
-            textAlign: "center",
-            marginBottom: spacing.sm,
-            letterSpacing: -0.55,
-          }}
-        >
+        <Text style={[styles.confirmedTitle, { color: palette.text }]}>
           Reserva confirmada!
         </Text>
 
         {/* Ticket card */}
-        <View
-          style={{
-            backgroundColor: "#171717",
-            borderRadius: 16,
-            padding: 16,
-            width: "100%",
-            marginTop: spacing.md,
-            borderWidth: 1,
-            borderColor: "#262626",
-            gap: 8,
-          }}
-        >
+        <View style={styles.ticketCard}>
           {slotDate ? (
-            <Text
-              style={{
-                fontFamily: "Sora_700Bold",
-                fontSize: 18,
-                color: palette.primary,
-                marginBottom: 4,
-              }}
-            >
+            <Text style={[styles.ticketDateText, { color: palette.primary }]}>
               {slotDate}
               {slotTime ? ` · ${slotTime}` : ""}
             </Text>
           ) : null}
           {selectedBarbeiro ? (
-            <Text
-              style={{
-                fontFamily: "JetBrainsMono_400Regular",
-                fontSize: 13,
-                color: palette.text,
-              }}
-            >
+            <Text style={styles.ticketDetailText}>
               Barbeiro: {selectedBarbeiro.nome}
             </Text>
           ) : null}
           {selectedServico ? (
-            <Text
-              style={{
-                fontFamily: "JetBrainsMono_400Regular",
-                fontSize: 13,
-                color: palette.text,
-              }}
-            >
+            <Text style={styles.ticketDetailText}>
               Serviço: {selectedServico.nome}
             </Text>
           ) : null}
           {preco ? (
-            <Text
-              style={{
-                fontFamily: "JetBrainsMono_400Regular",
-                fontSize: 13,
-                color: palette.text,
-              }}
-            >
-              Valor: {preco}
-            </Text>
+            <Text style={styles.ticketDetailText}>Valor: {preco}</Text>
           ) : null}
         </View>
 
-        <View style={{ marginTop: spacing.xl, width: "100%" }}>
+        <View style={[styles.ctaBlock, { marginTop: spacing.xl }]}>
           <AmberButton label="Ir pra Home" onPress={() => router.back()} />
+          <GhostButton
+            label="Adicionar ao calendário"
+            onPress={() => {
+              /* calendário — futuro */
+            }}
+          />
         </View>
       </View>
     );
@@ -332,7 +301,7 @@ export default function AgendarScreen() {
         </Text>
       </View>
 
-      {/* Barra de progresso */}
+      {/* Indicador de progresso — dots */}
       <View
         testID="progress-bar"
         style={[
@@ -344,11 +313,9 @@ export default function AgendarScreen() {
           <View
             key={i}
             style={[
-              styles.progressSegment,
+              styles.progressDot,
               {
-                backgroundColor:
-                  i <= step ? palette.primary : palette.borderStrong,
-                borderRadius: radius.full,
+                backgroundColor: i <= step ? "#F4B400" : "#262626",
               },
             ]}
           />
@@ -454,6 +421,7 @@ function StepServico({
             onPress={() => onSelect(s)}
             style={[
               styles.card,
+              styles.row,
               {
                 backgroundColor: palette.surface,
                 borderColor: isSelected ? palette.primary : palette.border,
@@ -463,21 +431,28 @@ function StepServico({
               },
             ]}
           >
-            <Text
-              style={[typography.bodyBold, { color: palette.text }]}
-              numberOfLines={1}
-            >
-              {s.nome}
-            </Text>
-            <Text
-              style={[
-                typography.caption,
-                { color: palette.textMuted, marginTop: 2 },
-              ]}
-            >
-              {s.duracao} min · R${" "}
-              {Number(s.preco).toFixed(2).replace(".", ",")}
-            </Text>
+            {/* Ícone da tesoura */}
+            <View style={styles.servicoIconBox}>
+              <Text style={styles.servicoIconText}>✂</Text>
+            </View>
+            {/* Detalhes do serviço */}
+            <View style={styles.servicoInfo}>
+              <Text
+                style={[typography.bodyBold, { color: palette.text }]}
+                numberOfLines={1}
+              >
+                {s.nome}
+              </Text>
+              <Text
+                style={[
+                  typography.caption,
+                  { color: palette.textMuted, marginTop: 2 },
+                ]}
+              >
+                {s.duracao} min · R${" "}
+                {Number(s.preco).toFixed(2).replace(".", ",")}
+              </Text>
+            </View>
           </Pressable>
         );
       })}
@@ -510,6 +485,8 @@ function StepBarbeiro({
     <View testID="step-barbeiro">
       {barbeiros.map((b) => {
         const isSelected = selected?.usrCodigo === b.usrCodigo;
+        const nota = b.nota ?? null;
+        const disponivel = b.disponivel ?? true;
         return (
           <Pressable
             key={b.usrCodigo}
@@ -529,15 +506,27 @@ function StepBarbeiro({
             ]}
           >
             <Avatar uri={b.avatarUrl} name={b.nome} size="sm" />
-            <Text
-              style={[
-                typography.bodyMedium,
-                { color: palette.text, marginLeft: spacing.sm, flex: 1 },
-              ]}
-              numberOfLines={1}
-            >
-              {b.nome}
-            </Text>
+            <View style={[styles.barbeiroInfo, { marginLeft: spacing.sm }]}>
+              <Text
+                style={[
+                  typography.bodyBold,
+                  { color: palette.text, fontSize: 14 },
+                ]}
+                numberOfLines={1}
+              >
+                {b.nome}
+              </Text>
+              <View style={styles.barbeiroMeta}>
+                <Text style={styles.barbeiroNota}>
+                  ⭐ {nota !== null ? String(nota) : "—"}
+                </Text>
+                {!disponivel && (
+                  <View style={styles.folga}>
+                    <Text style={styles.folgaText}>FOLGA</Text>
+                  </View>
+                )}
+              </View>
+            </View>
           </Pressable>
         );
       })}
@@ -554,17 +543,16 @@ function StepData({
   selected: string;
   onSelect: (d: string) => void;
 }) {
-  const { palette, spacing, radius, typography } = useTheme();
+  const { spacing } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = (screenWidth - 48) / 2;
 
   return (
     <View testID="step-data">
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}
-      >
+      <View style={[styles.dataGrid, { gap: spacing.sm }]}>
         {days.map((d) => {
           const isSelected = d === selected;
+          const { day, dayName, month } = parseDateParts(d);
           return (
             <Pressable
               key={d}
@@ -572,35 +560,42 @@ function StepData({
               accessibilityRole="button"
               onPress={() => onSelect(d)}
               style={[
-                styles.dateChip,
+                styles.dateCard,
                 {
-                  backgroundColor: isSelected
-                    ? palette.primary
-                    : palette.surface,
-                  borderColor: isSelected ? palette.primary : palette.border,
-                  borderRadius: radius.md,
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: spacing.sm,
+                  width: cardWidth,
+                  backgroundColor: isSelected ? "#F4B400" : "#171717",
+                  borderColor: isSelected ? "#F4B400" : "#262626",
                 },
               ]}
             >
               <Text
                 style={[
-                  typography.label,
-                  {
-                    color: isSelected ? palette.primaryOn : palette.text,
-                    fontFamily: isSelected
-                      ? "Inter_600SemiBold"
-                      : "Inter_400Regular",
-                  },
+                  styles.dateCardDayName,
+                  { color: isSelected ? "#0d0d0d" : "#888888" },
                 ]}
               >
-                {formatDateChip(d)}
+                {dayName}
+              </Text>
+              <Text
+                style={[
+                  styles.dateCardDay,
+                  { color: isSelected ? "#0d0d0d" : "#f5f5f5" },
+                ]}
+              >
+                {day}
+              </Text>
+              <Text
+                style={[
+                  styles.dateCardMonth,
+                  { color: isSelected ? "#0d0d0d" : "#888888" },
+                ]}
+              >
+                {month}
               </Text>
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -616,7 +611,7 @@ function StepHorario({
   selected: string;
   onSelect: (s: string) => void;
 }) {
-  const { palette, radius, typography } = useTheme();
+  const { palette, radius } = useTheme();
 
   if (isLoading) {
     return (
@@ -629,50 +624,108 @@ function StepHorario({
   if (slots.length === 0) {
     return (
       <View testID="step-horario" style={styles.center}>
-        <Text style={[typography.body, { color: palette.textMuted }]}>
+        <Text
+          style={{
+            fontFamily: "Inter_400Regular",
+            fontSize: 14,
+            color: palette.textMuted,
+          }}
+        >
           Nenhum horário disponível para esta data.
         </Text>
       </View>
     );
   }
 
+  const manha = slots.filter((s) => s.hora < "12:00");
+  const tarde = slots.filter((s) => s.hora >= "12:00");
+
   return (
-    <View testID="step-horario" style={styles.slotsGrid}>
-      {slots.map((slot) => {
-        const isSelected = slot.inicio === selected;
-        const slotTestId = `slot-${slot.hora.replace(":", "-")}`;
-        return (
-          <Pressable
-            key={slot.inicio}
-            testID={slotTestId}
-            accessibilityRole="button"
-            onPress={() => onSelect(slot.inicio)}
-            style={[
-              styles.slotBtn,
-              {
-                backgroundColor: isSelected ? palette.primary : palette.surface,
-                borderColor: isSelected ? palette.primary : palette.border,
-                borderRadius: radius.sm,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                {
-                  fontFamily: "JetBrainsMono_500Medium",
-                  fontSize: 14,
-                  lineHeight: 20,
-                },
-                {
-                  color: isSelected ? palette.primaryOn : palette.text,
-                },
-              ]}
-            >
-              {slot.hora}
-            </Text>
-          </Pressable>
-        );
-      })}
+    <View testID="step-horario">
+      {manha.length > 0 && (
+        <View>
+          <Text style={styles.slotSectionLabel}>Manhã</Text>
+          <View style={styles.slotsGrid}>
+            {manha.map((slot) => {
+              const isSelected = slot.inicio === selected;
+              const slotTestId = `slot-${slot.hora.replace(":", "-")}`;
+              return (
+                <Pressable
+                  key={slot.inicio}
+                  testID={slotTestId}
+                  accessibilityRole="button"
+                  onPress={() => onSelect(slot.inicio)}
+                  style={[
+                    styles.slotBtn,
+                    {
+                      backgroundColor: isSelected
+                        ? palette.primary
+                        : palette.surface,
+                      borderColor: isSelected
+                        ? palette.primary
+                        : palette.border,
+                      borderRadius: radius.sm,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.slotText,
+                      {
+                        color: isSelected ? palette.primaryOn : palette.text,
+                      },
+                    ]}
+                  >
+                    {slot.hora}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
+      {tarde.length > 0 && (
+        <View style={manha.length > 0 ? styles.slotSectionGap : undefined}>
+          <Text style={styles.slotSectionLabel}>Tarde</Text>
+          <View style={styles.slotsGrid}>
+            {tarde.map((slot) => {
+              const isSelected = slot.inicio === selected;
+              const slotTestId = `slot-${slot.hora.replace(":", "-")}`;
+              return (
+                <Pressable
+                  key={slot.inicio}
+                  testID={slotTestId}
+                  accessibilityRole="button"
+                  onPress={() => onSelect(slot.inicio)}
+                  style={[
+                    styles.slotBtn,
+                    {
+                      backgroundColor: isSelected
+                        ? palette.primary
+                        : palette.surface,
+                      borderColor: isSelected
+                        ? palette.primary
+                        : palette.border,
+                      borderRadius: radius.sm,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.slotText,
+                      {
+                        color: isSelected ? palette.primaryOn : palette.text,
+                      },
+                    ]}
+                  >
+                    {slot.hora}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -696,10 +749,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     marginTop: 8,
+    alignItems: "center",
   },
-  progressSegment: {
-    flex: 1,
-    height: 3,
+  progressDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   card: {
     borderWidth: 1,
@@ -714,8 +769,87 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 120,
   },
-  dateChip: {
+  // StepServico
+  servicoIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "#F4B40014",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  servicoIconText: {
+    fontSize: 18,
+  },
+  servicoInfo: {
+    flex: 1,
+  },
+  // StepBarbeiro
+  barbeiroInfo: {
+    flex: 1,
+  },
+  barbeiroMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
+  },
+  barbeiroNota: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 11,
+    color: "#aaaaaa",
+  },
+  folga: {
+    backgroundColor: "#ef44441a",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  folgaText: {
+    color: "#ef4444",
+    fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // StepData
+  dataGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  dateCard: {
+    height: 72,
+    borderRadius: 14,
     borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  dateCardDayName: {
+    fontSize: 9,
+    fontFamily: "Inter_400Regular",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  dateCardDay: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  dateCardMonth: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
+  // StepHorario
+  slotSectionLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: "#666666",
+    marginBottom: 8,
+  },
+  slotSectionGap: {
+    marginTop: 16,
   },
   slotsGrid: {
     flexDirection: "row",
@@ -729,12 +863,61 @@ const styles = StyleSheet.create({
     minWidth: 72,
     alignItems: "center",
   },
+  slotText: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 14,
+    lineHeight: 20,
+  },
   cta: {
     borderTopWidth: 1,
+  },
+  ctaBlock: {
+    width: "100%",
+    gap: 12,
   },
   confirmado: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#22c55e20",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  successIconText: {
+    fontSize: 32,
+    color: "#22c55e",
+  },
+  confirmedTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 22,
+    textAlign: "center",
+    marginBottom: 8,
+    letterSpacing: -0.55,
+  },
+  ticketCard: {
+    backgroundColor: "#171717",
+    borderRadius: 16,
+    padding: 16,
+    width: "100%",
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "#262626",
+    gap: 8,
+  },
+  ticketDateText: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  ticketDetailText: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 13,
+    color: "#f5f5f5",
   },
 });

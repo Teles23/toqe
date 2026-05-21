@@ -538,6 +538,18 @@ export default function ClienteHomeScreen() {
         )}
       </ScrollView>
 
+      {/* FAB — buscar barbearias (only when user already has a barbearia) */}
+      {!semBarbearias && (
+        <Pressable
+          testID="fab-buscar"
+          accessibilityLabel="Buscar barbearias"
+          onPress={() => router.push("/(cliente)/buscar")}
+          style={styles.fab}
+        >
+          <Text style={styles.fabIcon}>{"🔍"}</Text>
+        </Pressable>
+      )}
+
       {/* TenantSwitcherSheet */}
       <TenantSwitcherSheet
         visible={showSwitcher}
@@ -708,5 +720,24 @@ const styles = StyleSheet.create({
   statsNumber: {
     fontSize: 24,
     lineHeight: 30,
+  },
+  fab: {
+    position: "absolute",
+    bottom: 80,
+    right: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#F4B40066",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fabIcon: {
+    fontSize: 20,
   },
 });
