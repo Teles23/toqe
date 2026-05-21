@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import {
   ActivityIndicator,
@@ -6,6 +7,7 @@ import {
   type PressableProps,
   StyleSheet,
   Text,
+  View,
 } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -31,6 +33,10 @@ export interface BaseButtonProps extends Omit<
   border?: string;
   /** Se `true`, dispara `Haptics.selectionAsync` no onPress. Default: `true`. */
   haptic?: boolean;
+  /** Ícone Feather opcional à esquerda do label. */
+  icon?: keyof typeof Feather.glyphMap;
+  /** Ícone Feather opcional à direita do label. */
+  iconRight?: keyof typeof Feather.glyphMap;
 }
 
 /**
@@ -55,6 +61,8 @@ export function BaseButton({
   fg,
   border,
   haptic = true,
+  icon,
+  iconRight,
   onPress,
   accessibilityLabel,
   accessibilityState,
@@ -112,7 +120,11 @@ export function BaseButton({
       {loading ? (
         <ActivityIndicator color={fg} testID="button-loading" />
       ) : (
-        <Text style={[styles.text, { color: fg }]}>{label}</Text>
+        <View style={styles.content}>
+          {icon ? <Feather name={icon} size={18} color={fg} /> : null}
+          <Text style={[styles.text, { color: fg }]}>{label}</Text>
+          {iconRight ? <Feather name={iconRight} size={18} color={fg} /> : null}
+        </View>
       )}
     </AnimatedPressable>
   );
@@ -125,6 +137,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
+  },
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   text: {
     fontFamily: "Inter_600SemiBold",

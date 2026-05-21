@@ -10,12 +10,8 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
-jest.mock("expo-router", () => ({
-  router: { replace: jest.fn() },
-}));
-
-jest.mock("@/src/shared/hooks/barbeiro/use-barbeiros-da-barbearia", () => ({
-  useBarbeirosDaBarbearia: jest.fn(),
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: jest.fn(),
 }));
 
 jest.mock("@/src/shared/hooks/barbeiro/use-servicos", () => ({
@@ -35,31 +31,27 @@ import {
 } from "@testing-library/react-native";
 import React from "react";
 
-import { useBarbeirosDaBarbearia } from "@/src/shared/hooks/barbeiro/use-barbeiros-da-barbearia";
+import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useCriarWalkIn } from "@/src/shared/hooks/barbeiro/use-criar-walk-in";
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 
 import { AdicionarWalkInModal } from "../AdicionarWalkInModal";
 
-const mockUseBarbeiros = useBarbeirosDaBarbearia as jest.MockedFunction<
-  typeof useBarbeirosDaBarbearia
->;
+const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockUseServicos = useServicos as jest.MockedFunction<typeof useServicos>;
 const mockUseCriar = useCriarWalkIn as jest.MockedFunction<
   typeof useCriarWalkIn
 >;
 
-describe("AdicionarWalkInModal", () => {
+describe("AdicionarWalkInModal (walk-in chips)", () => {
   const mutateAsync = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseBarbeiros.mockReturnValue({
-      data: [
-        { usrCodigo: 10, nome: "Carlos", avatarUrl: null },
-        { usrCodigo: 11, nome: "Pedro", avatarUrl: null },
-      ],
-    } as unknown as ReturnType<typeof useBarbeirosDaBarbearia>);
+    mutateAsync.mockResolvedValue({ codigo: 999 });
+    mockUseAuth.mockReturnValue({
+      user: { codigo: 50, nome: "Carlos", email: "c@x.com" },
+    } as unknown as ReturnType<typeof useAuth>);
     mockUseServicos.mockReturnValue({
       data: [
         {
@@ -71,10 +63,17 @@ describe("AdicionarWalkInModal", () => {
         },
         {
           codigo: 2,
-          nome: "Barba",
-          duracaoBase: 15,
-          precoBase: 20,
+          nome: "Corte + Barba",
+          duracaoBase: 45,
+          precoBase: 75,
           ativo: true,
+        },
+        {
+          codigo: 3,
+          nome: "Pigmentação",
+          duracaoBase: 60,
+          precoBase: 90,
+          ativo: false,
         },
       ],
     } as unknown as ReturnType<typeof useServicos>);
@@ -86,74 +85,63 @@ describe("AdicionarWalkInModal", () => {
 
   it("não renderiza quando visible=false", () => {
     render(<AdicionarWalkInModal visible={false} onClose={jest.fn()} />);
-    expect(screen.queryByText(/Atender agora/)).toBeNull();
+    expect(screen.queryByText("Encaixe agora")).toBeNull();
   });
 
-  it("renderiza todos os campos quando visible=true", () => {
+  it("renderiza chips só de serviços ativos", () => {
     render(<AdicionarWalkInModal visible onClose={jest.fn()} />);
-    expect(screen.getByLabelText("Nome do cliente")).toBeTruthy();
-    expect(screen.getByLabelText("E-mail")).toBeTruthy();
-    expect(screen.getByLabelText("Telefone")).toBeTruthy();
-    expect(screen.getByLabelText("Atender com")).toBeTruthy();
-    expect(screen.getByLabelText("Serviço")).toBeTruthy();
+    expect(screen.getByTestId("walkin-servico-1")).toBeTruthy();
+    expect(screen.getByTestId("walkin-servico-2")).toBeTruthy();
+    // serviço inativo não vira chip
+    expect(screen.queryByTestId("walkin-servico-3")).toBeNull();
   });
 
-  it("validação Zod impede submit sem campos obrigatórios", async () => {
-    render(<AdicionarWalkInModal visible onClose={jest.fn()} />);
-    await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Atender agora →" }));
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Nome deve ter ao menos 2/i)).toBeTruthy();
-    });
-    expect(mutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("submete com payload correto e chama onClose no sucesso", async () => {
-    mutateAsync.mockResolvedValueOnce({ codigo: 999 });
+  it("submete com barbeiroId do usuário logado e servicosIds do chip selecionado", async () => {
     const onClose = jest.fn();
-
     render(<AdicionarWalkInModal visible onClose={onClose} />);
 
+    // seleciona o 2º serviço
+    fireEvent.press(screen.getByTestId("walkin-servico-2"));
     fireEvent.changeText(screen.getByLabelText("Nome do cliente"), "João");
-    fireEvent.changeText(screen.getByLabelText("E-mail"), "j@x.com");
-
-    // Seleciona barbeiro via Select (abre + clica)
-    fireEvent.press(screen.getByTestId("select-barbeiro"));
-    fireEvent.press(screen.getByTestId("select-barbeiro-option-10"));
-
-    fireEvent.press(screen.getByTestId("select-servico"));
-    fireEvent.press(screen.getByTestId("select-servico-option-1"));
 
     await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Atender agora →" }));
+      fireEvent.press(screen.getByRole("button", { name: "Atender agora" }));
     });
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-
-    expect(mutateAsync.mock.calls[0][0]).toMatchObject({
-      cliente: { nome: "João", email: "j@x.com" },
-      barbeiroId: 10,
-      servicosIds: [1],
+    const payload = mutateAsync.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      barbeiroId: 50,
+      servicosIds: [2],
+      cliente: { nome: "João" },
     });
+    // email sintético é gerado
+    expect(payload.cliente.email).toMatch(/@walk-in\.local$/);
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("usa o primeiro serviço ativo por padrão e nome 'Walk-in' se vazio", async () => {
+    render(<AdicionarWalkInModal visible onClose={jest.fn()} />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole("button", { name: "Atender agora" }));
+    });
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    const payload = mutateAsync.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      barbeiroId: 50,
+      servicosIds: [1],
+      cliente: { nome: "Walk-in" },
+    });
   });
 
   it("erro na mutation exibe mensagem de falha", async () => {
     mutateAsync.mockRejectedValueOnce(new Error("network"));
-
     render(<AdicionarWalkInModal visible onClose={jest.fn()} />);
 
-    fireEvent.changeText(screen.getByLabelText("Nome do cliente"), "João");
-    fireEvent.changeText(screen.getByLabelText("E-mail"), "j@x.com");
-    fireEvent.press(screen.getByTestId("select-barbeiro"));
-    fireEvent.press(screen.getByTestId("select-barbeiro-option-10"));
-    fireEvent.press(screen.getByTestId("select-servico"));
-    fireEvent.press(screen.getByTestId("select-servico-option-1"));
-
     await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Atender agora →" }));
+      fireEvent.press(screen.getByRole("button", { name: "Atender agora" }));
     });
 
     await waitFor(() => {

@@ -1,7 +1,9 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +16,77 @@ import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 import { useToggleServico } from "@/src/shared/hooks/barbeiro/use-toggle-servico";
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton } from "@/src/shared/ui";
+
+const ACCENT = "#F4B400";
+
+function formatBRL(v: number): string {
+  return `R$ ${v.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function PriceChip({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  accent?: boolean;
+}) {
+  return (
+    <View
+      style={[
+        priceChipStyles.chip,
+        accent ? priceChipStyles.chipAccent : priceChipStyles.chipMuted,
+      ]}
+    >
+      <Text style={priceChipStyles.label}>{label}</Text>
+      <Text
+        style={[priceChipStyles.value, { color: accent ? ACCENT : "#888888" }]}
+      >
+        {value}
+      </Text>
+      <Text style={priceChipStyles.sub}>{sub}</Text>
+    </View>
+  );
+}
+
+const priceChipStyles = StyleSheet.create({
+  chip: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    backgroundColor: "#1c1c1c",
+  },
+  chipMuted: { borderColor: "#262626" },
+  chipAccent: { borderColor: ACCENT + "40" },
+  label: {
+    fontSize: 9,
+    color: "#666666",
+    letterSpacing: 1.2,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    fontFamily: "Inter_600SemiBold",
+  },
+  value: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+  sub: {
+    fontSize: 10,
+    color: "#444444",
+    marginTop: 2,
+    fontFamily: "Inter_400Regular",
+  },
+});
 
 /**
  * Sub-tela de serviços e preços.
@@ -93,6 +166,19 @@ export default function ServicosScreen() {
             </Text>
           ) : null}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Adicionar serviço"
+          onPress={() =>
+            Alert.alert(
+              "Em breve",
+              "Cadastro de novos serviços chega numa próxima atualização.",
+            )
+          }
+          style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.7 }]}
+        >
+          <Feather name="plus" size={18} color={ACCENT} />
+        </Pressable>
       </View>
 
       {/* ── List ── */}
@@ -147,7 +233,11 @@ export default function ServicosScreen() {
                       },
                     ]}
                   >
-                    <Text style={{ fontSize: 18 }}>✂️</Text>
+                    <Feather
+                      name="scissors"
+                      size={16}
+                      color={ativo ? ACCENT : palette.textMuted}
+                    />
                   </View>
 
                   {/* Info */}
@@ -155,18 +245,29 @@ export default function ServicosScreen() {
                     <Text style={[typography.label, { color: palette.text }]}>
                       {s.nome}
                     </Text>
-                    <Text
-                      style={[typography.caption, { color: palette.textMuted }]}
-                    >
-                      {s.duracaoBase}min ·{" "}
-                      <Text style={{ color: palette.primary }}>
-                        R${" "}
-                        {s.precoBase.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                    <View style={styles.metaRow}>
+                      <Feather name="clock" size={10} color="#666666" />
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: palette.textMuted },
+                        ]}
+                      >
+                        {s.duracaoBase}min
                       </Text>
-                    </Text>
+                      <Text style={{ color: "#444444" }}>·</Text>
+                      <Text
+                        style={[
+                          typography.caption,
+                          {
+                            color: ativo ? "#aaaaaa" : palette.textMuted,
+                            fontFamily: "JetBrainsMono_400Regular",
+                          },
+                        ]}
+                      >
+                        {formatBRL(s.precoBase)}
+                      </Text>
+                    </View>
                   </View>
 
                   {/* Toggle */}
@@ -184,6 +285,28 @@ export default function ServicosScreen() {
                     thumbColor={palette.bg}
                   />
                 </View>
+
+                {/* Price chips — só quando ativo */}
+                {ativo ? (
+                  <View
+                    style={[
+                      styles.priceRow,
+                      { borderTopColor: palette.border },
+                    ]}
+                  >
+                    <PriceChip
+                      label="Preço base"
+                      value={formatBRL(s.precoBase)}
+                      sub="da barbearia"
+                    />
+                    <PriceChip
+                      label="Seu preço"
+                      value={formatBRL(s.precoBase)}
+                      sub="cobrado dos clientes"
+                      accent
+                    />
+                  </View>
+                ) : null}
               </View>
             );
           })}
@@ -245,9 +368,32 @@ export default function ServicosScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topBar: { flexDirection: "row", alignItems: "center" },
+  addBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: ACCENT + "1a",
+    borderWidth: 1,
+    borderColor: ACCENT + "38",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   card: {},
   cardRow: { flexDirection: "row", alignItems: "center" },
   iconBox: {},
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
+  },
+  priceRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
   stickyBottom: {},
 });

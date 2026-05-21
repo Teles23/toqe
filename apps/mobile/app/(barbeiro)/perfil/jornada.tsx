@@ -23,7 +23,58 @@ interface DiaJornada {
   abre: string | null;
   fecha: string | null;
   ativo: boolean;
+  /** Janela de almoço (exibição; persistência fica para fase futura). */
+  almoco: { de: string; ate: string } | null;
 }
+
+const VIOLET = "#a78bfa";
+
+/** Chip de horário read-only no estilo do protótipo. */
+function TimeChip({
+  label,
+  value,
+  accentColor,
+}: {
+  label: string;
+  value: string;
+  accentColor: string;
+}) {
+  return (
+    <View style={timeChipStyles.chip}>
+      <Text style={timeChipStyles.label}>{label}</Text>
+      <Text style={[timeChipStyles.value, { color: accentColor }]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+const timeChipStyles = StyleSheet.create({
+  chip: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262626",
+    backgroundColor: "#1c1c1c",
+  },
+  label: {
+    fontSize: 9,
+    color: "#666666",
+    letterSpacing: 1.2,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    fontFamily: "Inter_600SemiBold",
+  },
+  value: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+});
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
@@ -35,6 +86,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 2,
@@ -43,6 +95,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 3,
@@ -51,6 +104,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 4,
@@ -59,14 +113,16 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 5,
     dia: "Sexta",
     diaShort: "SEX",
     abre: "09:00",
-    fecha: "18:00",
+    fecha: "20:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 6,
@@ -75,6 +131,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "08:00",
     fecha: "17:00",
     ativo: true,
+    almoco: null,
   },
   {
     diaSemana: 0,
@@ -83,6 +140,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: null,
     fecha: null,
     ativo: false,
+    almoco: null,
   },
 ];
 
@@ -177,27 +235,21 @@ export default function JornadaScreen() {
           >
             {/* ── Card header ── */}
             <View style={styles.cardHeader}>
-              {/* Day pill */}
+              {/* Day pill — quadrado 36×36 mono */}
               <View
                 style={[
                   styles.dayPill,
                   {
                     backgroundColor: d.ativo
-                      ? palette.primary
+                      ? palette.primary + "1a"
                       : palette.surfaceHigh,
-                    borderRadius: radius.xs,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: 2,
                   },
                 ]}
               >
                 <Text
                   style={[
-                    typography.captionBold,
-                    {
-                      color: d.ativo ? palette.primaryOn : palette.textMuted,
-                      letterSpacing: 0.5,
-                    },
+                    styles.dayPillText,
+                    { color: d.ativo ? palette.primary : palette.textMuted },
                   ]}
                 >
                   {d.diaShort}
@@ -240,65 +292,38 @@ export default function JornadaScreen() {
               />
             </View>
 
-            {/* ── Time fields (read-only) ── */}
+            {/* ── Time chips (read-only) ── */}
             {d.ativo && d.abre && d.fecha ? (
-              <View style={[styles.timeRow, { marginTop: spacing.sm }]}>
-                <View
-                  style={[
-                    styles.timeField,
-                    {
-                      flex: 1,
-                      backgroundColor: palette.surfaceHigh,
-                      borderRadius: radius.sm,
-                      borderWidth: 1,
-                      borderColor: palette.border,
-                      padding: spacing.sm,
-                      marginRight: spacing.sm / 2,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      typography.captionBold,
-                      { color: palette.textMuted, letterSpacing: 0.5 },
-                    ]}
-                  >
-                    ABERTURA
-                  </Text>
-                  <Text
-                    style={[typography.monoMedium, { color: palette.text }]}
-                  >
-                    {d.abre}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.timeField,
-                    {
-                      flex: 1,
-                      backgroundColor: palette.surfaceHigh,
-                      borderRadius: radius.sm,
-                      borderWidth: 1,
-                      borderColor: palette.border,
-                      padding: spacing.sm,
-                      marginLeft: spacing.sm / 2,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      typography.captionBold,
-                      { color: palette.textMuted, letterSpacing: 0.5 },
-                    ]}
-                  >
-                    FECHAMENTO
-                  </Text>
-                  <Text
-                    style={[typography.monoMedium, { color: palette.text }]}
-                  >
-                    {d.fecha}
-                  </Text>
-                </View>
+              <View
+                style={[
+                  styles.timeGrid,
+                  { marginTop: spacing.sm, borderTopColor: palette.border },
+                ]}
+              >
+                <TimeChip
+                  label="Abertura"
+                  value={d.abre}
+                  accentColor={palette.primary}
+                />
+                <TimeChip
+                  label="Fechamento"
+                  value={d.fecha}
+                  accentColor={palette.primary}
+                />
+                {d.almoco ? (
+                  <>
+                    <TimeChip
+                      label="Almoço de"
+                      value={d.almoco.de}
+                      accentColor={VIOLET}
+                    />
+                    <TimeChip
+                      label="Almoço até"
+                      value={d.almoco.ate}
+                      accentColor={VIOLET}
+                    />
+                  </>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -348,8 +373,25 @@ const styles = StyleSheet.create({
   topBar: { flexDirection: "row", alignItems: "center" },
   card: {},
   cardHeader: { flexDirection: "row", alignItems: "center" },
-  dayPill: {},
-  timeRow: { flexDirection: "row" },
-  timeField: {},
+  dayPill: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayPillText: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  timeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
   stickyBottom: {},
 });

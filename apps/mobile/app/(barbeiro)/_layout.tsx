@@ -19,7 +19,9 @@ const BARBEIRO_PERFIS: readonly Perfil[] = [
 ];
 
 /**
- * Tab bar do barbeiro — 4 tabs no estilo Urban Flow native.
+ * Tab bar do barbeiro — 3 tabs no estilo Urban Flow native
+ * (Agenda · Clientes · Perfil). A fila de walk-ins aparece como seção no
+ * topo da Agenda (protótipo App Barbeiro v2), não como tab separada.
  *
  * Guard de acesso: verifica autenticação e perfil antes de renderizar
  * as tabs. Impede que um usuário com perfil CLIENTE acesse rotas do
@@ -61,24 +63,17 @@ export default function BarbeiroLayout() {
         }}
       />
       <Tabs.Screen
-        name="fila"
-        options={{
-          title: "Fila",
-          tabBarIcon: tabBarIcon("users"),
-        }}
-      />
-      <Tabs.Screen
         name="clientes"
         options={{
           title: "Clientes",
-          tabBarIcon: tabBarIcon("user-check"),
+          tabBarIcon: tabBarIcon("users"),
         }}
       />
       <Tabs.Screen
         name="perfil"
         options={{
           title: "Perfil",
-          tabBarIcon: tabBarIcon("user"),
+          tabBarIcon: tabBarIcon("shield"),
         }}
       />
     </Tabs>

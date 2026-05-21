@@ -12,6 +12,7 @@
  *  - Grupos: AGENDA (Jornada + Serviços + Convites) + CONTA (E-mail + Senha)
  */
 
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { type ReactNode, useCallback } from "react";
 import {
@@ -106,7 +107,7 @@ const groupStyles = StyleSheet.create({
 // ─── SettingsRow ──────────────────────────────────────────────────────────────
 
 interface SettingsRowProps {
-  icon?: string;
+  icon?: keyof typeof Feather.glyphMap;
   iconColor?: string;
   title: string;
   value?: string;
@@ -140,7 +141,7 @@ function SettingsRow({
             },
           ]}
         >
-          <Text style={{ fontSize: 15, color: iconColor }}>{icon}</Text>
+          <Feather name={icon} size={16} color={iconColor} />
         </View>
       )}
       <View style={rowStyles.textWrap}>
@@ -312,7 +313,7 @@ export default function PerfilIndexScreen() {
           accessibilityRole="button"
           style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.6 }]}
         >
-          <Text style={styles.editIcon}>✏️</Text>
+          <Feather name="edit-2" size={16} color="#888888" />
         </Pressable>
       </View>
 
@@ -408,28 +409,46 @@ export default function PerfilIndexScreen() {
           </View>
         )}
 
-        {/* ── AGENDA ── */}
-        <SettingsGroup label="AGENDA">
+        {/* ── SUA AGENDA ── */}
+        <SettingsGroup label="Sua agenda">
           <SettingsRow
-            icon="🗓"
-            iconColor="#60a5fa"
+            icon="clock"
+            iconColor="#F4B400"
             title="Jornada de trabalho"
+            value="Seg-Sex · Sáb"
             onTap={() => go("/jornada")}
             testID="ir-jornada"
           />
           <SettingsRow
-            icon="✂"
-            iconColor="#F4B400"
+            icon="scissors"
+            iconColor="#a78bfa"
             title="Serviços e preços"
             onTap={() => go("/servicos")}
             testID="ir-servicos"
           />
           <SettingsRow
-            icon="🔗"
-            iconColor="#a78bfa"
+            icon="link"
+            iconColor="#3b82f6"
             title="Convites"
             onTap={() => go("/notificacoes")}
             testID="ir-notificacoes"
+            last
+          />
+        </SettingsGroup>
+
+        {/* ── NOTIFICAÇÕES (display) ── */}
+        <SettingsGroup label="Notificações">
+          <SettingsRow
+            icon="bell"
+            iconColor="#F4B400"
+            title="Push notifications"
+            value="Ligado"
+          />
+          <SettingsRow
+            icon="message-circle"
+            iconColor="#22c55e"
+            title="WhatsApp"
+            value="Confirmações + lembretes"
             last
           />
         </SettingsGroup>
@@ -438,22 +457,30 @@ export default function PerfilIndexScreen() {
         <SettingsGroup label="Conta">
           {user?.email ? (
             <SettingsRow
-              icon="📧"
+              icon="mail"
               iconColor="#888888"
               title="E-mail"
               value={user.email}
               testID="ir-email"
             />
           ) : null}
+          {user?.telefone ? (
+            <SettingsRow
+              icon="phone"
+              iconColor="#888888"
+              title="Telefone"
+              value={user.telefone}
+            />
+          ) : null}
           <SettingsRow
-            icon="🔒"
+            icon="shield"
             iconColor="#888888"
             title="Segurança"
             onTap={() => go("/2fa")}
             testID="ir-2fa"
           />
           <SettingsRow
-            icon="🔑"
+            icon="key"
             iconColor="#888888"
             title="Mudar senha"
             onTap={() => go("/senha")}
@@ -541,9 +568,6 @@ const styles = StyleSheet.create({
     borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
-  },
-  editIcon: {
-    fontSize: 16,
   },
   hero: {
     alignItems: "center",
