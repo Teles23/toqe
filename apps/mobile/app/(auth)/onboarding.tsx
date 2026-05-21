@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -6,7 +7,7 @@ import { useTheme } from "@/src/shared/theme";
 import { AmberButton } from "@/src/shared/ui";
 
 interface Slide {
-  icon: string;
+  icon: keyof typeof Feather.glyphMap;
   title: string;
   accent: string;
   desc: string;
@@ -14,19 +15,19 @@ interface Slide {
 
 const SLIDES: Slide[] = [
   {
-    icon: "🔍",
+    icon: "search",
     title: "Encontre",
     accent: "sua barbearia",
     desc: "Barbearias da sua cidade, com fotos, avaliações e os profissionais disponíveis.",
   },
   {
-    icon: "⏱",
+    icon: "clock",
     title: "Agende",
     accent: "em 1 toque",
     desc: "Veja os próximos horários livres do seu barbeiro favorito. Toca, confirma, pronto.",
   },
   {
-    icon: "🔔",
+    icon: "bell",
     title: "Sem",
     accent: "esquecimentos",
     desc: "A gente te avisa antes do horário. Cancelou? Reagenda em 2 toques.",
@@ -71,6 +72,7 @@ export default function OnboardingScreen() {
           <Text style={[typography.label, { color: palette.textMuted }]}>
             Pular
           </Text>
+          <Feather name="arrow-right" size={14} color={palette.textMuted} />
         </Pressable>
       </View>
 
@@ -79,7 +81,7 @@ export default function OnboardingScreen() {
         testID={`slide-${step}`}
         style={[styles.slideContent, { paddingHorizontal: spacing.lg }]}
       >
-        {/* Icon container */}
+        {/* Icon container — quadrado arredondado */}
         <View
           style={[
             styles.iconContainer,
@@ -90,16 +92,16 @@ export default function OnboardingScreen() {
             },
           ]}
         >
-          <Text style={styles.iconText}>{slide.icon}</Text>
+          <Feather name={slide.icon} size={36} color={palette.primary} />
         </View>
 
-        {/* Title + accent */}
+        {/* Title + accent (esquerda) */}
         <View style={[styles.titleRow, { marginBottom: spacing.md }]}>
           <Text style={[styles.titleText, { color: palette.text }]}>
             {slide.title}{" "}
           </Text>
           <Text style={[styles.titleText, { color: palette.primary }]}>
-            {slide.accent}
+            {slide.accent}.
           </Text>
         </View>
 
@@ -126,7 +128,7 @@ export default function OnboardingScreen() {
                 styles.dot,
                 i === step
                   ? { width: 22, backgroundColor: palette.primary }
-                  : { width: 6, backgroundColor: palette.border },
+                  : { width: 6, backgroundColor: "#333333" },
               ]}
             />
           ))}
@@ -150,41 +152,40 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   skipPressable: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
   slideContent: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   iconContainer: {
     width: 72,
     height: 72,
-    borderRadius: 999,
+    borderRadius: 20,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  iconText: {
-    fontSize: 32,
-  },
   titleRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
+    alignItems: "flex-end",
   },
   titleText: {
     fontFamily: "Sora_700Bold",
-    fontSize: 34,
-    lineHeight: 42,
-    textAlign: "center",
+    fontSize: 36,
+    lineHeight: 40,
+    letterSpacing: -1,
   },
   desc: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
     lineHeight: 14 * 1.6,
-    textAlign: "center",
     maxWidth: 300,
   },
   bottomArea: {
