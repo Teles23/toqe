@@ -109,6 +109,11 @@ jest.mock("@/src/features/barbeiro/AdicionarWalkInModal", () => {
   };
 });
 
+// FilaSection é testada em seu próprio spec; aqui é stub para isolar a Agenda.
+jest.mock("@/src/features/barbeiro/FilaSection", () => ({
+  FilaSection: () => null,
+}));
+
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { addDays, format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";

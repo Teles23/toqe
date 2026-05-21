@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AvaliacaoSheet } from "@/src/features/cliente/AvaliacaoSheet";
 import {
@@ -81,6 +82,7 @@ function DetailMicro({
 
 export default function AgendamentoDetalheScreen() {
   const { palette } = useTheme();
+  const insets = useSafeAreaInsets();
   const { codigo: codigoStr } = useLocalSearchParams<{ codigo: string }>();
   const codigo = Number(codigoStr);
   const { data, isLoading, isError, refetch } = useAgendamento(codigo);
@@ -298,7 +300,10 @@ export default function AgendamentoDetalheScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 8 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Top bar ── */}

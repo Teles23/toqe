@@ -169,40 +169,23 @@ export default function LoginScreen() {
           },
         ]}
       >
-        {/* Brand block — nome + tagline (Urban Flow v2) */}
-        <View style={[styles.brand, { marginBottom: spacing.xl }]}>
-          <Text style={styles.brandName} accessibilityLabel="Logotipo Toqe">
-            toqe
-          </Text>
-          <Text
-            style={[
-              typography.caption,
-              { color: palette.textMuted, marginTop: spacing.xs },
-            ]}
-          >
-            Sua barbearia. Seu ritmo.
-          </Text>
+        {/* Header block — brand mark + boas-vindas (esquerda, Urban Flow v2) */}
+        <View style={styles.headerBlock}>
+          {/* Brand mark — quadrado âmbar com "T" */}
+          <View style={styles.brandMark} accessibilityLabel="Logotipo Toqe">
+            <Text style={styles.brandMarkLetter}>T</Text>
+          </View>
+
+          {/* Headline de boas-vindas */}
+          <View>
+            <Text style={[styles.headline, { color: palette.text }]}>
+              Bom te ver de{"\n"}volta.
+            </Text>
+            <Text style={styles.subtitle}>
+              Entre com seu e-mail e senha do Toqe.
+            </Text>
+          </View>
         </View>
-
-        {/* Headline de boas-vindas */}
-        <Text
-          style={[
-            styles.headline,
-            { color: palette.text, marginBottom: spacing.md },
-          ]}
-        >
-          Bom te ver de volta.
-        </Text>
-
-        {/* Subtítulo do método de login */}
-        <Text
-          style={[
-            typography.caption,
-            { color: palette.textMuted, marginBottom: spacing.lg },
-          ]}
-        >
-          Entre com seu e-mail e senha do Toqe.
-        </Text>
 
         <FormErrorBox error={errors.root?.message} />
 
@@ -212,7 +195,8 @@ export default function LoginScreen() {
           render={({ field: { onChange, onBlur, value } }) => (
             <FormInput
               label="E-mail"
-              placeholder="seu@email.com"
+              placeholder="voce@email.com"
+              leftIcon="mail"
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
@@ -232,7 +216,8 @@ export default function LoginScreen() {
           render={({ field: { onChange, onBlur, value } }) => (
             <FormInput
               label="Senha"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="••••••"
+              leftIcon="lock"
               secureTextEntry
               autoComplete="password"
               textContentType="password"
@@ -244,6 +229,17 @@ export default function LoginScreen() {
             />
           )}
         />
+
+        {/* Esqueci a senha */}
+        <Pressable
+          testID="btn-esqueci-senha"
+          accessibilityRole="button"
+          accessibilityLabel="Esqueci a senha"
+          onPress={() => {}}
+          style={styles.forgotWrap}
+        >
+          <Text style={styles.forgotText}>Esqueci a senha</Text>
+        </Pressable>
 
         <View style={{ marginTop: spacing.md }}>
           <AmberButton
@@ -279,7 +275,7 @@ export default function LoginScreen() {
 
         <View style={[styles.footer, { marginTop: spacing.xl }]}>
           <Text style={[typography.label, { color: palette.textMuted }]}>
-            Não tem uma conta?{" "}
+            Novo por aqui?{" "}
           </Text>
           <Link href="/(auth)/cadastro" asChild>
             <Pressable accessibilityRole="link">
@@ -289,7 +285,7 @@ export default function LoginScreen() {
                   { color: palette.primary, fontFamily: "Inter_600SemiBold" },
                 ]}
               >
-                Cadastre-se
+                Crie sua conta
               </Text>
             </Pressable>
           </Link>
@@ -302,16 +298,56 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingBottom: 40 },
-  brand: { alignItems: "center" },
-  brandName: {
+  // ── Header block (left-aligned)
+  headerBlock: {
+    alignItems: "flex-start",
+    gap: 18,
+    marginBottom: 28,
+  },
+  brandMark: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#F4B400",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  brandMarkLetter: {
     fontFamily: "Sora_700Bold",
-    fontSize: 26,
-    lineHeight: 34,
+    fontSize: 20,
+    color: "#0d0d0d",
+    letterSpacing: -1,
   },
   headline: {
     fontFamily: "Sora_700Bold",
-    fontSize: 26,
-    lineHeight: 34,
+    fontSize: 28,
+    lineHeight: 30,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#888888",
+    marginTop: 6,
+  },
+  // ── Esqueci a senha
+  forgotWrap: {
+    alignSelf: "flex-end",
+    marginTop: -4,
+    marginBottom: 4,
+    paddingVertical: 4,
+  },
+  forgotText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    color: "#F4B400",
+    fontWeight: "600",
   },
   dividerRow: {
     flexDirection: "row",

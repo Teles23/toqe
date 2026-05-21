@@ -40,6 +40,11 @@ export interface ClienteDetalheProps {
   cliente: ClienteAPI | null;
   visible: boolean;
   onClose: () => void;
+  proximoAgendamento?: {
+    data: string;
+    horario: string;
+    servico: string;
+  } | null;
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
@@ -48,6 +53,7 @@ export function ClienteDetalhe({
   cliente,
   visible,
   onClose,
+  proximoAgendamento,
 }: ClienteDetalheProps) {
   const { palette, spacing, typography, radius } = useTheme();
   const [editingNote, setEditingNote] = useState(false);
@@ -87,6 +93,9 @@ export function ClienteDetalhe({
         return `há ${diff}d`;
       })()
     : "—";
+
+  const isNovo = cliente.totalVisitas === 0;
+  const isVip = cliente.totalVisitas >= 10;
 
   return (
     <Modal
@@ -169,6 +178,22 @@ export function ClienteDetalhe({
                 {cliente.telefone}
               </Text>
             )}
+
+            {/* Tags: NOVO / VIP */}
+            {(isNovo || isVip) && (
+              <View style={styles.tagsRow} testID="cliente-tags">
+                {isNovo && (
+                  <View style={styles.badgeNovo}>
+                    <Text style={styles.badgeNovoText}>NOVO</Text>
+                  </View>
+                )}
+                {isVip && (
+                  <View style={styles.badgeVip}>
+                    <Text style={styles.badgeVipText}>VIP</Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Quick actions */}
@@ -176,7 +201,8 @@ export function ClienteDetalhe({
             <QuickAction
               emoji="📅"
               label="Agendar"
-              color={palette.primary}
+              iconBgColor="#F4B40014"
+              emojiColor="#F4B400"
               onPress={() => {
                 /* Phase 2: navegar para booking */
               }}
@@ -185,7 +211,8 @@ export function ClienteDetalhe({
             <QuickAction
               emoji="📞"
               label="Ligar"
-              color={palette.info}
+              iconBgColor="#3b82f61a"
+              emojiColor="#3b82f6"
               onPress={handleLigar}
               testID="qa-ligar"
               disabled={!cliente.telefone}
@@ -193,7 +220,8 @@ export function ClienteDetalhe({
             <QuickAction
               emoji="💬"
               label="WhatsApp"
-              color={palette.success}
+              iconBgColor="#22c55e1a"
+              emojiColor="#22c55e"
               onPress={handleWhatsApp}
               testID="qa-whatsapp"
               disabled={!cliente.telefone}
@@ -261,6 +289,29 @@ export function ClienteDetalhe({
               >
                 {cliente.servicoFav}
               </Text>
+            </View>
+          )}
+
+          {/* Próximo agendamento */}
+          {proximoAgendamento && (
+            <View style={styles.nextAptCard} testID="next-apt-card">
+              <Text style={styles.nextAptLabel}>PRÓXIMO AGENDAMENTO</Text>
+              <View style={styles.nextAptRow}>
+                <Text style={styles.nextAptDate}>
+                  {proximoAgendamento.data}
+                </Text>
+                <Text style={styles.nextAptSep}>{" · "}</Text>
+                <Text style={styles.nextAptHorario}>
+                  {proximoAgendamento.horario}
+                </Text>
+                <Text style={styles.nextAptSep}>{" · "}</Text>
+                <Text
+                  style={[styles.nextAptServico, { color: palette.text }]}
+                  numberOfLines={1}
+                >
+                  {proximoAgendamento.servico}
+                </Text>
+              </View>
             </View>
           )}
 
@@ -412,19 +463,21 @@ export function ClienteDetalhe({
 function QuickAction({
   emoji,
   label,
-  color,
+  iconBgColor,
+  emojiColor,
   onPress,
   disabled,
   testID,
 }: {
   emoji: string;
   label: string;
-  color: string;
+  iconBgColor: string;
+  emojiColor: string;
   onPress: () => void;
   disabled?: boolean;
   testID?: string;
 }) {
-  const { palette, typography, radius } = useTheme();
+  const { palette, radius } = useTheme();
   return (
     <Pressable
       testID={testID}
@@ -442,12 +495,12 @@ function QuickAction({
         },
       ]}
     >
-      <Text style={{ fontSize: 18, color }}>{emoji}</Text>
-      <Text
-        style={[typography.caption, { color: palette.textMuted, marginTop: 4 }]}
+      <View
+        style={[styles.quickActionIconBox, { backgroundColor: iconBgColor }]}
       >
-        {label}
-      </Text>
+        <Text style={{ fontSize: 18, color: emojiColor }}>{emoji}</Text>
+      </View>
+      <Text style={styles.quickActionLabel}>{label}</Text>
     </Pressable>
   );
 }
@@ -590,6 +643,17 @@ function HistoryRow({
               </Text>
             </View>
           </View>
+
+          {/* Repeat button */}
+          <Pressable
+            testID={`repeat-${agendamento.codigo}`}
+            onPress={() => {}}
+            accessibilityRole="button"
+            accessibilityLabel="Repetir agendamento"
+            style={styles.repeatBtn}
+          >
+            <Text style={styles.repeatIcon}>↺</Text>
+          </Pressable>
         </View>
       </View>
     </View>
@@ -632,6 +696,39 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: "center",
   },
+  tagsRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 6,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  badgeNovo: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: "#a78bfa1a",
+  },
+  badgeNovoText: {
+    fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: "#a78bfa",
+  },
+  badgeVip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: "#F4B40014",
+  },
+  badgeVipText: {
+    fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: "#F4B400",
+  },
   quickActions: {
     flexDirection: "row",
     gap: 8,
@@ -642,6 +739,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderWidth: 1,
     minHeight: 60,
+  },
+  quickActionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickActionLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "#888888",
+    marginTop: 6,
   },
   statsCard: {
     flexDirection: "row",
@@ -675,6 +785,47 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderLeftWidth: 3,
+  },
+  nextAptCard: {
+    backgroundColor: "#171717",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#262626",
+    borderLeftWidth: 3,
+    borderLeftColor: "#F4B400",
+  },
+  nextAptLabel: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 9,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: "#666666",
+    marginBottom: 6,
+  },
+  nextAptRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  nextAptDate: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 13,
+    color: "#F4B400",
+  },
+  nextAptSep: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#888888",
+  },
+  nextAptHorario: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 12,
+    color: "#888888",
+  },
+  nextAptServico: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
   },
   sectionLabel: {
     fontFamily: "Inter_600SemiBold",
@@ -762,5 +913,18 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     fontSize: 8,
     letterSpacing: 0.8,
+  },
+  repeatBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#F4B40014",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  repeatIcon: {
+    fontSize: 14,
+    color: "#F4B400",
   },
 });

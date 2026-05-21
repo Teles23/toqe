@@ -1,5 +1,19 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+/**
+ * AdicionarWalkInModal — "Encaixe agora" (walk-in) no estilo do protótipo
+ * `barbeiro-sheets.jsx::WalkinSheet`.
+ *
+ * Sheet leve: nome (opcional) + chips de serviço (reais via `useServicos`)
+ * + chips de duração + info verde + "Atender agora". Sem selects de barbeiro
+ * nem e-mail (o protótipo não os coleta):
+ *  - `barbeiroId` = barbeiro logado (`useAuth().user.codigo`)
+ *  - `email` sintético determinístico para satisfazer o contrato atual
+ *    (`criarClienteRapidoSchema` exige email). TODO: tornar e-mail opcional
+ *    no backend numa fase futura.
+ *  - duração é exibida (reflete a do serviço); o backend deriva a real do serviço.
+ */
+
+import { Feather } from "@expo/vector-icons";
+import { useEffect, useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -10,38 +24,16 @@ import {
   Text,
   View,
 } from "react-native";
-import { z } from "zod";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useBarbeirosDaBarbearia } from "@/src/shared/hooks/barbeiro/use-barbeiros-da-barbearia";
-import { maskTelefone } from "@/src/shared/utils/masks";
+import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useCriarWalkIn } from "@/src/shared/hooks/barbeiro/use-criar-walk-in";
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, FormErrorBox, FormInput, Select } from "@/src/shared/ui";
+import { AmberButton, FormErrorBox, FormInput } from "@/src/shared/ui";
 
-const walkInFormSchema = z.object({
-  nome: z
-    .string()
-    .min(2, "Nome deve ter ao menos 2 caracteres")
-    .max(100, "Nome muito longo"),
-  email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
-  telefone: z
-    .string()
-    .regex(/^\+?[\d\s\-()]{8,20}$/, "Telefone inválido")
-    .max(20, "Telefone muito longo")
-    .optional()
-    .or(z.literal("")),
-  barbeiroId: z
-    .number({ invalid_type_error: "Selecione um barbeiro" })
-    .int()
-    .positive("Selecione um barbeiro"),
-  servicoId: z
-    .number({ invalid_type_error: "Selecione um serviço" })
-    .int()
-    .positive("Selecione um serviço"),
-});
-
-type WalkInFormInput = z.infer<typeof walkInFormSchema>;
+const ACCENT = "#F4B400";
+const DURATIONS = [15, 30, 45, 60];
 
 interface Props {
   visible: boolean;
@@ -50,52 +42,66 @@ interface Props {
 }
 
 export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
-  const { palette, spacing, typography } = useTheme();
-  const { data: barbeiros = [] } = useBarbeirosDaBarbearia();
+  const { palette, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { data: servicos = [] } = useServicos();
   const criarWalkIn = useCriarWalkIn();
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-    setError,
-  } = useForm<WalkInFormInput>({
-    resolver: zodResolver(walkInFormSchema),
-    defaultValues: {
-      nome: "",
-      email: "",
-      telefone: "",
-      barbeiroId: undefined as unknown as number,
-      servicoId: undefined as unknown as number,
-    },
-  });
+  const ativos = useMemo(() => servicos.filter((s) => s.ativo), [servicos]);
 
-  const onSubmit = async (data: WalkInFormInput) => {
-    try {
-      await criarWalkIn.mutateAsync({
-        cliente: {
-          nome: data.nome,
-          email: data.email,
-          telefone: data.telefone || undefined,
-        },
-        barbeiroId: data.barbeiroId,
-        servicosIds: [data.servicoId],
-      });
-      reset();
-      onSuccess?.();
-      onClose();
-    } catch {
-      setError("root", {
-        message: "Não foi possível adicionar à fila. Tente novamente.",
-      });
+  const [nome, setNome] = useState("");
+  const [servicoId, setServicoId] = useState<number | null>(null);
+  const [duration, setDuration] = useState(30);
+  const [erro, setErro] = useState<string | null>(null);
+
+  // Default: primeiro serviço ativo + sua duração
+  useEffect(() => {
+    if (servicoId === null && ativos.length > 0) {
+      setServicoId(ativos[0].codigo);
+      setDuration(ativos[0].duracaoBase);
     }
+  }, [ativos, servicoId]);
+
+  const reset = () => {
+    setNome("");
+    setServicoId(ativos[0]?.codigo ?? null);
+    setDuration(ativos[0]?.duracaoBase ?? 30);
+    setErro(null);
   };
 
   const handleClose = () => {
     reset();
     onClose();
+  };
+
+  const handleSelectServico = (codigo: number, duracaoBase: number) => {
+    setServicoId(codigo);
+    setDuration(duracaoBase);
+  };
+
+  const handleSubmit = async () => {
+    if (servicoId === null) {
+      setErro("Selecione um serviço.");
+      return;
+    }
+    setErro(null);
+    try {
+      await criarWalkIn.mutateAsync({
+        cliente: {
+          nome: nome.trim() || "Walk-in",
+          // E-mail sintético — contrato exige email; walk-in não o coleta.
+          email: `walkin-${Date.now()}@walk-in.local`,
+        },
+        barbeiroId: user!.codigo,
+        servicosIds: [servicoId],
+      });
+      reset();
+      onSuccess?.();
+      onClose();
+    } catch {
+      setErro("Não foi possível adicionar à fila. Tente novamente.");
+    }
   };
 
   return (
@@ -114,152 +120,157 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
           onPress={handleClose}
           accessibilityLabel="Fechar"
         />
-        <View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: palette.bg,
-              borderColor: palette.border,
-              paddingTop: spacing.md,
-              paddingBottom: spacing.xl,
-            },
-          ]}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              paddingHorizontal: spacing.lg,
-              marginBottom: spacing.md,
-            }}
-          >
-            <Text style={{ ...typography.heading, color: palette.text }}>
-              Adicionar à fila
-            </Text>
+        <View style={styles.sheet}>
+          {/* Drag handle */}
+          <View style={styles.dragHandle} />
+
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <View style={styles.headerIcon}>
+              <Feather name="user" size={22} color={ACCENT} />
+            </View>
+            <View style={styles.headerTitles}>
+              <Text style={styles.headerTitle}>Encaixe agora</Text>
+              <Text style={styles.headerSubtitle}>
+                Walk-in · sem agendamento prévio
+              </Text>
+            </View>
             <Pressable
               onPress={handleClose}
               accessibilityRole="button"
-              accessibilityLabel="Cancelar"
-              hitSlop={12}
+              accessibilityLabel="Fechar"
+              hitSlop={8}
+              style={styles.closeBtn}
             >
-              <Text
-                style={{
-                  ...typography.body,
-                  color: palette.primary,
-                  fontWeight: "600",
-                }}
-              >
-                Cancelar
-              </Text>
+              <Feather name="x" size={16} color="#888888" />
             </Pressable>
           </View>
 
           <ScrollView
+            style={styles.scroll}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingHorizontal: spacing.lg }}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.lg,
+              paddingBottom: spacing.xl,
+              gap: 16,
+            }}
           >
-            <FormErrorBox error={errors.root?.message} />
+            <FormErrorBox error={erro ?? undefined} />
 
-            <Controller
-              control={control}
-              name="nome"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <FormInput
-                  label="Nome do cliente"
-                  placeholder="João Silva"
-                  autoCapitalize="words"
-                  maxLength={100}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={errors.nome?.message}
-                />
-              )}
+            {/* Nome */}
+            <FormInput
+              label="Nome do cliente"
+              hint="(opcional)"
+              placeholder="Quem é?"
+              leftIcon="user"
+              autoCapitalize="words"
+              maxLength={100}
+              value={nome}
+              onChangeText={setNome}
             />
 
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <FormInput
-                  label="E-mail"
-                  placeholder="joao@example.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  maxLength={100}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={errors.email?.message}
-                />
-              )}
-            />
+            {/* Serviço — chips */}
+            <View>
+              <Text style={styles.fieldLabel}>SERVIÇO</Text>
+              {ativos.length === 0 ? (
+                <Text style={styles.emptyHint}>
+                  Nenhum serviço ativo. Ative serviços em Perfil › Serviços.
+                </Text>
+              ) : null}
+              <View style={styles.grid2}>
+                {ativos.map((s) => {
+                  const active = s.codigo === servicoId;
+                  return (
+                    <Pressable
+                      key={s.codigo}
+                      testID={`walkin-servico-${s.codigo}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={s.nome}
+                      onPress={() =>
+                        handleSelectServico(s.codigo, s.duracaoBase)
+                      }
+                      style={[
+                        styles.chip,
+                        active ? styles.chipActive : styles.chipIdle,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          { color: active ? ACCENT : "#aaaaaa" },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {s.nome}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
 
-            <Controller
-              control={control}
-              name="telefone"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <FormInput
-                  label="Telefone"
-                  hint="(opcional)"
-                  placeholder="(11) 99999-9999"
-                  keyboardType="phone-pad"
-                  maxLength={20}
-                  onBlur={onBlur}
-                  onChangeText={(text) => onChange(maskTelefone(text))}
-                  value={value ?? ""}
-                />
-              )}
-            />
+            {/* Duração — chips (display; backend deriva do serviço) */}
+            <View>
+              <Text style={styles.fieldLabel}>DURAÇÃO</Text>
+              <View style={styles.grid4}>
+                {DURATIONS.map((d) => {
+                  const active = d === duration;
+                  return (
+                    <Pressable
+                      key={d}
+                      testID={`walkin-duracao-${d}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`${d} minutos`}
+                      onPress={() => setDuration(d)}
+                      style={[
+                        styles.chipDur,
+                        active ? styles.chipActive : styles.chipIdle,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipDurText,
+                          { color: active ? ACCENT : "#aaaaaa" },
+                        ]}
+                      >
+                        {d}m
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
 
-            <Controller
-              control={control}
-              name="barbeiroId"
-              render={({ field: { onChange, value } }) => (
-                <Select
-                  label="Atender com"
-                  value={value ?? null}
-                  onChange={onChange}
-                  options={barbeiros.map((b) => ({
-                    value: b.usrCodigo,
-                    label: b.nome,
-                  }))}
-                  placeholder="Selecione o barbeiro"
-                  error={errors.barbeiroId?.message}
-                  testID="select-barbeiro"
-                />
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="servicoId"
-              render={({ field: { onChange, value } }) => (
-                <Select
-                  label="Serviço"
-                  value={value ?? null}
-                  onChange={onChange}
-                  options={servicos.map((s) => ({
-                    value: s.codigo,
-                    label: s.nome,
-                    hint: `${s.duracaoBase}min · R$ ${Number(s.precoBase).toFixed(2)}`,
-                  }))}
-                  placeholder="Selecione o serviço"
-                  error={errors.servicoId?.message}
-                  testID="select-servico"
-                />
-              )}
-            />
-
-            <View style={{ marginTop: spacing.sm }}>
-              <AmberButton
-                label="Adicionar à fila"
-                onPress={handleSubmit(onSubmit)}
-                loading={isSubmitting}
-              />
+            {/* Info verde */}
+            <View style={styles.infoBox}>
+              <Feather name="check-circle" size={14} color="#22c55e" />
+              <Text style={styles.infoBoxText}>
+                Será inserido como WALK_IN · ocupa o próximo slot livre
+              </Text>
             </View>
           </ScrollView>
+
+          {/* CTA */}
+          <View
+            style={[
+              styles.footer,
+              {
+                paddingHorizontal: spacing.lg,
+                paddingBottom: insets.bottom + 18,
+                borderTopColor: palette.border,
+              },
+            ]}
+          >
+            <AmberButton
+              label="Atender agora"
+              icon="play"
+              iconRight="arrow-right"
+              onPress={handleSubmit}
+              loading={criarWalkIn.isPending}
+            />
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -271,8 +282,139 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject },
   sheet: {
     maxHeight: "92%",
+    backgroundColor: "#161616",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 10,
+  },
+  scroll: {
+    flexShrink: 1,
+  },
+  emptyHint: {
+    fontSize: 12,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    marginBottom: 4,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#3a3a3a",
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: ACCENT + "1a",
+    borderWidth: 1,
+    borderColor: ACCENT + "38",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitles: { flex: 1 },
+  headerTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 16,
+    color: "#f5f5f5",
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    color: "#888888",
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fieldLabel: {
+    fontSize: 10,
+    color: "#666666",
+    letterSpacing: 1.4,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  grid2: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  grid4: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  chip: {
+    flexBasis: "48%",
+    minHeight: 48,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  chipDur: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chipIdle: {
+    backgroundColor: "#1c1c1c",
+    borderColor: "#262626",
+  },
+  chipActive: {
+    backgroundColor: ACCENT + "1c",
+    borderColor: ACCENT,
+  },
+  chipText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  chipDurText: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 13,
+  },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "rgba(34,197,94,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.25)",
+  },
+  infoBoxText: {
+    flex: 1,
+    fontSize: 11,
+    color: "#9bd9b4",
+    fontFamily: "Inter_400Regular",
+  },
+  footer: {
+    paddingTop: 14,
+    paddingBottom: 18,
     borderTopWidth: 1,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: "#161616",
   },
 });

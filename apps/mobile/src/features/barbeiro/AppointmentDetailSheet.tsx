@@ -18,9 +18,9 @@
  *  - no_show       → Reagendar (ghost)
  */
 
-import { format, parseISO } from "date-fns";
+import { differenceInMinutes, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton, Avatar, BottomSheet, GhostButton } from "@/src/shared/ui";
@@ -63,8 +63,12 @@ export function AppointmentDetailSheet({
   const timeStr = format(inicio, "HH:mm", { locale: ptBR });
   const endTimeStr = format(fim, "HH:mm", { locale: ptBR });
 
-  const totalDuracao = agendamento.itens.reduce((sum, i) => sum + i.duracao, 0);
-  const totalPreco = agendamento.itens.reduce((sum, i) => sum + i.preco, 0);
+  // Duração real do agendamento (início→fim) — robusto contra item.duracao ausente.
+  const totalDuracao = Math.max(0, differenceInMinutes(fim, inicio));
+  const totalPreco = agendamento.itens.reduce(
+    (sum, i) => sum + (Number(i.preco) || Number(i.servico?.precoBase) || 0),
+    0,
+  );
 
   const servicoNome =
     agendamento.itens.length === 1
@@ -175,7 +179,11 @@ export function AppointmentDetailSheet({
 
         {/* ── Ações sticky no rodapé ── */}
         <View style={[styles.actionsWrap, { borderTopColor: "#262626" }]}>
-          <Actions status={agendamento.status} onAction={onAction} />
+          <Actions
+            status={agendamento.status}
+            telefone={agendamento.cliente.telefone}
+            onAction={onAction}
+          />
         </View>
       </View>
     </BottomSheet>
@@ -196,11 +204,23 @@ function TimeField({ label, value }: { label: string; value: string }) {
 
 function Actions({
   status,
+  telefone,
   onAction,
 }: {
   status: string;
+  telefone?: string | null;
   onAction: (a: DetailAction) => void;
 }) {
+  const handleLigar = () => {
+    if (telefone) void Linking.openURL(`tel:${telefone}`);
+  };
+  const handleWhatsApp = () => {
+    if (telefone) {
+      const digits = telefone.replace(/\D/g, "");
+      void Linking.openURL(`https://wa.me/55${digits}`);
+    }
+  };
+
   switch (status) {
     case "pendente":
       return (
@@ -215,6 +235,7 @@ function Actions({
           <View style={{ flex: 1 }}>
             <AmberButton
               label="Aceitar"
+              icon="check"
               onPress={() => onAction("aceitar")}
               testID="action-aceitar"
             />
@@ -226,21 +247,27 @@ function Actions({
         <View style={styles.actionCol}>
           <AmberButton
             label="Iniciar atendimento"
+            icon="play"
+            iconRight="arrow-right"
             onPress={() => onAction("iniciar")}
             testID="action-iniciar"
           />
           <View style={[styles.actionRow, { marginTop: 8 }]}>
             <View style={{ flex: 1 }}>
               <GhostButton
-                label="📞 Ligar"
-                onPress={() => onAction("reagendar")}
+                label="Ligar"
+                icon="phone"
+                onPress={handleLigar}
+                disabled={!telefone}
                 testID="action-ligar"
               />
             </View>
             <View style={{ flex: 1 }}>
               <GhostButton
-                label="⚡ Zap"
-                onPress={() => onAction("reagendar")}
+                label="Zap"
+                icon="message-circle"
+                onPress={handleWhatsApp}
+                disabled={!telefone}
                 testID="action-zap"
               />
             </View>
@@ -260,6 +287,7 @@ function Actions({
           <View style={{ flex: 1 }}>
             <AmberButton
               label="Concluir"
+              icon="check"
               onPress={() => onAction("concluir")}
               testID="action-concluir"
             />

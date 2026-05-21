@@ -10,10 +10,6 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
-jest.mock("expo-router", () => ({
-  router: { replace: jest.fn() },
-}));
-
 jest.mock("@/src/shared/hooks/barbeiro/use-fila-dia", () => ({
   useFilaDia: jest.fn(),
 }));
@@ -22,19 +18,13 @@ jest.mock("@/src/shared/hooks/barbeiro/use-update-status", () => ({
   useUpdateStatus: jest.fn(),
 }));
 
-// Stub do modal — testes do modal vivem no spec próprio.
-// jest.mock factories são hoistadas antes dos imports — require dinâmico
-// é a única forma de referenciar react-native dentro do factory.
-jest.mock("@/src/features/barbeiro/AdicionarWalkInModal", () => {
+// FilaCard tem timers internos (recalc de espera) — stub leve, testado à parte.
+jest.mock("@/src/features/barbeiro/FilaCard", () => {
   const RN = jest.requireActual("react-native");
   return {
-    AdicionarWalkInModal: ({
-      visible,
-      testID,
-    }: {
-      visible: boolean;
-      testID?: string;
-    }) => (visible ? <RN.View testID={testID ?? "walk-in-modal"} /> : null),
+    FilaCard: ({ testID }: { testID?: string }) => (
+      <RN.View testID={testID ?? "fila-card"} />
+    ),
   };
 });
 
@@ -45,7 +35,7 @@ import { useFilaDia } from "@/src/shared/hooks/barbeiro/use-fila-dia";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import type { AgendamentoResponse } from "@toqe/shared";
 
-import BarbeiroFilaScreen from "../fila";
+import { FilaSection } from "../FilaSection";
 
 const mockUseFilaDia = useFilaDia as jest.MockedFunction<typeof useFilaDia>;
 const mockUseUpdateStatus = useUpdateStatus as jest.MockedFunction<
@@ -84,34 +74,31 @@ function mockQ(over: Partial<ReturnType<typeof useFilaDia>> = {}) {
   } as unknown as ReturnType<typeof useFilaDia>;
 }
 
-describe("BarbeiroFilaScreen", () => {
+describe("FilaSection", () => {
+  const mutate = jest.fn();
+
   beforeEach(() => {
     mockUseFilaDia.mockReset();
+    mutate.mockReset();
     mockUseUpdateStatus.mockReset();
     mockUseUpdateStatus.mockReturnValue({
-      mutate: jest.fn(),
+      mutate,
     } as unknown as ReturnType<typeof useUpdateStatus>);
   });
 
-  it("mostra loading state", () => {
-    mockUseFilaDia.mockReturnValue(mockQ({ isLoading: true }));
-    render(<BarbeiroFilaScreen />);
-    expect(screen.getByTestId("lista-fila-loading")).toBeTruthy();
-  });
-
-  it("mostra estado vazio com mensagem específica", () => {
+  it("não renderiza nada quando a fila está vazia", () => {
     mockUseFilaDia.mockReturnValue(mockQ({ data: [] }));
-    render(<BarbeiroFilaScreen />);
-    expect(screen.getByText(/Fila vazia/i)).toBeTruthy();
+    render(<FilaSection />);
+    expect(screen.queryByTestId("fila-section")).toBeNull();
   });
 
-  it("mostra erro quando isError", () => {
-    mockUseFilaDia.mockReturnValue(mockQ({ isError: true }));
-    render(<BarbeiroFilaScreen />);
-    expect(screen.getByText(/Não foi possível carregar/i)).toBeTruthy();
+  it("não renderiza nada quando data é undefined", () => {
+    mockUseFilaDia.mockReturnValue(mockQ({ data: undefined }));
+    render(<FilaSection />);
+    expect(screen.queryByTestId("fila-section")).toBeNull();
   });
 
-  it("renderiza FilaCards com posição ascendente", () => {
+  it("renderiza a seção com walk-in cards quando há itens", () => {
     mockUseFilaDia.mockReturnValue(
       mockQ({
         data: [
@@ -123,32 +110,35 @@ describe("BarbeiroFilaScreen", () => {
             codigo: 2,
             cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
           }),
-          makeAg({
-            codigo: 3,
-            cliente: { usrCodigo: 3, nome: "Ana", telefone: null },
-          }),
         ],
       }),
     );
-    render(<BarbeiroFilaScreen />);
+    render(<FilaSection />);
 
-    expect(screen.getByTestId("lista-fila")).toBeTruthy();
-    expect(screen.getAllByText("João").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Maria").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Ana").length).toBeGreaterThan(0);
-
-    const posicoes = screen
-      .getAllByTestId("posicao")
-      .map((n) => n.props.children);
-    expect(posicoes).toEqual(["1º", "2º", "3º"]);
+    expect(screen.getByTestId("fila-section")).toBeTruthy();
+    expect(screen.getByTestId("walkin-card-1")).toBeTruthy();
+    expect(screen.getByTestId("walkin-card-2")).toBeTruthy();
+    expect(screen.getByText("João")).toBeTruthy();
+    expect(screen.getByText("Maria")).toBeTruthy();
   });
 
-  it("FAB abre o modal de adicionar walk-in", () => {
-    mockUseFilaDia.mockReturnValue(mockQ({ data: [] }));
-    render(<BarbeiroFilaScreen />);
+  it("o cabeçalho mostra a contagem de pendentes", () => {
+    mockUseFilaDia.mockReturnValue(
+      mockQ({
+        data: [
+          makeAg({ codigo: 1, status: "pendente" }),
+          makeAg({ codigo: 2, status: "confirmado" }),
+        ],
+      }),
+    );
+    render(<FilaSection />);
+    expect(screen.getByText(/FILA · esperando \(1\)/)).toBeTruthy();
+  });
 
-    expect(screen.queryByTestId("walk-in-modal")).toBeNull();
-    fireEvent.press(screen.getByTestId("fab-adicionar"));
-    expect(screen.getByTestId("walk-in-modal")).toBeTruthy();
+  it("botão Atender chama updateStatus com 'confirmado'", () => {
+    mockUseFilaDia.mockReturnValue(mockQ({ data: [makeAg({ codigo: 7 })] }));
+    render(<FilaSection />);
+    fireEvent.press(screen.getByTestId("btn-atender-7"));
+    expect(mutate).toHaveBeenCalledWith({ codigo: 7, status: "confirmado" });
   });
 });

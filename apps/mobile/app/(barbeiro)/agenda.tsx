@@ -22,11 +22,15 @@ import {
 import { ptBR } from "date-fns/locale";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { Feather } from "@expo/vector-icons";
 
 import { ActionMenuSheet } from "@/src/features/barbeiro/ActionMenuSheet";
 import { AgendaRow } from "@/src/features/barbeiro/AgendaRow";
 import { AppointmentDetailSheet } from "@/src/features/barbeiro/AppointmentDetailSheet";
 import { BloqueioSheet } from "@/src/features/barbeiro/BloqueioSheet";
+import { FilaSection } from "@/src/features/barbeiro/FilaSection";
 import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInModal";
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
@@ -172,6 +176,7 @@ const nowStyles = StyleSheet.create({
 
 export default function BarbeiroAgendaScreen() {
   const { palette, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data, isLoading, isRefetching, refetch, isError } =
@@ -253,7 +258,12 @@ export default function BarbeiroAgendaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* Header */}
-      <View style={[styles.headerWrap, { paddingHorizontal: spacing.md }]}>
+      <View
+        style={[
+          styles.headerWrap,
+          { paddingHorizontal: spacing.md, paddingTop: insets.top + 10 },
+        ]}
+      >
         {/* Linha superior: dia da semana + botão filtro */}
         <View style={styles.headerTop}>
           {/* Nav prev */}
@@ -280,7 +290,7 @@ export default function BarbeiroAgendaScreen() {
               {diaSemana}
             </Text>
             <View style={styles.dateRow}>
-              <Text style={styles.dateIcon}>📅</Text>
+              <Feather name="calendar" size={12} color="#888888" />
               {/* hojeShort inclui dia abreviado + data: "qui, 21 de mai" */}
               <Text style={styles.dateText} numberOfLines={1}>
                 {hojeShort}
@@ -317,6 +327,13 @@ export default function BarbeiroAgendaScreen() {
 
       {/* Stats strip — só quando há dados */}
       {data && data.length > 0 && <StatsStrip apts={data} />}
+
+      {/* Fila de walk-ins — seção vermelha no topo (só hoje) */}
+      {isSameDay(selectedDate, new Date()) && (
+        <View style={{ paddingHorizontal: spacing.md }}>
+          <FilaSection />
+        </View>
+      )}
 
       {/* Lista principal */}
       <DataListWrapper
@@ -427,10 +444,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginTop: 4,
-  },
-  dateIcon: {
-    fontSize: 12,
-    color: "#888888",
   },
   dateText: {
     fontSize: 12,

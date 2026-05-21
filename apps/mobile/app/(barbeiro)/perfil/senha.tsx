@@ -13,8 +13,11 @@ import {
   View,
 } from "react-native";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { ApiError } from "@/src/shared/api/api-client";
 import { useMudarSenha } from "@/src/shared/hooks/perfil/use-mudar-senha";
+import { ScreenHeader } from "@/src/shared/ui";
 
 const AMBER = "#F4B400";
 const CARD = "#171717";
@@ -25,6 +28,7 @@ const FG4 = "#666666";
 
 export default function PerfilSenhaScreen() {
   const mudar = useMudarSenha();
+  const insets = useSafeAreaInsets();
 
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -82,17 +86,11 @@ export default function PerfilSenhaScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-        >
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Trocar senha</Text>
-      </View>
+      <ScreenHeader
+        title="Trocar senha"
+        onBack={() => router.back()}
+        border={false}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -203,7 +201,7 @@ export default function PerfilSenhaScreen() {
       </ScrollView>
 
       {/* CTA sticky */}
-      <View style={styles.ctaWrapper}>
+      <View style={[styles.ctaWrapper, { bottom: insets.bottom + 18 }]}>
         <Pressable
           testID="btn-salvar-senha"
           onPress={onSubmit}
@@ -250,33 +248,6 @@ function RequisitRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backArrow: {
-    fontSize: 18,
-    color: FG,
-  },
-  headerTitle: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 18,
-    color: FG,
-    letterSpacing: -0.45,
   },
   scroll: {
     paddingHorizontal: 16,

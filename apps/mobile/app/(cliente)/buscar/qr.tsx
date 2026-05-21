@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * QR Scan Screen — visual mock (expo-camera não disponível).
@@ -7,6 +8,8 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
  * Design: Urban Flow v2 / QRScanScreen spec.
  */
 export default function QRScanScreen() {
+  const insets = useSafeAreaInsets();
+
   const handleBack = () => {
     router.back();
   };
@@ -30,7 +33,7 @@ export default function QRScanScreen() {
   return (
     <View style={styles.container}>
       {/* Top bar */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 16 }]}>
         <Pressable
           testID="btn-voltar-qr"
           accessibilityRole="button"
@@ -96,7 +99,6 @@ const styles = StyleSheet.create({
   },
   // ── Top bar
   topBar: {
-    paddingTop: 60,
     paddingHorizontal: 22,
     paddingBottom: 16,
     flexDirection: "row",

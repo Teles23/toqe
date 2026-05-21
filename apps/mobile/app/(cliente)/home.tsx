@@ -1,20 +1,35 @@
+import { Feather } from "@expo/vector-icons";
 import { useState, useCallback } from "react";
-import { format, parseISO } from "date-fns";
+import { differenceInCalendarDays, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
 import { useProximoAgendamento } from "@/src/shared/hooks/cliente/use-proximo-agendamento";
 import { useProximosSlots } from "@/src/shared/hooks/cliente/use-proximos-slots";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import {
-  AmberButton,
-  Card,
-  SkeletonBox,
-  TenantSwitcherSheet,
-} from "@/src/shared/ui";
+import { AmberButton, SkeletonBox, TenantSwitcherSheet } from "@/src/shared/ui";
+
+// ─── Design tokens (Quick Book Slots v2) ──────────────────────────────────────
+const ACCENT = "#F4B400";
+const ACCENT_ON = "#0d0d0d";
+const CARD = "#171717";
+const CARD2 = "#1f1f1f";
+const BORDER = "#262626";
+const BORDER2 = "#2a2a2a";
+const GREEN = "#22c55e";
+const BLUE = "#3b82f6";
+const FG = "#f5f5f5";
 
 // ─── QuickBook internal state ─────────────────────────────────────────────────
 type QuickView =
@@ -27,11 +42,10 @@ type QuickView =
   | "error";
 
 function QuickBookCard() {
-  const { palette, spacing, radius, typography } = useTheme();
   const { data, isLoading, isError } = useProximosSlots();
   const [view, setView] = useState<QuickView | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  // Derive state from hook + local view override
   const resolvedView: QuickView = (() => {
     if (view === "confirmed" || view === "confirming") return view;
     if (isLoading) return "loading";
@@ -40,6 +54,11 @@ function QuickBookCard() {
     if (view === "loaded") return "loaded";
     return "idle";
   })();
+
+  const handleVerHorarios = useCallback(() => {
+    setSelectedSlot(data?.slots[0]?.inicio ?? null);
+    setView("loaded");
+  }, [data]);
 
   const handleConfirm = useCallback(async () => {
     setView("confirming");
@@ -52,297 +71,317 @@ function QuickBookCard() {
     : "";
   const durationLabel = data ? `${data.servicoDuracao} min` : "";
 
+  // ── LOADING ──
   if (resolvedView === "loading") {
     return (
       <View
         testID="quick-book-card"
-        style={[
-          styles.quickCard,
-          {
-            backgroundColor: palette.surface,
-            borderColor: palette.border,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            marginBottom: spacing.md,
-          },
-        ]}
+        style={[styles.qbCard, styles.qbCardPlain]}
       >
-        <SkeletonBox width="60%" height={16} borderRadius={4} />
-        <View style={{ height: spacing.sm }} />
-        <SkeletonBox width="40%" height={12} borderRadius={4} />
-        <View style={{ height: spacing.sm }} />
-        <SkeletonBox width="80%" height={12} borderRadius={4} />
+        <View style={styles.qbLoadingLabel}>
+          <ActivityIndicator size="small" color={ACCENT} />
+          <Text style={styles.monoMuted}>GET /agenda/proximos…</Text>
+        </View>
+        {["Hoje", "Amanhã", "Sex"].map((day) => (
+          <View key={day} style={{ marginBottom: 10 }}>
+            <SkeletonBox width={44} height={9} borderRadius={4} />
+            <View style={{ height: 6 }} />
+            <View style={styles.slotRow}>
+              <SkeletonBox width="31%" height={48} borderRadius={12} />
+              <SkeletonBox width="31%" height={48} borderRadius={12} />
+            </View>
+          </View>
+        ))}
       </View>
     );
   }
 
+  // ── ERROR ──
   if (resolvedView === "error") {
     return (
       <View
         testID="quick-book-error"
-        style={[
-          styles.quickCard,
-          {
-            backgroundColor: palette.surface,
-            borderColor: palette.border,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            marginBottom: spacing.md,
-          },
-        ]}
+        style={[styles.qbCard, styles.qbCardPlain]}
       >
-        <Text style={[typography.body, { color: palette.textMuted }]}>
-          Não foi possível carregar horários.
-        </Text>
-        <View style={{ height: spacing.sm }} />
-        <AmberButton label="Tentar novamente" onPress={() => setView(null)} />
+        <View style={styles.qbCenterState}>
+          <View style={[styles.stateIconBox, styles.stateIconDanger]}>
+            <Feather name="wifi-off" size={26} color="#ef4444" />
+          </View>
+          <Text style={styles.stateTitle}>Falha na conexão</Text>
+          <Text style={styles.stateDesc}>
+            Não conseguimos buscar os horários. Verifique sua internet e tente
+            novamente.
+          </Text>
+          <Pressable
+            onPress={() => setView(null)}
+            style={styles.retryBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Tentar de novo"
+          >
+            <Feather name="refresh-cw" size={16} color={ACCENT_ON} />
+            <Text style={styles.retryBtnText}>Tentar de novo</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
 
+  // ── EMPTY ──
   if (resolvedView === "empty") {
     return (
       <View
         testID="quick-book-empty"
-        style={[
-          styles.quickCard,
-          {
-            backgroundColor: palette.surface,
-            borderColor: palette.border,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            marginBottom: spacing.md,
-          },
-        ]}
+        style={[styles.qbCard, styles.qbCardPlain]}
       >
-        <Text style={[typography.subheading, { color: palette.text }]}>
-          Sem horários disponíveis
-        </Text>
-        <Text
-          style={[
-            typography.caption,
-            { color: palette.textMuted, marginTop: spacing.xs },
-          ]}
-        >
-          Nenhum horário disponível nos próximos 7 dias.
-        </Text>
-        <View style={{ height: spacing.md }} />
-        <Pressable
-          style={[
-            styles.outlineBtn,
-            {
-              borderColor: palette.border,
-              borderRadius: radius.sm,
-              padding: spacing.sm,
-              marginBottom: spacing.sm,
-            },
-          ]}
-          accessibilityLabel="Outro barbeiro"
-        >
-          <Text style={[typography.label, { color: palette.textMuted }]}>
-            Outro barbeiro
+        <View style={styles.qbCenterState}>
+          <View style={[styles.stateIconBox, styles.stateIconNeutral]}>
+            <Feather name="clock" size={26} color="#666666" />
+          </View>
+          <Text style={styles.stateTitle}>Sem horários disponíveis</Text>
+          <Text style={styles.stateDesc}>
+            Não há horários livres nos próximos 7 dias. Tente outro barbeiro ou
+            ative o aviso de cancelamento.
           </Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.outlineBtn,
-            {
-              borderColor: palette.border,
-              borderRadius: radius.sm,
-              padding: spacing.sm,
-            },
-          ]}
-          accessibilityLabel="Avisar vaga"
-        >
-          <Text style={[typography.label, { color: palette.textMuted }]}>
-            Avisar vaga
-          </Text>
-        </Pressable>
+          <View style={styles.emptyBtnRow}>
+            <Pressable
+              onPress={() => setView(null)}
+              style={styles.emptyBtnNeutral}
+              accessibilityRole="button"
+              accessibilityLabel="Outro barbeiro"
+            >
+              <Feather name="user" size={14} color="#dddddd" />
+              <Text style={styles.emptyBtnNeutralText}>Outro barbeiro</Text>
+            </Pressable>
+            <Pressable
+              style={styles.emptyBtnAccent}
+              accessibilityRole="button"
+              accessibilityLabel="Avisar vaga"
+            >
+              <Feather name="bell" size={14} color={ACCENT} />
+              <Text style={styles.emptyBtnAccentText}>Avisar vaga</Text>
+            </Pressable>
+          </View>
+        </View>
       </View>
     );
   }
 
+  // ── CONFIRMED ──
   if (resolvedView === "confirmed") {
+    const slot = data?.slots.find((s) => s.inicio === selectedSlot);
     return (
-      <View
-        testID="quick-book-confirmed"
-        style={[
-          styles.quickCard,
-          {
-            backgroundColor: palette.successDim,
-            borderColor: palette.success,
-            borderRadius: radius.md,
-            padding: spacing.md,
-            marginBottom: spacing.md,
-          },
-        ]}
-      >
-        <Text style={[typography.subheading, { color: palette.success }]}>
-          Agendado com sucesso!
+      <View testID="quick-book-confirmed" style={styles.qbConfirmedCard}>
+        <View style={styles.confirmedCheck}>
+          <Feather name="check" size={32} color={GREEN} />
+        </View>
+        <Text style={styles.confirmedTitle}>Agendado!</Text>
+        <Text style={styles.confirmedDesc}>
+          {slot ? `${slot.dia} · ${slot.hora} · ` : ""}
+          {data?.servicoNome} com {data?.barbeiroNome}
         </Text>
-        <Text
-          style={[
-            typography.caption,
-            { color: palette.success, marginTop: spacing.xs },
-          ]}
+        <Pressable
+          onPress={() => setView(null)}
+          style={styles.reservarOutroBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Reservar outro"
         >
-          Seu horário foi confirmado.
-        </Text>
+          <Feather name="refresh-cw" size={14} color="#bbbbbb" />
+          <Text style={styles.reservarOutroText}>Reservar outro</Text>
+        </Pressable>
       </View>
     );
   }
 
-  // idle or loaded or confirming — show full card
+  // ── IDLE / LOADED / CONFIRMING (card com borda-esquerda accent + header) ──
   return (
-    <Card testID="quick-book-card">
-      {/* Card header */}
-      <View
-        style={[
-          styles.quickCardInner,
-          { borderLeftColor: palette.primary, borderLeftWidth: 3 },
-        ]}
-      >
-        <View
-          style={[
-            styles.initialAvatar,
-            {
-              backgroundColor: palette.primaryDim,
-              borderRadius: radius.full,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              typography.bodyBold,
-              { color: palette.primary, textAlign: "center" },
-            ]}
-          >
+    <View testID="quick-book-card" style={styles.qbCard}>
+      {/* Header */}
+      <View style={styles.qbHeader}>
+        <View style={styles.qbAvatar}>
+          <Text style={styles.qbAvatarLetter}>
             {data?.barbeiroInicial ?? "?"}
           </Text>
         </View>
-        <View style={{ flex: 1, marginLeft: spacing.sm }}>
-          <Text
-            style={[typography.bodyBold, { color: palette.text }]}
-            numberOfLines={1}
-          >
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.qbTitle} numberOfLines={1}>
             Repetir com {data?.barbeiroNome ?? "—"}
           </Text>
-          <Text
-            style={[
-              typography.caption,
-              { color: palette.textMuted, marginTop: 2 },
-            ]}
-          >
-            {data?.servicoNome} · {durationLabel} · {priceLabel}
-          </Text>
+          <View style={styles.qbSubRow}>
+            <Feather name="scissors" size={11} color="#888888" />
+            <Text style={styles.qbSubText} numberOfLines={1}>
+              {data?.servicoNome} · {durationLabel} · {priceLabel}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.oneToqueBadge}>
+          <Feather name="zap" size={10} color={ACCENT} />
+          <Text style={styles.oneToqueText}>1 TOQUE</Text>
         </View>
       </View>
 
-      <View style={{ height: spacing.sm }} />
-
+      {/* IDLE */}
       {resolvedView === "idle" && (
-        <AmberButton
+        <Pressable
           testID="quick-book-btn-ver-horarios"
-          label="Ver horários disponíveis"
-          onPress={() => setView("loaded")}
-        />
+          onPress={handleVerHorarios}
+          style={styles.verHorariosBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Ver horários disponíveis"
+        >
+          <Text style={styles.verHorariosText}>Ver horários disponíveis</Text>
+          <Feather name="arrow-right" size={16} color={ACCENT} />
+        </Pressable>
       )}
 
-      {resolvedView === "loaded" && data && (
-        <>
-          {/* Group slots by dia */}
-          {(() => {
-            const groups = data.slots.reduce<Record<string, typeof data.slots>>(
+      {/* LOADED / CONFIRMING */}
+      {(resolvedView === "loaded" || resolvedView === "confirming") && data && (
+        <View style={{ marginTop: 14 }}>
+          {/* slots label */}
+          <View style={styles.slotsLabelRow}>
+            <View style={styles.greenDot} />
+            <Text style={styles.slotsLabelText}>
+              {data.slots.length} slots · próximos 7 dias
+            </Text>
+          </View>
+
+          {/* grouped slots */}
+          {Object.entries(
+            data.slots.reduce<Record<string, typeof data.slots>>(
               (acc, slot) => {
-                if (!acc[slot.dia]) acc[slot.dia] = [];
-                acc[slot.dia].push(slot);
+                (acc[slot.dia] = acc[slot.dia] || []).push(slot);
                 return acc;
               },
               {},
-            );
-
-            return Object.entries(groups).map(([dia, slots]) => (
-              <View key={dia} style={{ marginBottom: spacing.sm }}>
-                <Text
-                  style={[
-                    styles.diaLabel,
-                    {
-                      color: palette.textMuted,
-                      marginBottom: spacing.xs,
-                    },
-                  ]}
-                >
-                  {dia}
-                </Text>
-                <View style={styles.slotsRow}>
-                  {slots.map((slot) => {
-                    const slotTestId = `slot-${slot.hora.replace(":", "-")}`;
-                    return (
-                      <Pressable
-                        key={slot.inicio}
-                        testID={slotTestId}
-                        onPress={() => handleConfirm()}
+            ),
+          ).map(([dia, slots]) => (
+            <View key={dia} style={{ marginBottom: 10 }}>
+              <Text style={styles.diaLabel}>{dia}</Text>
+              <View style={styles.slotRow}>
+                {slots.map((slot) => {
+                  const isSel = slot.inicio === selectedSlot;
+                  return (
+                    <Pressable
+                      key={slot.inicio}
+                      testID={`slot-${slot.hora.replace(":", "-")}`}
+                      onPress={() => setSelectedSlot(slot.inicio)}
+                      style={[
+                        styles.slotBtn,
+                        isSel ? styles.slotBtnSel : styles.slotBtnIdle,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Horário ${slot.hora}`}
+                    >
+                      <Text
                         style={[
-                          styles.slotBtn,
-                          {
-                            backgroundColor: palette.primaryDim,
-                            borderColor: palette.primary,
-                            borderRadius: radius.sm,
-                            padding: spacing.sm,
-                          },
+                          styles.slotText,
+                          { color: isSel ? ACCENT : "#bbbbbb" },
                         ]}
-                        accessibilityLabel={`Horário ${slot.hora}`}
                       >
-                        <Text
-                          style={[typography.mono, { color: palette.primary }]}
-                        >
-                          {slot.hora}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                        {slot.hora}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
-            ));
-          })()}
+            </View>
+          ))}
 
-          <View style={{ height: spacing.sm }} />
-
+          {/* confirm */}
           <Pressable
             testID="quick-book-btn-confirmar"
-            onPress={() => handleConfirm()}
-            style={[
-              styles.confirmBtn,
-              {
-                backgroundColor: palette.primary,
-                borderRadius: radius.sm,
-                padding: spacing.md,
-                alignItems: "center",
-              },
-            ]}
+            onPress={handleConfirm}
+            disabled={resolvedView === "confirming"}
+            style={styles.confirmBtn}
+            accessibilityRole="button"
             accessibilityLabel="Confirmar agendamento"
           >
-            <Text style={[typography.bodyBold, { color: palette.primaryOn }]}>
-              Confirmar
-            </Text>
+            {resolvedView === "confirming" ? (
+              <ActivityIndicator size="small" color={ACCENT_ON} />
+            ) : (
+              <>
+                <Text style={styles.confirmBtnText}>Confirmar reserva</Text>
+                <Feather name="arrow-right" size={16} color={ACCENT_ON} />
+              </>
+            )}
           </Pressable>
-        </>
+        </View>
       )}
-    </Card>
+    </View>
+  );
+}
+
+// ─── Next appointment — strip style ───────────────────────────────────────────
+function NextAppointmentStrip() {
+  const { data: proximo } = useProximoAgendamento();
+  if (!proximo) return null;
+
+  const inicio = parseISO(proximo.inicio);
+  const date = format(inicio, "EEE, dd MMM", { locale: ptBR });
+  const time = format(inicio, "HH:mm", { locale: ptBR });
+  const daysAway = Math.max(0, differenceInCalendarDays(inicio, new Date()));
+  const barbeiro =
+    (proximo as { barbeiro?: { nome?: string } }).barbeiro?.nome ?? "";
+
+  return (
+    <Pressable
+      testID="next-apt-card"
+      style={styles.strip}
+      accessibilityRole="button"
+      accessibilityLabel={`Próximo agendamento ${date} ${time}`}
+    >
+      <View style={styles.stripTopRow}>
+        <Text style={styles.stripLabel}>PRÓXIMO</Text>
+        <View style={styles.stripLine} />
+        <Text style={styles.stripDays}>em {daysAway}d</Text>
+      </View>
+      <View style={styles.stripBottomRow}>
+        <View style={styles.stripDot} />
+        <Text style={styles.stripDate}>
+          {date} · {time}
+        </Text>
+        {barbeiro ? <Text style={styles.stripWith}>· {barbeiro}</Text> : null}
+        <Feather
+          name="arrow-right"
+          size={14}
+          color="#555555"
+          style={{ marginLeft: "auto" }}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
+// ─── Stats grid ───────────────────────────────────────────────────────────────
+function StatsGrid({ visitas }: { visitas: number }) {
+  return (
+    <View style={styles.statsRow}>
+      <View testID="stats-visitas" style={styles.statCard}>
+        <View style={[styles.statIconBox, { backgroundColor: BLUE + "1a" }]}>
+          <Feather name="calendar" size={16} color={BLUE} />
+        </View>
+        <Text style={styles.statValue}>{visitas}</Text>
+        <Text style={styles.statLabel}>Total visitas</Text>
+      </View>
+      <View testID="stats-ticket" style={styles.statCard}>
+        <View style={[styles.statIconBox, { backgroundColor: ACCENT + "1a" }]}>
+          <Feather name="credit-card" size={16} color={ACCENT} />
+        </View>
+        <Text style={styles.statValue}>—</Text>
+        <Text style={styles.statLabel}>Ticket médio</Text>
+      </View>
+    </View>
   );
 }
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
-
 export default function ClienteHomeScreen() {
-  const { palette, spacing, radius, typography } = useTheme();
+  const { palette, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const { barbearia, barbearias } = useAuth();
-  const { data: proximo } = useProximoAgendamento();
   const { data: agendamentos } = useAgendamentosMeus();
   const [showSwitcher, setShowSwitcher] = useState(false);
 
   const semBarbearias = barbearias.length === 0;
-  const letraBarbearia = barbearia?.nome?.trim()[0]?.toUpperCase() ?? "?";
 
   return (
     <View
@@ -353,63 +392,42 @@ export default function ClienteHomeScreen() {
       <View
         style={[
           styles.header,
-          {
-            backgroundColor: palette.bg,
-            borderBottomColor: palette.border,
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.lg,
-            paddingBottom: spacing.md,
-          },
+          { paddingHorizontal: spacing.md, paddingTop: insets.top + 10 },
         ]}
       >
         <View style={{ flex: 1 }}>
-          <Text
-            style={[
-              { fontFamily: "Sora_700Bold", fontSize: 24, lineHeight: 30 },
-              { color: palette.text },
-            ]}
-          >
-            Início
-          </Text>
-          {/* Pill de tenant — só aparece quando há barbearia ativa */}
+          <Text style={styles.headerTitle}>Início</Text>
           {barbearia ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Barbearia ativa: ${barbearia.nome}. Toque para trocar`}
               onPress={() => setShowSwitcher(true)}
-              style={styles.tenantPill}
+              style={styles.tenantRow}
             >
-              {/* Mini logo */}
-              <View style={styles.pillLogoMini}>
-                <Text style={styles.pillLogoLetter}>{letraBarbearia}</Text>
-              </View>
-              <Text style={styles.pillNome} numberOfLines={1}>
+              <Feather name="home" size={12} color="#888888" />
+              <Text style={styles.tenantName} numberOfLines={1}>
                 {barbearia.nome}
               </Text>
-              <Text style={styles.pillSwap}>⇅</Text>
+              <Feather name="chevron-down" size={13} color="#666666" />
             </Pressable>
           ) : null}
         </View>
         <Pressable
           testID="btn-notificacoes"
+          accessibilityRole="button"
           accessibilityLabel="Notificações"
-          style={[
-            styles.bellBtn,
-            {
-              backgroundColor: palette.surface,
-              borderColor: palette.border,
-              borderRadius: radius.full,
-            },
-          ]}
+          style={styles.bellBtn}
         >
-          <Text style={{ fontSize: 18 }}>{"🔔"}</Text>
+          <Feather name="bell" size={20} color="#bbbbbb" />
         </Pressable>
       </View>
 
       <ScrollView
         contentContainerStyle={{
-          padding: spacing.md,
+          paddingHorizontal: spacing.md,
+          paddingTop: 6,
           paddingBottom: spacing.xxxl,
+          gap: 14,
         }}
       >
         {semBarbearias ? (
@@ -439,104 +457,27 @@ export default function ClienteHomeScreen() {
           </View>
         ) : (
           <>
-            {/* NextAptCard */}
-            {proximo ? (
-              <View
-                testID="next-apt-card"
-                style={[
-                  styles.nextAptPill,
-                  {
-                    backgroundColor: palette.primaryDim,
-                    borderColor: palette.primary,
-                    borderRadius: radius.full,
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.xs + 2,
-                    marginBottom: spacing.md,
-                    alignSelf: "flex-start",
-                  },
-                ]}
-              >
-                <Text
-                  style={[typography.captionBold, { color: palette.primary }]}
-                >
-                  {"Próximo · "}
-                  {format(parseISO(proximo.inicio), "HH:mm", { locale: ptBR })}
-                  {" · "}
-                  {proximo.itens[0]?.servico.nome ?? "Serviço"}
-                </Text>
-              </View>
-            ) : null}
-
-            {/* QuickBookCard */}
+            <NextAppointmentStrip />
             <QuickBookCard />
-
-            {/* Stats grid */}
             {agendamentos !== undefined && agendamentos !== null ? (
-              <View style={styles.statsRow}>
-                <View
-                  testID="stats-visitas"
-                  style={[
-                    styles.statsCard,
-                    {
-                      backgroundColor: palette.surface,
-                      borderColor: palette.border,
-                      borderRadius: radius.md,
-                      padding: spacing.md,
-                      marginRight: spacing.sm,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statsNumber,
-                      { color: palette.text, fontFamily: "Sora_700Bold" },
-                    ]}
-                  >
-                    {agendamentos.length}
-                  </Text>
-                  <Text
-                    style={[
-                      typography.caption,
-                      { color: palette.textMuted, marginTop: 2 },
-                    ]}
-                  >
-                    Visitas
-                  </Text>
-                </View>
-                <View
-                  testID="stats-ticket"
-                  style={[
-                    styles.statsCard,
-                    {
-                      backgroundColor: palette.surface,
-                      borderColor: palette.border,
-                      borderRadius: radius.md,
-                      padding: spacing.md,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statsNumber,
-                      { color: palette.text, fontFamily: "Sora_700Bold" },
-                    ]}
-                  >
-                    {"—"}
-                  </Text>
-                  <Text
-                    style={[
-                      typography.caption,
-                      { color: palette.textMuted, marginTop: 2 },
-                    ]}
-                  >
-                    Ticket médio
-                  </Text>
-                </View>
-              </View>
+              <StatsGrid visitas={agendamentos.length} />
             ) : null}
           </>
         )}
       </ScrollView>
+
+      {/* FAB buscar */}
+      {!semBarbearias && (
+        <Pressable
+          testID="fab-buscar"
+          accessibilityRole="button"
+          accessibilityLabel="Buscar barbearias"
+          onPress={() => router.push("/(cliente)/buscar")}
+          style={[styles.fab, { borderRadius: radius.full }]}
+        >
+          <Feather name="search" size={20} color={ACCENT_ON} />
+        </Pressable>
+      )}
 
       {/* TenantSwitcherSheet */}
       <TenantSwitcherSheet
@@ -549,55 +490,461 @@ export default function ClienteHomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // ── Header
   header: {
     flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
+    alignItems: "flex-start",
+    paddingTop: 18,
+    paddingBottom: 8,
   },
-  bellBtn: {
-    width: 40,
-    height: 40,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  headerTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 22,
+    lineHeight: 28,
+    color: FG,
+    letterSpacing: -0.4,
   },
-  // ── Tenant pill
-  tenantPill: {
-    marginTop: 6,
-    backgroundColor: "#171717",
-    borderRadius: 100,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+  tenantRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    borderWidth: 1,
-    borderColor: "#262626",
-    alignSelf: "flex-start",
+    marginTop: 3,
   },
-  pillLogoMini: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    backgroundColor: "#F4B400",
+  tenantName: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#999999",
+    maxWidth: 200,
+  },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#1c1c1c",
+    borderWidth: 1,
+    borderColor: BORDER,
     alignItems: "center",
     justifyContent: "center",
   },
-  pillLogoLetter: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 9,
-    color: "#0d0d0d",
+  // ── Next appointment strip
+  strip: {
+    paddingTop: 10,
+    paddingBottom: 14,
+    paddingHorizontal: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1c1c1c",
+    gap: 8,
   },
-  pillNome: {
-    fontSize: 12,
+  stripTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  stripLabel: {
+    fontSize: 9,
+    letterSpacing: 1.6,
     fontFamily: "Inter_600SemiBold",
     fontWeight: "700",
-    color: "#f5f5f5",
-    maxWidth: 160,
+    color: "#666666",
+    textTransform: "uppercase",
   },
-  pillSwap: {
+  stripLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#222222",
+  },
+  stripDays: {
+    fontSize: 10,
+    color: ACCENT,
+    fontWeight: "700",
+    fontFamily: "JetBrainsMono_400Regular",
+  },
+  stripBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  stripDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: ACCENT,
+  },
+  stripDate: {
+    fontSize: 13,
+    color: FG,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  stripWith: {
+    fontSize: 12,
+    color: "#888888",
+  },
+  // ── Quick Book card
+  qbCard: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: ACCENT + "30",
+    borderLeftWidth: 3,
+    borderLeftColor: ACCENT,
+    borderRadius: 20,
+    padding: 18,
+  },
+  qbCardPlain: {
+    borderColor: BORDER,
+    borderLeftColor: BORDER,
+    borderLeftWidth: 1,
+  },
+  qbHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  qbAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: ACCENT + "1a",
+    borderWidth: 1,
+    borderColor: ACCENT + "30",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  qbAvatarLetter: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 17,
+    color: ACCENT,
+  },
+  qbTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: "Inter_600SemiBold",
+    color: FG,
+  },
+  qbSubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
+  },
+  qbSubText: {
+    fontSize: 11,
+    color: "#999999",
+    flex: 1,
+  },
+  oneToqueBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: ACCENT + "14",
+    borderRadius: 6,
+  },
+  oneToqueText: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    color: ACCENT,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // ── idle CTA
+  verHorariosBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 14,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    backgroundColor: ACCENT + "14",
+    borderWidth: 1,
+    borderColor: ACCENT + "38",
+    borderRadius: 14,
+  },
+  verHorariosText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: ACCENT,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // ── slots
+  slotsLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+  },
+  greenDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: GREEN,
+  },
+  slotsLabelText: {
+    fontSize: 9,
+    color: GREEN,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    fontFamily: "JetBrainsMono_400Regular",
+    fontWeight: "700",
+  },
+  diaLabel: {
+    fontSize: 9,
+    color: "#666666",
+    textTransform: "uppercase",
+    letterSpacing: 1.4,
+    marginBottom: 6,
+    fontWeight: "700",
+    fontFamily: "Inter_600SemiBold",
+  },
+  slotRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  slotBtn: {
+    flexBasis: "31%",
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+  },
+  slotBtnIdle: {
+    backgroundColor: CARD2,
+    borderColor: BORDER2,
+  },
+  slotBtnSel: {
+    backgroundColor: ACCENT + "1c",
+    borderColor: ACCENT,
+  },
+  slotText: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
+  confirmBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 48,
+    marginTop: 10,
+    backgroundColor: ACCENT,
+    borderRadius: 13,
+  },
+  confirmBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: ACCENT_ON,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // ── plain-state shared
+  qbLoadingLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  monoMuted: {
+    fontSize: 9,
+    color: "#666666",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    fontFamily: "JetBrainsMono_400Regular",
+  },
+  qbCenterState: {
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  stateIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  stateIconNeutral: {
+    backgroundColor: CARD2,
+    borderColor: BORDER2,
+  },
+  stateIconDanger: {
+    backgroundColor: "rgba(239,68,68,0.12)",
+    borderColor: "rgba(239,68,68,0.3)",
+  },
+  stateTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 15,
+    color: FG,
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  stateDesc: {
+    fontSize: 12,
+    color: "#888888",
+    lineHeight: 18,
+    textAlign: "center",
+    maxWidth: 260,
+    marginBottom: 14,
+  },
+  retryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 18,
+    backgroundColor: ACCENT,
+    borderRadius: 12,
+  },
+  retryBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: ACCENT_ON,
+    fontFamily: "Inter_600SemiBold",
+  },
+  emptyBtnRow: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+  },
+  emptyBtnNeutral: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    backgroundColor: CARD2,
+    borderWidth: 1,
+    borderColor: BORDER2,
+    borderRadius: 12,
+  },
+  emptyBtnNeutralText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#dddddd",
+    fontFamily: "Inter_500Medium",
+  },
+  emptyBtnAccent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    backgroundColor: ACCENT + "1a",
+    borderWidth: 1,
+    borderColor: ACCENT + "40",
+    borderRadius: 12,
+  },
+  emptyBtnAccentText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: ACCENT,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // ── confirmed
+  qbConfirmedCard: {
+    backgroundColor: "#0f1f15",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.3)",
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 18,
+    alignItems: "center",
+  },
+  confirmedCheck: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(34,197,94,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(34,197,94,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  confirmedTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
+    color: FG,
+    marginBottom: 4,
+  },
+  confirmedDesc: {
+    fontSize: 12,
+    color: "#999999",
+    textAlign: "center",
+  },
+  reservarOutroBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 11,
+    marginTop: 14,
+  },
+  reservarOutroText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#bbbbbb",
+    fontFamily: "Inter_500Medium",
+  },
+  // ── stats
+  statsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 16,
+    padding: 16,
+  },
+  statIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  statValue: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 22,
+    lineHeight: 24,
+    color: FG,
+  },
+  statLabel: {
     fontSize: 10,
     color: "#666666",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginTop: 6,
+    fontWeight: "600",
+    fontFamily: "Inter_500Medium",
+  },
+  // ── FAB
+  fab: {
+    position: "absolute",
+    bottom: 80,
+    right: 18,
+    width: 52,
+    height: 52,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#F4B40066",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
   },
   // ── EmptyClienteSemBarbearia
   emptyBarbearia: {
@@ -619,7 +966,7 @@ const styles = StyleSheet.create({
   emptyBrand: {
     fontFamily: "Sora_700Bold",
     fontSize: 32,
-    color: "#f5f5f5",
+    color: FG,
     textAlign: "center",
     marginTop: 2,
     marginBottom: 12,
@@ -635,7 +982,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#262626",
+    borderColor: BORDER,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 12,
@@ -651,62 +998,5 @@ const styles = StyleSheet.create({
     color: "#444444",
     textAlign: "center",
     marginTop: 24,
-  },
-  emptyBox: {
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  nextAptPill: {
-    borderWidth: 1,
-  },
-  quickCard: {
-    borderWidth: 1,
-  },
-  quickCardInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: 8,
-  },
-  initialAvatar: {
-    width: 46,
-    height: 46,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  slotsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  slotBtn: {
-    borderWidth: 1,
-    minWidth: 64,
-    alignItems: "center",
-  },
-  confirmBtn: {
-    // base styles applied inline
-  },
-  outlineBtn: {
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  diaLabel: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  statsRow: {
-    flexDirection: "row",
-    marginTop: 16,
-  },
-  statsCard: {
-    flex: 1,
-    borderWidth: 1,
-  },
-  statsNumber: {
-    fontSize: 24,
-    lineHeight: 30,
   },
 });

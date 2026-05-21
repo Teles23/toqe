@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useConvite } from "@/src/shared/hooks/cliente/use-convite";
 import { useAceitarConvite } from "@/src/shared/hooks/use-aceitar-convite";
@@ -28,6 +29,7 @@ type ConviteView =
 
 export default function ConviteTokenScreen() {
   const { palette, spacing, radius, typography } = useTheme();
+  const insets = useSafeAreaInsets();
   const { token } = useLocalSearchParams<{ token: string }>();
 
   const { data, isLoading, isError } = useConvite(token);
@@ -91,52 +93,22 @@ export default function ConviteTokenScreen() {
         testID="convite-expirado"
         style={[
           styles.center,
-          { backgroundColor: palette.bg, flex: 1, padding: spacing.xl },
+          styles.screenPad,
+          { backgroundColor: palette.bg, flex: 1 },
         ]}
       >
-        <BackButton
-          palette={palette}
-          spacing={spacing}
-          typography={typography}
-        />
-        <Text style={{ fontSize: 40, marginBottom: spacing.md }}>{"⚠️"}</Text>
-        <Text
-          style={[
-            typography.heading,
-            {
-              color: palette.text,
-              textAlign: "center",
-              marginBottom: spacing.sm,
-            },
-          ]}
-        >
-          Convite expirado
+        <View style={styles.iconBoxRed}>
+          <Text style={styles.iconTextRed}>{"✖"}</Text>
+        </View>
+        <Text style={[styles.screenTitle, { color: palette.text }]}>
+          Link inválido
         </Text>
-        <Text
-          style={[
-            typography.body,
-            {
-              color: palette.textMuted,
-              textAlign: "center",
-              marginBottom: spacing.xl,
-            },
-          ]}
-        >
-          Este link de convite não é mais válido ou expirou.
+        <Text style={[styles.screenSubtitle]}>
+          Este convite expirou ou já foi utilizado.
         </Text>
         <Pressable
           disabled
-          style={[
-            styles.disabledBtn,
-            {
-              backgroundColor: palette.surface,
-              borderColor: palette.border,
-              borderRadius: radius.sm,
-              padding: spacing.md,
-              alignItems: "center",
-              opacity: 0.5,
-            },
-          ]}
+          style={styles.outlineBtnDisabled}
           accessibilityLabel="Solicitar novo convite"
         >
           <Text style={[typography.label, { color: palette.textMuted }]}>
@@ -154,34 +126,24 @@ export default function ConviteTokenScreen() {
         testID="convite-ja-membro"
         style={[
           styles.center,
-          { backgroundColor: palette.bg, flex: 1, padding: spacing.xl },
+          styles.screenPad,
+          { backgroundColor: palette.bg, flex: 1 },
         ]}
       >
-        <BackButton
-          palette={palette}
-          spacing={spacing}
-          typography={typography}
-        />
-        <Text
-          style={[
-            typography.heading,
-            {
-              color: palette.text,
-              textAlign: "center",
-              marginBottom: spacing.sm,
-            },
-          ]}
-        >
+        <View style={styles.iconBoxGreen}>
+          <Text style={styles.iconTextGreen}>{"✓"}</Text>
+        </View>
+        <Text style={[styles.screenTitle, { color: palette.text }]}>
           Você já é membro
         </Text>
-        <Text
-          style={[
-            typography.body,
-            { color: palette.textMuted, textAlign: "center" },
-          ]}
-        >
+        <Text style={[styles.screenSubtitle]}>
           Sua conta já está vinculada a esta barbearia.
         </Text>
+        <AmberButton
+          label="Ir para o app"
+          onPress={() => router.replace("/")}
+          accessibilityLabel="Ir para o app"
+        />
       </View>
     );
   }
@@ -193,30 +155,24 @@ export default function ConviteTokenScreen() {
         testID="convite-success"
         style={[
           styles.center,
-          { backgroundColor: palette.bg, flex: 1, padding: spacing.xl },
+          styles.screenPad,
+          { backgroundColor: palette.bg, flex: 1 },
         ]}
       >
-        <Text
-          style={[
-            typography.heading,
-            {
-              color: palette.success,
-              textAlign: "center",
-              marginBottom: spacing.sm,
-            },
-          ]}
-        >
-          Acesso liberado!
+        <View style={styles.iconBoxGreen}>
+          <Text style={styles.iconTextGreen}>{"✓"}</Text>
+        </View>
+        <Text style={[styles.screenTitle, { color: palette.text }]}>
+          Vinculação concluída!
         </Text>
-        <Text
-          style={[
-            typography.body,
-            { color: palette.textMuted, textAlign: "center" },
-          ]}
-        >
-          Você foi vinculado à barbearia {data?.barbeariaNome ?? ""} como
-          Barbeiro.
+        <Text style={[styles.screenSubtitle]}>
+          {`Você agora faz parte da ${data?.barbeariaNome ?? ""}`}
         </Text>
+        <AmberButton
+          label="Ir para o app"
+          onPress={() => router.replace("/")}
+          accessibilityLabel="Ir para o app"
+        />
       </View>
     );
   }
@@ -248,6 +204,7 @@ export default function ConviteTokenScreen() {
         style={{ flex: 1, backgroundColor: palette.bg }}
         contentContainerStyle={{
           padding: spacing.xl,
+          paddingTop: insets.top + spacing.lg,
           paddingBottom: spacing.xxxl,
         }}
       >
@@ -359,25 +316,19 @@ export default function ConviteTokenScreen() {
   }
 
   // ─── Landing ─────────────────────────────────────────────────────────────────
+  const primeiraLetra = data?.barbeariaNome?.charAt(0)?.toUpperCase() ?? "B";
+
   return (
     <ScrollView
       testID="convite-landing"
       style={{ flex: 1, backgroundColor: palette.bg }}
       contentContainerStyle={{
         padding: spacing.xl,
+        paddingTop: insets.top + spacing.lg,
         paddingBottom: spacing.xxxl,
       }}
     >
       <BackButton palette={palette} spacing={spacing} typography={typography} />
-
-      <Text
-        style={[
-          typography.heading,
-          { color: palette.text, marginBottom: spacing.sm },
-        ]}
-      >
-        Convite para a barbearia
-      </Text>
 
       <View
         style={[
@@ -386,18 +337,24 @@ export default function ConviteTokenScreen() {
             backgroundColor: palette.surface,
             borderColor: palette.border,
             borderRadius: radius.md,
-            padding: spacing.md,
+            padding: spacing.lg,
             marginBottom: spacing.xl,
+            alignItems: "center",
           },
         ]}
       >
-        <InfoRow
-          label="Barbearia"
-          value={data!.barbeariaNome}
-          palette={palette}
-          typography={typography}
-          spacing={spacing}
-        />
+        {/* Barbearia logo placeholder */}
+        <View style={styles.barbeariaBadge}>
+          <Text style={styles.barbeariaBadgeText}>{primeiraLetra}</Text>
+        </View>
+
+        <Text style={styles.conviteLabel}>Você foi convidado para</Text>
+        <Text style={[styles.barbeariaNome, { color: palette.text }]}>
+          {data!.barbeariaNome}
+        </Text>
+
+        <View style={styles.divider} />
+
         <InfoRow
           label="E-mail"
           value={data!.email}
@@ -419,6 +376,15 @@ export default function ConviteTokenScreen() {
         onPress={() => setView("form")}
         accessibilityLabel="Aceitar convite"
       />
+
+      <Pressable
+        testID="btn-rejeitar"
+        onPress={() => router.back()}
+        accessibilityLabel="Rejeitar convite"
+        style={styles.rejeitarBtn}
+      >
+        <Text style={styles.rejeitarBtnText}>Rejeitar convite</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -467,6 +433,7 @@ function InfoRow({
         flexDirection: "row",
         justifyContent: "space-between",
         marginBottom: spacing.sm,
+        width: "100%",
       }}
     >
       <Text style={[typography.caption, { color: palette.textMuted }]}>
@@ -484,6 +451,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  screenPad: {
+    padding: 24,
+  },
   input: {
     borderWidth: 1,
     fontSize: 16,
@@ -491,7 +461,107 @@ const styles = StyleSheet.create({
   infoCard: {
     borderWidth: 1,
   },
-  disabledBtn: {
+  // ─── Icon boxes ───────────────────────────────────────────────────────────────
+  iconBoxGreen: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#22c55e20",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  iconTextGreen: {
+    fontSize: 32,
+    color: "#22c55e",
+  },
+  iconBoxRed: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#ef44441a",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  iconTextRed: {
+    fontSize: 32,
+    color: "#ef4444",
+  },
+  // ─── Screen typography ────────────────────────────────────────────────────────
+  screenTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 22,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  screenSubtitle: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: "#888888",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  // ─── Expired outline button ───────────────────────────────────────────────────
+  outlineBtnDisabled: {
+    backgroundColor: "#171717",
+    borderRadius: 24,
+    height: 44,
     borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    opacity: 0.6,
+    width: "100%",
+  },
+  // ─── Landing: barbearia badge ─────────────────────────────────────────────────
+  barbeariaBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 14,
+    backgroundColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  barbeariaBadgeText: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 24,
+    color: "#0d0d0d",
+  },
+  conviteLabel: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    color: "#888888",
+    marginBottom: 4,
+  },
+  barbeariaNome: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 22,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#262626",
+    width: "100%",
+    marginBottom: 16,
+  },
+  // ─── Landing: reject button ───────────────────────────────────────────────────
+  rejeitarBtn: {
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#262626",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    width: "100%",
+  },
+  rejeitarBtnText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: "#888888",
   },
 });

@@ -1,17 +1,11 @@
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSalvarJornada } from "@/src/shared/hooks/barbeiro/use-salvar-jornada";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton } from "@/src/shared/ui";
+import { AmberButton, ScreenHeader } from "@/src/shared/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,7 +17,58 @@ interface DiaJornada {
   abre: string | null;
   fecha: string | null;
   ativo: boolean;
+  /** Janela de almoço (exibição; persistência fica para fase futura). */
+  almoco: { de: string; ate: string } | null;
 }
+
+const VIOLET = "#a78bfa";
+
+/** Chip de horário read-only no estilo do protótipo. */
+function TimeChip({
+  label,
+  value,
+  accentColor,
+}: {
+  label: string;
+  value: string;
+  accentColor: string;
+}) {
+  return (
+    <View style={timeChipStyles.chip}>
+      <Text style={timeChipStyles.label}>{label}</Text>
+      <Text style={[timeChipStyles.value, { color: accentColor }]}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+const timeChipStyles = StyleSheet.create({
+  chip: {
+    flexBasis: "47%",
+    flexGrow: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#262626",
+    backgroundColor: "#1c1c1c",
+  },
+  label: {
+    fontSize: 9,
+    color: "#666666",
+    letterSpacing: 1.2,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    fontFamily: "Inter_600SemiBold",
+  },
+  value: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+});
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
@@ -35,6 +80,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 2,
@@ -43,6 +89,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 3,
@@ -51,6 +98,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 4,
@@ -59,14 +107,16 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "09:00",
     fecha: "18:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 5,
     dia: "Sexta",
     diaShort: "SEX",
     abre: "09:00",
-    fecha: "18:00",
+    fecha: "20:00",
     ativo: true,
+    almoco: { de: "12:00", ate: "13:00" },
   },
   {
     diaSemana: 6,
@@ -75,6 +125,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: "08:00",
     fecha: "17:00",
     ativo: true,
+    almoco: null,
   },
   {
     diaSemana: 0,
@@ -83,6 +134,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
     abre: null,
     fecha: null,
     ativo: false,
+    almoco: null,
   },
 ];
 
@@ -94,6 +146,7 @@ const INITIAL_JORNADA: DiaJornada[] = [
  */
 export default function JornadaScreen() {
   const { palette, spacing, typography, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [jornada, setJornada] = useState<DiaJornada[]>(INITIAL_JORNADA);
   const [erro, setErro] = useState<string | null>(null);
   const { mutate, isPending } = useSalvarJornada();
@@ -124,35 +177,7 @@ export default function JornadaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* ── Top bar ── */}
-      <View
-        style={[
-          styles.topBar,
-          {
-            paddingHorizontal: spacing.md,
-            paddingTop: spacing.lg,
-            paddingBottom: spacing.sm,
-            borderBottomWidth: 1,
-            borderBottomColor: palette.border,
-          },
-        ]}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 4 })}
-        >
-          <Text style={{ color: palette.primary, fontSize: 20 }}>‹</Text>
-        </Pressable>
-        <Text
-          style={[
-            typography.subheading,
-            { color: palette.text, flex: 1, marginLeft: spacing.sm },
-          ]}
-        >
-          Jornada de trabalho
-        </Text>
-      </View>
+      <ScreenHeader title="Jornada de trabalho" onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={{
@@ -177,27 +202,21 @@ export default function JornadaScreen() {
           >
             {/* ── Card header ── */}
             <View style={styles.cardHeader}>
-              {/* Day pill */}
+              {/* Day pill — quadrado 36×36 mono */}
               <View
                 style={[
                   styles.dayPill,
                   {
                     backgroundColor: d.ativo
-                      ? palette.primary
+                      ? palette.primary + "1a"
                       : palette.surfaceHigh,
-                    borderRadius: radius.xs,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: 2,
                   },
                 ]}
               >
                 <Text
                   style={[
-                    typography.captionBold,
-                    {
-                      color: d.ativo ? palette.primaryOn : palette.textMuted,
-                      letterSpacing: 0.5,
-                    },
+                    styles.dayPillText,
+                    { color: d.ativo ? palette.primary : palette.textMuted },
                   ]}
                 >
                   {d.diaShort}
@@ -240,65 +259,38 @@ export default function JornadaScreen() {
               />
             </View>
 
-            {/* ── Time fields (read-only) ── */}
+            {/* ── Time chips (read-only) ── */}
             {d.ativo && d.abre && d.fecha ? (
-              <View style={[styles.timeRow, { marginTop: spacing.sm }]}>
-                <View
-                  style={[
-                    styles.timeField,
-                    {
-                      flex: 1,
-                      backgroundColor: palette.surfaceHigh,
-                      borderRadius: radius.sm,
-                      borderWidth: 1,
-                      borderColor: palette.border,
-                      padding: spacing.sm,
-                      marginRight: spacing.sm / 2,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      typography.captionBold,
-                      { color: palette.textMuted, letterSpacing: 0.5 },
-                    ]}
-                  >
-                    ABERTURA
-                  </Text>
-                  <Text
-                    style={[typography.monoMedium, { color: palette.text }]}
-                  >
-                    {d.abre}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.timeField,
-                    {
-                      flex: 1,
-                      backgroundColor: palette.surfaceHigh,
-                      borderRadius: radius.sm,
-                      borderWidth: 1,
-                      borderColor: palette.border,
-                      padding: spacing.sm,
-                      marginLeft: spacing.sm / 2,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      typography.captionBold,
-                      { color: palette.textMuted, letterSpacing: 0.5 },
-                    ]}
-                  >
-                    FECHAMENTO
-                  </Text>
-                  <Text
-                    style={[typography.monoMedium, { color: palette.text }]}
-                  >
-                    {d.fecha}
-                  </Text>
-                </View>
+              <View
+                style={[
+                  styles.timeGrid,
+                  { marginTop: spacing.sm, borderTopColor: palette.border },
+                ]}
+              >
+                <TimeChip
+                  label="Abertura"
+                  value={d.abre}
+                  accentColor={palette.primary}
+                />
+                <TimeChip
+                  label="Fechamento"
+                  value={d.fecha}
+                  accentColor={palette.primary}
+                />
+                {d.almoco ? (
+                  <>
+                    <TimeChip
+                      label="Almoço de"
+                      value={d.almoco.de}
+                      accentColor={VIOLET}
+                    />
+                    <TimeChip
+                      label="Almoço até"
+                      value={d.almoco.ate}
+                      accentColor={VIOLET}
+                    />
+                  </>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -311,6 +303,7 @@ export default function JornadaScreen() {
           styles.stickyBottom,
           {
             padding: spacing.md,
+            paddingBottom: insets.bottom + spacing.md,
             borderTopWidth: 1,
             borderTopColor: palette.border,
             backgroundColor: palette.bg,
@@ -345,11 +338,27 @@ export default function JornadaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center" },
   card: {},
   cardHeader: { flexDirection: "row", alignItems: "center" },
-  dayPill: {},
-  timeRow: { flexDirection: "row" },
-  timeField: {},
+  dayPill: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayPillText: {
+    fontFamily: "JetBrainsMono_500Medium",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  timeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
   stickyBottom: {},
 });
