@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { AvaliacaoSheet } from "@/src/features/cliente/AvaliacaoSheet";
 import { statusToBadge } from "@/src/features/barbeiro/utils/agendamento-actions";
 import {
   useAgendamento,
@@ -18,6 +19,7 @@ import {
 } from "@/src/shared/hooks/cliente/use-agendamento";
 import { useTheme } from "@/src/shared/theme";
 import {
+  AmberButton,
   Avatar,
   Card,
   CountdownTimer,
@@ -36,6 +38,7 @@ export default function AgendamentoDetalheScreen() {
   const codigo = Number(codigoStr);
   const { data, isLoading, isError, refetch } = useAgendamento(codigo);
   const cancelar = useCancelarAgendamento();
+  const [avaliacaoVisible, setAvaliacaoVisible] = useState(false);
 
   const handleCancelar = useCallback(() => {
     Alert.alert(
@@ -319,6 +322,16 @@ export default function AgendamentoDetalheScreen() {
           ) : null}
         </Card>
 
+        {data.status === "concluido" ? (
+          <View style={{ marginTop: spacing.xl }}>
+            <AmberButton
+              label="Avaliar"
+              onPress={() => setAvaliacaoVisible(true)}
+              testID="botao-avaliar"
+            />
+          </View>
+        ) : null}
+
         {podeCancelar ? (
           <View style={{ marginTop: spacing.xl }}>
             <DangerButton
@@ -330,6 +343,15 @@ export default function AgendamentoDetalheScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <AvaliacaoSheet
+        visible={avaliacaoVisible}
+        onClose={() => setAvaliacaoVisible(false)}
+        agendamentoCodigo={data.codigo}
+        barbeiroNome={data.barbeiro?.nome}
+        servicoNome={data.itens[0]?.servico.nome}
+        onSuccess={() => setAvaliacaoVisible(false)}
+      />
     </View>
   );
 }

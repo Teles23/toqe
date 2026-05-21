@@ -26,6 +26,17 @@ jest.mock("@/src/shared/hooks/cliente/use-agendamento", () => ({
   }),
 }));
 
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: () => ({ barbearia: { codigo: 1 } }),
+}));
+
+jest.mock("@/src/shared/hooks/cliente/use-avaliar-agendamento", () => ({
+  useAvaliarAgendamento: jest.fn(() => ({
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+}));
+
 import { Alert } from "react-native";
 import {
   fireEvent,
