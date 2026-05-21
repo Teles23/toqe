@@ -1,8 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Link } from "expo-router";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -25,6 +27,28 @@ import { loginSchema, type LoginInput } from "@toqe/contracts";
 export default function LoginScreen() {
   const { login, loginWithGoogle } = useAuth();
   const { palette, spacing, typography } = useTheme();
+  const [emailSent, setEmailSent] = useState(false);
+  const [sentEmail, setSentEmail] = useState("");
+
+  // Pulsing dot animation for sent state
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const startPulse = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.2,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  };
 
   const {
     control,
@@ -39,6 +63,11 @@ export default function LoginScreen() {
   const onSubmit = async (data: LoginInput) => {
     try {
       await login(data.email, data.senha);
+      // login() redireciona internamente em caso de sucesso com tokens.
+      // Se chegarmos aqui sem redirect (ex: magic link futuro), exibimos sent state.
+      setSentEmail(data.email);
+      setEmailSent(true);
+      startPulse();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("root", { message: "E-mail ou senha incorretos." });
@@ -73,6 +102,58 @@ export default function LoginScreen() {
       }
     }
   };
+
+  // ── "Link enviado" state ──────────────────────────────────────────────────
+  if (emailSent) {
+    return (
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: palette.bg }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View
+          testID="login-sent"
+          style={[styles.sentContainer, { paddingHorizontal: spacing.xl }]}
+        >
+          {/* Envelope icon */}
+          <View style={styles.sentIconWrap}>
+            <Text style={styles.sentIconEmoji}>✉</Text>
+          </View>
+
+          <Text style={[styles.sentTitle, { color: palette.text }]}>
+            Verifique seu e-mail
+          </Text>
+          <Text style={[typography.caption, styles.sentSubtitle]}>
+            {`Enviamos um link para\n${sentEmail}`}
+          </Text>
+
+          {/* Pulsing amber dot */}
+          <Animated.View style={[styles.pulseDot, { opacity: pulseAnim }]} />
+
+          {/* Reenviar */}
+          <Pressable
+            testID="btn-reenviar"
+            accessibilityRole="button"
+            accessibilityLabel="Reenviar link"
+            onPress={handleSubmit(onSubmit)}
+            disabled={isSubmitting}
+            style={styles.reenviarBtn}
+          >
+            <Text style={styles.reenviarText}>Reenviar link</Text>
+          </Pressable>
+
+          {/* Usar outra conta */}
+          <Pressable
+            testID="btn-outra-conta"
+            accessibilityRole="button"
+            accessibilityLabel="Usar outra conta"
+            onPress={() => setEmailSent(false)}
+          >
+            <Text style={styles.outraContaText}>Usar outra conta →</Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -238,4 +319,65 @@ const styles = StyleSheet.create({
   },
   line: { flex: 1, height: 1 },
   footer: { flexDirection: "row", justifyContent: "center" },
+  // ── Sent state
+  sentContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sentIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: "#F4B40014",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 0,
+  },
+  sentIconEmoji: {
+    fontSize: 36,
+  },
+  sentTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 22,
+    textAlign: "center",
+    marginTop: 24,
+  },
+  sentSubtitle: {
+    color: "#888888",
+    textAlign: "center",
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  pulseDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#F4B400",
+    marginTop: 24,
+  },
+  reenviarBtn: {
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 32,
+    paddingHorizontal: 32,
+    minWidth: 160,
+  },
+  reenviarText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: "#F4B400",
+    fontWeight: "700",
+  },
+  outraContaText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 13,
+    color: "#F4B400",
+    textAlign: "center",
+    marginTop: 16,
+  },
 });

@@ -25,6 +25,14 @@ jest.mock("@/src/shared/hooks/cliente/use-agendamentos-meus", () => ({
   useAgendamentosMeus: () => mockUseAgendamentos(),
 }));
 
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: () => ({
+    barbearia: { codigo: 1, nome: "Urban Flow", perfil: "cliente" },
+    barbearias: [{ codigo: 1, nome: "Urban Flow", perfil: "cliente" }],
+    switchBarbearia: jest.fn(),
+  }),
+}));
+
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 

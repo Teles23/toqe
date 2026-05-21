@@ -117,7 +117,7 @@ describe("ClienteHomeScreen", () => {
     render(<ClienteHomeScreen />);
     expect(screen.getByTestId("home-sem-barbearia")).toBeTruthy();
     expect(
-      screen.getByText(/Conecte-se a uma barbearia para começar/),
+      screen.getByText(/Encontre e agende em barbearias perto de você/),
     ).toBeTruthy();
   });
 
