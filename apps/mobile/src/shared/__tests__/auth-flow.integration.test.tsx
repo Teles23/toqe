@@ -206,6 +206,29 @@ describe("Auth flow — integration", () => {
     expect(mockSS.deleteItemAsync).toHaveBeenCalledWith("toqe_refresh_token");
   });
 
+  it("bootstrap com token mas /usuarios/me retorna 401 → limpa tokens e redireciona para login", async () => {
+    // Simula token salvo mas inválido/usuário inativo
+    mockSS.getItemAsync.mockResolvedValueOnce("stale_access"); // getAccessToken
+    // /usuarios/me responde 401 (token expirado sem refresh disponível)
+    mockFetch.mockResolvedValueOnce(jsonRes(401, { message: "Unauthorized" }));
+    // Tentativa de refresh também falha
+    mockSS.getItemAsync.mockResolvedValueOnce(null); // getRefreshToken retorna null
+
+    renderApp();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").props.children).toBe("ready");
+    });
+
+    // Tokens devem ser limpos
+    expect(mockSS.deleteItemAsync).toHaveBeenCalledWith("toqe_access_token");
+    expect(mockSS.deleteItemAsync).toHaveBeenCalledWith("toqe_refresh_token");
+    // Usuário não autenticado
+    expect(screen.getByTestId("user-name").props.children).toBe("anon");
+    // Redirecionado para login
+    expect(mockRouterReplace).toHaveBeenCalledWith("/(auth)/login");
+  });
+
   it("switchBarbearia troca barbearia ativa + perfil", async () => {
     // Boot com usuário que tem 2 barbearias
     mockSS.getItemAsync.mockResolvedValueOnce("existing_access");
