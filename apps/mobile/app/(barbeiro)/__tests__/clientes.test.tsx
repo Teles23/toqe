@@ -18,15 +18,29 @@ jest.mock("@/src/shared/hooks/barbeiro/use-clientes-da-barbearia", () => ({
   useClientesDaBarbearia: jest.fn(),
 }));
 
-// Stub do modal — testado em arquivo próprio
-jest.mock("@/src/features/barbeiro/ClienteDetalheModal", () => {
+// Walk-in modal stub
+jest.mock("@/src/features/barbeiro/AdicionarWalkInModal", () => {
   const RN = jest.requireActual("react-native");
   return {
-    ClienteDetalheModal: ({
+    AdicionarWalkInModal: ({
+      visible,
+    }: {
+      visible: boolean;
+      onClose: () => void;
+    }) => (visible ? <RN.View testID="walkin-modal" /> : null),
+  };
+});
+
+// Stub do ClienteDetalhe — testado em arquivo próprio
+jest.mock("@/src/features/barbeiro/ClienteDetalhe", () => {
+  const RN = jest.requireActual("react-native");
+  return {
+    ClienteDetalhe: ({
       visible,
       cliente,
     }: {
       visible: boolean;
+      onClose: () => void;
       cliente: { codigo: number; nome: string } | null;
     }) =>
       visible && cliente ? (
@@ -171,11 +185,7 @@ describe("BarbeiroClientesScreen", () => {
       }),
     );
     render(<BarbeiroClientesScreen />);
-    // Por padrão "Nome": B vem antes de A (alfabético)
-    // Trocar pra ultima visita: A vem primeiro (mais recente)
     fireEvent.press(screen.getByTestId("sort-ultimaVisita"));
-    // Não temos como inspecionar ordem direto via getAllByText sem complexidade;
-    // mas a contagem deve continuar e os 2 nomes presentes.
     expect(screen.getByText("A Recente")).toBeTruthy();
     expect(screen.getByText("B Antigo")).toBeTruthy();
   });
@@ -191,5 +201,53 @@ describe("BarbeiroClientesScreen", () => {
     expect(screen.queryByTestId("detalhe-modal")).toBeNull();
     fireEvent.press(screen.getByTestId("cliente-7"));
     expect(screen.getByTestId("detalhe-modal")).toBeTruthy();
+  });
+
+  it("filtro 'Recentes' exibe apenas clientes com visita nos últimos 7 dias", () => {
+    const hoje = new Date().toISOString();
+    const antigo = new Date(
+      Date.now() - 60 * 24 * 60 * 60 * 1000,
+    ).toISOString(); // 60 dias atrás
+
+    mockHook.mockReturnValue(
+      mockResult({
+        data: [
+          makeC({ codigo: 1, nome: "Recente", ultimaVisita: hoje }),
+          makeC({ codigo: 2, nome: "Antigo", ultimaVisita: antigo }),
+        ],
+      }),
+    );
+    render(<BarbeiroClientesScreen />);
+    fireEvent.press(screen.getByTestId("filter-recentes"));
+    expect(screen.getByText("Recente")).toBeTruthy();
+    expect(screen.queryByText("Antigo")).toBeNull();
+  });
+
+  it("filtro 'Sumidos' exibe apenas clientes com visita há 30+ dias", () => {
+    const hoje = new Date().toISOString();
+    const antigo = new Date(
+      Date.now() - 60 * 24 * 60 * 60 * 1000,
+    ).toISOString(); // 60 dias
+
+    mockHook.mockReturnValue(
+      mockResult({
+        data: [
+          makeC({ codigo: 1, nome: "Recente", ultimaVisita: hoje }),
+          makeC({ codigo: 2, nome: "Sumido", ultimaVisita: antigo }),
+        ],
+      }),
+    );
+    render(<BarbeiroClientesScreen />);
+    fireEvent.press(screen.getByTestId("filter-sumidos"));
+    expect(screen.queryByText("Recente")).toBeNull();
+    expect(screen.getByText("Sumido")).toBeTruthy();
+  });
+
+  it("botão + abre modal de walk-in", () => {
+    mockHook.mockReturnValue(mockResult({ data: [] }));
+    render(<BarbeiroClientesScreen />);
+    expect(screen.queryByTestId("walkin-modal")).toBeNull();
+    fireEvent.press(screen.getByTestId("btn-adicionar-walkin"));
+    expect(screen.getByTestId("walkin-modal")).toBeTruthy();
   });
 });
