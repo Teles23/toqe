@@ -224,6 +224,8 @@ export default function LoginScreen() {
               placeholder="••••••"
               leftIcon="lock"
               secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
               autoComplete="password"
               textContentType="password"
               maxLength={128}

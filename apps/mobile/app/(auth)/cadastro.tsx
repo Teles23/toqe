@@ -190,6 +190,8 @@ export default function CadastroScreen() {
                   label="Senha"
                   placeholder="Mínimo 6 caracteres"
                   secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   autoComplete="new-password"
                   textContentType="newPassword"
                   maxLength={128}
@@ -209,6 +211,8 @@ export default function CadastroScreen() {
                   label="Confirmar senha"
                   placeholder="Repita a senha"
                   secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   autoComplete="new-password"
                   textContentType="newPassword"
                   maxLength={128}

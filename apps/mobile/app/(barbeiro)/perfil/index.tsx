@@ -18,6 +18,7 @@ import { type ReactNode, useCallback } from "react";
 import {
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -250,7 +251,12 @@ export default function PerfilIndexScreen() {
   const basePath = usePerfilBasePath();
   const { user, perfil, barbearias, barbearia, switchBarbearia, logout } =
     useAuth();
-  const { data: barbeiroStats, isLoading: statsLoading } = useBarbeiroStats();
+  const {
+    data: barbeiroStats,
+    isLoading: statsLoading,
+    isRefetching: statsRefetching,
+    refetch: refetchStats,
+  } = useBarbeiroStats();
 
   const handleLogout = useCallback(() => {
     Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
@@ -323,6 +329,14 @@ export default function PerfilIndexScreen() {
         testID="perfil-scroll"
         contentContainerStyle={{ paddingBottom: spacing.xxxl }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={statsRefetching}
+            onRefresh={refetchStats}
+            tintColor={palette.primary}
+            colors={[palette.primary]}
+          />
+        }
       >
         {/* ── Identity hero ── */}
         <View

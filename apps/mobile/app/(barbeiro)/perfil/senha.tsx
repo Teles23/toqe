@@ -120,6 +120,8 @@ export default function PerfilSenhaScreen() {
             placeholder="••••••••"
             placeholderTextColor="#444"
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
             autoComplete="password"
             maxLength={128}
             value={senhaAtual}
@@ -145,6 +147,8 @@ export default function PerfilSenhaScreen() {
             placeholder="Mínimo 8 caracteres"
             placeholderTextColor="#444"
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
             autoComplete="new-password"
             maxLength={128}
             value={novaSenha}
@@ -164,6 +168,8 @@ export default function PerfilSenhaScreen() {
             placeholder="Repita a senha"
             placeholderTextColor="#444"
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
             autoComplete="new-password"
             maxLength={128}
             value={confirmar}

@@ -3,6 +3,7 @@ import { useCallback, useMemo } from "react";
 import {
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -164,7 +165,7 @@ export default function ClientePerfilScreen() {
   const insets = useSafeAreaInsets();
   const basePath = usePerfilBasePath();
   const { user, barbearias, barbearia, switchBarbearia, logout } = useAuth();
-  const { data } = useAgendamentosMeus();
+  const { data, isRefetching, refetch } = useAgendamentosMeus();
 
   const go = useCallback(
     (path: string) => router.push(`${basePath}${path}` as never),
@@ -213,6 +214,14 @@ export default function ClientePerfilScreen() {
         testID="perfil-scroll"
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={palette.primary}
+            colors={[palette.primary]}
+          />
+        }
       >
         {/* ── Identity ── */}
         <View style={styles.identitySection}>

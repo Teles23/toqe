@@ -277,6 +277,8 @@ export default function ConviteTokenScreen() {
             placeholder="Sua senha"
             placeholderTextColor={palette.textDisabled}
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
             style={[
               styles.input,
               {
