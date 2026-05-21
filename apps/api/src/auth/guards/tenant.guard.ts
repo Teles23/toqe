@@ -17,15 +17,20 @@ export class TenantGuard implements CanActivate {
 
     if (!user) return true; // rota pública sem JwtAuthGuard
 
+    // Aceita apenas params de URL ou header x-tenant-id.
+    // body.barCodigo removido: evita parameter-tampering onde um atacante
+    // injeta "barCodigo" no body para contornar a validação de membership.
     const barCodigo =
       request.params['barCodigo'] ??
-      (request.body?.['barCodigo'] as string | undefined) ??
       (request.headers['x-tenant-id'] as string | undefined);
 
-    if (!barCodigo) return true; // rota global, sem tenant
+    if (!barCodigo) return true; // rota global, sem tenant (ex: /usuarios/me)
 
     const barCodigoNum = Number(barCodigo);
-    if (isNaN(barCodigoNum) || barCodigoNum === 0) return true; // valor inválido, deixa passar para o controller tratar
+    // barCodigo inválido ou <= 0 não é permitido — lança 403 em vez de ignorar
+    if (isNaN(barCodigoNum) || barCodigoNum <= 0) {
+      throw new ForbiddenException('Tenant inválido');
+    }
 
     const membro = await this.prisma.membroBarbearia.findFirst({
       where: {

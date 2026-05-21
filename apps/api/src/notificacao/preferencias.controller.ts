@@ -12,6 +12,8 @@ import { UpdatePreferenciasDto } from './dto/update-preferencias.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -24,7 +26,8 @@ import {
 @ApiBearerAuth('JWT')
 @ApiSecurity('x-tenant-id')
 @Controller('notificacoes/preferencias')
-@UseGuards(JwtAuthGuard, TenantGuard)
+@UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+@Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
 export class PreferenciasController {
   constructor(private readonly preferenciasService: PreferenciasService) {}
 

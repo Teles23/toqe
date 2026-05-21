@@ -17,6 +17,7 @@ const mockAgendamentoService = {
   create: jest.fn(),
   findAll: jest.fn(),
   findOne: jest.fn(),
+  findOneForCliente: jest.fn(),
   patchStatus: jest.fn(),
   cancel: jest.fn(),
   meusAgendamentos: jest.fn(),
@@ -74,12 +75,28 @@ describe('AgendamentoController', () => {
   });
 
   describe('findOne', () => {
-    it('delega para service.findOne com codigo e barCodigo', () => {
+    it('staff: delega para service.findOne com codigo e barCodigo', () => {
       mockAgendamentoService.findOne.mockResolvedValue({ codigo: 42 });
+      const req = { user: { sub: 10, perfil: 'barbeiro' } } as never;
 
-      void controller.findOne(42, '3');
+      void controller.findOne(42, '3', req);
 
       expect(mockAgendamentoService.findOne).toHaveBeenCalledWith(42, 3);
+    });
+
+    it('cliente: delega para service.findOneForCliente com clienteId', () => {
+      mockAgendamentoService.findOneForCliente.mockResolvedValue({
+        codigo: 42,
+      });
+      const req = { user: { sub: 20, perfil: 'cliente' } } as never;
+
+      void controller.findOne(42, '3', req);
+
+      expect(mockAgendamentoService.findOneForCliente).toHaveBeenCalledWith(
+        42,
+        3,
+        20,
+      );
     });
   });
 
@@ -103,12 +120,26 @@ describe('AgendamentoController', () => {
   });
 
   describe('cancel', () => {
-    it('delega para service.cancel', () => {
+    it('staff: delega para service.cancel sem callerUserId', () => {
       mockAgendamentoService.cancel.mockResolvedValue({ status: 'cancelado' });
+      const req = { user: { sub: 10, perfil: 'barbeiro' } } as never;
 
-      void controller.cancel(42, '3');
+      void controller.cancel(42, '3', req);
 
-      expect(mockAgendamentoService.cancel).toHaveBeenCalledWith(42, 3);
+      expect(mockAgendamentoService.cancel).toHaveBeenCalledWith(
+        42,
+        3,
+        undefined,
+      );
+    });
+
+    it('cliente: passa callerUserId para service.cancel', () => {
+      mockAgendamentoService.cancel.mockResolvedValue({ status: 'cancelado' });
+      const req = { user: { sub: 20, perfil: 'cliente' } } as never;
+
+      void controller.cancel(42, '3', req);
+
+      expect(mockAgendamentoService.cancel).toHaveBeenCalledWith(42, 3, 20);
     });
   });
 

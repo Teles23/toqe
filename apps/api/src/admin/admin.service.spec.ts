@@ -201,14 +201,13 @@ describe('AdminService', () => {
 
       const result = await service.updateStatus(1, 'suspenso');
 
-      expect(mockPrisma.barbearia.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            planoStatus: 'suspenso',
-            ativo: false,
-          }),
-        }),
-      );
+      const callArgs = (
+        mockPrisma.barbearia.update.mock.calls[0] as [
+          { data: { planoStatus: string; ativo: boolean } },
+        ]
+      )[0];
+      expect(callArgs.data.planoStatus).toBe('suspenso');
+      expect(callArgs.data.ativo).toBe(false);
       expect(result.ativo).toBe(false);
     });
 
@@ -224,11 +223,13 @@ describe('AdminService', () => {
 
       await service.updateStatus(1, 'ativo');
 
-      expect(mockPrisma.barbearia.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ planoStatus: 'ativo', ativo: true }),
-        }),
-      );
+      const callArgs2 = (
+        mockPrisma.barbearia.update.mock.calls[0] as [
+          { data: { planoStatus: string; ativo: boolean } },
+        ]
+      )[0];
+      expect(callArgs2.data.planoStatus).toBe('ativo');
+      expect(callArgs2.data.ativo).toBe(true);
     });
 
     it('lança NotFoundException para ID inexistente', async () => {

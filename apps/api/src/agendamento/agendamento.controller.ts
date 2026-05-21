@@ -22,7 +22,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import type { JwtRequest } from '../common/types/jwt-request';
+import type { TenantRequest } from '../common/types/jwt-request';
 import {
   ApiTags,
   ApiOperation,
@@ -75,7 +75,7 @@ export class AgendamentoController {
     description: 'Lista de agendamentos do cliente.',
   })
   meusAgendamentos(
-    @Request() req: JwtRequest,
+    @Request() req: TenantRequest,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
     return this.agendamentoService.meusAgendamentos(
@@ -89,7 +89,7 @@ export class AgendamentoController {
   @ApiOperation({ summary: 'Próximo agendamento futuro do cliente logado' })
   @ApiResponse({ status: 200, description: 'Agendamento ou null.' })
   proximoAgendamento(
-    @Request() req: JwtRequest,
+    @Request() req: TenantRequest,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
     return this.agendamentoService.proximoAgendamento(
@@ -105,7 +105,7 @@ export class AgendamentoController {
   })
   @ApiResponse({ status: 200, description: 'Agendamento atual ou null.' })
   agendamentoAtual(
-    @Request() req: JwtRequest,
+    @Request() req: TenantRequest,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
     return this.agendamentoService.agendamentoAtual(
@@ -122,7 +122,16 @@ export class AgendamentoController {
   findOne(
     @Param('codigo', ParseIntPipe) codigo: number,
     @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
   ) {
+    // Cliente só pode ver seus próprios agendamentos
+    if (req.user.perfil === 'cliente') {
+      return this.agendamentoService.findOneForCliente(
+        codigo,
+        Number(barCodigo),
+        req.user.sub,
+      );
+    }
     return this.agendamentoService.findOne(codigo, Number(barCodigo));
   }
 
@@ -151,11 +160,24 @@ export class AgendamentoController {
   })
   @ApiResponse({ status: 200, description: 'Agendamento cancelado.' })
   @ApiResponse({ status: 400, description: 'Agendamento já cancelado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Cliente tentando cancelar agendamento de outro.',
+  })
   @ApiResponse({ status: 404, description: 'Agendamento não encontrado.' })
   cancel(
     @Param('codigo', ParseIntPipe) codigo: number,
     @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
   ) {
-    return this.agendamentoService.cancel(codigo, Number(barCodigo));
+    // Para 'cliente': service valida ownership (só pode cancelar o próprio)
+    // Para staff: callerUserId=undefined (sem restrição de ownership)
+    const callerUserId =
+      req.user.perfil === 'cliente' ? req.user.sub : undefined;
+    return this.agendamentoService.cancel(
+      codigo,
+      Number(barCodigo),
+      callerUserId,
+    );
   }
 }

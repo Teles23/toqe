@@ -8,6 +8,8 @@ import {
   ParseIntPipe,
   Headers,
   Query,
+  Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AgendaService } from './agenda.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
@@ -16,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { TenantRequest } from '../common/types/jwt-request';
 import {
   ApiTags,
   ApiOperation,
@@ -42,7 +45,14 @@ export class AgendaController {
     @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
     @Headers('x-tenant-id') barCodigo: string,
     @Body() dto: ConfigJornadaDto,
+    @Request() req: TenantRequest,
   ) {
+    // Barbeiro só pode alterar sua própria jornada
+    if (req.user.perfil === 'barbeiro' && req.user.sub !== barbeiroId) {
+      throw new ForbiddenException(
+        'Barbeiro só pode configurar sua própria jornada de trabalho',
+      );
+    }
     return this.agendaService.upsertJornada(barbeiroId, Number(barCodigo), dto);
   }
 
@@ -50,8 +60,12 @@ export class AgendaController {
   @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
   @ApiOperation({ summary: 'Obtém a jornada de trabalho de um barbeiro' })
   @ApiResponse({ status: 200, description: 'Jornada retornada.' })
-  obterJornada(@Param('barbeiroId', ParseIntPipe) barbeiroId: number) {
-    return this.agendaService.getJornada(barbeiroId);
+  obterJornada(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
+    // barCodigo incluído para garantir isolamento de tenant
+    return this.agendaService.getJornada(barbeiroId, Number(barCodigo));
   }
 
   @Post('bloqueios/:barbeiroId')
@@ -64,7 +78,14 @@ export class AgendaController {
     @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
     @Headers('x-tenant-id') barCodigo: string,
     @Body() dto: CreateBloqueioDto,
+    @Request() req: TenantRequest,
   ) {
+    // Barbeiro só pode criar bloqueio na própria agenda
+    if (req.user.perfil === 'barbeiro' && req.user.sub !== barbeiroId) {
+      throw new ForbiddenException(
+        'Barbeiro só pode bloquear sua própria agenda',
+      );
+    }
     return this.agendaService.createBloqueio(
       barbeiroId,
       Number(barCodigo),
@@ -87,6 +108,7 @@ export class AgendaController {
     @Query('data') data: string,
     @Query('duracao', ParseIntPipe) duracao: number,
   ) {
+    // barCodigo é passado ao service que valida que barbeiroId pertence ao tenant
     return this.agendaService.getAvailableSlots(
       barbeiroId,
       Number(barCodigo),

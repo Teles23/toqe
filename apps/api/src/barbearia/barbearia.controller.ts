@@ -16,6 +16,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -31,7 +32,7 @@ import { CriarClienteRapidoDto } from './dto/criar-cliente-rapido.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
 import { UpsertHorariosDto } from './dto/upsert-horarios.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import type { JwtRequest } from '../common/types/jwt-request';
+import type { JwtRequest, TenantRequest } from '../common/types/jwt-request';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { FeatureFlagGuard } from '../auth/guards/feature-flag.guard';
@@ -169,9 +170,13 @@ export class BarbeariaController {
   convidarMembro(
     @Param('barCodigo', ParseIntPipe) barCodigo: number,
     @Body() dto: ConvidarMembroDto,
-    @Headers('x-tenant-id') _tenantId: string,
+    @Request() req: TenantRequest,
   ) {
-    return this.membroService.convidarMembro(barCodigo, dto);
+    // Passa o perfil do caller para que o service impeça gerente de criar dono.
+    // TenantGuard garante que perfil está sempre definido para rotas de tenant.
+    const callerPerfil = req.user.perfil;
+    if (!callerPerfil) throw new ForbiddenException('Perfil não identificado');
+    return this.membroService.convidarMembro(barCodigo, dto, callerPerfil);
   }
 
   @Get(':barCodigo/tema')

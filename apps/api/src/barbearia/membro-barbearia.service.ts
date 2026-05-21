@@ -1,6 +1,7 @@
 import {
   Injectable,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -125,7 +126,18 @@ export class MembroBarbeariaService {
     });
   }
 
-  async convidarMembro(barCodigo: number, dto: ConvidarMembroDto) {
+  async convidarMembro(
+    barCodigo: number,
+    dto: ConvidarMembroDto,
+    callerPerfil: string,
+  ) {
+    // Gerente não pode criar outro dono — somente o dono pode fazer isso
+    if (callerPerfil === 'gerente' && dto.perfil === 'dono') {
+      throw new ForbiddenException(
+        'Gerente não tem permissão para convidar um dono',
+      );
+    }
+
     const usuario = await this.prisma.usuario.findUnique({
       where: { email: dto.email },
     });

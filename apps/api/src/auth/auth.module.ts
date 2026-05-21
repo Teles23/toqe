@@ -16,7 +16,13 @@ import {
     UsuarioModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret',
+      secret: (() => {
+        if (!process.env.JWT_SECRET)
+          throw new Error(
+            'JWT_SECRET env var is required and must not be empty',
+          );
+        return process.env.JWT_SECRET;
+      })(),
       signOptions: { expiresIn: '15m' },
     }),
     NotificacaoModule,

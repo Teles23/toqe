@@ -81,13 +81,18 @@ describe('BarbeariaController', () => {
   });
 
   describe('convidarMembro', () => {
-    it('delega para membroService.convidarMembro com barCodigo e dto', () => {
+    it('delega para membroService.convidarMembro com barCodigo, dto e callerPerfil', () => {
       const dto = { email: 'x@x.com', perfil: PerfilMembro.BARBEIRO };
       mockMembroService.convidarMembro.mockResolvedValue({ usrCodigo: 5 });
+      const req = { user: { sub: 1, perfil: 'dono' } } as never;
 
-      void controller.convidarMembro(1, dto, '1');
+      void controller.convidarMembro(1, dto, req);
 
-      expect(mockMembroService.convidarMembro).toHaveBeenCalledWith(1, dto);
+      expect(mockMembroService.convidarMembro).toHaveBeenCalledWith(
+        1,
+        dto,
+        'dono',
+      );
     });
   });
 

@@ -62,16 +62,18 @@ export class ServicoService {
 
   async update(codigo: number, dto: UpdateServicoDto, barCodigo: number) {
     await this.findOne(codigo, barCodigo);
+    // barCodigo no where garante isolamento de tenant (TOCTOU)
     return this.prisma.servico.update({
-      where: { codigo },
+      where: { codigo, barCodigo },
       data: dto,
     });
   }
 
   async remove(codigo: number, barCodigo: number) {
     await this.findOne(codigo, barCodigo);
+    // barCodigo no where garante isolamento de tenant (TOCTOU)
     return this.prisma.servico.update({
-      where: { codigo },
+      where: { codigo, barCodigo },
       data: { ativo: false },
     });
   }
