@@ -146,3 +146,56 @@ Utilitário exportado: `roundToNext15(now: Date): Date`
 | `sort-nome` / `sort-ultimaVisita`         | Botões de ordenação                                |
 | `clientes-contagem`                       | Contagem filtrada/total                            |
 | `btn-adicionar-walkin`                    | Botão + do header de clientes                      |
+
+---
+
+## Extensão — Design v4 + v5 (2026-05-21)
+
+**Design bundles:** `h/AqsnKt00L9AeqO0334ZKGw` (v4) + `h/DX2Sut4VXrSqfPreHKex8Q` (v5)
+
+### Novas Telas Implementadas
+
+| Tela                    | Arquivo                                | Descrição                                                                |
+| ----------------------- | -------------------------------------- | ------------------------------------------------------------------------ |
+| Barbeiro Perfil v2      | `app/(barbeiro)/perfil/index.tsx`      | Identity hero, stats mensais (`useBarbeiroStats`), grupos settings       |
+| Barbeiro Jornada        | `app/(barbeiro)/perfil/jornada.tsx`    | Editor semanal (Phase 1 — estado local)                                  |
+| Barbeiro Serviços       | `app/(barbeiro)/perfil/servicos.tsx`   | Toggle por serviço via `useServicos()`                                   |
+| Cliente Agendamentos v2 | `app/(cliente)/agendamentos/index.tsx` | Abas Próximos/Histórico, DateTile, pills de status, chip AVALIAR         |
+| Cliente Perfil v2       | `app/(cliente)/perfil/index.tsx`       | Implementação própria, barbeiros favoritos, barbearias salvas            |
+| **Login v2**            | `app/(auth)/login.tsx`                 | Urban Flow v2: "Bom te ver de volta." headline, Sora_700Bold             |
+| **Onboarding v2**       | `app/(auth)/onboarding.tsx`            | 3-slide swipe: Encontre / Agende / Sem esquecimentos                     |
+| **Home / Quick Book**   | `app/(cliente)/home.tsx`               | Header + QuickBook card (7 estados) + stats grid                         |
+| **Convite Magic Link**  | `app/convite/[token].tsx`              | Landing barbeiro: estados loading/landing/form/accepting/success/expired |
+
+### Novos Hooks
+
+| Hook               | Endpoint                      | Descrição                                |
+| ------------------ | ----------------------------- | ---------------------------------------- |
+| `useBarbeiroStats` | `GET /me/stats?periodo=mes`   | Stats mensais do barbeiro (graceful 404) |
+| `useProximosSlots` | `GET /agenda/proximos?dias=7` | Slots para Quick Book (graceful 404)     |
+| `useConvite`       | `GET /convite/:token`         | Dados do convite por token               |
+
+### TestIDs novos
+
+| TestID                        | Tela       | Descrição                 |
+| ----------------------------- | ---------- | ------------------------- |
+| `quick-book-card`             | Home       | Card Quick Book           |
+| `quick-book-btn-ver-horarios` | Home       | Botão idle state          |
+| `quick-book-empty`            | Home       | Estado sem slots          |
+| `quick-book-confirmed`        | Home       | Estado sucesso            |
+| `slot-{HH-mm}`                | Home       | Botão de slot individual  |
+| `quick-book-btn-confirmar`    | Home       | Confirmar agendamento     |
+| `next-apt-card`               | Home       | Card próximo agendamento  |
+| `home-sem-barbearia`          | Home       | Empty state sem barbearia |
+| `btn-pular`                   | Onboarding | Pular onboarding          |
+| `btn-proximo`                 | Onboarding | Avançar slide             |
+| `dot-{0,1,2}`                 | Onboarding | Indicadores de passo      |
+| `convite-landing`             | Convite    | Landing do convite        |
+| `convite-expirado`            | Convite    | Token expirado/inválido   |
+| `convite-accepting`           | Convite    | Vinculando...             |
+| `convite-success`             | Convite    | Sucesso                   |
+| `btn-aceitar`                 | Convite    | Aceitar convite           |
+
+### Cobertura de testes
+
+Total: **84 suites · 482 tests** — todos passando

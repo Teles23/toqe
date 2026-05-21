@@ -88,21 +88,11 @@ export default function LoginScreen() {
           },
         ]}
       >
-        {/* Brand mark — monograma + nome + tagline (princípio "dark é o palco") */}
-        <View style={[styles.brand, { marginBottom: spacing.xxl }]}>
-          <Text
-            style={[
-              styles.monogram,
-              {
-                color: palette.primary,
-                textShadowColor: palette.primaryDim,
-              },
-            ]}
-            accessibilityLabel="Logotipo Toqe"
-          >
-            T
+        {/* Brand block — nome + tagline (Urban Flow v2) */}
+        <View style={[styles.brand, { marginBottom: spacing.xl }]}>
+          <Text style={styles.brandName} accessibilityLabel="Logotipo Toqe">
+            toqe
           </Text>
-          <Text style={[typography.title, { color: palette.text }]}>toqe</Text>
           <Text
             style={[
               typography.caption,
@@ -112,6 +102,26 @@ export default function LoginScreen() {
             Sua barbearia. Seu ritmo.
           </Text>
         </View>
+
+        {/* Headline de boas-vindas */}
+        <Text
+          style={[
+            styles.headline,
+            { color: palette.text, marginBottom: spacing.md },
+          ]}
+        >
+          Bom te ver de volta.
+        </Text>
+
+        {/* Subtítulo do método de login */}
+        <Text
+          style={[
+            typography.caption,
+            { color: palette.textMuted, marginBottom: spacing.lg },
+          ]}
+        >
+          Entre com seu e-mail e senha do Toqe.
+        </Text>
 
         <FormErrorBox error={errors.root?.message} />
 
@@ -212,12 +222,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, paddingBottom: 40 },
   brand: { alignItems: "center" },
-  monogram: {
+  brandName: {
     fontFamily: "Sora_700Bold",
-    fontSize: 80,
-    lineHeight: 84,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 16,
+    fontSize: 26,
+    lineHeight: 34,
+  },
+  headline: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 26,
+    lineHeight: 34,
   },
   dividerRow: {
     flexDirection: "row",
