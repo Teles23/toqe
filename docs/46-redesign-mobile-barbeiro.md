@@ -268,3 +268,45 @@ Objetivo: fluxo completo de ponta a ponta para o cliente — descoberta → deta
 ### Cobertura de testes — Design v6
 
 Total: **88 suites · 512 tests** — todos passando
+
+---
+
+## Extensão — Pixel-Accurate Rewrite v7 (2026-05-21)
+
+**Design bundle:** `h/pcdJqXIMwxAnS5h2u5Ls5g` — arquivos: `cliente-screens.jsx`, `flow-shared-1.jsx`, `barbeiro-agenda.jsx`, `barbeiro-clientes.jsx`, `barbeiro-perfil.jsx`, `barbeiro-sheets.jsx`, `toqe-ds.jsx`
+
+**Motivação:** O app rodando com Expo dev-client estava visualmente idêntico ao design anterior. Causa: implementações anteriores usavam abstrações genéricas (`Avatar`, `Card`, `ScreenHeader`, `AmberButton`) que não reproduzem o CSS inline do protótipo. Rewrite pixel-accurate traduzindo todos os estilos para `StyleSheet.create()`.
+
+### Arquivos reescritos
+
+| Arquivo                                            | Operação | Mudanças principais                                                                                                                               |
+| -------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/(cliente)/buscar.tsx`                         | REWRITE  | Logo square 54×54 amber (não círculo Avatar), header "Descobrir", search pill 46px borderRadius 23, chips feature/rating                          |
+| `app/(cliente)/barbearia/[slug].tsx`               | REWRITE  | Hero 200px backgroundColor amber, body overlap `marginTop: -60`, logo 80×80 borderRadius 20 borda 3px, CTA fixo `position: 'absolute' bottom: 18` |
+| `app/(cliente)/agendamentos/index.tsx`             | FIX      | DateTile: futuro `#F4B40014` bg / `#F4B40038` border, passado `#1c1c1c` / `#262626`; row borderBottom sem card bg; badge AVALIAR amber tint       |
+| `app/(cliente)/agendamentos/[codigo].tsx`          | FIX      | Hero Sora_700Bold 32px data (branca) + hora (amber); service card `#1c1c1c` + grid 3-col; actions sticky por status                               |
+| `app/(cliente)/perfil/index.tsx`                   | FIX      | StatCard icon 30×30 + Sora 24px valor; SettingsGroup container `#171717` overflow hidden; separadores internos borderBottom                       |
+| `app/(barbeiro)/agenda.tsx`                        | FIX      | Header: dia Sora 700 24px + data 12px `#888888`; nav buttons 40×40 `#1c1c1c`; FAB `bottom: 80` shadow `#F4B40066`                                 |
+| `app/(barbeiro)/clientes.tsx`                      | FIX      | SearchInput pill height 44 borderRadius 22; chips filtro: ativo `#F4B4001c` / inativo `#1c1c1c`; sort buttons amber active                        |
+| `app/(barbeiro)/perfil/index.tsx`                  | FIX      | PerfilStat grid 3-col (amber/green/blue) Sora 700 22px; SettingsRow IconBox 36×36 borderRadius 10; SettingsGroup `#171717` overflow hidden        |
+| `src/features/barbeiro/AppointmentDetailSheet.tsx` | FIX      | Service card `#1c1c1c` + ✂ iconBox 36×36; history card `#171717` violet; CONFIRMADO: Iniciar + Ligar + Zap                                        |
+| `src/features/barbeiro/ClienteCard.tsx`            | FIX      | Row transparente borderBottom `#262626`, sem card bg; badge NOVO `#a78bfa1a`                                                                      |
+| `src/features/barbeiro/AgendaRow.tsx`              | FIX      | timeCol 52px → 48px (spec design)                                                                                                                 |
+
+### Token mapping aplicado
+
+| TOQE_COLORS       | Hex       | Aplicação              |
+| ----------------- | --------- | ---------------------- |
+| `bg`              | `#0d0d0d` | `palette.bg`           |
+| `card` / `bgElev` | `#171717` | inline `'#171717'`     |
+| `border`          | `#262626` | inline `'#262626'`     |
+| `fg`              | `#f5f5f5` | `palette.text`         |
+| `fg2`             | `#aaaaaa` | inline `'#aaaaaa'`     |
+| `fg3`             | `#888888` | `palette.textMuted`    |
+| `fg4`             | `#666666` | inline `'#666666'`     |
+| `fg5`             | `#444444` | `palette.textDisabled` |
+| `accent`          | `#F4B400` | `palette.primary`      |
+
+### Cobertura de testes — v7
+
+Total: **90 suites · 518 tests** — todos passando
