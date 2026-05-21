@@ -3,7 +3,6 @@ import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,9 +10,9 @@ import {
   Text,
   View,
 } from "react-native";
-
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { CriarServicoModal } from "@/src/features/barbeiro/CriarServicoModal";
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
 import { useToggleServico } from "@/src/shared/hooks/barbeiro/use-toggle-servico";
 import { useTheme } from "@/src/shared/theme";
@@ -107,6 +106,7 @@ export default function ServicosScreen() {
   // Optimistic local state: sobrescreve valor do servidor enquanto a mutation não invalida
   const [ativos, setAtivos] = useState<Record<number, boolean>>({});
   const [erro, setErro] = useState<string | null>(null);
+  const [criarOpen, setCriarOpen] = useState(false);
 
   const isAtivo = useCallback(
     (codigo: number, defaultAtivo: boolean) => {
@@ -151,12 +151,7 @@ export default function ServicosScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Adicionar serviço"
-            onPress={() =>
-              Alert.alert(
-                "Em breve",
-                "Cadastro de novos serviços chega numa próxima atualização.",
-              )
-            }
+            onPress={() => setCriarOpen(true)}
             style={({ pressed }) => [
               styles.addBtn,
               pressed && { opacity: 0.7 },
@@ -348,6 +343,11 @@ export default function ServicosScreen() {
           onPress={() => router.back()}
         />
       </View>
+
+      <CriarServicoModal
+        visible={criarOpen}
+        onClose={() => setCriarOpen(false)}
+      />
     </View>
   );
 }
