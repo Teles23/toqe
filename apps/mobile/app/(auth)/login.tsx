@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Link } from "expo-router";
@@ -171,9 +172,13 @@ export default function LoginScreen() {
       >
         {/* Header block — brand mark + boas-vindas (esquerda, Urban Flow v2) */}
         <View style={styles.headerBlock}>
-          {/* Brand mark — quadrado âmbar com "T" */}
-          <View style={styles.brandMark} accessibilityLabel="Logotipo Toqe">
-            <Text style={styles.brandMarkLetter}>T</Text>
+          {/* Brand mark — quadrado âmbar com a tesoura oficial Toqe */}
+          <View
+            style={styles.brandMark}
+            accessibilityLabel="Logotipo Toqe"
+            accessibilityRole="image"
+          >
+            <Feather name="scissors" size={22} color="#0d0d0d" />
           </View>
 
           {/* Headline de boas-vindas */}
@@ -316,12 +321,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 18,
     elevation: 8,
-  },
-  brandMarkLetter: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 20,
-    color: "#0d0d0d",
-    letterSpacing: -1,
   },
   headline: {
     fontFamily: "Sora_700Bold",

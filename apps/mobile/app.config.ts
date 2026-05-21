@@ -24,8 +24,8 @@ const config: ExpoConfig = {
   android: {
     package: "com.teles23.toqe",
     adaptiveIcon: {
-      // Cor da marca — bate com splash + icon principal
-      backgroundColor: "#1a73e8",
+      // Cor da marca Toqe (âmbar) — bate com splash + icon principal
+      backgroundColor: "#F4B400",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -60,12 +60,12 @@ const config: ExpoConfig = {
       "expo-splash-screen",
       {
         image: "./assets/images/splash-icon.png",
-        imageWidth: 240,
+        imageWidth: 200,
         resizeMode: "contain",
-        // Fundo da marca — sem flash branco entre splash e primeira tela
-        backgroundColor: "#1a73e8",
+        // Fundo escuro da marca Toqe — sem flash branco entre splash e 1ª tela
+        backgroundColor: "#0d0d0d",
         dark: {
-          backgroundColor: "#0d1117",
+          backgroundColor: "#0d0d0d",
         },
       },
     ],
