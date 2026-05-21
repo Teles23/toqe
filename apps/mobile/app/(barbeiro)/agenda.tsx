@@ -22,6 +22,7 @@ import {
 import { ptBR } from "date-fns/locale";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Feather } from "@expo/vector-icons";
 
@@ -175,6 +176,7 @@ const nowStyles = StyleSheet.create({
 
 export default function BarbeiroAgendaScreen() {
   const { palette, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data, isLoading, isRefetching, refetch, isError } =
@@ -256,7 +258,12 @@ export default function BarbeiroAgendaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* Header */}
-      <View style={[styles.headerWrap, { paddingHorizontal: spacing.md }]}>
+      <View
+        style={[
+          styles.headerWrap,
+          { paddingHorizontal: spacing.md, paddingTop: insets.top + 10 },
+        ]}
+      >
         {/* Linha superior: dia da semana + botão filtro */}
         <View style={styles.headerTop}>
           {/* Nav prev */}

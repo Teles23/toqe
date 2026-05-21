@@ -73,6 +73,20 @@ Decisões do usuário:
 
 ---
 
+## Correções pós-review
+
+| Problema reportado                                              | Causa                                                                                                                   | Correção                                                                                                                                                                                             |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Duração exibindo **"NaNm"** na agenda e no detalhe              | A API lista agendamentos como objeto Prisma cru (campo `duracaoMin`), enquanto o app lia `item.duracao` (→ `undefined`) | `AgendaRow` e `AppointmentDetailSheet` passam a derivar a duração de `fim − inicio` (`differenceInMinutes`), sempre correta. Preço agora é coagido com `Number(...)` + fallback `servico.precoBase`. |
+| Título **colado no topo** (sob a status bar) em Agenda/Clientes | Telas não aplicavam safe-area top inset                                                                                 | `useSafeAreaInsets()` aplicado no header de Agenda, Clientes e Perfil (`paddingTop: insets.top + 10`).                                                                                               |
+| Emoji `👤` no header de Clientes                                | —                                                                                                                       | Trocado por Feather `users`.                                                                                                                                                                         |
+
+Setup de teste: `apps/mobile/jest.setup.js` mocka `useSafeAreaInsets` (insets
+zerados) — o provider real vem do expo-router em produção, mas os specs
+renderizam telas isoladas.
+
+---
+
 ## Resultados
 
 - `pnpm --filter mobile lint`: 0 errors (1 warning pré-existente em test file)

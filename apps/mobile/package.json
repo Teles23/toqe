@@ -17,7 +17,8 @@
   "jest": {
     "preset": "jest-expo",
     "setupFilesAfterEnv": [
-      "@testing-library/jest-native/extend-expect"
+      "@testing-library/jest-native/extend-expect",
+      "<rootDir>/jest.setup.js"
     ],
     "moduleNameMapper": {
       "^@toqe/shared$": "<rootDir>/../../packages/shared/src/index.ts",

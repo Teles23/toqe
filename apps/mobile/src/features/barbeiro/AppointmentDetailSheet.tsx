@@ -18,7 +18,7 @@
  *  - no_show       → Reagendar (ghost)
  */
 
-import { format, parseISO } from "date-fns";
+import { differenceInMinutes, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -63,8 +63,12 @@ export function AppointmentDetailSheet({
   const timeStr = format(inicio, "HH:mm", { locale: ptBR });
   const endTimeStr = format(fim, "HH:mm", { locale: ptBR });
 
-  const totalDuracao = agendamento.itens.reduce((sum, i) => sum + i.duracao, 0);
-  const totalPreco = agendamento.itens.reduce((sum, i) => sum + i.preco, 0);
+  // Duração real do agendamento (início→fim) — robusto contra item.duracao ausente.
+  const totalDuracao = Math.max(0, differenceInMinutes(fim, inicio));
+  const totalPreco = agendamento.itens.reduce(
+    (sum, i) => sum + (Number(i.preco) || Number(i.servico?.precoBase) || 0),
+    0,
+  );
 
   const servicoNome =
     agendamento.itens.length === 1

@@ -10,7 +10,7 @@
  * `isNext` → realça visualmente o próximo agendamento do dia.
  */
 
-import { format, parseISO } from "date-fns";
+import { differenceInMinutes, format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -69,10 +69,16 @@ function AgendaRowImpl({
   const { palette, typography } = useTheme();
 
   const inicio = parseISO(agendamento.inicio);
+  const fim = parseISO(agendamento.fim);
   const timeStr = format(inicio, "HH:mm", { locale: ptBR });
 
-  const totalDuracao = agendamento.itens.reduce((sum, i) => sum + i.duracao, 0);
-  const totalPreco = agendamento.itens.reduce((sum, i) => sum + i.preco, 0);
+  // Duração real do agendamento (robusto: independe do campo `duracao` do item,
+  // que o backend nem sempre popula — usa a janela início→fim).
+  const totalDuracao = Math.max(0, differenceInMinutes(fim, inicio));
+  const totalPreco = agendamento.itens.reduce(
+    (sum, i) => sum + (Number(i.preco) || Number(i.servico?.precoBase) || 0),
+    0,
+  );
 
   const servicoNome =
     agendamento.itens.length === 1

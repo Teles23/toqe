@@ -9,6 +9,7 @@
  *  - Tap → ClienteDetalhe (modal full-screen)
  */
 
+import { Feather } from "@expo/vector-icons";
 import { differenceInDays, parseISO } from "date-fns";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -19,6 +20,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInModal";
 import { ClienteCard } from "@/src/features/barbeiro/ClienteCard";
@@ -72,6 +74,7 @@ function normalize(s: string): string {
 
 export default function BarbeiroClientesScreen() {
   const { palette, spacing } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const { data, isLoading, isError, isRefetching, refetch } =
     useClientesDaBarbearia();
@@ -126,14 +129,14 @@ export default function BarbeiroClientesScreen() {
       <View
         style={[
           styles.header,
-          { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+          { paddingHorizontal: spacing.md, paddingTop: insets.top + 10 },
         ]}
       >
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Clientes</Text>
           {data && (
             <View style={styles.headerSubRow}>
-              <Text style={styles.headerSubIcon}>👤</Text>
+              <Feather name="users" size={12} color="#888888" />
               <Text style={styles.headerSubText}>{data.length} no total</Text>
             </View>
           )}
@@ -339,10 +342,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginTop: 4,
-  },
-  headerSubIcon: {
-    fontSize: 12,
-    color: "#888888",
   },
   headerSubText: {
     fontSize: 12,

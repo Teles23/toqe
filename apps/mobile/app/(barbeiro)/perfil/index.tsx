@@ -23,6 +23,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePerfilBasePath } from "@/src/features/perfil/use-perfil-base-path";
 import { useAuth } from "@/src/shared/hooks/use-auth";
@@ -245,6 +246,7 @@ const ROLE_LABEL: Record<string, string> = {
  */
 export default function PerfilIndexScreen() {
   const { palette, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const basePath = usePerfilBasePath();
   const { user, perfil, barbearias, barbearia, switchBarbearia, logout } =
     useAuth();
@@ -301,7 +303,7 @@ export default function PerfilIndexScreen() {
           styles.header,
           {
             paddingHorizontal: spacing.md,
-            paddingTop: spacing.lg,
+            paddingTop: insets.top + 10,
             paddingBottom: spacing.sm,
           },
         ]}
