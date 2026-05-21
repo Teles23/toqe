@@ -180,6 +180,24 @@ export default function AgendarScreen() {
   // ─── Estado confirmado ────────────────────────────────────────────────────
 
   if (confirmed) {
+    // Formata data e hora para exibição no ticket
+    const slotDate = selectedSlot
+      ? new Date(selectedSlot).toLocaleDateString("pt-BR", {
+          weekday: "short",
+          day: "2-digit",
+          month: "short",
+        })
+      : "";
+    const slotTime = selectedSlot
+      ? new Date(selectedSlot).toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "";
+    const preco = selectedServico
+      ? `R$ ${Number(selectedServico.preco).toFixed(2).replace(".", ",")}`
+      : "";
+
     return (
       <View
         testID="agendar-confirmado"
@@ -188,32 +206,97 @@ export default function AgendarScreen() {
           { backgroundColor: palette.bg, padding: spacing.lg },
         ]}
       >
-        <Text
-          style={[
-            { fontFamily: "Sora_700Bold", fontSize: 26, lineHeight: 34 },
-            { color: palette.primary, textAlign: "center" },
-          ]}
+        {/* Ícone de sucesso */}
+        <View
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: "#22c55e20",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: spacing.lg,
+          }}
         >
-          💈 Reserva confirmada!
-        </Text>
+          <Text style={{ fontSize: 32, color: "#22c55e" }}>✓</Text>
+        </View>
+
         <Text
-          style={[
-            typography.body,
-            {
-              color: palette.textMuted,
-              textAlign: "center",
-              marginTop: spacing.md,
-            },
-          ]}
+          style={{
+            fontFamily: "Sora_700Bold",
+            fontSize: 22,
+            color: palette.text,
+            textAlign: "center",
+            marginBottom: spacing.sm,
+            letterSpacing: -0.55,
+          }}
         >
-          Seu agendamento com {selectedBarbeiro?.nome ?? "o barbeiro"} foi
-          confirmado.
+          Reserva confirmada!
         </Text>
+
+        {/* Ticket card */}
+        <View
+          style={{
+            backgroundColor: "#171717",
+            borderRadius: 16,
+            padding: 16,
+            width: "100%",
+            marginTop: spacing.md,
+            borderWidth: 1,
+            borderColor: "#262626",
+            gap: 8,
+          }}
+        >
+          {slotDate ? (
+            <Text
+              style={{
+                fontFamily: "Sora_700Bold",
+                fontSize: 18,
+                color: palette.primary,
+                marginBottom: 4,
+              }}
+            >
+              {slotDate}
+              {slotTime ? ` · ${slotTime}` : ""}
+            </Text>
+          ) : null}
+          {selectedBarbeiro ? (
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_400Regular",
+                fontSize: 13,
+                color: palette.text,
+              }}
+            >
+              Barbeiro: {selectedBarbeiro.nome}
+            </Text>
+          ) : null}
+          {selectedServico ? (
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_400Regular",
+                fontSize: 13,
+                color: palette.text,
+              }}
+            >
+              Serviço: {selectedServico.nome}
+            </Text>
+          ) : null}
+          {preco ? (
+            <Text
+              style={{
+                fontFamily: "JetBrainsMono_400Regular",
+                fontSize: 13,
+                color: palette.text,
+              }}
+            >
+              Valor: {preco}
+            </Text>
+          ) : null}
+        </View>
+
         <View style={{ marginTop: spacing.xl, width: "100%" }}>
-          <AmberButton
-            label="Ver meus agendamentos"
-            onPress={() => router.back()}
-          />
+          <AmberButton label="Ir pra Home" onPress={() => router.back()} />
         </View>
       </View>
     );
