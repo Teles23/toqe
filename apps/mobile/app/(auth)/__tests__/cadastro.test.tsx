@@ -88,7 +88,7 @@ async function walkThroughSteps(
   const senha = opts.senha ?? "senha123";
   const confirma = opts.confirma ?? senha;
   const nome = opts.nome ?? "Carlos";
-  const telefone = opts.telefone ?? "+5511999999999";
+  const telefone = opts.telefone ?? "11999999999";
 
   // Step 1: email + senha + confirmar
   fireEvent.changeText(screen.getByLabelText("E-mail"), email);
