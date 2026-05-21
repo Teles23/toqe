@@ -24,6 +24,8 @@ model Usuario {
   ativo        Boolean  @default(true) @map("TQE_USR_ATIVO")
   twoFaSecret  String?  @map("TQE_USR_TWO_FA_SECRET") @db.VarChar(64)
   twoFaEnabled Boolean  @default(false) @map("TQE_USR_TWO_FA_ENABLED")
+  // Acesso irrestrito ao painel Super Admin (fundador). Setado via SUPER_ADMIN_EMAIL env.
+  superAdmin   Boolean  @default(false) @map("TQE_USR_SUPER_ADMIN")
   criadoEm  DateTime @default(now()) @map("TQE_USR_CRIADO_EM") @db.Timestamptz
 
   refreshTokens       RefreshToken[]
@@ -76,7 +78,7 @@ model Barbearia {
   slug        String   @unique @map("TQE_BAR_SLUG") @db.VarChar(60)
   timezone    String   @default("America/Sao_Paulo") @map("TQE_BAR_TIMEZONE")
   slotInterval Int      @default(30) @map("TQE_BAR_SLOT_INTERVAL")
-  plano       String   @default("free") @map("TQE_BAR_PLANO")
+  plano       String   @default("free") @map("TQE_BAR_PLANO") // free | basic | pro
   planoStatus String   @default("ativo") @map("TQE_BAR_PLANO_STATUS") // ativo | inadimplente | suspenso | cancelado
   bloqueadaEm DateTime? @map("TQE_BAR_BLOQUEADA_EM") @db.Timestamptz
   ativo       Boolean  @default(true) @map("TQE_BAR_ATIVO")
@@ -125,7 +127,9 @@ model TemaTenant {
 
 model PlanoLimite {
   codigo           Int      @id @default(autoincrement()) @map("TQE_PLI_CODIGO")
+  // Valores: free | basic | pro
   plano            String   @unique @map("TQE_PLI_PLANO") @db.VarChar(20)
+  preco            Decimal  @default(0) @map("TQE_PLI_PRECO") @db.Decimal(10, 2)
   maxBarbeiros     Int?     @map("TQE_PLI_MAX_BARBEIROS")
   maxAgdMes        Int?     @map("TQE_PLI_MAX_AGD_MES")
   whiteLabel       Boolean  @default(false) @map("TQE_PLI_WHITE_LABEL")

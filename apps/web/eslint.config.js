@@ -116,6 +116,10 @@ export default [
       "src/features/configuracoes/components/**/*.tsx",
       "src/features/relatorios/components/**/*.tsx",
       "src/features/servicos/components/**/*.tsx",
+      // Super Admin — usa inline styles para cores dinâmicas por plano/status
+      // (PLAN_COLORS, STATUS_COLORS computadas em runtime a partir dos dados).
+      // Não há equivalente em classes Tailwind estáticas para esses valores.
+      "src/features/super-admin/components/**/*.tsx",
       "src/shared/components/chart-utils.tsx",
       "src/shared/components/config-row.tsx",
       "src/shared/components/detail-metric-grid.tsx",

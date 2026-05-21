@@ -29,6 +29,7 @@ export const mockAuthContext: AuthContextValue = {
     telefone: null,
     avatarUrl: null,
     twoFaEnabled: false,
+    superAdmin: false,
   },
   barbearia: {
     codigo: 1,

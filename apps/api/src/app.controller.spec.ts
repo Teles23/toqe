@@ -1,6 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaService } from './prisma/prisma.service';
+
+const mockPrismaService = {
+  usuario: {
+    updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+  },
+};
 
 describe('AppController', () => {
   let appController: AppController;
@@ -8,7 +15,10 @@ describe('AppController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        AppService,
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
     }).compile();
 
     appController = app.get<AppController>(AppController);

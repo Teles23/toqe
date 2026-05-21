@@ -26,6 +26,8 @@ interface AuthUser {
   telefone: string | null;
   avatarUrl: string | null;
   twoFaEnabled: boolean;
+  /** true apenas para o fundador/operador interno da plataforma */
+  superAdmin: boolean;
 }
 
 interface AuthState {
@@ -94,6 +96,7 @@ export function AuthProvider({
           telefone,
           avatarUrl,
           twoFaEnabled,
+          superAdmin,
           barbearias: bars,
         } = me;
         setUser({
@@ -103,6 +106,7 @@ export function AuthProvider({
           telefone,
           avatarUrl,
           twoFaEnabled: twoFaEnabled ?? false,
+          superAdmin: superAdmin ?? false,
         });
         setBarbearias(bars);
 
@@ -133,6 +137,7 @@ export function AuthProvider({
         telefone,
         avatarUrl,
         twoFaEnabled,
+        superAdmin,
         barbearias: bars,
       } = me;
       setUser({
@@ -142,11 +147,18 @@ export function AuthProvider({
         telefone,
         avatarUrl,
         twoFaEnabled: twoFaEnabled ?? false,
+        superAdmin: superAdmin ?? false,
       });
       setBarbearias(bars);
       if (bars.length > 0) {
         setBarbearia(bars[0]!);
         setPerfil(bars[0]!.perfil);
+      }
+
+      // Super admin vai para o painel interno; usuários normais para o dashboard
+      if (superAdmin) {
+        router.push("/admin");
+        return;
       }
       const params = new URLSearchParams(window.location.search);
       router.push(params.get("redirect") ?? "/dashboard");

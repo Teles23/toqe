@@ -351,6 +351,115 @@ export const handlers = [
     ),
   ),
 
+  // ── Admin (Super Admin) ──────────────────────────────────────────────────
+  http.get(`${BASE}/admin/metrics`, () =>
+    HttpResponse.json({
+      mrr: 1246,
+      arr: 14952,
+      totalTenants: 18,
+      activeTenants: 12,
+      totalBarbeiros: 34,
+      totalAgdMes: 872,
+    }),
+  ),
+  http.get(`${BASE}/admin/barbearias`, () =>
+    HttpResponse.json([
+      {
+        codigo: 1,
+        nome: "Barbearia Alpha",
+        slug: "alpha",
+        cidade: "São Paulo",
+        plano: "pro",
+        planoStatus: "ativo",
+        mrr: 189,
+        totalBarbeiros: 3,
+        totalAgdMes: 120,
+        criadoEm: "2025-01-10T00:00:00.000Z",
+      },
+      {
+        codigo: 2,
+        nome: "Barbearia Beta",
+        slug: "beta",
+        cidade: "Rio de Janeiro",
+        plano: "basic",
+        planoStatus: "ativo",
+        mrr: 89,
+        totalBarbeiros: 2,
+        totalAgdMes: 68,
+        criadoEm: "2025-03-15T00:00:00.000Z",
+      },
+      {
+        codigo: 3,
+        nome: "Barbearia Gamma",
+        slug: "gamma",
+        cidade: "Belo Horizonte",
+        plano: "free",
+        planoStatus: "inativo",
+        mrr: 0,
+        totalBarbeiros: 1,
+        totalAgdMes: 0,
+        criadoEm: "2025-06-01T00:00:00.000Z",
+      },
+    ]),
+  ),
+  http.get(`${BASE}/admin/activity`, () =>
+    HttpResponse.json([
+      {
+        tipo: "signup",
+        texto: "Nova barbearia: Corte & Cia",
+        tempo: "2 min atrás",
+      },
+      {
+        tipo: "upgrade",
+        texto: "Alpha fez upgrade para Pro",
+        tempo: "18 min atrás",
+      },
+      { tipo: "payment", texto: "Pagamento R$89 — Beta", tempo: "1h atrás" },
+      { tipo: "churn", texto: "Gamma cancelou o plano", tempo: "3h atrás" },
+    ]),
+  ),
+  http.get(`${BASE}/admin/revenue`, () =>
+    HttpResponse.json({
+      historico: [
+        { mes: "Nov/25", mrr: 890 },
+        { mes: "Dez/25", mrr: 980 },
+        { mes: "Jan/26", mrr: 1050 },
+        { mes: "Fev/26", mrr: 1100 },
+        { mes: "Mar/26", mrr: 1180 },
+        { mes: "Abr/26", mrr: 1200 },
+        { mes: "Mai/26", mrr: 1246 },
+      ],
+      breakdown: [
+        { plano: "pro", count: 4, preco: 189, total: 756 },
+        { plano: "basic", count: 8, preco: 89, total: 712 },
+        { plano: "free", count: 6, preco: 0, total: 0 },
+      ],
+      churnMes: 0,
+      mrr: 1246,
+      arr: 14952,
+    }),
+  ),
+  http.get(`${BASE}/admin/barbearias/:id`, ({ params }) =>
+    HttpResponse.json({
+      codigo: Number(params.id),
+      nome: "Barbearia Alpha",
+      slug: "alpha",
+      cidade: "São Paulo",
+      plano: "pro",
+      planoStatus: "ativo",
+      mrr: 189,
+      totalBarbeiros: 3,
+      totalAgdMes: 120,
+      criadoEm: "2025-01-10T00:00:00.000Z",
+    }),
+  ),
+  http.patch(`${BASE}/admin/barbearias/:id/plano`, () =>
+    HttpResponse.json({ ok: true }),
+  ),
+  http.patch(`${BASE}/admin/barbearias/:id/status`, () =>
+    HttpResponse.json({ ok: true }),
+  ),
+
   // ── Legacy handlers (usados em setup.spec.ts com fetch relativo) ─────────
   http.get("/barbearia", () =>
     HttpResponse.json({ codigo: 1, nome: "BarberShop", slug: "barbershop" }),

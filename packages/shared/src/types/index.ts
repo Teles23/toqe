@@ -28,6 +28,7 @@ export interface UsuarioMe {
   telefone: string | null;
   avatarUrl: string | null;
   twoFaEnabled?: boolean;
+  superAdmin?: boolean;
   barbearias: BarbeariaResumo[];
 }
 

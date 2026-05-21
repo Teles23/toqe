@@ -22,9 +22,8 @@ export class RolesGuard implements CanActivate {
 
     const { user } = context.switchToHttp().getRequest<TenantRequest>();
 
-    // super_admin bypassa todas as restrições
-    if (user?.perfil === 'super_admin') return true;
-
+    // Super admin opera exclusivamente via /admin/*  (SuperAdminGuard).
+    // Não bypassa rotas normais — princípio do menor privilégio.
     if (!user?.perfil || !requiredRoles.includes(user.perfil)) {
       throw new ForbiddenException(
         `Acesso negado: perfil '${user?.perfil}' não tem permissão. Necessário: ${requiredRoles.join(' | ')}`,

@@ -17,6 +17,7 @@ const SELECT_PERFIL = {
   ativo: true,
   criadoEm: true,
   twoFaEnabled: true,
+  superAdmin: true,
 } as const;
 
 @Injectable()

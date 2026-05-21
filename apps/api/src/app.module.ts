@@ -22,6 +22,7 @@ import { RelatorioModule } from './relatorio/relatorio.module';
 import { ObservabilidadeModule } from './observabilidade/observabilidade.module';
 import { HealthModule } from './health/health.module';
 import { PushTokenModule } from './push-token/push-token.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -59,10 +60,11 @@ import { PushTokenModule } from './push-token/push-token.module';
     RelatorioModule,
     HealthModule,
     PushTokenModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [
-    AppService,
+    AppService, // usa PrismaService (global) para bootstrap do super_admin
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
   ],
