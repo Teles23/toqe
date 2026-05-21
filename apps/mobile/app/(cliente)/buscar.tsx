@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { router } from "expo-router";
 
 import {
   useBarbeariasPublico,
@@ -8,45 +16,62 @@ import {
 import { useTheme } from "@/src/shared/theme";
 import {
   Avatar,
-  Card,
   EmptyScreen,
   ScreenHeader,
   SearchInput,
 } from "@/src/shared/ui";
 
-function BarbeariaCard({ item }: { item: BarbeariaPublica }) {
-  const { palette, spacing, typography } = useTheme();
+function BarbeariaRow({ item }: { item: BarbeariaPublica }) {
+  const { palette, spacing, typography, radius } = useTheme();
+
+  function handlePress() {
+    router.push(`/(cliente)/barbearia/${item.slug}` as never);
+  }
+
   return (
-    <View
-      style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}
+    <Pressable
+      testID={`barbearia-publica-${item.codigo}`}
+      accessibilityRole="button"
+      onPress={handlePress}
+      style={({ pressed }) => [
+        styles.row,
+        {
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm + 2,
+          backgroundColor: pressed ? palette.surfaceHigh : palette.surface,
+          borderRadius: radius.md,
+          marginHorizontal: spacing.md,
+          marginVertical: spacing.xs,
+          borderWidth: 1,
+          borderColor: palette.border,
+        },
+      ]}
     >
-      <Card testID={`barbearia-publica-${item.codigo}`}>
-        <View style={styles.row}>
-          <Avatar
-            name={item.nome}
-            uri={item.tema?.logoUrl ?? undefined}
-            size="md"
-          />
-          <View style={[styles.info, { marginLeft: spacing.md - 4 }]}>
-            <Text
-              style={{ ...typography.bodyBold, color: palette.text }}
-              numberOfLines={1}
-            >
-              {item.nome}
-            </Text>
-            <Text
-              style={{
-                ...typography.caption,
-                color: palette.textMuted,
-                marginTop: 2,
-              }}
-            >
-              @{item.slug}
-            </Text>
-          </View>
-        </View>
-      </Card>
-    </View>
+      <Avatar
+        name={item.nome}
+        uri={item.tema?.logoUrl ?? undefined}
+        size="md"
+      />
+      <View style={[styles.info, { marginLeft: spacing.md - 4 }]}>
+        <Text
+          style={{ ...typography.bodyBold, color: palette.text }}
+          numberOfLines={1}
+        >
+          {item.nome}
+        </Text>
+        <Text
+          style={{
+            ...typography.caption,
+            color: palette.textMuted,
+            marginTop: 2,
+          }}
+          numberOfLines={1}
+        >
+          @{item.slug}
+        </Text>
+      </View>
+      <Text style={{ ...typography.body, color: palette.textMuted }}>›</Text>
+    </Pressable>
   );
 }
 
@@ -64,47 +89,52 @@ export default function ClienteBuscarScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg }}>
-      <ScreenHeader title="Buscar barbearias" />
+      <ScreenHeader title="Descobrir" />
       <View
         style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}
       >
         <SearchInput
           value={search}
           onChangeText={setSearch}
-          placeholder="Nome da barbearia..."
+          placeholder="Pesquisar barbearias..."
           testID="buscar-input"
         />
       </View>
 
-      {isError ? (
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator
+            color={palette.primary}
+            size="large"
+            testID="buscar-loading"
+          />
+        </View>
+      ) : isError ? (
         <EmptyScreen
           icon="⚠️"
           title="Erro ao buscar"
           description="Não foi possível carregar as barbearias."
         />
-      ) : data.length === 0 && !isLoading ? (
+      ) : data.length === 0 ? (
         <EmptyScreen
           icon="🔍"
-          title={
-            search.trim().length >= 2
-              ? "Nenhuma barbearia encontrada"
-              : "Descubra barbearias"
-          }
+          title="Nenhuma barbearia encontrada"
           description={
             search.trim().length >= 2
               ? `Nenhuma barbearia encontrada para "${search}".`
               : "Digite o nome de uma barbearia para buscar."
           }
+          testID="buscar-empty"
         />
       ) : (
         <FlatList
           data={data}
           keyExtractor={(item) => String(item.codigo)}
-          renderItem={({ item }) => <BarbeariaCard item={item} />}
+          renderItem={({ item }) => <BarbeariaRow item={item} />}
           onRefresh={refetch}
           refreshing={isLoading}
           contentContainerStyle={{ paddingVertical: spacing.xs }}
-          testID="lista-barbearias"
+          testID="lista-barbearias-publicas"
         />
       )}
     </View>
@@ -112,6 +142,16 @@ export default function ClienteBuscarScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center" },
-  info: { flex: 1 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  info: {
+    flex: 1,
+  },
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
