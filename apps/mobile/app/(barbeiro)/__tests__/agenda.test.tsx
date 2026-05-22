@@ -34,8 +34,9 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: jest.fn(),
 }));
 
+const mockShowToast = jest.fn();
 jest.mock("@/src/shared/hooks/use-toast", () => ({
-  useToast: jest.fn().mockReturnValue({ showToast: jest.fn() }),
+  useToast: () => ({ showToast: mockShowToast }),
 }));
 
 jest.mock("@/src/shared/ui", () => {
@@ -210,6 +211,7 @@ describe("BarbeiroAgendaScreen", () => {
       barbearia: { codigo: 1, nome: "Urban Barber", perfil: "barbeiro" },
       barbearias: [{ codigo: 1, nome: "Urban Barber", perfil: "barbeiro" }],
     } as unknown as ReturnType<typeof useAuth>);
+    mockShowToast.mockClear();
   });
 
   it("mostra loading state inicial", () => {
@@ -317,6 +319,21 @@ describe("BarbeiroAgendaScreen", () => {
     render(<BarbeiroAgendaScreen />);
     const hojeShort = format(new Date(), "EEE, dd 'de' MMM", { locale: ptBR });
     expect(screen.getByText(new RegExp(hojeShort))).toBeTruthy();
+  });
+
+  it("exibe título 'Sua agenda' e pill da barbearia ativa (mesmo com 1 vínculo)", () => {
+    mockUseAgendaDia.mockReturnValue(mockQueryResult({ data: [] }));
+    render(<BarbeiroAgendaScreen />);
+    expect(screen.getByText("Sua agenda")).toBeTruthy();
+    expect(screen.getByTestId("btn-tenant-switcher")).toBeTruthy();
+    expect(screen.getByText("Urban Barber")).toBeTruthy();
+  });
+
+  it("sino dispara toast 'Notificações em breve'", () => {
+    mockUseAgendaDia.mockReturnValue(mockQueryResult({ data: [] }));
+    render(<BarbeiroAgendaScreen />);
+    fireEvent.press(screen.getByTestId("btn-notificacoes"));
+    expect(mockShowToast).toHaveBeenCalledWith("Notificações em breve", "info");
   });
 
   it("FAB está presente na tela", () => {

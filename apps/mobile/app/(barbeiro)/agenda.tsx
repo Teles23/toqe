@@ -296,9 +296,55 @@ export default function BarbeiroAgendaScreen() {
           { paddingHorizontal: spacing.md, paddingTop: insets.top + 10 },
         ]}
       >
-        {/* Linha superior: dia da semana + botão filtro */}
-        <View style={styles.headerTop}>
-          {/* Nav prev */}
+        {/* Linha 1: título da tela + sino de notificações */}
+        <View style={styles.titleRow}>
+          <Text style={styles.screenTitle}>Sua agenda</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Notificações"
+            testID="btn-notificacoes"
+            onPress={() => showToast("Notificações em breve", "info")}
+            style={({ pressed }) => [styles.bellBtn, pressed && styles.pressed]}
+          >
+            <Feather name="bell" size={20} color="#888888" />
+          </Pressable>
+        </View>
+
+        {/* Pill da barbearia ativa — sempre visível; troca só com 2+ vínculos */}
+        {barbearia && (
+          <Pressable
+            testID="btn-tenant-switcher"
+            accessibilityRole="button"
+            accessibilityLabel={
+              barbearias.length > 1
+                ? `Barbearia ativa: ${barbearia.nome}. Toque para trocar.`
+                : `Barbearia: ${barbearia.nome}`
+            }
+            disabled={barbearias.length <= 1}
+            onPress={() => {
+              if (barbearias.length > 1) setTenantSwitcherOpen(true);
+            }}
+            style={({ pressed }) => [
+              styles.tenantPill,
+              { opacity: pressed ? 0.75 : 1 },
+            ]}
+          >
+            <View style={styles.tenantLetter}>
+              <Text style={styles.tenantLetterText}>
+                {barbearia.nome.trim()[0]?.toUpperCase() ?? "B"}
+              </Text>
+            </View>
+            <Text style={styles.tenantName} numberOfLines={1}>
+              {barbearia.nome}
+            </Text>
+            {barbearias.length > 1 && (
+              <Feather name="refresh-cw" size={12} color="#888888" />
+            )}
+          </Pressable>
+        )}
+
+        {/* Navegação de dias — ‹ dia · data › (tap no centro volta para hoje) */}
+        <View style={styles.dayNav}>
           <Pressable
             onPress={goPrev}
             accessibilityRole="button"
@@ -308,7 +354,6 @@ export default function BarbeiroAgendaScreen() {
             <Text style={[styles.navArrow, { color: palette.text }]}>‹</Text>
           </Pressable>
 
-          {/* Centro: dia da semana + data curta — tap volta para hoje */}
           <Pressable
             onPress={goToday}
             accessibilityRole="button"
@@ -330,57 +375,16 @@ export default function BarbeiroAgendaScreen() {
             </View>
           </Pressable>
 
-          {/* Nav next + notificações */}
-          <View style={styles.rightBtns}>
-            <Pressable
-              onPress={goNext}
-              accessibilityRole="button"
-              accessibilityLabel="Próximo dia"
-              style={({ pressed }) => [
-                styles.navBtn,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Text style={[styles.navArrow, { color: palette.text }]}>›</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Notificações"
-              testID="btn-notificacoes"
-              style={({ pressed }) => [
-                styles.filterBtn,
-                pressed && styles.pressed,
-              ]}
-            >
-              <Feather name="bell" size={18} color="#888888" />
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={goNext}
+            accessibilityRole="button"
+            accessibilityLabel="Próximo dia"
+            style={({ pressed }) => [styles.navBtn, pressed && styles.pressed]}
+          >
+            <Text style={[styles.navArrow, { color: palette.text }]}>›</Text>
+          </Pressable>
         </View>
       </View>
-
-      {/* Pill de tenant — só quando há mais de uma barbearia */}
-      {barbearias.length > 1 && barbearia && (
-        <Pressable
-          testID="btn-tenant-switcher"
-          accessibilityRole="button"
-          accessibilityLabel={`Barbearia ativa: ${barbearia.nome}. Toque para trocar.`}
-          onPress={() => setTenantSwitcherOpen(true)}
-          style={({ pressed }) => [
-            styles.tenantPill,
-            { opacity: pressed ? 0.75 : 1 },
-          ]}
-        >
-          <View style={styles.tenantLetter}>
-            <Text style={styles.tenantLetterText}>
-              {barbearia.nome.trim()[0]?.toUpperCase() ?? "B"}
-            </Text>
-          </View>
-          <Text style={styles.tenantName} numberOfLines={1}>
-            {barbearia.nome}
-          </Text>
-          <Feather name="refresh-cw" size={12} color="#888888" />
-        </Pressable>
-      )}
 
       {/* Stats strip — só quando há dados */}
       {data && data.length > 0 && <StatsStrip apts={data} />}
@@ -482,10 +486,24 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     flexShrink: 0,
   },
-  headerTop: {
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  screenTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 24,
+    color: "#f5f5f5",
+    letterSpacing: -0.6,
+    lineHeight: 28,
+  },
+  dayNav: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginTop: 10,
     paddingBottom: 4,
   },
   centerBtn: {
@@ -513,12 +531,7 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     textTransform: "capitalize",
   },
-  rightBtns: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  filterBtn: {
+  bellBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -527,11 +540,6 @@ const styles = StyleSheet.create({
     borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
-  },
-  filterIcon: {
-    fontSize: 16,
-    color: "#888888",
-    lineHeight: 20,
   },
   navBtn: {
     width: 40,
@@ -554,8 +562,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 7,
     alignSelf: "flex-start",
-    marginHorizontal: 16,
-    marginBottom: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: "#1c1c1c",
