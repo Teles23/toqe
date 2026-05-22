@@ -152,19 +152,19 @@ async function main() {
     {
       email: 'joao.cliente@email.com',
       inicio: setHours(setMinutes(hoje, 0), 9),
-      status: 'CONCLUIDO',
+      status: 'concluido',
       barbeiroEmail: 'thiago@email.com',
     },
     {
       email: 'marcos.silva@email.com',
       inicio: setHours(setMinutes(hoje, 0), 10),
-      status: 'CONCLUIDO',
+      status: 'concluido',
       barbeiroEmail: 'barbeiro1@email.com',
     },
     {
       email: 'joao.cliente@email.com',
       inicio: addHours(new Date(), -1),
-      status: 'EM_ATENDIMENTO',
+      status: 'em_andamento',
       barbeiroEmail: 'thiago@email.com',
     },
   ];

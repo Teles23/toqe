@@ -3,6 +3,9 @@ import { DIAS_SEMANA_CURTO } from "@/shared/lib/constants";
 
 export const API_STATUS_TO_SLOT: Record<string, SlotStatus> = {
   confirmado: "confirmed",
+  // Em atendimento: ocupa o slot como "ativo" (web não tem estado próprio
+  // de in-progress; reutiliza "active" como concluído ocupado).
+  em_andamento: "active",
   concluido: "active",
   cancelado: "blocked",
   no_show: "late",

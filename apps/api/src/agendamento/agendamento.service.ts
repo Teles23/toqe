@@ -241,7 +241,11 @@ export class AgendamentoService {
         inicio: { lte: now },
         fim: { gte: now },
         status: {
-          in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+          in: [
+            StatusAgendamento.EM_ANDAMENTO,
+            StatusAgendamento.CONFIRMADO,
+            StatusAgendamento.PENDENTE,
+          ],
         },
       },
       include: INCLUDE_COMPLETO,

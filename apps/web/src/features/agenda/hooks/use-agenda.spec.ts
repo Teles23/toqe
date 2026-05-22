@@ -50,6 +50,11 @@ describe("toSlot", () => {
     expect(slot.status).toBe("active");
   });
 
+  it("mapeia status em_andamento → active", () => {
+    const slot = toSlot(makeAgendamento({ status: "em_andamento" }), now);
+    expect(slot.status).toBe("active");
+  });
+
   it("mapeia status cancelado → blocked", () => {
     const slot = toSlot(makeAgendamento({ status: "cancelado" }), now);
     expect(slot.status).toBe("blocked");

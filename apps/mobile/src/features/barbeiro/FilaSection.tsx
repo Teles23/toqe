@@ -120,7 +120,7 @@ export function FilaSection() {
   const handleAtender = useCallback(
     (codigo: number) => {
       updateStatus.mutate(
-        { codigo, status: "confirmado" },
+        { codigo, status: "em_andamento" },
         {
           onSuccess: () => showToast("Em atendimento", "success"),
           onError: () =>

@@ -110,6 +110,20 @@ describe("AppointmentDetailSheet", () => {
     expect(screen.queryByTestId("action-aceitar")).toBeNull();
   });
 
+  it("status em_andamento → exibe No-show e Concluir", () => {
+    render(
+      <AppointmentDetailSheet
+        agendamento={makeApt({ status: "em_andamento" })}
+        visible
+        onClose={jest.fn()}
+        onAction={jest.fn()}
+      />,
+    );
+    expect(screen.getByTestId("action-concluir")).toBeTruthy();
+    expect(screen.getByTestId("action-no_show")).toBeTruthy();
+    expect(screen.queryByTestId("action-iniciar")).toBeNull();
+  });
+
   it("status concluido → exibe Histórico e Reagendar", () => {
     render(
       <AppointmentDetailSheet

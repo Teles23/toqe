@@ -83,9 +83,12 @@ export const createPublicAgendamentoSchema = z.object({
 });
 
 export const patchStatusAgendamentoSchema = z.object({
-  status: z.enum(["confirmado", "cancelado", "concluido", "no_show"], {
-    errorMap: () => ({ message: "Status inválido" }),
-  }),
+  status: z.enum(
+    ["confirmado", "em_andamento", "cancelado", "concluido", "no_show"],
+    {
+      errorMap: () => ({ message: "Status inválido" }),
+    },
+  ),
 });
 
 export const listAgendamentoSchema = z.object({
@@ -95,7 +98,14 @@ export const listAgendamentoSchema = z.object({
     .optional(),
   barbeiroId: z.coerce.number().int().positive().optional(),
   status: z
-    .enum(["pendente", "confirmado", "cancelado", "concluido", "no_show"])
+    .enum([
+      "pendente",
+      "confirmado",
+      "em_andamento",
+      "cancelado",
+      "concluido",
+      "no_show",
+    ])
     .optional(),
   tipo: tipoAgendamentoSchema.optional(),
 });

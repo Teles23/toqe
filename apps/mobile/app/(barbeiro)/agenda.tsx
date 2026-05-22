@@ -231,7 +231,7 @@ export default function BarbeiroAgendaScreen() {
       const statusMap: Partial<Record<DetailAction, UpdatableStatus>> = {
         aceitar: "confirmado",
         recusar: "cancelado",
-        iniciar: "confirmado",
+        iniciar: "em_andamento",
         concluir: "concluido",
         no_show: "no_show",
       };

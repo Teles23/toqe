@@ -131,6 +131,7 @@ describe("STATUS_DOT_COLORS", () => {
     const statuses = [
       "pendente",
       "confirmado",
+      "em_andamento",
       "concluido",
       "cancelado",
       "no_show",
@@ -145,6 +146,7 @@ describe("getStatusLabel", () => {
   it.each([
     ["pendente", "Aguardando"],
     ["confirmado", "Confirmado"],
+    ["em_andamento", "Atendendo"],
     ["concluido", "Concluído"],
     ["cancelado", "Cancelado"],
     ["no_show", "No-show"],

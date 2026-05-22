@@ -135,12 +135,12 @@ describe("FilaSection", () => {
     expect(screen.getByText(/FILA · esperando \(1\)/)).toBeTruthy();
   });
 
-  it("botão Atender chama updateStatus com 'confirmado'", () => {
+  it("botão Atender chama updateStatus com 'em_andamento'", () => {
     mockUseFilaDia.mockReturnValue(mockQ({ data: [makeAg({ codigo: 7 })] }));
     render(<FilaSection />);
     fireEvent.press(screen.getByTestId("btn-atender-7"));
     expect(mutate).toHaveBeenCalledWith(
-      { codigo: 7, status: "confirmado" },
+      { codigo: 7, status: "em_andamento" },
       expect.objectContaining({
         onSuccess: expect.any(Function),
         onError: expect.any(Function),

@@ -44,9 +44,18 @@ describe("FilaCard", () => {
     );
   });
 
-  it("exibe 'Em atendimento' para status confirmado", () => {
+  it("exibe 'Confirmado' para status confirmado", () => {
     render(
       <FilaCard agendamento={make({ status: "confirmado" })} posicao={1} />,
+    );
+    expect(screen.getByTestId("status-badge").props.children).toBe(
+      "Confirmado",
+    );
+  });
+
+  it("exibe 'Em atendimento' para status em_andamento", () => {
+    render(
+      <FilaCard agendamento={make({ status: "em_andamento" })} posicao={1} />,
     );
     expect(screen.getByTestId("status-badge").props.children).toBe(
       "Em atendimento",

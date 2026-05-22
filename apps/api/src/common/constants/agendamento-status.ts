@@ -1,6 +1,7 @@
 export enum StatusAgendamento {
   PENDENTE = 'pendente',
   CONFIRMADO = 'confirmado',
+  EM_ANDAMENTO = 'em_andamento',
   CANCELADO = 'cancelado',
   CONCLUIDO = 'concluido',
   NO_SHOW = 'no_show',
@@ -23,4 +24,5 @@ export const STATUSES_ATIVOS = [
 export const STATUSES_BLOQUEANTES = [
   StatusAgendamento.CONFIRMADO,
   StatusAgendamento.PENDENTE,
+  StatusAgendamento.EM_ANDAMENTO,
 ] as const;

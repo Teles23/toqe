@@ -27,7 +27,8 @@ interface Props {
 
 const STATUS_LABEL: Record<StatusAgendamento, string> = {
   pendente: "Aguardando",
-  confirmado: "Em atendimento",
+  confirmado: "Confirmado",
+  em_andamento: "Em atendimento",
   concluido: "Concluído",
   cancelado: "Cancelado",
   no_show: "No-show",

@@ -316,6 +316,22 @@ describe('AgendamentoService', () => {
       expect(result.status).toBe('concluido');
       expect(mockAgendaGateway.emitStatusAtualizado).toHaveBeenCalled();
     });
+
+    it('aceita transição para em_andamento (iniciar atendimento)', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...mockAgendamento,
+        status: 'em_andamento',
+      });
+
+      const result = await service.patchStatus(
+        1,
+        { status: StatusAgendamento.EM_ANDAMENTO },
+        barCodigo,
+      );
+      expect(result.status).toBe('em_andamento');
+      expect(mockAgendaGateway.emitStatusAtualizado).toHaveBeenCalled();
+    });
   });
 
   describe('cancel', () => {
@@ -379,6 +395,15 @@ describe('AgendamentoService', () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue(null);
       const result = await service.agendamentoAtual(10, barCodigo);
       expect(result).toBeNull();
+    });
+
+    it('inclui em_andamento entre os status considerados "atual"', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      await service.agendamentoAtual(10, barCodigo);
+      const arg = mockPrisma.agendamento.findFirst.mock.calls.at(-1)?.[0] as {
+        where: { status: { in: string[] } };
+      };
+      expect(arg.where.status.in).toContain('em_andamento');
     });
   });
 

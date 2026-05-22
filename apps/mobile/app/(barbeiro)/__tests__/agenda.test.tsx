@@ -102,6 +102,12 @@ jest.mock("@/src/features/barbeiro/AppointmentDetailSheet", () => {
           >
             aceitar
           </RN.Text>
+          <RN.Text
+            testID="action-iniciar-btn"
+            onPress={() => onAction("iniciar")}
+          >
+            iniciar
+          </RN.Text>
         </RN.View>
       ) : null,
   };
@@ -427,6 +433,31 @@ describe("BarbeiroAgendaScreen", () => {
     fireEvent.press(screen.getByTestId("action-aceitar-btn"));
     expect(mutateFn).toHaveBeenCalledWith(
       { codigo: 8, status: "confirmado" },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it("ação iniciar no detail sheet chama updateStatus com 'em_andamento'", () => {
+    const mutateFn = jest.fn();
+    mockUseUpdateStatus.mockReturnValue({
+      mutate: mutateFn,
+    } as unknown as ReturnType<typeof useUpdateStatus>);
+    mockUseAgendaDia.mockReturnValue(
+      mockQueryResult({
+        data: [
+          makeAgendamento({
+            codigo: 9,
+            status: "confirmado",
+            cliente: { usrCodigo: 42, nome: "Bia", telefone: null },
+          }),
+        ],
+      }),
+    );
+    render(<BarbeiroAgendaScreen />);
+    fireEvent.press(screen.getByTestId("agenda-row-9"));
+    fireEvent.press(screen.getByTestId("action-iniciar-btn"));
+    expect(mutateFn).toHaveBeenCalledWith(
+      { codigo: 9, status: "em_andamento" },
       expect.objectContaining({ onError: expect.any(Function) }),
     );
   });

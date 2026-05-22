@@ -41,6 +41,7 @@ function statusColor(status: StatusAgendamento): string {
 const STATUS_SHORT: Record<StatusAgendamento, string> = {
   pendente: "Aguardando",
   confirmado: "Confirmado",
+  em_andamento: "Em atendimento",
   concluido: "Concluído",
   cancelado: "Cancelado",
   no_show: "No-show",

@@ -23,6 +23,7 @@ import type { AgendamentoResponse } from "@toqe/shared";
 export const STATUS_DOT_COLORS: Record<string, string> = {
   pendente: "#F4B400",
   confirmado: "#3b82f6",
+  em_andamento: "#22c55e",
   concluido: "#555555",
   cancelado: "#555555",
   no_show: "#ef4444",
@@ -34,6 +35,8 @@ export function getStatusLabel(status: string): string {
       return "Aguardando";
     case "confirmado":
       return "Confirmado";
+    case "em_andamento":
+      return "Atendendo";
     case "concluido":
       return "Concluído";
     case "cancelado":

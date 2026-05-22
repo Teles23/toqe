@@ -101,6 +101,7 @@ export interface BloqueioResponse {
 export type StatusAgendamento =
   | "pendente"
   | "confirmado"
+  | "em_andamento"
   | "cancelado"
   | "concluido"
   | "no_show";

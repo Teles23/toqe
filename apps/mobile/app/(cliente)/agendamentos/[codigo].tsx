@@ -29,6 +29,8 @@ function statusColor(status: StatusAgendamento): string {
       return "#F4B400";
     case "confirmado":
       return "#22c55e";
+    case "em_andamento":
+      return "#22c55e";
     case "concluido":
       return "#666666";
     case "cancelado":
@@ -43,6 +45,7 @@ function statusColor(status: StatusAgendamento): string {
 const STATUS_LABEL: Record<StatusAgendamento, string> = {
   pendente: "Aguardando confirmação",
   confirmado: "Confirmado",
+  em_andamento: "Em atendimento",
   concluido: "Concluído",
   cancelado: "Cancelado",
   no_show: "Você não foi",
