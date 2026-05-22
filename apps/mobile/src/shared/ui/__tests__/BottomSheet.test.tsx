@@ -5,13 +5,14 @@ import { Text } from "react-native";
 import { BottomSheet } from "../BottomSheet";
 
 describe("BottomSheet", () => {
-  it("não renderiza conteúdo quando visible=false (Modal escondido)", () => {
+  it("não renderiza nada quando visible=false (overlay desmontado)", () => {
     render(
       <BottomSheet visible={false} onClose={jest.fn()}>
         <Text>conteúdo</Text>
       </BottomSheet>,
     );
     expect(screen.queryByText("conteúdo")).toBeNull();
+    expect(screen.queryByTestId("bottom-sheet")).toBeNull();
   });
 
   it("renderiza conteúdo quando visible=true", () => {
@@ -23,14 +24,15 @@ describe("BottomSheet", () => {
     expect(screen.getByText("conteúdo")).toBeTruthy();
   });
 
-  it("passa onClose para o onRequestClose do Modal (back-button Android)", () => {
+  it("expõe backdrop 'Fechar' que fecha o sheet (in-screen, sem Modal)", () => {
     const onClose = jest.fn();
     render(
       <BottomSheet visible onClose={onClose}>
         <Text>x</Text>
       </BottomSheet>,
     );
-    const modal = screen.getByTestId("bottom-sheet");
-    expect(typeof modal.props.onRequestClose).toBe("function");
+    // Renderiza in-screen (overlay), não via Modal — backdrop acessível presente.
+    expect(screen.getByTestId("bottom-sheet")).toBeTruthy();
+    expect(screen.getByLabelText("Fechar")).toBeTruthy();
   });
 });

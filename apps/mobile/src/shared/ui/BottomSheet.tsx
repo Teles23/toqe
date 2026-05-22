@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import {
-  Modal,
+  BackHandler,
   Pressable,
   StyleSheet,
   View,
@@ -35,15 +35,23 @@ export interface BottomSheetProps {
 /**
  * Bottom sheet padrão do app — substitui `Alert` e `Modal` central.
  *
+ * Renderiza COMO OVERLAY DENTRO DA TELA (não via `Modal` do RN). Isso é
+ * intencional: o `Modal` do RN sobe numa camada acima de tudo e cobriria a
+ * tab bar. Como overlay in-screen, o backdrop cobre apenas a área de conteúdo
+ * (acima da tab bar do Expo Router), deixando a tab bar visível — fiel ao
+ * protótipo Urban Flow, onde o sheet é irmão do conteúdo e a tab bar fica
+ * fora, visível abaixo.
+ *
  * Características:
  * - Slide up/down animado via Reanimated
- * - Backdrop com `expo-blur` (estética Urban Flow)
+ * - Backdrop com `expo-blur`
  * - Handle bar no topo (padrão nativo iOS/Android)
- * - Fecha ao tocar no backdrop
+ * - Fecha ao tocar no backdrop (anima a saída e então chama `onClose`)
+ * - Back-button do Android fecha o sheet (via `BackHandler`)
  * - `accessibilityViewIsModal` para leitores de tela
  *
- * Nota: usa `Modal` do RN para z-order correto sobre tab bars/headers e
- * para captura de back-button no Android (`onRequestClose`).
+ * z-order: `root` zIndex 20 / elevation 20 (acima do FAB zIndex 10 e do
+ * conteúdo, abaixo de nada dentro da tela).
  */
 export function BottomSheet({
   visible,
@@ -73,6 +81,16 @@ export function BottomSheet({
     }
   }, [visible, sheetHeight, translateY]);
 
+  // Back-button do Android fecha o sheet (substitui `onRequestClose` do Modal).
+  useEffect(() => {
+    if (!visible) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [visible, onClose]);
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
@@ -89,77 +107,78 @@ export function BottomSheet({
     );
   }
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-      testID={testID ?? "bottom-sheet"}
-    >
-      <View style={styles.root}>
-        <Pressable
-          accessibilityLabel="Fechar"
-          accessibilityRole="button"
-          style={StyleSheet.absoluteFill}
-          onPress={handleBackdropPress}
-        >
-          <SafeBlurView
-            intensity={30}
-            tint={isDark ? "dark" : "light"}
-            style={StyleSheet.absoluteFill}
-          />
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: palette.overlay },
-            ]}
-          />
-        </Pressable>
+  if (!visible) return null;
 
-        <Animated.View
-          accessibilityViewIsModal
+  return (
+    <View
+      style={styles.root}
+      testID={testID ?? "bottom-sheet"}
+      accessibilityViewIsModal
+    >
+      <Pressable
+        accessibilityLabel="Fechar"
+        accessibilityRole="button"
+        style={StyleSheet.absoluteFill}
+        onPress={handleBackdropPress}
+      >
+        <SafeBlurView
+          intensity={30}
+          tint={isDark ? "dark" : "light"}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
           style={[
-            styles.sheet,
-            {
-              backgroundColor: palette.surfaceHigh,
-              borderTopLeftRadius: radius.xl,
-              borderTopRightRadius: radius.xl,
-              paddingTop: spacing.sm,
-              paddingBottom: spacing.xl,
-              paddingHorizontal: spacing.lg,
-              height: sheetHeight,
-            },
-            animatedStyle,
+            StyleSheet.absoluteFill,
+            { backgroundColor: palette.overlay },
           ]}
-        >
-          <View
-            style={[
-              styles.handle,
-              {
-                backgroundColor: palette.borderStrong,
-                borderRadius: radius.full,
-                marginBottom: spacing.md,
-              },
-            ]}
-          />
-          {children}
-        </Animated.View>
-      </View>
-    </Modal>
+        />
+      </Pressable>
+
+      <Animated.View
+        style={[
+          styles.sheet,
+          {
+            backgroundColor: palette.surfaceHigh,
+            borderTopLeftRadius: radius.xl,
+            borderTopRightRadius: radius.xl,
+            paddingTop: spacing.sm,
+            paddingBottom: spacing.xl,
+            paddingHorizontal: spacing.lg,
+            height: sheetHeight,
+          },
+          animatedStyle,
+        ]}
+      >
+        <View
+          style={[
+            styles.handle,
+            {
+              backgroundColor: palette.borderStrong,
+              borderRadius: radius.full,
+              marginBottom: spacing.md,
+            },
+          ]}
+        />
+        {children}
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "flex-end",
+    zIndex: 20,
+    elevation: 20,
   },
   sheet: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 21,
+    elevation: 21,
   },
   handle: {
     width: 40,
