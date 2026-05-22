@@ -38,6 +38,8 @@ model Usuario {
   servicosProps  BarbeiroServico[]
   preferencias   NotificacaoPreferencia[]
   pushTokens     PushToken[]
+  notasFeitas    ClienteNota[]      @relation("NotaBarbeiro")
+  notasRecebidas ClienteNota[]      @relation("NotaCliente")
 
   @@map("TQE_USUARIO")
 }
@@ -95,6 +97,7 @@ model Barbearia {
   preferencias   NotificacaoPreferencia[]
   horarios       HorarioFuncionamento[]
   convites       ConviteBarbearia[]
+  clienteNotas   ClienteNota[]
 
   @@map("TQE_BARBEARIA")
 }
@@ -111,6 +114,26 @@ model MembroBarbearia {
 
   @@unique([barCodigo, usrCodigo])
   @@map("TQE_MEMBRO_BARBEARIA")
+}
+
+/// Nota privada de um barbeiro sobre um cliente (ex.: "máquina 2 nas laterais").
+/// Visível apenas para o barbeiro autor, escopada por barbearia. Uma nota por
+/// (barbearia, barbeiro, cliente) — atualizada via upsert.
+model ClienteNota {
+  codigo       Int      @id @default(autoincrement()) @map("TQE_CLN_CODIGO")
+  barCodigo    Int      @map("TQE_CLN_BAR_CODIGO")
+  barbeiroId   Int      @map("TQE_CLN_BARBEIRO_ID")
+  clienteId    Int      @map("TQE_CLN_CLIENTE_ID")
+  conteudo     String   @map("TQE_CLN_CONTEUDO") @db.Text
+  criadoEm     DateTime @default(now()) @map("TQE_CLN_CRIADO_EM") @db.Timestamptz
+  atualizadoEm DateTime @updatedAt @map("TQE_CLN_ATUALIZADO_EM") @db.Timestamptz
+
+  barbearia Barbearia @relation(fields: [barCodigo], references: [codigo])
+  barbeiro  Usuario   @relation("NotaBarbeiro", fields: [barbeiroId], references: [codigo])
+  cliente   Usuario   @relation("NotaCliente", fields: [clienteId], references: [codigo])
+
+  @@unique([barCodigo, barbeiroId, clienteId])
+  @@map("TQE_CLIENTE_NOTA")
 }
 
 model TemaTenant {

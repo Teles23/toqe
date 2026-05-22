@@ -7,6 +7,7 @@ export * from "./agenda";
 export * from "./agendamento";
 export * from "./auth";
 export * from "./barbearia";
+export * from "./cliente";
 export * from "./convite";
 export * from "./notificacao";
 export * from "./servico";

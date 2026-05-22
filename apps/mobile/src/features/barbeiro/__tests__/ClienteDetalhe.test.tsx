@@ -18,6 +18,14 @@ jest.mock("@/src/shared/hooks/barbeiro/use-historico-cliente", () => ({
   useHistoricoCliente: jest.fn(),
 }));
 
+const mockSalvarNotaMutate = jest.fn();
+jest.mock("@/src/shared/hooks/barbeiro/use-cliente-nota", () => ({
+  useClienteNota: jest.fn(() => ({
+    data: { conteudo: "", atualizadoEm: null },
+  })),
+  useSalvarNotaCliente: jest.fn(() => ({ mutate: mockSalvarNotaMutate })),
+}));
+
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
@@ -86,6 +94,7 @@ describe("ClienteDetalhe", () => {
   beforeEach(() => {
     mockHistorico.mockReset();
     mockHistorico.mockReturnValue(mockHistoricoResult());
+    mockSalvarNotaMutate.mockReset();
   });
 
   it("não renderiza quando cliente é null", () => {
@@ -206,15 +215,19 @@ describe("ClienteDetalhe", () => {
     expect(screen.getByDisplayValue("Prefere degradê alto")).toBeTruthy();
   });
 
-  it("pressionar Salvar fecha o TextInput", () => {
+  it("pressionar Salvar fecha o TextInput e persiste a nota via mutation", () => {
     render(
       <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
     );
     fireEvent.press(screen.getByTestId("btn-editar-nota"));
-    expect(screen.getByTestId("input-nota")).toBeTruthy();
+    fireEvent.changeText(
+      screen.getByTestId("input-nota"),
+      "Prefere degradê alto",
+    );
     // Pressiona "Salvar" (toggled state do mesmo botão)
     fireEvent.press(screen.getByTestId("btn-editar-nota"));
     expect(screen.queryByTestId("input-nota")).toBeNull();
+    expect(mockSalvarNotaMutate).toHaveBeenCalledWith("Prefere degradê alto");
   });
 
   it("botão voltar chama onClose", () => {

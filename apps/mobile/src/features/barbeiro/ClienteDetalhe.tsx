@@ -6,7 +6,7 @@
  *  - Quick actions: Agendar · Ligar · WhatsApp
  *  - Stats: visitas totais, ticket médio, última visita
  *  - Próximo agendamento agendado (se houver)
- *  - Notas do barbeiro (editáveis localmente — integração API é Phase 2)
+ *  - Notas do barbeiro (privadas, persistidas via `useClienteNota`)
  *  - Timeline de histórico via `useHistoricoCliente`
  *
  * Usa `Modal` com `animationType="slide"` para simular push navigation
@@ -16,7 +16,7 @@
 import { Feather } from "@expo/vector-icons";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Linking,
   Modal,
@@ -32,6 +32,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/src/shared/theme";
 import { Avatar } from "@/src/shared/ui";
 import { useHistoricoCliente } from "@/src/shared/hooks/barbeiro/use-historico-cliente";
+import {
+  useClienteNota,
+  useSalvarNotaCliente,
+} from "@/src/shared/hooks/barbeiro/use-cliente-nota";
 import type { ClienteAPI } from "@toqe/contracts";
 import type { AgendamentoResponse } from "@toqe/shared";
 
@@ -65,6 +69,24 @@ export function ClienteDetalhe({
     cliente?.codigo ?? 0,
     visible && !!cliente,
   );
+
+  // Nota privada do barbeiro sobre o cliente (persistida via API).
+  const clienteId = cliente?.codigo ?? 0;
+  const { data: notaData } = useClienteNota(clienteId, visible && !!cliente);
+  const salvarNota = useSalvarNotaCliente(clienteId);
+
+  // Sincroniza a nota do servidor para o estado local quando não está editando
+  // (evita sobrescrever o que o barbeiro está digitando).
+  useEffect(() => {
+    if (!editingNote) setNote(notaData?.conteudo ?? "");
+  }, [notaData?.conteudo, editingNote]);
+
+  const handleToggleNota = useCallback(() => {
+    if (editingNote) {
+      salvarNota.mutate(note.trim());
+    }
+    setEditingNote((v) => !v);
+  }, [editingNote, note, salvarNota]);
 
   const handleLigar = useCallback(() => {
     if (cliente?.telefone) {
@@ -341,7 +363,7 @@ export function ClienteDetalhe({
               </View>
               <Pressable
                 testID="btn-editar-nota"
-                onPress={() => setEditingNote((v) => !v)}
+                onPress={handleToggleNota}
                 hitSlop={8}
               >
                 <Text

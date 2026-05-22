@@ -30,6 +30,7 @@ export function createPrismaMock() {
     planoLimite: makeMethods(),
     avaliacaoAgendamento: makeMethods(),
     conviteBarbearia: makeMethods(),
+    clienteNota: makeMethods(),
     $transaction: jest.fn(),
     $queryRaw: jest.fn(),
     $executeRawUnsafe: jest.fn(),

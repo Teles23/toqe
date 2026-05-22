@@ -25,6 +25,7 @@ import { PushTokenModule } from './push-token/push-token.module';
 import { AdminModule } from './admin/admin.module';
 import { MeModule } from './me/me.module';
 import { ConviteModule } from './convite/convite.module';
+import { ClienteNotaModule } from './cliente-nota/cliente-nota.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { ConviteModule } from './convite/convite.module';
     AdminModule,
     MeModule,
     ConviteModule,
+    ClienteNotaModule,
   ],
   controllers: [AppController],
   providers: [
