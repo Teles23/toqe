@@ -30,6 +30,28 @@ jest.mock("@/src/shared/hooks/barbeiro/use-criar-bloqueio", () => ({
   useCriarBloqueio: jest.fn(),
 }));
 
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: jest.fn(),
+}));
+
+jest.mock("@/src/shared/hooks/use-toast", () => ({
+  useToast: jest.fn().mockReturnValue({ showToast: jest.fn() }),
+}));
+
+jest.mock("@/src/shared/ui", () => {
+  const real = jest.requireActual("@/src/shared/ui");
+  const RN = jest.requireActual("react-native");
+  return {
+    ...real,
+    TenantSwitcherSheet: ({
+      visible,
+    }: {
+      visible: boolean;
+      onClose: () => void;
+    }) => (visible ? <RN.View testID="tenant-switcher-sheet" /> : null),
+  };
+});
+
 // Stubs leves para sheets testados em arquivo próprio
 jest.mock("@/src/features/barbeiro/ActionMenuSheet", () => {
   const RN = jest.requireActual("react-native");
@@ -122,6 +144,7 @@ import React from "react";
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
 import { useCriarBloqueio } from "@/src/shared/hooks/barbeiro/use-criar-bloqueio";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
+import { useAuth } from "@/src/shared/hooks/use-auth";
 import type { AgendamentoResponse } from "@toqe/shared";
 
 import BarbeiroAgendaScreen from "../agenda";
@@ -135,6 +158,7 @@ const mockUseUpdateStatus = useUpdateStatus as jest.MockedFunction<
 const mockUseCriarBloqueio = useCriarBloqueio as jest.MockedFunction<
   typeof useCriarBloqueio
 >;
+const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 function makeAgendamento(
   overrides: Partial<AgendamentoResponse> = {},
@@ -182,6 +206,10 @@ describe("BarbeiroAgendaScreen", () => {
       mutate: jest.fn(),
       isPending: false,
     } as unknown as ReturnType<typeof useCriarBloqueio>);
+    mockUseAuth.mockReturnValue({
+      barbearia: { codigo: 1, nome: "Urban Barber", perfil: "barbeiro" },
+      barbearias: [{ codigo: 1, nome: "Urban Barber", perfil: "barbeiro" }],
+    } as unknown as ReturnType<typeof useAuth>);
   });
 
   it("mostra loading state inicial", () => {
@@ -380,6 +408,9 @@ describe("BarbeiroAgendaScreen", () => {
     render(<BarbeiroAgendaScreen />);
     fireEvent.press(screen.getByTestId("agenda-row-8"));
     fireEvent.press(screen.getByTestId("action-aceitar-btn"));
-    expect(mutateFn).toHaveBeenCalledWith({ codigo: 8, status: "confirmado" });
+    expect(mutateFn).toHaveBeenCalledWith(
+      { codigo: 8, status: "confirmado" },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 });

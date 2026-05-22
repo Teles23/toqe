@@ -22,6 +22,8 @@ import {
   View,
 } from "react-native";
 
+import { Feather } from "@expo/vector-icons";
+
 import { useTheme } from "@/src/shared/theme";
 import { BottomSheet } from "@/src/shared/ui";
 
@@ -29,12 +31,15 @@ import { BottomSheet } from "@/src/shared/ui";
 
 const VIOLET = "#a78bfa";
 
-const MOTIVOS = [
-  { label: "Almoço", emoji: "🍽" },
-  { label: "Limpeza", emoji: "✨" },
-  { label: "Folga pessoal", emoji: "⏸" },
-  { label: "Outro", emoji: "✏" },
-] as const;
+const MOTIVOS: {
+  label: string;
+  icon: keyof typeof Feather.glyphMap;
+}[] = [
+  { label: "Almoço", icon: "coffee" },
+  { label: "Limpeza", icon: "wind" },
+  { label: "Folga pessoal", icon: "pause-circle" },
+  { label: "Outro", icon: "edit-2" },
+];
 
 const DURACOES = [15, 30, 45, 60, 90, 120] as const;
 
@@ -91,7 +96,7 @@ export function BloqueioSheet({
               },
             ]}
           >
-            <Text style={{ fontSize: 18 }}>⏸</Text>
+            <Feather name="pause-circle" size={22} color={VIOLET} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[typography.subheading, { color: palette.text }]}>
@@ -142,7 +147,11 @@ export function BloqueioSheet({
                       },
                     ]}
                   >
-                    <Text style={{ fontSize: 14 }}>{m.emoji}</Text>
+                    <Feather
+                      name={m.icon}
+                      size={16}
+                      color={active ? VIOLET : "#888888"}
+                    />
                     <Text
                       style={[
                         typography.caption,
@@ -258,11 +267,16 @@ export function BloqueioSheet({
                 backgroundColor: VIOLET + "10",
                 borderColor: VIOLET + "30",
                 borderRadius: radius.sm,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
               },
             ]}
           >
-            <Text style={[typography.caption, { color: VIOLET + "cc" }]}>
-              ℹ{" "}
+            <Feather name="info" size={13} color={VIOLET + "cc"} />
+            <Text
+              style={[typography.caption, { color: VIOLET + "cc", flex: 1 }]}
+            >
               {recorrente
                 ? "Bloqueio recorrente · vai repetir toda semana automaticamente."
                 : "Bloqueio único · só hoje."}

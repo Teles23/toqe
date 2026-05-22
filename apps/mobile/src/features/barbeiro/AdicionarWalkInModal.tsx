@@ -29,6 +29,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useCriarWalkIn } from "@/src/shared/hooks/barbeiro/use-criar-walk-in";
 import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
+import { useToast } from "@/src/shared/hooks/use-toast";
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton, FormErrorBox, FormInput } from "@/src/shared/ui";
 
@@ -47,6 +48,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
   const { user } = useAuth();
   const { data: servicos = [] } = useServicos();
   const criarWalkIn = useCriarWalkIn();
+  const { showToast } = useToast();
 
   const ativos = useMemo(() => servicos.filter((s) => s.ativo), [servicos]);
 
@@ -81,6 +83,10 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (!nome.trim()) {
+      setErro("Nome é obrigatório.");
+      return;
+    }
     if (servicoId === null) {
       setErro("Selecione um serviço.");
       return;
@@ -89,13 +95,14 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
     try {
       await criarWalkIn.mutateAsync({
         cliente: {
-          nome: nome.trim() || "Walk-in",
-          // E-mail sintético — contrato exige email; walk-in não o coleta.
+          nome: nome.trim(),
+          // E-mail sintético — contrato exige email; encaixe não o coleta.
           email: `walkin-${Date.now()}@walk-in.local`,
         },
         barbeiroId: user!.codigo,
         servicosIds: [servicoId],
       });
+      showToast("Encaixe adicionado à fila", "success");
       reset();
       onSuccess?.();
       onClose();
@@ -132,7 +139,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
             <View style={styles.headerTitles}>
               <Text style={styles.headerTitle}>Encaixe agora</Text>
               <Text style={styles.headerSubtitle}>
-                Walk-in · sem agendamento prévio
+                Encaixe · sem agendamento prévio
               </Text>
             </View>
             <Pressable
@@ -160,7 +167,6 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
             {/* Nome */}
             <FormInput
               label="Nome do cliente"
-              hint="(opcional)"
               placeholder="Quem é?"
               leftIcon="user"
               autoCapitalize="words"
@@ -269,6 +275,7 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
               iconRight="arrow-right"
               onPress={handleSubmit}
               loading={criarWalkIn.isPending}
+              disabled={!nome.trim() || criarWalkIn.isPending}
             />
           </View>
         </View>

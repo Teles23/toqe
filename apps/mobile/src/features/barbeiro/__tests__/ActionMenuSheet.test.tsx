@@ -99,7 +99,7 @@ describe("ActionMenuSheet", () => {
         onBloqueio={jest.fn()}
       />,
     );
-    expect(screen.getByText("Encaixe / walk-in")).toBeTruthy();
+    expect(screen.getByText("Encaixe")).toBeTruthy();
     expect(screen.getByText("Bloquear horário")).toBeTruthy();
   });
 });

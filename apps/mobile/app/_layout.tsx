@@ -20,6 +20,7 @@ import { useAuth } from "@/src/shared/hooks/use-auth";
 import { usePushNotifications } from "@/src/shared/hooks/use-push-notifications";
 import { AuthProvider } from "@/src/shared/providers/auth-provider";
 import { QueryProvider } from "@/src/shared/providers/query-provider";
+import { ToastProvider } from "@/src/shared/providers/toast-provider";
 import { FONT_MAP } from "@/src/shared/theme/fonts";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -61,7 +62,9 @@ export default function RootLayout() {
   return (
     <QueryProvider>
       <AuthProvider>
-        <RootNavigator fontsReady={fontsReady} />
+        <ToastProvider>
+          <RootNavigator fontsReady={fontsReady} />
+        </ToastProvider>
       </AuthProvider>
     </QueryProvider>
   );

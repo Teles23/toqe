@@ -15,6 +15,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { FilaCard } from "@/src/features/barbeiro/FilaCard";
 import { useFilaDia } from "@/src/shared/hooks/barbeiro/use-fila-dia";
+import { useToast } from "@/src/shared/hooks/use-toast";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 
 // ─── Pulsing dot vermelho ────────────────────────────────────────────────────
@@ -114,12 +115,20 @@ function WalkInCard({
 export function FilaSection() {
   const { data } = useFilaDia();
   const updateStatus = useUpdateStatus();
+  const { showToast } = useToast();
 
   const handleAtender = useCallback(
     (codigo: number) => {
-      updateStatus.mutate({ codigo, status: "confirmado" });
+      updateStatus.mutate(
+        { codigo, status: "confirmado" },
+        {
+          onSuccess: () => showToast("Em atendimento", "success"),
+          onError: () =>
+            showToast("Não foi possível atender. Tente novamente.", "error"),
+        },
+      );
     },
-    [updateStatus],
+    [updateStatus, showToast],
   );
 
   const filaItems = data ?? [];

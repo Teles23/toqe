@@ -6,7 +6,10 @@
  *  - Bloquear horário  → almoço, folga, limpeza
  */
 
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { Feather } from "@expo/vector-icons";
 
 import { useTheme } from "@/src/shared/theme";
 import { BottomSheet } from "@/src/shared/ui";
@@ -49,8 +52,8 @@ export function ActionMenuSheet({
       <View style={{ gap: spacing.sm }}>
         <SheetActionButton
           iconColor={palette.primary}
-          icon="👤"
-          title="Encaixe / walk-in"
+          icon={<Feather name="user" size={22} color={palette.primary} />}
+          title="Encaixe"
           subtitle="Cliente chegou agora · sem agendamento"
           onPress={() => {
             onClose();
@@ -61,7 +64,7 @@ export function ActionMenuSheet({
 
         <SheetActionButton
           iconColor="#a78bfa"
-          icon="⏸"
+          icon={<Feather name="pause-circle" size={22} color="#a78bfa" />}
           title="Bloquear horário"
           subtitle="Almoço · limpeza · folga pessoal"
           onPress={() => {
@@ -79,7 +82,7 @@ export function ActionMenuSheet({
 
 interface SheetActionButtonProps {
   iconColor: string;
-  icon: string;
+  icon: ReactNode;
   title: string;
   subtitle: string;
   onPress: () => void;
@@ -124,7 +127,7 @@ function SheetActionButton({
           },
         ]}
       >
-        <Text style={{ fontSize: 18 }}>{icon}</Text>
+        {icon}
       </View>
 
       {/* Text */}

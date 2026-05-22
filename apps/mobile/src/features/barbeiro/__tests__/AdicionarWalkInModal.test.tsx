@@ -120,25 +120,35 @@ describe("AdicionarWalkInModal (walk-in chips)", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
-  it("usa o primeiro serviço ativo por padrão e nome 'Walk-in' se vazio", async () => {
+  it("botão fica desabilitado quando nome está vazio", () => {
     render(<AdicionarWalkInModal visible onClose={jest.fn()} />);
+    const btn = screen.getByRole("button", { name: "Atender agora" });
+    expect(btn.props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it("botão habilita ao preencher nome e submete corretamente", async () => {
+    const onClose = jest.fn();
+    render(<AdicionarWalkInModal visible onClose={onClose} />);
+
+    fireEvent.changeText(screen.getByLabelText("Nome do cliente"), "Ana");
+    const btn = screen.getByRole("button", { name: "Atender agora" });
+    expect(btn.props.accessibilityState?.disabled).toBe(false);
 
     await act(async () => {
-      fireEvent.press(screen.getByRole("button", { name: "Atender agora" }));
+      fireEvent.press(btn);
     });
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-    const payload = mutateAsync.mock.calls[0][0];
-    expect(payload).toMatchObject({
-      barbeiroId: 50,
-      servicosIds: [1],
-      cliente: { nome: "Walk-in" },
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({
+      cliente: { nome: "Ana" },
     });
   });
 
   it("erro na mutation exibe mensagem de falha", async () => {
     mutateAsync.mockRejectedValueOnce(new Error("network"));
     render(<AdicionarWalkInModal visible onClose={jest.fn()} />);
+
+    fireEvent.changeText(screen.getByLabelText("Nome do cliente"), "João");
 
     await act(async () => {
       fireEvent.press(screen.getByRole("button", { name: "Atender agora" }));

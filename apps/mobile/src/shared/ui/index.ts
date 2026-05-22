@@ -1,3 +1,6 @@
+// Toast overlay
+export { ToastOverlay, type ToastVisualProps, type ToastTone } from "./Toast";
+
 // Botões — design system Urban Flow
 export { BaseButton, type BaseButtonProps } from "./BaseButton";
 export { AmberButton, type AmberButtonProps } from "./AmberButton";

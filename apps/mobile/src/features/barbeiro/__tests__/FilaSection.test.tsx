@@ -139,6 +139,12 @@ describe("FilaSection", () => {
     mockUseFilaDia.mockReturnValue(mockQ({ data: [makeAg({ codigo: 7 })] }));
     render(<FilaSection />);
     fireEvent.press(screen.getByTestId("btn-atender-7"));
-    expect(mutate).toHaveBeenCalledWith({ codigo: 7, status: "confirmado" });
+    expect(mutate).toHaveBeenCalledWith(
+      { codigo: 7, status: "confirmado" },
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
+    );
   });
 });

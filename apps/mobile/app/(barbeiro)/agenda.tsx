@@ -35,8 +35,10 @@ import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInMod
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import { useCriarBloqueio } from "@/src/shared/hooks/barbeiro/use-criar-bloqueio";
+import { useAuth } from "@/src/shared/hooks/use-auth";
+import { useToast } from "@/src/shared/hooks/use-toast";
 import { useTheme } from "@/src/shared/theme";
-import { DataListWrapper } from "@/src/shared/ui";
+import { DataListWrapper, TenantSwitcherSheet } from "@/src/shared/ui";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 
 import type { DetailAction } from "@/src/features/barbeiro/AppointmentDetailSheet";
@@ -177,6 +179,8 @@ const nowStyles = StyleSheet.create({
 export default function BarbeiroAgendaScreen() {
   const { palette, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+  const { barbearia, barbearias } = useAuth();
+  const { showToast } = useToast();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data, isLoading, isRefetching, refetch, isError } =
@@ -192,6 +196,7 @@ export default function BarbeiroAgendaScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [walkinOpen, setWalkinOpen] = useState(false);
   const [bloqueioOpen, setBloqueioOpen] = useState(false);
+  const [tenantSwitcherOpen, setTenantSwitcherOpen] = useState(false);
 
   const goPrev = useCallback(() => setSelectedDate((d) => subDays(d, 1)), []);
   const goNext = useCallback(() => setSelectedDate((d) => addDays(d, 1)), []);
@@ -220,19 +225,42 @@ export default function BarbeiroAgendaScreen() {
       type UpdatableStatus = Exclude<StatusAgendamento, "pendente">;
       const statusMap: Partial<Record<DetailAction, UpdatableStatus>> = {
         aceitar: "confirmado",
+        recusar: "cancelado",
         iniciar: "confirmado",
         concluir: "concluido",
         no_show: "no_show",
       };
 
+      const toastMap: Partial<
+        Record<DetailAction, { msg: string; tone: "success" | "warn" }>
+      > = {
+        aceitar: { msg: "Aceito · cliente avisado", tone: "success" },
+        recusar: { msg: "Recusado · cliente notificado", tone: "warn" },
+        iniciar: { msg: "Atendimento iniciado", tone: "success" },
+        concluir: { msg: "Concluído · pagamento registrado", tone: "success" },
+        no_show: { msg: "Marcado como não compareceu", tone: "warn" },
+      };
+
       const newStatus = statusMap[action];
       if (newStatus) {
-        updateStatus.mutate({ codigo: selectedApt.codigo, status: newStatus });
+        updateStatus.mutate(
+          { codigo: selectedApt.codigo, status: newStatus },
+          {
+            onError: () =>
+              showToast(
+                "Não foi possível atualizar. Tente novamente.",
+                "error",
+              ),
+          },
+        );
       }
+
+      const toastEntry = toastMap[action];
+      if (toastEntry) showToast(toastEntry.msg, toastEntry.tone);
 
       setDetailOpen(false);
     },
-    [selectedApt, updateStatus],
+    [selectedApt, updateStatus, showToast],
   );
 
   const handleBloqueioConfirm = useCallback(
@@ -242,10 +270,14 @@ export default function BarbeiroAgendaScreen() {
       recorrente: boolean;
     }) => {
       criarBloqueio.mutate(bloqueioData, {
+        onSuccess: () =>
+          showToast(`Horário bloqueado · ${bloqueioData.motivo}`, "info"),
+        onError: () =>
+          showToast("Não foi possível bloquear. Tente novamente.", "error"),
         onSettled: () => setBloqueioOpen(false),
       });
     },
-    [criarBloqueio],
+    [criarBloqueio, showToast],
   );
 
   // ── Header: dia da semana + data + botão filtro ──────────────────────────
@@ -298,7 +330,7 @@ export default function BarbeiroAgendaScreen() {
             </View>
           </Pressable>
 
-          {/* Nav next + filtro */}
+          {/* Nav next + notificações */}
           <View style={styles.rightBtns}>
             <Pressable
               onPress={goNext}
@@ -313,17 +345,42 @@ export default function BarbeiroAgendaScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Filtrar agenda"
+              accessibilityLabel="Notificações"
+              testID="btn-notificacoes"
               style={({ pressed }) => [
                 styles.filterBtn,
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={styles.filterIcon}>≡</Text>
+              <Feather name="bell" size={18} color="#888888" />
             </Pressable>
           </View>
         </View>
       </View>
+
+      {/* Pill de tenant — só quando há mais de uma barbearia */}
+      {barbearias.length > 1 && barbearia && (
+        <Pressable
+          testID="btn-tenant-switcher"
+          accessibilityRole="button"
+          accessibilityLabel={`Barbearia ativa: ${barbearia.nome}. Toque para trocar.`}
+          onPress={() => setTenantSwitcherOpen(true)}
+          style={({ pressed }) => [
+            styles.tenantPill,
+            { opacity: pressed ? 0.75 : 1 },
+          ]}
+        >
+          <View style={styles.tenantLetter}>
+            <Text style={styles.tenantLetterText}>
+              {barbearia.nome.trim()[0]?.toUpperCase() ?? "B"}
+            </Text>
+          </View>
+          <Text style={styles.tenantName} numberOfLines={1}>
+            {barbearia.nome}
+          </Text>
+          <Feather name="refresh-cw" size={12} color="#888888" />
+        </Pressable>
+      )}
 
       {/* Stats strip — só quando há dados */}
       {data && data.length > 0 && <StatsStrip apts={data} />}
@@ -375,7 +432,7 @@ export default function BarbeiroAgendaScreen() {
         testID="fab-adicionar"
         onPress={() => setMenuOpen(true)}
         accessibilityRole="button"
-        accessibilityLabel="Adicionar walk-in ou bloqueio"
+        accessibilityLabel="Adicionar encaixe ou bloqueio"
         style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.9 : 1 }]}
       >
         <Text style={styles.fabText}>+</Text>
@@ -406,6 +463,11 @@ export default function BarbeiroAgendaScreen() {
       <AdicionarWalkInModal
         visible={walkinOpen}
         onClose={() => setWalkinOpen(false)}
+      />
+
+      <TenantSwitcherSheet
+        visible={tenantSwitcherOpen}
+        onClose={() => setTenantSwitcherOpen(false)}
       />
     </View>
   );
@@ -487,6 +549,39 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   pressed: { opacity: 0.7 },
+  tenantPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    alignSelf: "flex-start",
+    marginHorizontal: 16,
+    marginBottom: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#1c1c1c",
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  tenantLetter: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: "#F4B400",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tenantLetterText: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 10,
+    color: "#0d0d0d",
+  },
+  tenantName: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    color: "#f5f5f5",
+    maxWidth: 150,
+  },
   fab: {
     position: "absolute",
     bottom: 80,
