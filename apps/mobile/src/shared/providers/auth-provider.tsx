@@ -27,6 +27,15 @@ interface AuthState {
 interface AuthActions {
   login(email: string, senha: string): Promise<void>;
   loginWithGoogle(idToken: string): Promise<void>;
+  /**
+   * Estabelece a sessão a partir de tokens já emitidos (ex.: auto-login após
+   * aceitar convite). Salva os tokens, carrega o usuário e atualiza o estado —
+   * SEM redirecionar (o chamador decide o destino). Retorna o perfil ativo.
+   */
+  establishSession(
+    accessToken: string,
+    refreshToken: string,
+  ): Promise<Perfil | null>;
   logout(): Promise<void>;
   switchBarbearia(codigo: number): void;
 }
@@ -122,14 +131,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ─── Actions ───────────────────────────────────────────────────────────────
 
-  const login = useCallback(
-    async (email: string, senha: string): Promise<void> => {
-      const data = await api.post<{
-        access_token: string;
-        refresh_token: string;
-      }>("/auth/login", { email, senha }, { skipRefresh: true });
-
-      await TokenStorage.saveTokens(data.access_token, data.refresh_token);
+  const establishSession = useCallback(
+    async (
+      accessToken: string,
+      refreshToken: string,
+    ): Promise<Perfil | null> => {
+      await TokenStorage.saveTokens(accessToken, refreshToken);
 
       const me = await api.get<UsuarioMe>("/usuarios/me");
       const primeiraBarbearia = me.barbearias[0] ?? null;
@@ -142,11 +149,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading: false,
       });
 
-      router.replace(
-        getRedirectForPerfil(primeiraBarbearia?.perfil ?? null) as never,
-      );
+      return primeiraBarbearia?.perfil ?? null;
     },
     [],
+  );
+
+  const login = useCallback(
+    async (email: string, senha: string): Promise<void> => {
+      const data = await api.post<{
+        access_token: string;
+        refresh_token: string;
+      }>("/auth/login", { email, senha }, { skipRefresh: true });
+
+      const perfil = await establishSession(
+        data.access_token,
+        data.refresh_token,
+      );
+
+      router.replace(getRedirectForPerfil(perfil) as never);
+    },
+    [establishSession],
   );
 
   const loginWithGoogle = useCallback(
@@ -158,24 +180,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refresh_token: string;
       }>("/auth/google", { idToken }, { skipRefresh: true });
 
-      await TokenStorage.saveTokens(data.access_token, data.refresh_token);
-
-      const me = await api.get<UsuarioMe>("/usuarios/me");
-      const primeiraBarbearia = me.barbearias[0] ?? null;
-
-      setState({
-        user: buildUser(me),
-        barbearias: me.barbearias,
-        barbearia: primeiraBarbearia,
-        perfil: primeiraBarbearia?.perfil ?? null,
-        loading: false,
-      });
-
-      router.replace(
-        getRedirectForPerfil(primeiraBarbearia?.perfil ?? null) as never,
+      const perfil = await establishSession(
+        data.access_token,
+        data.refresh_token,
       );
+
+      router.replace(getRedirectForPerfil(perfil) as never);
     },
-    [],
+    [establishSession],
   );
 
   const logout = useCallback(async (): Promise<void> => {
@@ -216,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ...state,
     login,
     loginWithGoogle,
+    establishSession,
     logout,
     switchBarbearia,
   };

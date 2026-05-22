@@ -68,17 +68,24 @@ describe("useAceitarConvite", () => {
     );
   });
 
-  it("retorna sucesso com userId correto", async () => {
-    mockPost.mockResolvedValue({ sucesso: true, userId: 42 });
+  it("retorna tokens + isNew + barbeariaNome (auto-login)", async () => {
+    const resposta = {
+      access_token: "acc",
+      refresh_token: "ref",
+      user: { codigo: 42, nome: "João", email: "j@x.com" },
+      isNew: true,
+      barbeariaNome: "Urban Flow",
+    };
+    mockPost.mockResolvedValue(resposta);
 
     const { result } = renderHook(() => useAceitarConvite(), { wrapper });
 
-    let data: { sucesso: boolean; userId: number } | undefined;
+    let data: typeof resposta | undefined;
     await act(async () => {
       data = await result.current.mutateAsync({ token: "token-ok" });
     });
 
-    expect(data).toEqual({ sucesso: true, userId: 42 });
+    expect(data).toEqual(resposta);
   });
 
   it("propaga erro 404 da API", async () => {

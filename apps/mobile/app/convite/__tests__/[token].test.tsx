@@ -11,7 +11,7 @@ jest.mock("expo-constants", () => ({
 }));
 
 jest.mock("expo-router", () => ({
-  router: { back: jest.fn(), push: jest.fn() },
+  router: { back: jest.fn(), push: jest.fn(), replace: jest.fn() },
   useLocalSearchParams: jest.fn(() => ({ token: "abc123" })),
 }));
 
@@ -23,6 +23,24 @@ const mockAceitarMutate = jest.fn();
 jest.mock("@/src/shared/hooks/use-aceitar-convite", () => ({
   useAceitarConvite: () => ({ mutate: mockAceitarMutate }),
 }));
+
+const mockRejeitarMutate = jest.fn();
+jest.mock("@/src/shared/hooks/use-rejeitar-convite", () => ({
+  useRejeitarConvite: () => ({ mutate: mockRejeitarMutate }),
+}));
+
+const mockEstablishSession = jest.fn().mockResolvedValue(null);
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: () => ({ establishSession: mockEstablishSession }),
+}));
+
+const aceitarOk = {
+  access_token: "acc",
+  refresh_token: "ref",
+  user: { codigo: 1, nome: "Carlos Mendes", email: "joao@test.com" },
+  isNew: true,
+  barbeariaNome: "Urban Flow Barber",
+};
 
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
@@ -48,7 +66,10 @@ describe("ConviteTokenScreen", () => {
     jest.useFakeTimers();
     mockUseConvite.mockReset();
     mockAceitarMutate.mockReset();
+    mockRejeitarMutate.mockReset();
+    mockEstablishSession.mockClear();
     (router.back as jest.Mock).mockReset();
+    (router.replace as jest.Mock).mockReset();
   });
 
   afterEach(() => {
@@ -154,16 +175,19 @@ describe("ConviteTokenScreen", () => {
     expect(screen.getByTestId("convite-accepting")).toBeTruthy();
   });
 
-  it("10. mostra convite-success quando mutate chama onSuccess", async () => {
+  it("10. onSuccess faz auto-login (establishSession) e mostra boas-vindas", async () => {
     mockUseConvite.mockReturnValue({
       data: validConvite,
       isLoading: false,
       isError: false,
     });
-    // Simula mutate que chama onSuccess imediatamente
+    // Simula mutate que chama onSuccess com a resposta de auto-login
     mockAceitarMutate.mockImplementation(
-      (_input: unknown, callbacks: { onSuccess?: () => void }) => {
-        callbacks?.onSuccess?.();
+      (
+        _input: unknown,
+        callbacks: { onSuccess?: (r: typeof aceitarOk) => void },
+      ) => {
+        callbacks?.onSuccess?.(aceitarOk);
       },
     );
 
@@ -174,10 +198,37 @@ describe("ConviteTokenScreen", () => {
       fireEvent.press(screen.getByTestId("btn-aceitar"));
     });
 
+    expect(mockEstablishSession).toHaveBeenCalledWith("acc", "ref");
     expect(screen.getByTestId("convite-success")).toBeTruthy();
+    expect(screen.getByText(/Bem-vindo/)).toBeTruthy();
   });
 
-  it("11. pressionar btn-voltar-convite chama router.back()", () => {
+  it("11. boas-vindas → 'Ver minha agenda' navega para a agenda", async () => {
+    mockUseConvite.mockReturnValue({
+      data: validConvite,
+      isLoading: false,
+      isError: false,
+    });
+    mockAceitarMutate.mockImplementation(
+      (
+        _input: unknown,
+        callbacks: { onSuccess?: (r: typeof aceitarOk) => void },
+      ) => {
+        callbacks?.onSuccess?.(aceitarOk);
+      },
+    );
+
+    render(<ConviteTokenScreen />);
+    fireEvent.press(screen.getByText("Aceitar convite"));
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("btn-aceitar"));
+    });
+    fireEvent.press(screen.getByText("Ver minha agenda"));
+
+    expect(router.replace).toHaveBeenCalledWith("/(barbeiro)/agenda");
+  });
+
+  it("12. btn-voltar-convite chama router.back()", () => {
     mockUseConvite.mockReturnValue({
       data: validConvite,
       isLoading: false,
@@ -185,6 +236,18 @@ describe("ConviteTokenScreen", () => {
     });
     render(<ConviteTokenScreen />);
     fireEvent.press(screen.getByTestId("btn-voltar-convite"));
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it("13. rejeitar convite chama DELETE (useRejeitarConvite) e volta", () => {
+    mockUseConvite.mockReturnValue({
+      data: validConvite,
+      isLoading: false,
+      isError: false,
+    });
+    render(<ConviteTokenScreen />);
+    fireEvent.press(screen.getByTestId("btn-rejeitar"));
+    expect(mockRejeitarMutate).toHaveBeenCalledWith("abc123");
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 });

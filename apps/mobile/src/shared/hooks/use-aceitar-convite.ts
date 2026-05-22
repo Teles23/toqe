@@ -9,12 +9,17 @@ export interface AceitarConviteInput {
 }
 
 export interface AceitarConviteResult {
-  sucesso: boolean;
-  userId: number;
+  access_token: string;
+  refresh_token: string;
+  user: { codigo: number; nome: string; email: string };
+  isNew: boolean;
+  barbeariaNome: string;
 }
 
 /**
- * Aceita um convite de barbearia e vincula o usuário como Barbeiro.
+ * Aceita um convite de barbearia, vincula o usuário e faz **auto-login**:
+ * o backend retorna access/refresh tokens (a posse do link é a prova de
+ * identidade). O chamador usa `establishSession(tokens)` para entrar.
  *
  * Endpoint: POST /convite/:token/aceitar
  * Autenticação: não requerida (endpoint público).

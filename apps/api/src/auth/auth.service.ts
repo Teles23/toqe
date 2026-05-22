@@ -363,6 +363,15 @@ export class AuthService {
     return this.generateTokens(user.codigo, user.nome, user.email);
   }
 
+  /**
+   * Emite tokens (access + refresh) para um usuário já autenticado por outro
+   * meio — ex.: aceite de convite, onde a posse do link enviado por e-mail é
+   * a prova de identidade (auto-login sem senha para usuário existente).
+   */
+  async issueTokens(codigo: number, nome: string, email: string) {
+    return this.generateTokens(codigo, nome, email);
+  }
+
   private async generateTokens(codigo: number, nome: string, email: string) {
     const payload = { sub: codigo, jti: randomUUID() };
     const accessToken = this.jwtService.sign(payload);

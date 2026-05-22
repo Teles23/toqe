@@ -13,6 +13,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useConvite } from "@/src/shared/hooks/cliente/use-convite";
 import { useAceitarConvite } from "@/src/shared/hooks/use-aceitar-convite";
+import { useRejeitarConvite } from "@/src/shared/hooks/use-rejeitar-convite";
+import { useAuth } from "@/src/shared/hooks/use-auth";
 import { ApiError } from "@/src/shared/api/api-client";
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton } from "@/src/shared/ui";
@@ -24,7 +26,7 @@ type ConviteView =
   | "landing"
   | "form"
   | "accepting"
-  | "success"
+  | "welcome"
   | "already_member";
 
 export default function ConviteTokenScreen() {
@@ -34,10 +36,13 @@ export default function ConviteTokenScreen() {
 
   const { data, isLoading, isError } = useConvite(token);
   const { mutate: aceitarConvite } = useAceitarConvite();
+  const { mutate: rejeitarConvite } = useRejeitarConvite();
+  const { establishSession } = useAuth();
 
   const [view, setView] = useState<ConviteView | null>(null);
   const [nome, setNome] = useState("");
   const [senha, setSenha] = useState("");
+  const [welcomeNome, setWelcomeNome] = useState("");
   const [erroConvite, setErroConvite] = useState<string | null>(null);
 
   // Derive current view
@@ -45,7 +50,7 @@ export default function ConviteTokenScreen() {
     if (
       view === "form" ||
       view === "accepting" ||
-      view === "success" ||
+      view === "welcome" ||
       view === "already_member"
     ) {
       return view;
@@ -61,7 +66,12 @@ export default function ConviteTokenScreen() {
     aceitarConvite(
       { token: token!, nome: nome || undefined, senha: senha || undefined },
       {
-        onSuccess: () => setView("success"),
+        onSuccess: async (result) => {
+          // Auto-login: estabelece a sessão a partir dos tokens retornados.
+          setWelcomeNome(result.user.nome);
+          await establishSession(result.access_token, result.refresh_token);
+          setView("welcome");
+        },
         onError: (e) => {
           const status = e instanceof ApiError ? e.status : 0;
           const msg =
@@ -69,12 +79,23 @@ export default function ConviteTokenScreen() {
               ? "Convite já utilizado."
               : status === 404
                 ? "Convite expirado ou não encontrado."
-                : (e.message ?? "Erro ao aceitar convite. Tente novamente.");
+                : status === 401
+                  ? "Senha incorreta."
+                  : status === 400
+                    ? "Senha de ao menos 8 caracteres."
+                    : (e.message ??
+                      "Erro ao aceitar convite. Tente novamente.");
           setErroConvite(msg);
           setView("form");
         },
       },
     );
+  };
+
+  const handleReject = () => {
+    // Remove o token no backend (não cria conta/vínculo) e sai da tela.
+    if (token) rejeitarConvite(token);
+    router.back();
   };
 
   // ─── Loading ─────────────────────────────────────────────────────────────────
@@ -148,8 +169,9 @@ export default function ConviteTokenScreen() {
     );
   }
 
-  // ─── Success ─────────────────────────────────────────────────────────────────
-  if (resolvedView === "success") {
+  // ─── Welcome (slide 04 — boas-vindas após auto-login) ──────────────────────────
+  if (resolvedView === "welcome") {
+    const primeiroNome = welcomeNome.trim().split(/\s+/)[0] || "barbeiro";
     return (
       <View
         testID="convite-success"
@@ -163,15 +185,15 @@ export default function ConviteTokenScreen() {
           <Text style={styles.iconTextGreen}>{"✓"}</Text>
         </View>
         <Text style={[styles.screenTitle, { color: palette.text }]}>
-          Vinculação concluída!
+          {`Bem-vindo,\n${primeiroNome}.`}
         </Text>
         <Text style={[styles.screenSubtitle]}>
-          {`Você agora faz parte da ${data?.barbeariaNome ?? ""}`}
+          {`Você agora faz parte da ${data?.barbeariaNome ?? "equipe"}. Vamos configurar sua agenda?`}
         </Text>
         <AmberButton
-          label="Ir para o app"
-          onPress={() => router.replace("/")}
-          accessibilityLabel="Ir para o app"
+          label="Ver minha agenda"
+          onPress={() => router.replace("/(barbeiro)/agenda")}
+          accessibilityLabel="Ver minha agenda"
         />
       </View>
     );
@@ -381,7 +403,7 @@ export default function ConviteTokenScreen() {
 
       <Pressable
         testID="btn-rejeitar"
-        onPress={() => router.back()}
+        onPress={handleReject}
         accessibilityLabel="Rejeitar convite"
         style={styles.rejeitarBtn}
       >

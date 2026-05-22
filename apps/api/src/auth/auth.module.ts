@@ -35,5 +35,6 @@ import {
     // testes de integração substituem via overrideProvider com stub determinístico.
     { provide: GOOGLE_TOKEN_VERIFIER, useClass: GoogleAuthLibraryVerifier },
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}

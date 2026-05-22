@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Body,
   HttpCode,
@@ -30,9 +31,13 @@ export class ConviteController {
   @Post(':token/aceitar')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Aceita um convite e cria/vincula usuário à barbearia',
+    summary:
+      'Aceita um convite, cria/vincula usuário e faz auto-login (retorna tokens)',
   })
-  @ApiResponse({ status: 200, description: 'Convite aceito. Retorna userId.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Convite aceito. Retorna access/refresh tokens (auto-login).',
+  })
   @ApiResponse({
     status: 400,
     description: 'Dados inválidos ou convite já utilizado.',
@@ -46,5 +51,13 @@ export class ConviteController {
     @Body() dto: AceitarConviteDto,
   ) {
     return this.conviteService.aceitarConvite(token, dto);
+  }
+
+  @Delete(':token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rejeita um convite (remove o token)' })
+  @ApiResponse({ status: 200, description: 'Convite rejeitado.' })
+  rejeitarConvite(@Param('token') token: string) {
+    return this.conviteService.rejeitarConvite(token);
   }
 }
