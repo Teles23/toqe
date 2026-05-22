@@ -7,7 +7,9 @@ import { useAuth } from "@/src/shared/hooks/use-auth";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    // expo-notifications 0.32+ substituiu `shouldShowAlert` por banner + list.
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
