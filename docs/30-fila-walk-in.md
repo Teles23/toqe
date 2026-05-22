@@ -158,5 +158,39 @@ pnpm --filter api test:integration
 
 ## Conhecidos / TODO futuro
 
-- Se o POST `/agendamentos` falhar após o POST `/clientes`, o cliente fica órfão. Mitigar criando endpoint transacional `POST /walk-ins` no backend (envelope cliente+agendamento atômico) numa próxima fase.
+- ✅ **Resolvido** — endpoint transacional `POST /agendamentos/walk-in` (ver seção abaixo). O fluxo antigo de duas chamadas deixava cliente órfão e usava o `clienteId` errado.
 - "Fila geral" (sem barbeiro fixo, próximo barbeiro disponível pega da fila) não é suportada — precisa migration de `barbeiroId` para nullable + endpoint "pegar próximo". Não há demanda atual.
+
+---
+
+## Atualização — walk-in atômico (`POST /agendamentos/walk-in`)
+
+**Por que:** o fluxo anterior fazia **duas** chamadas a partir do mobile — `POST /barbearias/:cod/clientes` e depois `POST /agendamentos`. Dois bugs reais decorriam disso:
+
+1. **`clienteId` errado** — `POST /barbearias/:cod/clientes` retorna um `MembroBarbearia`, cujo `codigo` é o **PK do membro** (autoincrement próprio). O hook usava esse `codigo` como `clienteId`, mas `Agendamento.clienteId` é FK para **`Usuario.codigo`**. Resultado: violação de FK (ou agendamento apontando para o usuário errado) → o `POST /agendamentos` falhava com o cliente já criado (sintoma "toast de erro + cliente aparece em Clientes").
+2. **Role** — `POST /barbearias/:cod/clientes` exige `dono/gerente/recepcionista`; um **barbeiro** (a persona do walk-in) tomava 403 na criação do cliente.
+
+**Correção:** uma única chamada autenticada a `POST /agendamentos/walk-in` que cria/reaproveita o cliente **e** o agendamento na **mesma transação**. Se o agendamento falha, o cliente recém-criado é desfeito junto — sem órfão. A rota é autorizada para `barbeiro`. A notificação é best-effort (falha de fila não derruba um walk-in já gravado).
+
+| Arquivo                                                      | Mudança                                                                                                                                  |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/contracts/src/schemas/agendamento.ts`              | `createWalkInSchema` (`cliente` XOR `clienteId`) + tipo `CreateWalkInInput`                                                              |
+| `apps/api/src/agendamento/dto/create-walk-in.dto.ts`         | DTO novo                                                                                                                                 |
+| `apps/api/src/agendamento/agendamento.controller.ts`         | `POST /agendamentos/walk-in` (`@Roles` inclui `barbeiro`)                                                                                |
+| `apps/api/src/agendamento/agendamento.service.ts`            | `createWalkIn()` transacional; usa `membro.usuario.codigo` como `clienteId`; notificação best-effort; helper `buildNotificacaoJob` (DRY) |
+| `apps/api/src/barbearia/membro-barbearia.service.ts`         | `findOrCreateCliente`/`upsertClienteUsuario` aceitam `tx` opcional (participam da transação do walk-in)                                  |
+| `apps/api/src/agendamento/agendamento.module.ts`             | importa `BarbeariaModule` (injeta `MembroBarbeariaService`)                                                                              |
+| `apps/mobile/src/shared/hooks/barbeiro/use-criar-walk-in.ts` | uma única chamada a `/agendamentos/walk-in` (envia `cliente` OU `clienteId`; `inicio` é do servidor)                                     |
+
+```http
+POST /agendamentos/walk-in
+Header: x-tenant-id: 7
+Authorization: Bearer <token>
+
+{ "barbeiroId": 99, "servicosIds": [1, 3], "cliente": { "nome": "João", "email": "joao@x.com" } }
+# — ou, para cliente existente: { "barbeiroId": 99, "servicosIds": [1], "clienteId": 42 }
+
+→ 201 { "codigo": 555, "tipo": "WALK_IN", "status": "PENDENTE", ... }
+```
+
+**Testes:** `agendamento.service.spec.ts` (+4: atomicidade/clienteId correto, clienteId existente, serviço inexistente, notificação best-effort), `agendamento.controller.spec.ts` (+1: delega `criarWalkIn`), `use-criar-walk-in.test.tsx` (chamada única; `cliente` XOR `clienteId`).

@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '../generated/prisma';
 import * as bcrypt from 'bcrypt';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
 import { CriarClienteRapidoDto } from './dto/criar-cliente-rapido.dto';
@@ -194,16 +195,24 @@ export class MembroBarbeariaService {
   }
 
   /**
-   * Versão idempotente usada pelo fluxo de booking público.
+   * Versão idempotente usada pelos fluxos de booking público e walk-in.
    *
    * Diferente de `criarCliente`, NÃO lança se o usuário já estiver vinculado
    * à barbearia — apenas retorna o membro existente. Permite que clientes
    * recorrentes voltem a agendar sem fricção.
+   *
+   * Aceita um `tx` opcional para participar de uma transação maior (ex.: o
+   * walk-in cria cliente + agendamento atomicamente — se o agendamento falha,
+   * o cliente recém-criado é desfeito junto).
    */
-  async findOrCreateCliente(barCodigo: number, dto: CriarClienteRapidoDto) {
-    const { usuario } = await this.upsertClienteUsuario(barCodigo, dto);
+  async findOrCreateCliente(
+    barCodigo: number,
+    dto: CriarClienteRapidoDto,
+    tx: Prisma.TransactionClient = this.prisma,
+  ) {
+    const { usuario } = await this.upsertClienteUsuario(barCodigo, dto, tx);
 
-    const jaMembro = await this.prisma.membroBarbearia.findUnique({
+    const jaMembro = await tx.membroBarbearia.findUnique({
       where: { barCodigo_usrCodigo: { barCodigo, usrCodigo: usuario.codigo } },
       include: {
         usuario: { select: { codigo: true, nome: true, email: true } },
@@ -211,7 +220,7 @@ export class MembroBarbeariaService {
     });
     if (jaMembro) return jaMembro;
 
-    return this.prisma.membroBarbearia.create({
+    return tx.membroBarbearia.create({
       data: { barCodigo, usrCodigo: usuario.codigo, perfil: 'cliente' },
       include: {
         usuario: { select: { codigo: true, nome: true, email: true } },
@@ -222,15 +231,16 @@ export class MembroBarbeariaService {
   private async upsertClienteUsuario(
     barCodigo: number,
     dto: CriarClienteRapidoDto,
+    tx: Prisma.TransactionClient = this.prisma,
   ) {
-    let usuario = await this.prisma.usuario.findUnique({
+    let usuario = await tx.usuario.findUnique({
       where: { email: dto.email },
     });
 
     if (!usuario) {
       const tempSenha = Math.random().toString(36).slice(-10);
       const senhaHash = await bcrypt.hash(tempSenha, await bcrypt.genSalt());
-      usuario = await this.prisma.usuario.create({
+      usuario = await tx.usuario.create({
         data: {
           nome: dto.nome,
           email: dto.email,
@@ -240,7 +250,7 @@ export class MembroBarbeariaService {
       });
     }
 
-    const jaEraMembro = await this.prisma.membroBarbearia.findUnique({
+    const jaEraMembro = await tx.membroBarbearia.findUnique({
       where: { barCodigo_usrCodigo: { barCodigo, usrCodigo: usuario.codigo } },
     });
 

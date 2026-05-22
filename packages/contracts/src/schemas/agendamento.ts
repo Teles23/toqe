@@ -34,6 +34,29 @@ export const createAgendamentoSchema = z.object({
     .or(z.literal("")),
 });
 
+// Walk-in autenticado (barbeiro/recepção) — cria cliente + agendamento de forma
+// ATÔMICA no backend. Resolve o orphan-client: ou `cliente` (cria/reaproveita o
+// usuário) ou `clienteId` (existente), nunca os dois. `inicio` é definido pelo
+// servidor (agora), pois walk-in = cliente chegou agora.
+export const createWalkInSchema = z
+  .object({
+    barbeiroId: z
+      .number({ invalid_type_error: "Selecione um barbeiro" })
+      .int()
+      .positive("Barbeiro inválido"),
+
+    servicosIds: z
+      .array(z.number().int().positive())
+      .min(1, "Selecione ao menos um serviço"),
+
+    cliente: criarClienteRapidoSchema.optional(),
+
+    clienteId: z.number().int().positive("Cliente inválido").optional(),
+  })
+  .refine((d) => (d.cliente == null) !== (d.clienteId == null), {
+    message: "Forneça `cliente` (novo) ou `clienteId` (existente), nunca ambos",
+  });
+
 // Booking público (sem autenticação) — cliente é criado/reaproveitado pelo
 // próprio fluxo. `barbeiroId` aceita 0 para "qualquer barbeiro disponível"
 // (o service escolhe um automaticamente). `servicosIds` reusa as regras do
@@ -82,6 +105,7 @@ export type CreateAgendamentoInput = z.infer<typeof createAgendamentoSchema>;
 export type CreatePublicAgendamentoInput = z.infer<
   typeof createPublicAgendamentoSchema
 >;
+export type CreateWalkInInput = z.infer<typeof createWalkInSchema>;
 export type PatchStatusAgendamentoInput = z.infer<
   typeof patchStatusAgendamentoSchema
 >;

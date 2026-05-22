@@ -4,14 +4,18 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
+import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
+import { AgendamentoConfirmadoJob } from '../notificacao/notificacao.types';
+import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { Prisma } from '../generated/prisma';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
@@ -25,10 +29,13 @@ const INCLUDE_COMPLETO = {
 
 @Injectable()
 export class AgendamentoService {
+  private readonly logger = new Logger(AgendamentoService.name);
+
   constructor(
     private prisma: PrismaService,
     private notificacaoProducer: NotificacaoProducer,
     private agendaGateway: AgendaGateway,
+    private membroService: MembroBarbeariaService,
   ) {}
 
   async create(dto: CreateAgendamentoDto, barCodigo: number) {
@@ -91,7 +98,97 @@ export class AgendamentoService {
       });
     });
 
-    await this.notificacaoProducer.agendamentoConfirmado({
+    await this.notificacaoProducer.agendamentoConfirmado(
+      this.buildNotificacaoJob(agendamento, servicos),
+    );
+
+    this.agendaGateway.emitAgendamentoCriado(barCodigo, agendamento);
+
+    return agendamento;
+  }
+
+  /**
+   * Cria um walk-in (encaixe) de forma ATÔMICA: numa única transação, cria/
+   * reaproveita o cliente e cria o agendamento tipo WALK_IN. Se o agendamento
+   * falha, o cliente recém-criado é desfeito junto — sem cliente órfão.
+   *
+   * Atende a persona barbeiro diretamente (a rota é autorizada para barbeiro),
+   * sem depender de `POST /barbearias/:cod/clientes` (que exige dono/gerente).
+   *
+   * `inicio` é definido pelo servidor (agora) — walk-in = cliente chegou agora.
+   * A notificação é best-effort: falha de fila NÃO derruba um walk-in já gravado.
+   */
+  async createWalkIn(dto: CreateWalkInDto, barCodigo: number) {
+    const servicos = await this.prisma.servico.findMany({
+      where: { codigo: { in: dto.servicosIds }, barCodigo },
+      include: { barbeiros: { where: { barbeiroId: dto.barbeiroId } } },
+    });
+
+    if (servicos.length !== dto.servicosIds.length) {
+      throw new BadRequestException(
+        'Alguns serviços não foram encontrados ou não pertencem a esta barbearia',
+      );
+    }
+
+    const { itensData, totalDuration } = this.buildItensData(
+      servicos,
+      barCodigo,
+    );
+
+    const inicioDate = new Date();
+    const fimDate = addMinutes(inicioDate, totalDuration);
+
+    const agendamento = await this.prisma.$transaction(async (tx) => {
+      let clienteId = dto.clienteId;
+      if (clienteId == null && dto.cliente) {
+        const membro = await this.membroService.findOrCreateCliente(
+          barCodigo,
+          dto.cliente,
+          tx,
+        );
+        // `clienteId` do agendamento referencia Usuario.codigo (não o PK do membro).
+        clienteId = membro.usuario.codigo;
+      }
+
+      return tx.agendamento.create({
+        data: {
+          barbeiroId: dto.barbeiroId,
+          clienteId: clienteId!,
+          barCodigo,
+          inicio: inicioDate,
+          fim: fimDate,
+          status: StatusAgendamento.PENDENTE,
+          tipo: 'WALK_IN',
+          itens: { create: itensData },
+        },
+        include: INCLUDE_COMPLETO,
+      });
+    });
+
+    try {
+      await this.notificacaoProducer.agendamentoConfirmado(
+        this.buildNotificacaoJob(agendamento, servicos),
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Walk-in ${agendamento.codigo} criado, mas falha ao enfileirar notificação: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+
+    this.agendaGateway.emitAgendamentoCriado(barCodigo, agendamento);
+
+    return agendamento;
+  }
+
+  private buildNotificacaoJob(
+    agendamento: Prisma.AgendamentoGetPayload<{
+      include: typeof INCLUDE_COMPLETO;
+    }>,
+    servicos: { nome: string }[],
+  ): AgendamentoConfirmadoJob {
+    return {
       agendamentoCodigo: agendamento.codigo,
       clienteNome: agendamento.cliente.nome,
       clienteEmail: agendamento.cliente.email,
@@ -100,11 +197,7 @@ export class AgendamentoService {
       inicio: agendamento.inicio.toISOString(),
       fim: agendamento.fim.toISOString(),
       servicos: servicos.map((s) => s.nome),
-    });
-
-    this.agendaGateway.emitAgendamentoCriado(barCodigo, agendamento);
-
-    return agendamento;
+    };
   }
 
   meusAgendamentos(clienteId: number, barCodigo: number) {

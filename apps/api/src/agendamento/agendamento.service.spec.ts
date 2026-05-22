@@ -9,8 +9,10 @@ import { AgendamentoService } from './agendamento.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendaGateway } from '../agenda/agenda.gateway';
+import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
+import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import {
   PatchStatusAgendamentoDto,
@@ -27,6 +29,10 @@ const mockAgendaGateway = {
   emitStatusAtualizado: jest.fn(),
 };
 
+const mockMembroService = {
+  findOrCreateCliente: jest.fn(),
+};
+
 describe('AgendamentoService', () => {
   let service: AgendamentoService;
 
@@ -37,6 +43,7 @@ describe('AgendamentoService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: NotificacaoProducer, useValue: mockNotificacaoProducer },
         { provide: AgendaGateway, useValue: mockAgendaGateway },
+        { provide: MembroBarbeariaService, useValue: mockMembroService },
       ],
     }).compile();
     service = module.get(AgendamentoService);
@@ -138,6 +145,124 @@ describe('AgendamentoService', () => {
       await expect(service.create(dto, barCodigo)).rejects.toThrow(
         ConflictException,
       );
+    });
+  });
+
+  describe('createWalkIn', () => {
+    const servicoMock = {
+      codigo: 1,
+      nome: 'Corte',
+      duracaoBase: 30,
+      precoBase: 25,
+      barbeiros: [],
+    };
+
+    function mockWalkInTx() {
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: unknown) => unknown) => {
+          const tx = {
+            agendamento: {
+              create: jest.fn().mockResolvedValue({
+                ...mockAgendamento,
+                status: 'PENDENTE',
+                tipo: 'WALK_IN',
+              }),
+            },
+          };
+          return fn(tx);
+        },
+      );
+    }
+
+    it('cria cliente + walk-in atomicamente e usa Usuario.codigo como clienteId', async () => {
+      const dto: CreateWalkInDto = {
+        barbeiroId: 10,
+        servicosIds: [1],
+        cliente: { nome: 'João', email: 'j@x.com' },
+      };
+      mockPrisma.servico.findMany.mockResolvedValue([servicoMock]);
+      // findOrCreateCliente devolve o MEMBRO (PK próprio) com o usuário aninhado.
+      mockMembroService.findOrCreateCliente.mockResolvedValue({
+        codigo: 555, // PK do membro — NÃO deve virar clienteId
+        usuario: { codigo: 20, nome: 'João', email: 'j@x.com' },
+      });
+
+      let capturedClienteId: number | undefined;
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: unknown) => unknown) => {
+          const tx = {
+            agendamento: {
+              create: jest.fn().mockImplementation((args: unknown) => {
+                capturedClienteId = (args as { data: { clienteId: number } })
+                  .data.clienteId;
+                return Promise.resolve({
+                  ...mockAgendamento,
+                  status: 'PENDENTE',
+                  tipo: 'WALK_IN',
+                });
+              }),
+            },
+          };
+          return fn(tx);
+        },
+      );
+
+      const result = await service.createWalkIn(dto, barCodigo);
+
+      expect(mockMembroService.findOrCreateCliente).toHaveBeenCalledWith(
+        barCodigo,
+        dto.cliente,
+        expect.anything(),
+      );
+      expect(capturedClienteId).toBe(20); // Usuario.codigo, não o membro 555
+      expect(result).toHaveProperty('tipo', 'WALK_IN');
+      expect(mockAgendaGateway.emitAgendamentoCriado).toHaveBeenCalled();
+    });
+
+    it('usa clienteId existente sem criar cliente', async () => {
+      const dto: CreateWalkInDto = {
+        barbeiroId: 10,
+        servicosIds: [1],
+        clienteId: 77,
+      };
+      mockPrisma.servico.findMany.mockResolvedValue([servicoMock]);
+      mockWalkInTx();
+
+      await service.createWalkIn(dto, barCodigo);
+
+      expect(mockMembroService.findOrCreateCliente).not.toHaveBeenCalled();
+    });
+
+    it('lança BadRequestException se serviço não encontrado', async () => {
+      const dto: CreateWalkInDto = {
+        barbeiroId: 10,
+        servicosIds: [999],
+        cliente: { nome: 'João', email: 'j@x.com' },
+      };
+      mockPrisma.servico.findMany.mockResolvedValue([]);
+
+      await expect(service.createWalkIn(dto, barCodigo)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockMembroService.findOrCreateCliente).not.toHaveBeenCalled();
+    });
+
+    it('não derruba o walk-in se a notificação falha (best-effort)', async () => {
+      const dto: CreateWalkInDto = {
+        barbeiroId: 10,
+        servicosIds: [1],
+        clienteId: 77,
+      };
+      mockPrisma.servico.findMany.mockResolvedValue([servicoMock]);
+      mockWalkInTx();
+      mockNotificacaoProducer.agendamentoConfirmado.mockRejectedValueOnce(
+        new Error('redis down'),
+      );
+
+      const result = await service.createWalkIn(dto, barCodigo);
+
+      expect(result).toHaveProperty('tipo', 'WALK_IN');
+      expect(mockAgendaGateway.emitAgendamentoCriado).toHaveBeenCalled();
     });
   });
 

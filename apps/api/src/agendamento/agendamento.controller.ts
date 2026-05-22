@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { AgendamentoService } from './agendamento.service';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
+import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
@@ -50,6 +51,21 @@ export class AgendamentoController {
     @Headers('x-tenant-id') barCodigo: string,
   ) {
     return this.agendamentoService.create(dto, Number(barCodigo));
+  }
+
+  @Post('walk-in')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
+  @ApiOperation({
+    summary:
+      'Cria um walk-in (encaixe) — cria/reaproveita o cliente e o agendamento atomicamente',
+  })
+  @ApiResponse({ status: 201, description: 'Walk-in criado.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  criarWalkIn(
+    @Body() dto: CreateWalkInDto,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
+    return this.agendamentoService.createWalkIn(dto, Number(barCodigo));
   }
 
   @Get()

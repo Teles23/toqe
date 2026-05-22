@@ -15,6 +15,7 @@ const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
 
 const mockAgendamentoService = {
   create: jest.fn(),
+  createWalkIn: jest.fn(),
   findAll: jest.fn(),
   findOne: jest.fn(),
   findOneForCliente: jest.fn(),
@@ -60,6 +61,21 @@ describe('AgendamentoController', () => {
       void controller.create(dto, '3');
 
       expect(mockAgendamentoService.create).toHaveBeenCalledWith(dto, 3);
+    });
+  });
+
+  describe('criarWalkIn', () => {
+    it('delega para service.createWalkIn com barCodigo convertido', () => {
+      const dto = {
+        barbeiroId: 5,
+        servicosIds: [1],
+        cliente: { nome: 'João', email: 'j@x.com' },
+      } as never;
+      mockAgendamentoService.createWalkIn.mockResolvedValue({ codigo: 1 });
+
+      void controller.criarWalkIn(dto, '3');
+
+      expect(mockAgendamentoService.createWalkIn).toHaveBeenCalledWith(dto, 3);
     });
   });
 

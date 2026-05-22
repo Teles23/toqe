@@ -45,10 +45,8 @@ describe("useCriarWalkIn", () => {
     });
   });
 
-  it("orquestra POST cliente + POST agendamento com cliente novo", async () => {
-    mockPost
-      .mockResolvedValueOnce({ codigo: 123, nome: "João", email: "j@x.com" })
-      .mockResolvedValueOnce({ codigo: 999, tipo: "WALK_IN" });
+  it("faz UMA chamada atômica a /agendamentos/walk-in com cliente novo", async () => {
+    mockPost.mockResolvedValueOnce({ codigo: 999, tipo: "WALK_IN" });
 
     const { result } = renderHook(() => useCriarWalkIn(), { wrapper });
 
@@ -60,27 +58,23 @@ describe("useCriarWalkIn", () => {
       });
     });
 
-    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1));
 
-    // 1ª chamada: POST /barbearias/:codigo/clientes
-    expect(mockPost.mock.calls[0][0]).toBe("/barbearias/7/clientes");
-    expect(mockPost.mock.calls[0][1]).toEqual({
+    expect(mockPost.mock.calls[0][0]).toBe("/agendamentos/walk-in");
+    const payload = mockPost.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload.barbeiroId).toBe(42);
+    expect(payload.servicosIds).toEqual([1]);
+    expect(payload.cliente).toEqual({
       nome: "João",
       email: "j@x.com",
       telefone: "1199",
     });
-
-    // 2ª chamada: POST /agendamentos com clienteId retornado da 1ª
-    expect(mockPost.mock.calls[1][0]).toBe("/agendamentos");
-    const agdPayload = mockPost.mock.calls[1][1] as Record<string, unknown>;
-    expect(agdPayload.tipo).toBe("WALK_IN");
-    expect(agdPayload.clienteId).toBe(123);
-    expect(agdPayload.barbeiroId).toBe(42);
-    expect(agdPayload.servicosIds).toEqual([1]);
-    expect(agdPayload.inicio).toEqual(expect.stringMatching(/^\d{4}-/));
+    // sem clienteId quando é cliente novo; inicio é definido pelo servidor
+    expect(payload.clienteId).toBeUndefined();
+    expect(payload.inicio).toBeUndefined();
   });
 
-  it("pula criação de cliente quando clienteId já fornecido", async () => {
+  it("envia clienteId (sem objeto cliente) quando cliente já existe", async () => {
     mockPost.mockResolvedValueOnce({ codigo: 999 });
 
     const { result } = renderHook(() => useCriarWalkIn(), { wrapper });
@@ -94,10 +88,10 @@ describe("useCriarWalkIn", () => {
     });
 
     expect(mockPost).toHaveBeenCalledTimes(1);
-    expect(mockPost.mock.calls[0][0]).toBe("/agendamentos");
-    expect(
-      (mockPost.mock.calls[0][1] as Record<string, unknown>).clienteId,
-    ).toBe(555);
+    expect(mockPost.mock.calls[0][0]).toBe("/agendamentos/walk-in");
+    const payload = mockPost.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload.clienteId).toBe(555);
+    expect(payload.cliente).toBeUndefined();
   });
 
   it("rejeita se nem cliente nem clienteId forem fornecidos", async () => {

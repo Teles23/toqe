@@ -4,9 +4,10 @@ import { AgendamentoController } from './agendamento.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificacaoModule } from '../notificacao/notificacao.module';
 import { AgendaModule } from '../agenda/agenda.module';
+import { BarbeariaModule } from '../barbearia/barbearia.module';
 
 @Module({
-  imports: [PrismaModule, NotificacaoModule, AgendaModule],
+  imports: [PrismaModule, NotificacaoModule, AgendaModule, BarbeariaModule],
   controllers: [AgendamentoController],
   providers: [AgendamentoService],
   exports: [AgendamentoService],

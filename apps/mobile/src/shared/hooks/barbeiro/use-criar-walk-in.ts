@@ -5,12 +5,6 @@ import { useAuth } from "@/src/shared/hooks/use-auth";
 import type { AgendamentoResponse } from "@toqe/shared";
 import type { CriarClienteRapidoInput } from "@toqe/contracts";
 
-interface ClienteResponse {
-  codigo: number;
-  nome: string;
-  email: string;
-}
-
 export interface CriarWalkInInput {
   /** Dados do cliente novo. Se omitido, usar `clienteId` existente. */
   cliente?: CriarClienteRapidoInput;
@@ -21,46 +15,36 @@ export interface CriarWalkInInput {
 }
 
 /**
- * Orquestra a criação de um walk-in:
- *   1. Se `cliente` foi passado: POST /barbearias/:codigo/clientes (cria cliente novo)
- *   2. POST /agendamentos { tipo: 'WALK_IN', inicio: now(), ... }
+ * Cria um walk-in numa ÚNICA chamada atômica ao backend
+ * (`POST /agendamentos/walk-in`): o servidor cria/reaproveita o cliente e o
+ * agendamento na mesma transação. Se o agendamento falha, o cliente não é
+ * persistido — sem cliente órfão (o bug do fluxo anterior de duas chamadas).
  *
- * Reusa `criarClienteRapidoSchema` de `@toqe/contracts` (já existe).
+ * Reusa `criarClienteRapidoSchema` de `@toqe/contracts`. `inicio` é definido
+ * pelo servidor (agora).
  *
- * onSuccess: invalida queryKeys ['fila'] e ['agendamentos'] para refletir
- * o novo walk-in em todas as listas relacionadas.
- *
- * TODO: se a 2ª chamada falhar, o cliente fica órfão no DB. Mitigar com
- * endpoint transacional no backend numa próxima fase.
+ * onSuccess: invalida ['fila'] e ['agendamentos'] para refletir o novo walk-in.
  */
 export function useCriarWalkIn() {
   const { barbearia } = useAuth();
   const qc = useQueryClient();
 
   return useMutation<AgendamentoResponse, Error, CriarWalkInInput>({
-    mutationFn: async (input) => {
+    mutationFn: (input) => {
       if (!input.cliente && !input.clienteId) {
         throw new Error("Forneça `cliente` (criar novo) ou `clienteId`");
       }
 
-      const tenant = tenantApi(barbearia!.codigo);
-
-      let clienteId = input.clienteId;
-      if (!clienteId && input.cliente) {
-        const novoCliente = await tenant.post<ClienteResponse>(
-          `/barbearias/${barbearia!.codigo}/clientes`,
-          input.cliente,
-        );
-        clienteId = novoCliente.codigo;
-      }
-
-      return tenant.post<AgendamentoResponse>("/agendamentos", {
-        barbeiroId: input.barbeiroId,
-        clienteId,
-        servicosIds: input.servicosIds,
-        inicio: new Date().toISOString(),
-        tipo: "WALK_IN",
-      });
+      return tenantApi(barbearia!.codigo).post<AgendamentoResponse>(
+        "/agendamentos/walk-in",
+        {
+          barbeiroId: input.barbeiroId,
+          servicosIds: input.servicosIds,
+          ...(input.clienteId
+            ? { clienteId: input.clienteId }
+            : { cliente: input.cliente }),
+        },
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["fila"] });
