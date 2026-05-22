@@ -1,5 +1,9 @@
+// Convite — exercita os hooks reais (useConvite, useAceitarConvite,
+// useRejeitarConvite) + api-client real. Só o boundary HTTP (global.fetch) e a
+// sessão (useAuth.establishSession) são mockados.
+
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue(null),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -15,41 +19,25 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(() => ({ token: "abc123" })),
 }));
 
-jest.mock("@/src/shared/hooks/cliente/use-convite", () => ({
-  useConvite: jest.fn(),
-}));
-
-const mockAceitarMutate = jest.fn();
-jest.mock("@/src/shared/hooks/use-aceitar-convite", () => ({
-  useAceitarConvite: () => ({ mutate: mockAceitarMutate }),
-}));
-
-const mockRejeitarMutate = jest.fn();
-jest.mock("@/src/shared/hooks/use-rejeitar-convite", () => ({
-  useRejeitarConvite: () => ({ mutate: mockRejeitarMutate }),
-}));
-
 const mockEstablishSession = jest.fn().mockResolvedValue(null);
 jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: () => ({ establishSession: mockEstablishSession }),
 }));
 
-const aceitarOk = {
-  access_token: "acc",
-  refresh_token: "ref",
-  user: { codigo: 1, nome: "Carlos Mendes", email: "joao@test.com" },
-  isNew: true,
-  barbeariaNome: "Urban Flow Barber",
-};
-
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { router } from "expo-router";
 
-import { useConvite } from "@/src/shared/hooks/cliente/use-convite";
 import ConviteTokenScreen from "../[token]";
 
-const mockUseConvite = useConvite as jest.Mock;
+const originalFetch = global.fetch;
 
 const validConvite = {
   token: "abc123",
@@ -61,193 +49,173 @@ const validConvite = {
   isNew: true,
 };
 
+const aceitarOk = {
+  access_token: "acc",
+  refresh_token: "ref",
+  user: { codigo: 1, nome: "Carlos Mendes", email: "joao@test.com" },
+  isNew: true,
+  barbeariaNome: "Urban Flow Barber",
+};
+
+function makeRes(body: unknown, status = 200) {
+  return {
+    ok: status < 400,
+    status,
+    url: "http://localhost:3000/api/v1/convite/abc123",
+    json: async () => body,
+  };
+}
+
+/** Roteia GET/POST/DELETE em /convite/:token. `convite` é o GET; `aceitar`
+ *  controla o POST (`"ok"` resolve, `"hang"` fica pendente). */
+function setupFetch(opts: {
+  conviteStatus?: number;
+  convite?: unknown;
+  aceitar?: "ok" | "hang";
+}) {
+  const { conviteStatus = 200, convite = validConvite, aceitar = "ok" } = opts;
+  global.fetch = jest.fn(async (url: unknown, init?: { method?: string }) => {
+    const u = String(url);
+    const m = (init?.method ?? "GET").toUpperCase();
+    if (m === "POST" && u.includes("/aceitar")) {
+      if (aceitar === "hang") return new Promise<never>(() => {});
+      return makeRes(aceitarOk);
+    }
+    if (m === "DELETE") return makeRes({ sucesso: true });
+    if (m === "GET" && u.includes("/convite/")) {
+      return makeRes(convite, conviteStatus);
+    }
+    return makeRes(null);
+  }) as unknown as typeof fetch;
+}
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+function renderScreen() {
+  return render(<ConviteTokenScreen />, { wrapper });
+}
+
 describe("ConviteTokenScreen", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    mockUseConvite.mockReset();
-    mockAceitarMutate.mockReset();
-    mockRejeitarMutate.mockReset();
-    mockEstablishSession.mockClear();
-    (router.back as jest.Mock).mockReset();
-    (router.replace as jest.Mock).mockReset();
+    jest.clearAllMocks();
+    mockEstablishSession.mockResolvedValue(null);
+  });
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it("1. mostra loading quando isLoading=true", () => {
-    mockUseConvite.mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    // ActivityIndicator is rendered; no landing or expired
+  it("1. mostra loading enquanto a query do convite está pendente", () => {
+    global.fetch = jest.fn(
+      () => new Promise<never>(() => {}),
+    ) as unknown as typeof fetch;
+    renderScreen();
     expect(screen.queryByTestId("convite-expirado")).toBeNull();
     expect(screen.queryByTestId("convite-landing")).toBeNull();
   });
 
-  it("2. mostra convite-expirado quando isError=true", () => {
-    mockUseConvite.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: true,
-    });
-    render(<ConviteTokenScreen />);
-    expect(screen.getByTestId("convite-expirado")).toBeTruthy();
+  it("2. mostra convite-expirado quando a API erra (500)", async () => {
+    setupFetch({ conviteStatus: 500, convite: { message: "erro" } });
+    renderScreen();
+    expect(await screen.findByTestId("convite-expirado")).toBeTruthy();
   });
 
-  it("3. mostra convite-expirado quando data=null", () => {
-    mockUseConvite.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    expect(screen.getByTestId("convite-expirado")).toBeTruthy();
+  it("3. mostra convite-expirado quando a API responde 404 (null)", async () => {
+    setupFetch({ conviteStatus: 404, convite: { message: "not found" } });
+    renderScreen();
+    expect(await screen.findByTestId("convite-expirado")).toBeTruthy();
   });
 
-  it("4. mostra convite-landing quando data é válido", () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    expect(screen.getByTestId("convite-landing")).toBeTruthy();
+  it("4. mostra convite-landing quando o convite é válido", async () => {
+    setupFetch({});
+    renderScreen();
+    expect(await screen.findByTestId("convite-landing")).toBeTruthy();
   });
 
-  it("5. landing mostra nome da barbearia", () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    expect(screen.getByText("Urban Flow Barber")).toBeTruthy();
+  it("5. landing mostra nome da barbearia", async () => {
+    setupFetch({});
+    renderScreen();
+    expect(await screen.findByText("Urban Flow Barber")).toBeTruthy();
   });
 
-  it("6. landing mostra o e-mail do convite", () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    expect(screen.getByText("joao@test.com")).toBeTruthy();
+  it("6. landing mostra o e-mail do convite", async () => {
+    setupFetch({});
+    renderScreen();
+    expect(await screen.findByText("joao@test.com")).toBeTruthy();
   });
 
-  it("7. pressionar Aceitar convite mostra formulário com input-nome para novo usuário", () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    fireEvent.press(screen.getByText("Aceitar convite"));
+  it("7. Aceitar convite mostra input-nome + input-senha (usuário novo)", async () => {
+    setupFetch({});
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
     expect(screen.getByTestId("input-nome")).toBeTruthy();
     expect(screen.getByTestId("input-senha")).toBeTruthy();
   });
 
-  it("8. para usuário existente (isNew=false) mostra apenas input-senha no formulário", () => {
-    mockUseConvite.mockReturnValue({
-      data: { ...validConvite, isNew: false },
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    fireEvent.press(screen.getByText("Aceitar convite"));
+  it("8. usuário existente (isNew=false) mostra só input-senha", async () => {
+    setupFetch({ convite: { ...validConvite, isNew: false } });
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
     expect(screen.queryByTestId("input-nome")).toBeNull();
     expect(screen.getByTestId("input-senha")).toBeTruthy();
   });
 
-  it("9. pressionar btn-aceitar mostra estado convite-accepting", async () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    fireEvent.press(screen.getByText("Aceitar convite"));
+  it("9. btn-aceitar mostra estado convite-accepting", async () => {
+    setupFetch({ aceitar: "hang" });
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
     fireEvent.press(screen.getByTestId("btn-aceitar"));
-    // Should immediately show accepting state before timer resolves
-    expect(screen.getByTestId("convite-accepting")).toBeTruthy();
+    expect(await screen.findByTestId("convite-accepting")).toBeTruthy();
   });
 
-  it("10. onSuccess faz auto-login (establishSession) e mostra boas-vindas", async () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    // Simula mutate que chama onSuccess com a resposta de auto-login
-    mockAceitarMutate.mockImplementation(
-      (
-        _input: unknown,
-        callbacks: { onSuccess?: (r: typeof aceitarOk) => void },
-      ) => {
-        callbacks?.onSuccess?.(aceitarOk);
-      },
-    );
-
-    render(<ConviteTokenScreen />);
-    fireEvent.press(screen.getByText("Aceitar convite"));
-
+  it("10. sucesso faz auto-login (establishSession) e mostra boas-vindas", async () => {
+    setupFetch({ aceitar: "ok" });
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
     await act(async () => {
       fireEvent.press(screen.getByTestId("btn-aceitar"));
     });
 
-    expect(mockEstablishSession).toHaveBeenCalledWith("acc", "ref");
-    expect(screen.getByTestId("convite-success")).toBeTruthy();
+    await waitFor(() =>
+      expect(mockEstablishSession).toHaveBeenCalledWith("acc", "ref"),
+    );
+    expect(await screen.findByTestId("convite-success")).toBeTruthy();
     expect(screen.getByText(/Bem-vindo/)).toBeTruthy();
   });
 
   it("11. boas-vindas → 'Ver minha agenda' navega para a agenda", async () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    mockAceitarMutate.mockImplementation(
-      (
-        _input: unknown,
-        callbacks: { onSuccess?: (r: typeof aceitarOk) => void },
-      ) => {
-        callbacks?.onSuccess?.(aceitarOk);
-      },
-    );
-
-    render(<ConviteTokenScreen />);
-    fireEvent.press(screen.getByText("Aceitar convite"));
+    setupFetch({ aceitar: "ok" });
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
     await act(async () => {
       fireEvent.press(screen.getByTestId("btn-aceitar"));
     });
-    fireEvent.press(screen.getByText("Ver minha agenda"));
-
+    fireEvent.press(await screen.findByText("Ver minha agenda"));
     expect(router.replace).toHaveBeenCalledWith("/(barbeiro)/agenda");
   });
 
-  it("12. btn-voltar-convite chama router.back()", () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    fireEvent.press(screen.getByTestId("btn-voltar-convite"));
+  it("12. btn-voltar-convite chama router.back()", async () => {
+    setupFetch({});
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("btn-voltar-convite"));
     expect(router.back).toHaveBeenCalledTimes(1);
   });
 
-  it("13. rejeitar convite chama DELETE (useRejeitarConvite) e volta", () => {
-    mockUseConvite.mockReturnValue({
-      data: validConvite,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ConviteTokenScreen />);
-    fireEvent.press(screen.getByTestId("btn-rejeitar"));
-    expect(mockRejeitarMutate).toHaveBeenCalledWith("abc123");
+  it("13. rejeitar convite faz DELETE /convite/abc123 e volta", async () => {
+    setupFetch({});
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("btn-rejeitar"));
     expect(router.back).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      const del = (global.fetch as jest.Mock).mock.calls.find(
+        ([u, init]) =>
+          /\/convite\/abc123$/.test(String(u)) &&
+          (init as { method?: string })?.method === "DELETE",
+      );
+      expect(del).toBeTruthy();
+    });
   });
 });

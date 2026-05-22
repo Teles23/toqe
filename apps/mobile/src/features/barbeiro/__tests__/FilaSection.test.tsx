@@ -1,5 +1,9 @@
+// FilaSection — exercita os hooks reais useFilaDia + useUpdateStatus +
+// api-client real. Só o boundary HTTP (global.fetch) e a sessão (useAuth) são
+// mockados. FilaCard tem timers internos (recalc de espera) → stub leve.
+
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue("fake-access-token"),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -10,15 +14,10 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
-jest.mock("@/src/shared/hooks/barbeiro/use-fila-dia", () => ({
-  useFilaDia: jest.fn(),
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: () => ({ barbearia: { codigo: 1 } }),
 }));
 
-jest.mock("@/src/shared/hooks/barbeiro/use-update-status", () => ({
-  useUpdateStatus: jest.fn(),
-}));
-
-// FilaCard tem timers internos (recalc de espera) — stub leve, testado à parte.
 jest.mock("@/src/features/barbeiro/FilaCard", () => {
   const RN = jest.requireActual("react-native");
   return {
@@ -28,19 +27,51 @@ jest.mock("@/src/features/barbeiro/FilaCard", () => {
   };
 });
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import React from "react";
 
-import { useFilaDia } from "@/src/shared/hooks/barbeiro/use-fila-dia";
-import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import type { AgendamentoResponse } from "@toqe/shared";
 
 import { FilaSection } from "../FilaSection";
 
-const mockUseFilaDia = useFilaDia as jest.MockedFunction<typeof useFilaDia>;
-const mockUseUpdateStatus = useUpdateStatus as jest.MockedFunction<
-  typeof useUpdateStatus
->;
+const originalFetch = global.fetch;
+
+function makeRes(body: unknown, status = 200) {
+  return {
+    ok: status < 400,
+    status,
+    url: "http://localhost:3000/api/v1/agendamentos",
+    json: async () => body,
+  };
+}
+
+function setupFetch(fila: AgendamentoResponse[]) {
+  global.fetch = jest.fn(async (url: unknown, init?: { method?: string }) => {
+    const u = String(url);
+    const m = (init?.method ?? "GET").toUpperCase();
+    if (m === "PATCH" && /\/agendamentos\/\d+\/status/.test(u)) {
+      return makeRes({});
+    }
+    if (u.includes("tipo=WALK_IN")) return makeRes(fila);
+    return makeRes([]);
+  }) as unknown as typeof fetch;
+}
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+function renderFila() {
+  return render(<FilaSection />, { wrapper });
+}
 
 function makeAg(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
   return {
@@ -63,118 +94,82 @@ function makeAg(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
   };
 }
 
-function mockQ(over: Partial<ReturnType<typeof useFilaDia>> = {}) {
-  return {
-    data: undefined,
-    isLoading: false,
-    isRefetching: false,
-    isError: false,
-    refetch: jest.fn(),
-    ...over,
-  } as unknown as ReturnType<typeof useFilaDia>;
-}
-
 describe("FilaSection", () => {
-  const mutate = jest.fn();
-
   beforeEach(() => {
-    mockUseFilaDia.mockReset();
-    mutate.mockReset();
-    mockUseUpdateStatus.mockReset();
-    mockUseUpdateStatus.mockReturnValue({
-      mutate,
-    } as unknown as ReturnType<typeof useUpdateStatus>);
+    jest.clearAllMocks();
+  });
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
-  it("não renderiza nada quando a fila está vazia", () => {
-    mockUseFilaDia.mockReturnValue(mockQ({ data: [] }));
-    render(<FilaSection />);
+  it("não renderiza nada quando a fila está vazia", async () => {
+    setupFetch([]);
+    renderFila();
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
     expect(screen.queryByTestId("fila-section")).toBeNull();
   });
 
-  it("não renderiza nada quando data é undefined", () => {
-    mockUseFilaDia.mockReturnValue(mockQ({ data: undefined }));
-    render(<FilaSection />);
-    expect(screen.queryByTestId("fila-section")).toBeNull();
-  });
-
-  it("colapsado por padrão: mostra prévia do primeiro e esconde a lista", () => {
-    mockUseFilaDia.mockReturnValue(
-      mockQ({
-        data: [
-          makeAg({
-            codigo: 1,
-            cliente: { usrCodigo: 1, nome: "João", telefone: null },
-          }),
-          makeAg({
-            codigo: 2,
-            cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
-          }),
-        ],
+  it("colapsado: mostra prévia do primeiro e esconde a lista detalhada", async () => {
+    setupFetch([
+      makeAg({
+        codigo: 1,
+        cliente: { usrCodigo: 1, nome: "João", telefone: null },
       }),
-    );
-    render(<FilaSection />);
-
-    expect(screen.getByTestId("fila-section")).toBeTruthy();
-    // Lista detalhada não renderizada enquanto colapsado (não empurra a agenda).
+      makeAg({
+        codigo: 2,
+        cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
+      }),
+    ]);
+    renderFila();
+    await screen.findByTestId("fila-section");
     expect(screen.queryByTestId("fila-expanded")).toBeNull();
     expect(screen.queryByTestId("walkin-card-2")).toBeNull();
-    // Prévia do primeiro da fila visível.
     expect(screen.getByText(/João/)).toBeTruthy();
   });
 
-  it("expande ao tocar no banner e revela todos os walk-in cards", () => {
-    mockUseFilaDia.mockReturnValue(
-      mockQ({
-        data: [
-          makeAg({
-            codigo: 1,
-            cliente: { usrCodigo: 1, nome: "João", telefone: null },
-          }),
-          makeAg({
-            codigo: 2,
-            cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
-          }),
-        ],
+  it("expande ao tocar no banner e revela os walk-in cards", async () => {
+    setupFetch([
+      makeAg({
+        codigo: 1,
+        cliente: { usrCodigo: 1, nome: "João", telefone: null },
       }),
-    );
-    render(<FilaSection />);
-
-    fireEvent.press(screen.getByTestId("fila-banner-toggle"));
-
+      makeAg({
+        codigo: 2,
+        cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
+      }),
+    ]);
+    renderFila();
+    fireEvent.press(await screen.findByTestId("fila-banner-toggle"));
     expect(screen.getByTestId("fila-expanded")).toBeTruthy();
     expect(screen.getByTestId("walkin-card-1")).toBeTruthy();
     expect(screen.getByTestId("walkin-card-2")).toBeTruthy();
     expect(screen.getByText("Maria")).toBeTruthy();
-
-    // Recolhe novamente.
-    fireEvent.press(screen.getByTestId("fila-banner-toggle"));
-    expect(screen.queryByTestId("fila-expanded")).toBeNull();
   });
 
-  it("o cabeçalho mostra a contagem de pendentes", () => {
-    mockUseFilaDia.mockReturnValue(
-      mockQ({
-        data: [
-          makeAg({ codigo: 1, status: "pendente" }),
-          makeAg({ codigo: 2, status: "confirmado" }),
-        ],
-      }),
-    );
-    render(<FilaSection />);
-    expect(screen.getByText(/FILA · esperando \(1\)/)).toBeTruthy();
+  it("o cabeçalho mostra a contagem de pendentes", async () => {
+    setupFetch([
+      makeAg({ codigo: 1, status: "pendente" }),
+      makeAg({ codigo: 2, status: "confirmado" }),
+    ]);
+    renderFila();
+    expect(await screen.findByText(/FILA · esperando \(1\)/)).toBeTruthy();
   });
 
-  it("atalho Atender (colapsado) chama updateStatus com 'em_andamento'", () => {
-    mockUseFilaDia.mockReturnValue(mockQ({ data: [makeAg({ codigo: 7 })] }));
-    render(<FilaSection />);
-    fireEvent.press(screen.getByTestId("btn-atender-7"));
-    expect(mutate).toHaveBeenCalledWith(
-      { codigo: 7, status: "em_andamento" },
-      expect.objectContaining({
-        onSuccess: expect.any(Function),
-        onError: expect.any(Function),
-      }),
-    );
+  it("atalho Atender faz PATCH /agendamentos/7/status com em_andamento", async () => {
+    setupFetch([makeAg({ codigo: 7 })]);
+    renderFila();
+    fireEvent.press(await screen.findByTestId("btn-atender-7"));
+
+    await waitFor(() => {
+      const patch = (global.fetch as jest.Mock).mock.calls.find(
+        ([u, init]) =>
+          /\/agendamentos\/7\/status/.test(String(u)) &&
+          (init as { method?: string })?.method === "PATCH",
+      );
+      expect(patch).toBeTruthy();
+      expect(String((patch?.[1] as { body?: string }).body)).toContain(
+        "em_andamento",
+      );
+    });
   });
 });

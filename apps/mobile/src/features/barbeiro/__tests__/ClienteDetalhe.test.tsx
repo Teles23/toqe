@@ -1,5 +1,10 @@
+// ClienteDetalhe — exercita os hooks reais (useHistoricoCliente,
+// useClienteNota, useSalvarNotaCliente) + api-client real. Só o boundary HTTP
+// (global.fetch) e a sessão (useAuth) são mockados. FilaCard tem timers
+// internos → stub leve.
+
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue("fake-access-token"),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -14,30 +19,67 @@ jest.mock("expo-router", () => ({
   router: { replace: jest.fn() },
 }));
 
-jest.mock("@/src/shared/hooks/barbeiro/use-historico-cliente", () => ({
-  useHistoricoCliente: jest.fn(),
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: () => ({ barbearia: { codigo: 1 } }),
 }));
 
-const mockSalvarNotaMutate = jest.fn();
-jest.mock("@/src/shared/hooks/barbeiro/use-cliente-nota", () => ({
-  useClienteNota: jest.fn(() => ({
-    data: { conteudo: "", atualizadoEm: null },
-  })),
-  useSalvarNotaCliente: jest.fn(() => ({ mutate: mockSalvarNotaMutate })),
-}));
-
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import React from "react";
 
-import { useHistoricoCliente } from "@/src/shared/hooks/barbeiro/use-historico-cliente";
 import type { ClienteAPI } from "@toqe/contracts";
 import type { AgendamentoResponse } from "@toqe/shared";
 
 import { ClienteDetalhe } from "../ClienteDetalhe";
 
-const mockHistorico = useHistoricoCliente as jest.MockedFunction<
-  typeof useHistoricoCliente
->;
+const originalFetch = global.fetch;
+
+function makeRes(body: unknown, status = 200) {
+  return {
+    ok: status < 400,
+    status,
+    url: "http://localhost:3000/api/v1",
+    json: async () => body,
+  };
+}
+
+function setupFetch(
+  opts: { historico?: AgendamentoResponse[]; nota?: string } = {},
+) {
+  const { historico = [], nota = "" } = opts;
+  global.fetch = jest.fn(async (url: unknown, init?: { method?: string }) => {
+    const u = String(url);
+    const m = (init?.method ?? "GET").toUpperCase();
+    if (u.includes("/nota")) {
+      if (m === "PUT") return makeRes({ conteudo: "", atualizadoEm: null });
+      return makeRes({ conteudo: nota, atualizadoEm: null });
+    }
+    if (u.includes("/agendamentos")) return makeRes(historico);
+    return makeRes([]);
+  }) as unknown as typeof fetch;
+}
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+function renderDetalhe(
+  props: Partial<React.ComponentProps<typeof ClienteDetalhe>> = {},
+) {
+  const defaults = {
+    cliente: makeCliente(),
+    visible: true,
+    onClose: jest.fn(),
+  };
+  return render(<ClienteDetalhe {...defaults} {...props} />, { wrapper });
+}
 
 function makeCliente(over: Partial<ClienteAPI> = {}): ClienteAPI {
   return {
@@ -79,82 +121,49 @@ function makeHistoricoItem(
   };
 }
 
-function mockHistoricoResult(
-  over: Partial<ReturnType<typeof useHistoricoCliente>> = {},
-) {
-  return {
-    data: undefined,
-    isLoading: false,
-    isError: false,
-    ...over,
-  } as unknown as ReturnType<typeof useHistoricoCliente>;
-}
-
 describe("ClienteDetalhe", () => {
   beforeEach(() => {
-    mockHistorico.mockReset();
-    mockHistorico.mockReturnValue(mockHistoricoResult());
-    mockSalvarNotaMutate.mockReset();
+    jest.clearAllMocks();
+    setupFetch();
+  });
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   it("não renderiza quando cliente é null", () => {
-    render(<ClienteDetalhe cliente={null} visible onClose={jest.fn()} />);
+    renderDetalhe({ cliente: null });
     expect(screen.queryByTestId("cliente-detalhe-modal")).toBeNull();
   });
 
   it("não renderiza quando visible=false", () => {
-    render(
-      <ClienteDetalhe
-        cliente={makeCliente()}
-        visible={false}
-        onClose={jest.fn()}
-      />,
-    );
+    renderDetalhe({ visible: false });
     expect(screen.queryByText("João Barbosa")).toBeNull();
   });
 
-  it("renderiza nome, total de visitas e ticket médio quando visible=true", () => {
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
+  it("renderiza nome, total de visitas e ticket médio", () => {
+    renderDetalhe();
     expect(screen.getAllByText("João Barbosa").length).toBeGreaterThan(0);
-    expect(screen.getByText("5")).toBeTruthy(); // totalVisitas
-    expect(screen.getByText("R$50")).toBeTruthy(); // ticketMedio
+    expect(screen.getByText("5")).toBeTruthy();
+    expect(screen.getByText("R$50")).toBeTruthy();
   });
 
   it("exibe telefone no formato mono", () => {
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
+    renderDetalhe();
     expect(screen.getByText("+5511999999999")).toBeTruthy();
   });
 
   it("exibe serviço favorito quando definido", () => {
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
+    renderDetalhe();
     expect(screen.getByText("Corte Masculino")).toBeTruthy();
   });
 
   it("não exibe card de serviço favorito quando null", () => {
-    render(
-      <ClienteDetalhe
-        cliente={makeCliente({ servicoFav: null })}
-        visible
-        onClose={jest.fn()}
-      />,
-    );
+    renderDetalhe({ cliente: makeCliente({ servicoFav: null }) });
     expect(screen.queryByText("SERVIÇO FAVORITO")).toBeNull();
   });
 
   it("quick action Ligar desabilitado quando telefone é null", () => {
-    render(
-      <ClienteDetalhe
-        cliente={makeCliente({ telefone: null })}
-        visible
-        onClose={jest.fn()}
-      />,
-    );
+    renderDetalhe({ cliente: makeCliente({ telefone: null }) });
     const btn = screen.getByTestId("qa-ligar");
     expect(
       btn.props.accessibilityState?.disabled ?? btn.props.disabled,
@@ -162,51 +171,35 @@ describe("ClienteDetalhe", () => {
   });
 
   it("quick action WhatsApp desabilitado quando telefone é null", () => {
-    render(
-      <ClienteDetalhe
-        cliente={makeCliente({ telefone: null })}
-        visible
-        onClose={jest.fn()}
-      />,
-    );
+    renderDetalhe({ cliente: makeCliente({ telefone: null }) });
     const btn = screen.getByTestId("qa-whatsapp");
     expect(
       btn.props.accessibilityState?.disabled ?? btn.props.disabled,
     ).toBeTruthy();
   });
 
-  it("exibe vazio de histórico quando histórico está vazio", () => {
-    mockHistorico.mockReturnValue(mockHistoricoResult({ data: [] }));
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
-    expect(screen.getByTestId("historico-vazio")).toBeTruthy();
+  it("exibe vazio de histórico quando a API retorna lista vazia", async () => {
+    setupFetch({ historico: [] });
+    renderDetalhe();
+    expect(await screen.findByTestId("historico-vazio")).toBeTruthy();
   });
 
-  it("exibe lista de histórico quando há itens", () => {
-    mockHistorico.mockReturnValue(
-      mockHistoricoResult({ data: [makeHistoricoItem()] }),
-    );
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
-    expect(screen.getByTestId("historico-lista")).toBeTruthy();
+  it("exibe lista de histórico quando a API retorna itens", async () => {
+    setupFetch({ historico: [makeHistoricoItem()] });
+    renderDetalhe();
+    expect(await screen.findByTestId("historico-lista")).toBeTruthy();
     expect(screen.getByText("Corte")).toBeTruthy();
   });
 
   it("botão Editar exibe TextInput de nota", () => {
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
+    renderDetalhe();
     expect(screen.queryByTestId("input-nota")).toBeNull();
     fireEvent.press(screen.getByTestId("btn-editar-nota"));
     expect(screen.getByTestId("input-nota")).toBeTruthy();
   });
 
   it("nota pode ser editada no TextInput", () => {
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
+    renderDetalhe();
     fireEvent.press(screen.getByTestId("btn-editar-nota"));
     fireEvent.changeText(
       screen.getByTestId("input-nota"),
@@ -215,49 +208,42 @@ describe("ClienteDetalhe", () => {
     expect(screen.getByDisplayValue("Prefere degradê alto")).toBeTruthy();
   });
 
-  it("pressionar Salvar fecha o TextInput e persiste a nota via mutation", () => {
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={jest.fn()} />,
-    );
+  it("Salvar fecha o input e persiste a nota via PUT /clientes/1/nota", async () => {
+    renderDetalhe();
     fireEvent.press(screen.getByTestId("btn-editar-nota"));
     fireEvent.changeText(
       screen.getByTestId("input-nota"),
       "Prefere degradê alto",
     );
-    // Pressiona "Salvar" (toggled state do mesmo botão)
     fireEvent.press(screen.getByTestId("btn-editar-nota"));
     expect(screen.queryByTestId("input-nota")).toBeNull();
-    expect(mockSalvarNotaMutate).toHaveBeenCalledWith("Prefere degradê alto");
+
+    await waitFor(() => {
+      const put = (global.fetch as jest.Mock).mock.calls.find(
+        ([u, init]) =>
+          /\/clientes\/1\/nota$/.test(String(u)) &&
+          (init as { method?: string })?.method === "PUT",
+      );
+      expect(put).toBeTruthy();
+      const body = JSON.parse(String((put?.[1] as { body?: string }).body));
+      expect(body.conteudo).toBe("Prefere degradê alto");
+    });
   });
 
   it("botão voltar chama onClose", () => {
     const onClose = jest.fn();
-    render(
-      <ClienteDetalhe cliente={makeCliente()} visible onClose={onClose} />,
-    );
+    renderDetalhe({ onClose });
     fireEvent.press(screen.getByTestId("btn-voltar"));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("ultimaVisita null exibe '—' nas stats", () => {
-    render(
-      <ClienteDetalhe
-        cliente={makeCliente({ ultimaVisita: null })}
-        visible
-        onClose={jest.fn()}
-      />,
-    );
+    renderDetalhe({ cliente: makeCliente({ ultimaVisita: null }) });
     expect(screen.getByText("—")).toBeTruthy();
   });
 
   it("ticketMedio zero exibe '—'", () => {
-    render(
-      <ClienteDetalhe
-        cliente={makeCliente({ ticketMedio: 0 })}
-        visible
-        onClose={jest.fn()}
-      />,
-    );
+    renderDetalhe({ cliente: makeCliente({ ticketMedio: 0 }) });
     expect(screen.getByText("—")).toBeTruthy();
   });
 });
