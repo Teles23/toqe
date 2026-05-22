@@ -110,7 +110,7 @@ describe("AppointmentDetailSheet", () => {
     expect(screen.queryByTestId("action-aceitar")).toBeNull();
   });
 
-  it("status em_andamento → exibe No-show e Concluir", () => {
+  it("status em_andamento → exibe Não compareceu e Concluir", () => {
     render(
       <AppointmentDetailSheet
         agendamento={makeApt({ status: "em_andamento" })}

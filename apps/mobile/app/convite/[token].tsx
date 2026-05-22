@@ -17,7 +17,7 @@ import { useRejeitarConvite } from "@/src/shared/hooks/use-rejeitar-convite";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { ApiError } from "@/src/shared/api/api-client";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton } from "@/src/shared/ui";
+import { AmberButton, FormInput } from "@/src/shared/ui";
 
 // ─── View state ───────────────────────────────────────────────────────────────
 type ConviteView =
@@ -283,34 +283,16 @@ export default function ConviteTokenScreen() {
           </View>
         ) : null}
 
-        <View style={{ marginBottom: spacing.xl }}>
-          <Text
-            style={[
-              typography.label,
-              { color: palette.textMuted, marginBottom: spacing.xs },
-            ]}
-          >
-            Senha
-          </Text>
-          <TextInput
+        <View style={{ marginBottom: spacing.md }}>
+          <FormInput
             testID="input-senha"
+            label="Senha"
             value={senha}
             onChangeText={setSenha}
-            placeholder="Sua senha"
-            placeholderTextColor={palette.textDisabled}
-            secureTextEntry
+            placeholder="Mínimo 8 caracteres"
+            secureToggle
             autoCapitalize="none"
             autoCorrect={false}
-            style={[
-              styles.input,
-              {
-                backgroundColor: palette.inputBg,
-                borderColor: palette.inputBorder,
-                borderRadius: radius.sm,
-                color: palette.text,
-                padding: spacing.md,
-              },
-            ]}
           />
         </View>
 

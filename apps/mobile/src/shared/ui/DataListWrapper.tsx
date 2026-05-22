@@ -1,4 +1,4 @@
-import { ReactElement, ReactNode } from "react";
+import { createElement, isValidElement, ReactElement, ReactNode } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -55,6 +55,7 @@ export function DataListWrapper<T>({
   emptyComponent,
   loadingComponent,
   contentContainerStyle,
+  ListHeaderComponent,
   testID,
   ...flatListProps
 }: DataListWrapperProps<T>): ReactNode {
@@ -67,26 +68,36 @@ export function DataListWrapper<T>({
     textAlign: "center" as const,
   };
 
+  // Cabeçalho fixo (ex.: header + stats + fila da agenda). Renderizado também
+  // nos estados de loading/erro para que a navegação do topo nunca suma.
+  const headerNode: ReactNode = isValidElement(ListHeaderComponent)
+    ? ListHeaderComponent
+    : ListHeaderComponent
+      ? createElement(ListHeaderComponent)
+      : null;
+
   if (isLoading) {
     const loadingTestID = `${testID ?? "data-list"}-loading`;
-    if (loadingComponent) {
-      return (
-        <View style={styles.fill} testID={loadingTestID}>
-          {loadingComponent}
-        </View>
-      );
-    }
     return (
-      <View style={styles.center} testID={loadingTestID}>
-        <ActivityIndicator color={palette.text} />
+      <View style={styles.fill}>
+        {headerNode}
+        <View
+          style={loadingComponent ? styles.fill : styles.center}
+          testID={loadingTestID}
+        >
+          {loadingComponent ?? <ActivityIndicator color={palette.text} />}
+        </View>
       </View>
     );
   }
 
   if (isError) {
     return (
-      <View style={styles.center} testID={`${testID ?? "data-list"}-error`}>
-        <Text style={muted}>{errorMessage}</Text>
+      <View style={styles.fill}>
+        {headerNode}
+        <View style={styles.center} testID={`${testID ?? "data-list"}-error`}>
+          <Text style={muted}>{errorMessage}</Text>
+        </View>
       </View>
     );
   }
@@ -95,6 +106,7 @@ export function DataListWrapper<T>({
     <FlatList
       testID={testID}
       data={data ?? []}
+      ListHeaderComponent={ListHeaderComponent}
       contentContainerStyle={[
         { padding: spacing.md, paddingBottom: 40, flexGrow: 1 },
         contentContainerStyle,

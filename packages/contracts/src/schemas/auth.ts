@@ -7,7 +7,7 @@ export const loginSchema = z
     email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
     senha: z
       .string()
-      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .min(8, "Senha deve ter ao menos 8 caracteres")
       .max(128, "Senha muito longa"),
   })
   .strict();
@@ -21,7 +21,7 @@ export const registerSchema = z
     email: z.string().email("E-mail inválido").max(100, "E-mail muito longo"),
     senha: z
       .string()
-      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .min(8, "Senha deve ter ao menos 8 caracteres")
       .max(128, "Senha muito longa"),
     telefone: z
       .string()
@@ -79,7 +79,7 @@ export const resetPasswordSchema = z
     token: z.string().min(1, "Token obrigatório"),
     novaSenha: z
       .string()
-      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .min(8, "Senha deve ter ao menos 8 caracteres")
       .max(128, "Senha muito longa"),
   })
   .strict();
@@ -95,7 +95,7 @@ export const changePasswordSchema = z
       .max(128, "Senha muito longa"),
     novaSenha: z
       .string()
-      .min(6, "Nova senha deve ter ao menos 6 caracteres")
+      .min(8, "Nova senha deve ter ao menos 8 caracteres")
       .max(128, "Senha muito longa"),
   })
   .strict()

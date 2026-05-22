@@ -427,7 +427,7 @@ export default function PerfilIndexScreen() {
             </View>
             {/* Rodapé */}
             <Text style={styles.statsFooter}>
-              Ticket médio {ticketStr} · {noShowStr} no-shows este mês
+              Ticket médio {ticketStr} · {noShowStr} faltas este mês
             </Text>
           </View>
         )}

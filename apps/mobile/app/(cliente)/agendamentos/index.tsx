@@ -44,7 +44,7 @@ const STATUS_SHORT: Record<StatusAgendamento, string> = {
   em_andamento: "Em atendimento",
   concluido: "Concluído",
   cancelado: "Cancelado",
-  no_show: "No-show",
+  no_show: "Não compareceu",
 };
 
 // ─── DateTile ─────────────────────────────────────────────────────────────────

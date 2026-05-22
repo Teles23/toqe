@@ -188,8 +188,8 @@ export default function CadastroScreen() {
               render={({ field: { onChange, onBlur, value } }) => (
                 <FormInput
                   label="Senha"
-                  placeholder="Mínimo 6 caracteres"
-                  secureTextEntry
+                  placeholder="Mínimo 8 caracteres"
+                  secureToggle
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="new-password"
@@ -210,7 +210,7 @@ export default function CadastroScreen() {
                 <FormInput
                   label="Confirmar senha"
                   placeholder="Repita a senha"
-                  secureTextEntry
+                  secureToggle
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="new-password"

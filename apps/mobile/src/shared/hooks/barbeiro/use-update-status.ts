@@ -26,7 +26,11 @@ export function useUpdateStatus() {
         status,
       }),
     onSuccess: () => {
+      // Atualiza tanto a lista do dia (["agendamentos"]) quanto a fila de
+      // walk-ins (["fila"]): ao "Atender →", o encaixe sai da fila e reaparece
+      // como EM_ANDAMENTO na agenda. Espelha use-criar-walk-in.
       qc.invalidateQueries({ queryKey: ["agendamentos"] });
+      qc.invalidateQueries({ queryKey: ["fila"] });
     },
   });
 }

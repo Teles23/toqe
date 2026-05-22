@@ -5,7 +5,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+} from "lucide-react";
 import { useResetPassword } from "@/features/auth/hooks/use-reset-password";
 import { AuthErrorBanner } from "./AuthErrorBanner";
 
@@ -13,11 +20,11 @@ const resetSchema = z
   .object({
     novaSenha: z
       .string()
-      .min(6, "Senha deve ter ao menos 6 caracteres")
+      .min(8, "Senha deve ter ao menos 8 caracteres")
       .max(128, "Senha muito longa"),
     confirmarSenha: z
       .string()
-      .min(6, "Confirme sua senha")
+      .min(8, "Confirme sua senha")
       .max(128, "Senha muito longa"),
   })
   .refine((d) => d.novaSenha === d.confirmarSenha, {
@@ -41,6 +48,8 @@ export function ResetPasswordForm({
   onBackToLogin,
 }: ResetPasswordFormProps): React.JSX.Element {
   const reset = useResetPassword();
+  const [showNova, setShowNova] = React.useState(false);
+  const [showConfirm, setShowConfirm] = React.useState(false);
 
   const {
     register,
@@ -118,14 +127,25 @@ export function ResetPasswordForm({
     >
       <div>
         <label className="tqe-label">Nova senha</label>
-        <input
-          type="password"
-          {...register("novaSenha")}
-          placeholder="Mínimo 6 caracteres"
-          className="tqe-input"
-          autoComplete="new-password"
-          maxLength={128}
-        />
+        <div className="tqe-input-affix">
+          <KeyRound size={15} className="text-[var(--text-muted)] shrink-0" />
+          <input
+            type={showNova ? "text" : "password"}
+            {...register("novaSenha")}
+            placeholder="Mínimo 8 caracteres"
+            className="tqe-input-bare"
+            autoComplete="new-password"
+            maxLength={128}
+          />
+          <button
+            type="button"
+            onClick={() => setShowNova(!showNova)}
+            aria-label={showNova ? "Ocultar senha" : "Mostrar senha"}
+            className="ml-1 px-2 h-9 text-[var(--text-muted)] hover:text-[var(--text-primary)] border-l border-[var(--border-subtle)] transition-colors"
+          >
+            {showNova ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        </div>
         {errors.novaSenha && (
           <p
             className="text-[11px] mt-1"
@@ -138,14 +158,25 @@ export function ResetPasswordForm({
 
       <div>
         <label className="tqe-label">Confirmar senha</label>
-        <input
-          type="password"
-          {...register("confirmarSenha")}
-          placeholder="Repita a nova senha"
-          className="tqe-input"
-          autoComplete="new-password"
-          maxLength={128}
-        />
+        <div className="tqe-input-affix">
+          <KeyRound size={15} className="text-[var(--text-muted)] shrink-0" />
+          <input
+            type={showConfirm ? "text" : "password"}
+            {...register("confirmarSenha")}
+            placeholder="Repita a nova senha"
+            className="tqe-input-bare"
+            autoComplete="new-password"
+            maxLength={128}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirm(!showConfirm)}
+            aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"}
+            className="ml-1 px-2 h-9 text-[var(--text-muted)] hover:text-[var(--text-primary)] border-l border-[var(--border-subtle)] transition-colors"
+          >
+            {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        </div>
         {errors.confirmarSenha && (
           <p
             className="text-[11px] mt-1"

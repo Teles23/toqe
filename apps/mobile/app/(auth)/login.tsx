@@ -221,9 +221,9 @@ export default function LoginScreen() {
           render={({ field: { onChange, onBlur, value } }) => (
             <FormInput
               label="Senha"
-              placeholder="••••••"
+              placeholder="••••••••"
               leftIcon="lock"
-              secureTextEntry
+              secureToggle
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="password"

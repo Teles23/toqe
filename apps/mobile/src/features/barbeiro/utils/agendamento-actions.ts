@@ -29,7 +29,12 @@ const FULL_ACTIONS: AgendamentoActionSpec[] = [
     icon: "check-circle",
     variant: "success",
   },
-  { key: "no_show", label: "No-show", icon: "user-x", variant: "neutral" },
+  {
+    key: "no_show",
+    label: "Não compareceu",
+    icon: "user-x",
+    variant: "neutral",
+  },
   { key: "cancelado", label: "Cancelar", icon: "x", variant: "danger" },
 ];
 
@@ -68,7 +73,7 @@ export function getFullActions(): readonly AgendamentoActionSpec[] {
  * + label customizado quando necessário.
  *
  * `no_show` → visualmente `cancelado` (mesmo tom de gravidade), mas label
- *   "No-show" preserva semântica para o operador.
+ *   "Não compareceu" preserva semântica para o operador.
  *
  * Defensivo: aceita `string | null | undefined` para sobreviver a payloads
  * inesperados do backend (status novo, snake_case vs camelCase, null por
@@ -91,7 +96,7 @@ export function statusToBadge(
     case "cancelado":
       return { badge: "cancelado", label: "Cancelado" };
     case "no_show":
-      return { badge: "cancelado", label: "No-show" };
+      return { badge: "cancelado", label: "Não compareceu" };
     default:
       // Status desconhecido — trata como pendente visualmente e mostra
       // o valor cru para o operador conseguir reportar.

@@ -13,7 +13,7 @@
  * Ações por status:
  *  - pendente      → Recusar (ghost) + Aceitar (amber)
  *  - confirmado    → Iniciar (amber fullWidth) + row: Ligar + Zap (ghost)
- *  - em_andamento  → No-show (danger outline) + Concluir (success)
+ *  - em_andamento  → Não compareceu (danger outline) + Concluir (success)
  *  - concluido     → Ver histórico (ghost) + Reagendar (ghost)
  *  - no_show       → Reagendar (ghost)
  */
@@ -279,7 +279,7 @@ function Actions({
         <View style={styles.actionRow}>
           <View style={{ flex: 1 }}>
             <GhostButton
-              label="No-show"
+              label="Não compareceu"
               onPress={() => onAction("no_show")}
               testID="action-no_show"
             />

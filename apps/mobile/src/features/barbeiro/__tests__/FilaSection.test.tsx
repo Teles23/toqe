@@ -98,7 +98,7 @@ describe("FilaSection", () => {
     expect(screen.queryByTestId("fila-section")).toBeNull();
   });
 
-  it("renderiza a seção com walk-in cards quando há itens", () => {
+  it("colapsado por padrão: mostra prévia do primeiro e esconde a lista", () => {
     mockUseFilaDia.mockReturnValue(
       mockQ({
         data: [
@@ -116,10 +116,40 @@ describe("FilaSection", () => {
     render(<FilaSection />);
 
     expect(screen.getByTestId("fila-section")).toBeTruthy();
+    // Lista detalhada não renderizada enquanto colapsado (não empurra a agenda).
+    expect(screen.queryByTestId("fila-expanded")).toBeNull();
+    expect(screen.queryByTestId("walkin-card-2")).toBeNull();
+    // Prévia do primeiro da fila visível.
+    expect(screen.getByText(/João/)).toBeTruthy();
+  });
+
+  it("expande ao tocar no banner e revela todos os walk-in cards", () => {
+    mockUseFilaDia.mockReturnValue(
+      mockQ({
+        data: [
+          makeAg({
+            codigo: 1,
+            cliente: { usrCodigo: 1, nome: "João", telefone: null },
+          }),
+          makeAg({
+            codigo: 2,
+            cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
+          }),
+        ],
+      }),
+    );
+    render(<FilaSection />);
+
+    fireEvent.press(screen.getByTestId("fila-banner-toggle"));
+
+    expect(screen.getByTestId("fila-expanded")).toBeTruthy();
     expect(screen.getByTestId("walkin-card-1")).toBeTruthy();
     expect(screen.getByTestId("walkin-card-2")).toBeTruthy();
-    expect(screen.getByText("João")).toBeTruthy();
     expect(screen.getByText("Maria")).toBeTruthy();
+
+    // Recolhe novamente.
+    fireEvent.press(screen.getByTestId("fila-banner-toggle"));
+    expect(screen.queryByTestId("fila-expanded")).toBeNull();
   });
 
   it("o cabeçalho mostra a contagem de pendentes", () => {
@@ -135,7 +165,7 @@ describe("FilaSection", () => {
     expect(screen.getByText(/FILA · esperando \(1\)/)).toBeTruthy();
   });
 
-  it("botão Atender chama updateStatus com 'em_andamento'", () => {
+  it("atalho Atender (colapsado) chama updateStatus com 'em_andamento'", () => {
     mockUseFilaDia.mockReturnValue(mockQ({ data: [makeAg({ codigo: 7 })] }));
     render(<FilaSection />);
     fireEvent.press(screen.getByTestId("btn-atender-7"));

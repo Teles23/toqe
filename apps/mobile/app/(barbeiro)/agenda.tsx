@@ -295,8 +295,11 @@ export default function BarbeiroAgendaScreen() {
     ? "Hoje"
     : format(selectedDate, "EEEE", { locale: ptBR });
 
-  return (
-    <View style={[styles.container, { backgroundColor: palette.bg }]}>
+  // Header + stats + fila vivem no ListHeaderComponent do FlatList: assim o
+  // pull-to-refresh responde ao puxar do topo da tela (não só sobre a lista),
+  // e o conteúdo todo rola junto. Bug UX: gesto não respondia no header.
+  const listHeader = (
+    <>
       {/* Header */}
       <View
         style={[
@@ -397,14 +400,18 @@ export default function BarbeiroAgendaScreen() {
       {/* Stats strip — só quando há dados */}
       {data && data.length > 0 && <StatsStrip apts={data} />}
 
-      {/* Fila de walk-ins — seção vermelha no topo (só hoje) */}
+      {/* Fila de walk-ins — banner colapsável no topo (só hoje) */}
       {isSameDay(selectedDate, new Date()) && (
         <View style={{ paddingHorizontal: spacing.md }}>
           <FilaSection />
         </View>
       )}
+    </>
+  );
 
-      {/* Lista principal */}
+  return (
+    <View style={[styles.container, { backgroundColor: palette.bg }]}>
+      {/* Lista principal (header/stats/fila no ListHeaderComponent) */}
       <DataListWrapper
         testID="lista-agendamentos"
         data={data}
@@ -412,9 +419,11 @@ export default function BarbeiroAgendaScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
+        ListHeaderComponent={listHeader}
         loadingComponent={<ListSkeleton testID="agenda-skeleton" />}
         contentContainerStyle={{
-          paddingHorizontal: spacing.md,
+          paddingHorizontal: 0,
+          paddingTop: 0,
           paddingBottom: 120,
         }}
         emptyComponent={
@@ -447,7 +456,7 @@ export default function BarbeiroAgendaScreen() {
         errorMessage="Não foi possível carregar a agenda. Puxe para tentar novamente."
         keyExtractor={(item) => String(item.codigo)}
         renderItem={({ item, index }) => (
-          <>
+          <View style={{ paddingHorizontal: spacing.md }}>
             {/* Divider "AGORA" entre passado e futuro */}
             {index === nowDividerIndex + 1 && nowDividerIndex >= 0 && (
               <NowDivider />
@@ -458,7 +467,7 @@ export default function BarbeiroAgendaScreen() {
               isNext={item.codigo === nextAptId}
               dim={isPast(item) && item.status === "concluido"}
             />
-          </>
+          </View>
         )}
       />
 

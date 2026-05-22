@@ -50,7 +50,7 @@ describe("ResetPasswordForm", () => {
     renderForm();
 
     expect(
-      screen.getByPlaceholderText("Mínimo 6 caracteres"),
+      screen.getByPlaceholderText("Mínimo 8 caracteres"),
     ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("Repita a nova senha"),
@@ -65,7 +65,7 @@ describe("ResetPasswordForm", () => {
     mockUseResetPassword.mockReturnValue(makeResetMutation({ mutate }));
     renderForm("meu-token-123");
 
-    fireEvent.change(screen.getByPlaceholderText("Mínimo 6 caracteres"), {
+    fireEvent.change(screen.getByPlaceholderText("Mínimo 8 caracteres"), {
       target: { value: "novaSenha123" },
     });
     fireEvent.change(screen.getByPlaceholderText("Repita a nova senha"), {
@@ -122,7 +122,7 @@ describe("ResetPasswordForm", () => {
     mockUseResetPassword.mockReturnValue(makeResetMutation());
     renderForm();
 
-    fireEvent.change(screen.getByPlaceholderText("Mínimo 6 caracteres"), {
+    fireEvent.change(screen.getByPlaceholderText("Mínimo 8 caracteres"), {
       target: { value: "senhaAbc123" },
     });
     fireEvent.change(screen.getByPlaceholderText("Repita a nova senha"), {
@@ -144,7 +144,7 @@ describe("ResetPasswordForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Senha deve ter ao menos 6 caracteres"),
+        screen.getByText("Senha deve ter ao menos 8 caracteres"),
       ).toBeInTheDocument();
     });
     expect(mutate).not.toHaveBeenCalled();
@@ -155,7 +155,7 @@ describe("ResetPasswordForm", () => {
     mockUseResetPassword.mockReturnValue(makeResetMutation({ mutate }));
     renderForm();
 
-    fireEvent.change(screen.getByPlaceholderText("Mínimo 6 caracteres"), {
+    fireEvent.change(screen.getByPlaceholderText("Mínimo 8 caracteres"), {
       target: { value: "123" },
     });
     fireEvent.change(screen.getByPlaceholderText("Repita a nova senha"), {
@@ -165,10 +165,25 @@ describe("ResetPasswordForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Senha deve ter ao menos 6 caracteres"),
+        screen.getByText("Senha deve ter ao menos 8 caracteres"),
       ).toBeInTheDocument();
     });
     expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it("alterna a visibilidade da nova senha pelo ícone de olho", () => {
+    mockUseResetPassword.mockReturnValue(makeResetMutation());
+    renderForm();
+
+    const input = screen.getByPlaceholderText("Mínimo 8 caracteres");
+    expect(input).toHaveAttribute("type", "password");
+
+    const [toggle] = screen.getAllByRole("button", { name: /mostrar senha/i });
+    expect(toggle).toBeTruthy();
+    if (!toggle) return;
+    fireEvent.click(toggle);
+
+    expect(input).toHaveAttribute("type", "text");
   });
 
   it("desabilita o botão enquanto isPending", () => {

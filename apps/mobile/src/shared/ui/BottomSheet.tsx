@@ -25,10 +25,13 @@ export interface BottomSheetProps {
   onClose: () => void;
   children: React.ReactNode;
   /**
-   * Altura do sheet em % da tela. Default: 40%.
-   * Use `auto` para que o conteúdo defina a altura (até 80% máx.).
+   * Altura do sheet:
+   * - número (0–1): fração da altura da tela (default: 40%);
+   * - `"auto"`: até 80% da tela (para conteúdos longos com ScrollView);
+   * - `"content"`: ajusta-se exatamente ao conteúdo, sem altura mínima
+   *   (ideal para menus curtos — evita o vão vazio embaixo).
    */
-  height?: number | "auto";
+  height?: number | "auto" | "content";
   testID?: string;
 }
 
@@ -64,8 +67,17 @@ export function BottomSheet({
   const { height: screenHeight } = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
 
-  const sheetHeight =
-    height === "auto" ? screenHeight * 0.8 : screenHeight * height;
+  // `content` → sem altura fixa (o conteúdo manda). Demais modos calculam uma
+  // altura proporcional. `hideOffset` é o deslocamento para esconder o sheet
+  // (em `content` não sabemos a altura, então usamos a tela inteira — o
+  // overshoot fica invisível abaixo da borda inferior).
+  const isContent = height === "content";
+  const sheetHeight = isContent
+    ? undefined
+    : height === "auto"
+      ? screenHeight * 0.8
+      : screenHeight * height;
+  const hideOffset = sheetHeight ?? screenHeight;
 
   useEffect(() => {
     if (visible) {
@@ -74,12 +86,12 @@ export function BottomSheet({
         easing: Easing.out(Easing.cubic),
       });
     } else {
-      translateY.value = withTiming(sheetHeight, {
+      translateY.value = withTiming(hideOffset, {
         duration: 220,
         easing: Easing.in(Easing.cubic),
       });
     }
-  }, [visible, sheetHeight, translateY]);
+  }, [visible, hideOffset, translateY]);
 
   // Back-button do Android fecha o sheet (substitui `onRequestClose` do Modal).
   useEffect(() => {
@@ -97,7 +109,7 @@ export function BottomSheet({
 
   function handleBackdropPress() {
     translateY.value = withTiming(
-      sheetHeight,
+      hideOffset,
       { duration: 220, easing: Easing.in(Easing.cubic) },
       (finished) => {
         if (finished) {
@@ -135,6 +147,7 @@ export function BottomSheet({
       </Pressable>
 
       <Animated.View
+        testID={`${testID ?? "bottom-sheet"}-panel`}
         style={[
           styles.sheet,
           {
@@ -144,7 +157,7 @@ export function BottomSheet({
             paddingTop: spacing.sm,
             paddingBottom: spacing.xl,
             paddingHorizontal: spacing.lg,
-            height: sheetHeight,
+            ...(sheetHeight === undefined ? null : { height: sheetHeight }),
           },
           animatedStyle,
         ]}

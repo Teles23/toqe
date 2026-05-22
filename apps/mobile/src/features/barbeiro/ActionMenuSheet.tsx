@@ -37,7 +37,7 @@ export function ActionMenuSheet({
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      height="auto"
+      height="content"
       testID="action-menu-sheet"
     >
       <Text

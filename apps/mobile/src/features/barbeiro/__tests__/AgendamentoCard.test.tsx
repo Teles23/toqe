@@ -52,7 +52,7 @@ describe("AgendamentoCard", () => {
       { status: "confirmado", label: "Confirmado" },
       { status: "concluido", label: "Concluído" },
       { status: "cancelado", label: "Cancelado" },
-      { status: "no_show", label: "No-show" },
+      { status: "no_show", label: "Não compareceu" },
     ];
 
     for (const { status, label } of cases) {

@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import {
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +21,13 @@ export interface FormInputProps extends Omit<
   hint?: string;
   /** Ícone Feather opcional à esquerda do campo (ex: "mail", "lock") */
   leftIcon?: keyof typeof Feather.glyphMap;
+  /**
+   * Quando `true`, o campo é tratado como senha: começa oculto e ganha um
+   * botão de olho (Feather `eye`/`eye-off`) à direita para mostrar/ocultar.
+   * O FormInput passa a controlar o `secureTextEntry` internamente — não
+   * passe `secureTextEntry` junto com esta prop.
+   */
+  secureToggle?: boolean;
 }
 
 /**
@@ -28,10 +36,24 @@ export interface FormInputProps extends Omit<
  */
 export const FormInput = forwardRef<TextInput, FormInputProps>(
   function FormInput(
-    { label, error, hint, leftIcon, accessibilityLabel, ...textInputProps },
+    {
+      label,
+      error,
+      hint,
+      leftIcon,
+      secureToggle = false,
+      secureTextEntry,
+      accessibilityLabel,
+      ...textInputProps
+    },
     ref,
   ) {
     const { palette, spacing, radius, typography, a11y } = useTheme();
+    const [hidden, setHidden] = useState(true);
+
+    // Com `secureToggle`, o estado interno comanda a ocultação; sem ele,
+    // respeita o `secureTextEntry` vindo do consumidor.
+    const isSecure = secureToggle ? hidden : secureTextEntry;
 
     return (
       <View style={{ marginBottom: spacing.md }}>
@@ -51,12 +73,13 @@ export const FormInput = forwardRef<TextInput, FormInputProps>(
           ) : null}
           <TextInput
             ref={ref}
+            secureTextEntry={isSecure}
             style={[
               styles.input,
               {
                 borderRadius: radius.md,
                 paddingLeft: leftIcon ? 40 : spacing.md - 2,
-                paddingRight: spacing.md - 2,
+                paddingRight: secureToggle ? 44 : spacing.md - 2,
                 fontFamily: typography.body.fontFamily,
                 fontSize: typography.body.fontSize,
                 minHeight: a11y.minTouch,
@@ -69,6 +92,22 @@ export const FormInput = forwardRef<TextInput, FormInputProps>(
             accessibilityLabel={accessibilityLabel ?? label}
             {...textInputProps}
           />
+          {secureToggle ? (
+            <Pressable
+              onPress={() => setHidden((h) => !h)}
+              style={styles.iconRight}
+              accessibilityRole="button"
+              accessibilityLabel={hidden ? "Mostrar senha" : "Ocultar senha"}
+              testID="toggle-senha"
+              hitSlop={8}
+            >
+              <Feather
+                name={hidden ? "eye" : "eye-off"}
+                size={18}
+                color={palette.textMuted}
+              />
+            </Pressable>
+          ) : null}
         </View>
         {error ? (
           <Text
@@ -95,6 +134,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 14,
     zIndex: 1,
+  },
+  iconRight: {
+    position: "absolute",
+    right: 12,
+    zIndex: 1,
+    padding: 4,
   },
   input: {
     height: 48,

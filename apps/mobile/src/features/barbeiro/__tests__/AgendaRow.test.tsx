@@ -149,7 +149,7 @@ describe("getStatusLabel", () => {
     ["em_andamento", "Atendendo"],
     ["concluido", "Concluído"],
     ["cancelado", "Cancelado"],
-    ["no_show", "No-show"],
+    ["no_show", "Não compareceu"],
   ])("status %s → label %s", (status, label) => {
     expect(getStatusLabel(status)).toBe(label);
   });

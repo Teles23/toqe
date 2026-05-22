@@ -10,13 +10,47 @@
  * busca seus próprios dados e some quando a fila está vazia.
  */
 
-import { useCallback, useEffect, useRef } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  UIManager,
+  View,
+} from "react-native";
+
+import { Feather } from "@expo/vector-icons";
 
 import { FilaCard } from "@/src/features/barbeiro/FilaCard";
 import { useFilaDia } from "@/src/shared/hooks/barbeiro/use-fila-dia";
 import { useToast } from "@/src/shared/hooks/use-toast";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
+
+// Habilita LayoutAnimation no Android (no-op em iOS/Fabric, onde já é nativo).
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// Resumo curto do serviço de um agendamento (para o preview colapsado).
+function resumoServico(
+  ag: Parameters<typeof FilaCard>[0]["agendamento"],
+): string {
+  if (ag.itens.length === 1) return ag.itens[0].servico.nome;
+  return `${ag.itens[0]?.servico.nome ?? "Serviço"} +${ag.itens.length - 1}`;
+}
+
+function minutosAguardando(criadoEm: string): number {
+  return Math.max(
+    0,
+    Math.floor((Date.now() - new Date(criadoEm).getTime()) / 60_000),
+  );
+}
 
 // ─── Pulsing dot vermelho ────────────────────────────────────────────────────
 
@@ -56,16 +90,8 @@ function WalkInCard({
   onAtender: (codigo: number) => void;
   onChangeStatus?: Parameters<typeof FilaCard>[0]["onChangeStatus"];
 }) {
-  const servicoNome =
-    agendamento.itens.length === 1
-      ? agendamento.itens[0].servico.nome
-      : `${agendamento.itens[0]?.servico.nome ?? "Serviço"} +${agendamento.itens.length - 1}`;
-
-  const chegadaMs = new Date(agendamento.criadoEm).getTime();
-  const minutosAguardando = Math.max(
-    0,
-    Math.floor((Date.now() - chegadaMs) / 60_000),
-  );
+  const servicoNome = resumoServico(agendamento);
+  const minutos = minutosAguardando(agendamento.criadoEm);
 
   return (
     <View
@@ -80,9 +106,7 @@ function WalkInCard({
           <Text style={styles.walkInServico} numberOfLines={1}>
             {servicoNome}
           </Text>
-          <Text style={styles.walkInTempo}>
-            Aguardando {minutosAguardando} min
-          </Text>
+          <Text style={styles.walkInTempo}>Aguardando {minutos} min</Text>
         </View>
 
         <Pressable
@@ -109,13 +133,19 @@ function WalkInCard({
 // ─── FilaSection ──────────────────────────────────────────────────────────────
 
 /**
- * Renderiza a seção de fila. Retorna `null` quando não há walk-ins
- * aguardando — assim a Agenda só mostra a seção quando relevante.
+ * Banner colapsável de fila no topo da Agenda. Retorna `null` quando não há
+ * walk-ins aguardando — assim não ocupa espaço nem empurra a lista (Bug UX:
+ * a fila não deve deslocar a agenda).
+ *
+ * - **Colapsado** (padrão): linha única com contador, prévia do primeiro da
+ *   fila e um atalho "Atender →" para ele.
+ * - **Expandido** (tap no banner): mostra todos os walk-ins com `WalkInCard`.
  */
 export function FilaSection() {
   const { data } = useFilaDia();
   const updateStatus = useUpdateStatus();
   const { showToast } = useToast();
+  const [expanded, setExpanded] = useState(false);
 
   const handleAtender = useCallback(
     (codigo: number) => {
@@ -131,29 +161,71 @@ export function FilaSection() {
     [updateStatus, showToast],
   );
 
+  const toggle = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded((e) => !e);
+  }, []);
+
   const filaItems = data ?? [];
   if (filaItems.length === 0) return null;
 
   const pendentes = filaItems.filter((a) => a.status === "pendente");
+  const primeiro = filaItems[0];
 
   return (
     <View testID="fila-section" style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <RedPulsingDot />
-        <Text style={styles.sectionTitle}>
-          FILA · esperando ({pendentes.length})
-        </Text>
+      <View style={styles.bannerRow}>
+        <Pressable
+          testID="fila-banner-toggle"
+          accessibilityRole="button"
+          accessibilityLabel={expanded ? "Recolher fila" : "Expandir fila"}
+          onPress={toggle}
+          style={styles.bannerTap}
+        >
+          <RedPulsingDot />
+          <Text style={styles.sectionTitle}>
+            FILA · esperando ({pendentes.length})
+          </Text>
+          {!expanded && (
+            <Text style={styles.preview} numberOfLines={1}>
+              {primeiro.cliente.nome} · {resumoServico(primeiro)} ·{" "}
+              {minutosAguardando(primeiro.criadoEm)}min
+            </Text>
+          )}
+          <Feather
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color="#ef4444"
+          />
+        </Pressable>
+
+        {/* Atalho de atendimento do primeiro da fila quando colapsado. */}
+        {!expanded && (
+          <Pressable
+            testID={`btn-atender-${primeiro.codigo}`}
+            accessibilityRole="button"
+            accessibilityLabel={`Atender ${primeiro.cliente.nome}`}
+            onPress={() => handleAtender(primeiro.codigo)}
+            style={styles.atenderBtn}
+          >
+            <Text style={styles.atenderBtnText}>Atender →</Text>
+          </Pressable>
+        )}
       </View>
 
-      {filaItems.map((item, idx) => (
-        <View key={item.codigo} style={styles.cardWrap}>
-          <WalkInCard
-            agendamento={item}
-            posicao={idx + 1}
-            onAtender={handleAtender}
-          />
+      {expanded && (
+        <View testID="fila-expanded">
+          {filaItems.map((item, idx) => (
+            <View key={item.codigo} style={styles.cardWrap}>
+              <WalkInCard
+                agendamento={item}
+                posicao={idx + 1}
+                onAtender={handleAtender}
+              />
+            </View>
+          ))}
         </View>
-      ))}
+      )}
     </View>
   );
 }
@@ -165,11 +237,23 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  sectionHeader: {
+  bannerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  bannerTap: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 4,
+    minHeight: 40,
+  },
+  preview: {
+    flex: 1,
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#f5f5f5",
   },
   redDot: {
     width: 8,

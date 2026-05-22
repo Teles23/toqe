@@ -55,10 +55,10 @@ describe("statusToBadge", () => {
     });
   });
 
-  it("no_show vira badge `cancelado` mas mantém label 'No-show'", () => {
+  it("no_show vira badge `cancelado` mas mantém label 'Não compareceu'", () => {
     expect(statusToBadge("no_show")).toEqual({
       badge: "cancelado",
-      label: "No-show",
+      label: "Não compareceu",
     });
   });
 

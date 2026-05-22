@@ -33,7 +33,7 @@ describe("Onboarding v2", () => {
       screen.getByPlaceholderText("joao@barbearia.com"),
     ).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText("Mín. 6 caracteres"),
+      screen.getByPlaceholderText("Mín. 8 caracteres"),
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Repita a senha")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("(11) 99999-9999")).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe("Onboarding v2", () => {
     fireEvent.change(screen.getByPlaceholderText("joao@barbearia.com"), {
       target: { value: "a@b.com" },
     });
-    fireEvent.change(screen.getByPlaceholderText("Mín. 6 caracteres"), {
+    fireEvent.change(screen.getByPlaceholderText("Mín. 8 caracteres"), {
       target: { value: "senha123" },
     });
     fireEvent.change(screen.getByPlaceholderText("Repita a senha"), {
@@ -70,7 +70,7 @@ describe("Onboarding v2", () => {
     fireEvent.change(screen.getByPlaceholderText("joao@barbearia.com"), {
       target: { value: "joao@barbearia.com" },
     });
-    fireEvent.change(screen.getByPlaceholderText("Mín. 6 caracteres"), {
+    fireEvent.change(screen.getByPlaceholderText("Mín. 8 caracteres"), {
       target: { value: "senha123" },
     });
     fireEvent.change(screen.getByPlaceholderText("Repita a senha"), {
@@ -93,7 +93,7 @@ describe("Onboarding v2", () => {
     fireEvent.change(screen.getByPlaceholderText("joao@barbearia.com"), {
       target: { value: "joao@test.com" },
     });
-    fireEvent.change(screen.getByPlaceholderText("Mín. 6 caracteres"), {
+    fireEvent.change(screen.getByPlaceholderText("Mín. 8 caracteres"), {
       target: { value: "senha123" },
     });
     fireEvent.change(screen.getByPlaceholderText("Repita a senha"), {
@@ -117,7 +117,7 @@ describe("Onboarding v2", () => {
     fireEvent.change(screen.getByPlaceholderText("joao@barbearia.com"), {
       target: { value: "joao@test.com" },
     });
-    fireEvent.change(screen.getByPlaceholderText("Mín. 6 caracteres"), {
+    fireEvent.change(screen.getByPlaceholderText("Mín. 8 caracteres"), {
       target: { value: "senha123" },
     });
     fireEvent.change(screen.getByPlaceholderText("Repita a senha"), {

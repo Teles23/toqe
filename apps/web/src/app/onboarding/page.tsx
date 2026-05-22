@@ -360,7 +360,7 @@ function Passo1Conta({
                 type={showPass ? "text" : "password"}
                 value={data.senha}
                 onChange={(e) => onChange("senha", e.target.value)}
-                placeholder="Mín. 6 caracteres"
+                placeholder="Mín. 8 caracteres"
                 autoComplete="new-password"
                 maxLength={128}
                 className="pr-9"

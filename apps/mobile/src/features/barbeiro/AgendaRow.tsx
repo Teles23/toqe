@@ -42,7 +42,7 @@ export function getStatusLabel(status: string): string {
     case "cancelado":
       return "Cancelado";
     case "no_show":
-      return "No-show";
+      return "Não compareceu";
     default:
       return status;
   }

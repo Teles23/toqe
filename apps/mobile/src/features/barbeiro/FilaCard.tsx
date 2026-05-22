@@ -31,7 +31,7 @@ const STATUS_LABEL: Record<StatusAgendamento, string> = {
   em_andamento: "Em atendimento",
   concluido: "Concluído",
   cancelado: "Cancelado",
-  no_show: "No-show",
+  no_show: "Não compareceu",
 };
 
 const ACTIONS: {
@@ -40,7 +40,7 @@ const ACTIONS: {
 }[] = [
   { label: "Chamar agora", status: "confirmado" },
   { label: "Marcar concluído", status: "concluido" },
-  { label: "Marcar no-show", status: "no_show" },
+  { label: "Marcar não compareceu", status: "no_show" },
   { label: "Cancelar", status: "cancelado" },
 ];
 

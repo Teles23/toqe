@@ -144,7 +144,7 @@ describe("LoginForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Senha deve ter ao menos 6 caracteres"),
+        screen.getByText("Senha deve ter ao menos 8 caracteres"),
       ).toBeInTheDocument();
     });
     expect(mutate).not.toHaveBeenCalled();

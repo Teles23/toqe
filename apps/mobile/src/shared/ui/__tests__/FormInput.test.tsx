@@ -71,4 +71,46 @@ describe("FormInput", () => {
     const input = screen.getByLabelText("Senha");
     expect(input.props.secureTextEntry).toBe(true);
   });
+
+  it("sem secureToggle não renderiza o botão de olho", () => {
+    render(<FormInput label="Nome" value="" onChangeText={jest.fn()} />);
+    expect(screen.queryByTestId("toggle-senha")).toBeNull();
+  });
+
+  it("com secureToggle começa oculto e mostra 'Mostrar senha'", () => {
+    render(
+      <FormInput
+        label="Senha"
+        secureToggle
+        testID="campo-senha"
+        value="abc"
+        onChangeText={jest.fn()}
+      />,
+    );
+    expect(screen.getByTestId("campo-senha").props.secureTextEntry).toBe(true);
+    expect(screen.getByTestId("toggle-senha").props.accessibilityLabel).toBe(
+      "Mostrar senha",
+    );
+  });
+
+  it("alterna a visibilidade da senha ao tocar no olho", () => {
+    render(
+      <FormInput
+        label="Senha"
+        secureToggle
+        testID="campo-senha"
+        value="abc"
+        onChangeText={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId("toggle-senha"));
+    expect(screen.getByTestId("campo-senha").props.secureTextEntry).toBe(false);
+    expect(screen.getByTestId("toggle-senha").props.accessibilityLabel).toBe(
+      "Ocultar senha",
+    );
+
+    fireEvent.press(screen.getByTestId("toggle-senha"));
+    expect(screen.getByTestId("campo-senha").props.secureTextEntry).toBe(true);
+  });
 });
