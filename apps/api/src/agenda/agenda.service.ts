@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
+import { ConfigJornadaSemanalDto } from './dto/config-jornada-semanal.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
 import { isTimeOverlap } from '../common/utils/date.utils';
@@ -44,6 +45,54 @@ export class AgendaService {
         barbeiroId,
         barCodigo,
       },
+    });
+  }
+
+  /**
+   * Salva a jornada semanal inteira numa ÚNICA transação (slide 15): dias
+   * ativos criam/atualizam o registro; dias inativos (folga) removem o registro
+   * do dia. Se qualquer passo falha, nada é persistido — a semana fica íntegra.
+   */
+  async upsertJornadaSemanal(
+    barbeiroId: number,
+    barCodigo: number,
+    dto: ConfigJornadaSemanalDto,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      for (const dia of dto.dias) {
+        if (dia.ativo) {
+          const data = {
+            diaSemana: dia.diaSemana,
+            inicio: dia.inicio,
+            fim: dia.fim,
+            almocoIni: dia.almocoIni,
+            almocoFim: dia.almocoFim,
+          };
+          const existing = await tx.jornadaTrabalho.findFirst({
+            where: { barbeiroId, barCodigo, diaSemana: dia.diaSemana },
+          });
+          if (existing) {
+            await tx.jornadaTrabalho.update({
+              where: { codigo: existing.codigo },
+              data,
+            });
+          } else {
+            await tx.jornadaTrabalho.create({
+              data: { ...data, barbeiroId, barCodigo },
+            });
+          }
+        } else {
+          // Folga: remove o registro do dia (se existir).
+          await tx.jornadaTrabalho.deleteMany({
+            where: { barbeiroId, barCodigo, diaSemana: dia.diaSemana },
+          });
+        }
+      }
+
+      return tx.jornadaTrabalho.findMany({
+        where: { barbeiroId, barCodigo },
+        orderBy: { diaSemana: 'asc' },
+      });
     });
   }
 

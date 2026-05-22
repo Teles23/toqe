@@ -10,6 +10,7 @@ const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
 
 const mockAgendaService = {
   upsertJornada: jest.fn(),
+  upsertJornadaSemanal: jest.fn(),
   getJornada: jest.fn(),
   createBloqueio: jest.fn(),
   getAvailableSlots: jest.fn(),
@@ -52,6 +53,42 @@ describe('AgendaController', () => {
 
       expect(() =>
         controller.configurarJornada(5, '3', dto as never, req),
+      ).toThrow('Barbeiro só pode configurar sua própria jornada de trabalho');
+    });
+  });
+
+  describe('salvarJornadaSemanal', () => {
+    const dto = {
+      dias: [
+        {
+          diaSemana: 1,
+          ativo: true,
+          inicio: '09:00',
+          fim: '18:00',
+          almocoIni: '12:00',
+          almocoFim: '13:00',
+        },
+      ],
+    };
+
+    it('delega para agendaService.upsertJornadaSemanal', () => {
+      mockAgendaService.upsertJornadaSemanal.mockResolvedValue([]);
+      const req = { user: { sub: 5, perfil: 'barbeiro' } } as never;
+
+      void controller.salvarJornadaSemanal(5, '3', dto as never, req);
+
+      expect(mockAgendaService.upsertJornadaSemanal).toHaveBeenCalledWith(
+        5,
+        3,
+        dto,
+      );
+    });
+
+    it('lança ForbiddenException se barbeiro tenta alterar jornada de outro', () => {
+      const req = { user: { sub: 99, perfil: 'barbeiro' } } as never;
+
+      expect(() =>
+        controller.salvarJornadaSemanal(5, '3', dto as never, req),
       ).toThrow('Barbeiro só pode configurar sua própria jornada de trabalho');
     });
   });

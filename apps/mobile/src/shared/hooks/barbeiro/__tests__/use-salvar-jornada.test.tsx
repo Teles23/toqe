@@ -14,9 +14,9 @@ jest.mock("expo-router", () => ({
   router: { replace: jest.fn() },
 }));
 
-const mockPost = jest.fn();
+const mockPut = jest.fn();
 jest.mock("@/src/shared/api/api-client", () => ({
-  tenantApi: jest.fn(() => ({ post: mockPost })),
+  tenantApi: jest.fn(() => ({ put: mockPut })),
 }));
 
 const mockUseAuth = jest.fn();
@@ -46,8 +46,10 @@ describe("useSalvarJornada", () => {
     mockUseAuth.mockReturnValue({ barbearia: BARBEARIA, user: USER });
   });
 
-  it("chama POST /agenda/jornada/:barbeiroId com os dados corretos para dias ativos", async () => {
-    mockPost.mockResolvedValue({ diaSemana: 1, inicio: "09:00", fim: "18:00" });
+  it("faz UM PUT /agenda/jornada/:barbeiroId com todos os dias (transacional)", async () => {
+    mockPut.mockResolvedValue([
+      { diaSemana: 1, inicio: "09:00", fim: "18:00" },
+    ]);
 
     const { result } = renderHook(() => useSalvarJornada(), { wrapper });
 
@@ -58,19 +60,33 @@ describe("useSalvarJornada", () => {
       ]);
     });
 
-    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
 
-    expect(mockPost).toHaveBeenCalledWith(`/agenda/jornada/${USER.codigo}`, {
-      diaSemana: 1,
-      inicio: "09:00",
-      fim: "18:00",
-      almocoIni: "12:00",
-      almocoFim: "13:00",
+    // Envia os 2 dias (inclusive o inativo) num único body { dias: [...] }
+    expect(mockPut).toHaveBeenCalledWith(`/agenda/jornada/${USER.codigo}`, {
+      dias: [
+        {
+          diaSemana: 1,
+          ativo: true,
+          inicio: "09:00",
+          fim: "18:00",
+          almocoIni: "12:00",
+          almocoFim: "13:00",
+        },
+        {
+          diaSemana: 0,
+          ativo: false,
+          inicio: "09:00",
+          fim: "18:00",
+          almocoIni: "12:00",
+          almocoFim: "13:00",
+        },
+      ],
     });
   });
 
   it("invalida queryKey ['jornada'] no onSuccess", async () => {
-    mockPost.mockResolvedValue({ diaSemana: 2, inicio: "09:00", fim: "18:00" });
+    mockPut.mockResolvedValue({ diaSemana: 2, inicio: "09:00", fim: "18:00" });
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -105,7 +121,7 @@ describe("useSalvarJornada", () => {
   });
 
   it("propaga erro da API no onError", async () => {
-    mockPost.mockRejectedValue(new Error("Server error"));
+    mockPut.mockRejectedValue(new Error("Server error"));
 
     const { result } = renderHook(() => useSalvarJornada(), { wrapper });
 

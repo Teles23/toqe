@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Put,
   Body,
   Get,
   UseGuards,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { AgendaService } from './agenda.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
+import { ConfigJornadaSemanalDto } from './dto/config-jornada-semanal.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
@@ -56,6 +58,31 @@ export class AgendaController {
       );
     }
     return this.agendaService.upsertJornada(barbeiroId, Number(barCodigo), dto);
+  }
+
+  @Put('jornada/:barbeiroId')
+  @Roles('dono', 'gerente', 'barbeiro')
+  @ApiOperation({
+    summary: 'Salva a jornada semanal inteira (7 dias) numa única transação',
+  })
+  @ApiResponse({ status: 200, description: 'Jornada semanal salva.' })
+  salvarJornadaSemanal(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Body() dto: ConfigJornadaSemanalDto,
+    @Request() req: TenantRequest,
+  ) {
+    // Barbeiro só pode alterar sua própria jornada
+    if (req.user.perfil === 'barbeiro' && req.user.sub !== barbeiroId) {
+      throw new ForbiddenException(
+        'Barbeiro só pode configurar sua própria jornada de trabalho',
+      );
+    }
+    return this.agendaService.upsertJornadaSemanal(
+      barbeiroId,
+      Number(barCodigo),
+      dto,
+    );
   }
 
   @Get('jornada/:barbeiroId')

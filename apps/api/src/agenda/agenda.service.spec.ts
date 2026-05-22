@@ -64,6 +64,51 @@ describe('AgendaService', () => {
     });
   });
 
+  describe('upsertJornadaSemanal (transacional)', () => {
+    function mockTx() {
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: unknown) => unknown) => fn(mockPrisma),
+      );
+    }
+
+    const dia = (diaSemana: number, ativo: boolean) => ({
+      diaSemana,
+      ativo,
+      inicio: '09:00',
+      fim: '18:00',
+      almocoIni: '12:00',
+      almocoFim: '13:00',
+    });
+
+    it('roda tudo numa transação: cria/atualiza ativos e remove (folga) inativos', async () => {
+      mockTx();
+      // dia 1: novo (create); dia 2: já existe (update); dia 0: folga (delete)
+      mockPrisma.jornadaTrabalho.findFirst
+        .mockResolvedValueOnce(null) // dia 1
+        .mockResolvedValueOnce({ codigo: 99 }); // dia 2
+      mockPrisma.jornadaTrabalho.create.mockResolvedValue({});
+      mockPrisma.jornadaTrabalho.update.mockResolvedValue({});
+      mockPrisma.jornadaTrabalho.deleteMany.mockResolvedValue({ count: 1 });
+      mockPrisma.jornadaTrabalho.findMany.mockResolvedValue([{ diaSemana: 1 }]);
+
+      const result = await service.upsertJornadaSemanal(5, 1, {
+        dias: [dia(1, true), dia(2, true), dia(0, false)],
+      });
+
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.jornadaTrabalho.create).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.jornadaTrabalho.update).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.jornadaTrabalho.deleteMany).toHaveBeenCalledWith({
+        where: { barbeiroId: 5, barCodigo: 1, diaSemana: 0 },
+      });
+      // não vaza `ativo` nos dados gravados
+      const createCalls = mockPrisma.jornadaTrabalho.create.mock
+        .calls as unknown as Array<[{ data: Record<string, unknown> }]>;
+      expect(createCalls[0][0].data).not.toHaveProperty('ativo');
+      expect(result).toEqual([{ diaSemana: 1 }]);
+    });
+  });
+
   describe('getAvailableSlots', () => {
     const MEMBRO_TENANT = { usrCodigo: 5, barCodigo: 1, perfil: 'barbeiro' };
 

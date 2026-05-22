@@ -4,8 +4,6 @@ import { tenantApi } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 
 // Dias da semana: 0 = Domingo, 1 = Segunda, ..., 6 = Sábado (ISO: domingo=0)
-// O schema configJornadaSchema exige um POST por dia com diaSemana + inicio + fim + almocoIni + almocoFim.
-// Esta tela simplificada não tem campos de almoço — usamos "12:00"/"13:00" como placeholder.
 
 export interface DiaSemanaPayload {
   /** 0 = domingo … 6 = sábado */
@@ -15,7 +13,7 @@ export interface DiaSemanaPayload {
   ativo: boolean;
 }
 
-/** Resultado de cada upsert de dia (a API retorna o registro criado/atualizado) */
+/** Registro de jornada retornado pela API (um por dia ativo). */
 interface JornadaResult {
   diaSemana: number;
   inicio: string;
@@ -23,42 +21,38 @@ interface JornadaResult {
 }
 
 /**
- * Salva a jornada de trabalho do barbeiro autenticado.
- * Envia um POST /agenda/jornada/:barbeiroId por dia **ativo**.
- * Dias inativos são ignorados (a API não tem endpoint de "desativar dia").
+ * Salva a jornada de trabalho do barbeiro autenticado numa ÚNICA chamada
+ * transacional: `PUT /agenda/jornada/:barbeiroId` com os 7 dias de uma vez.
+ * O backend, numa transação, cria/atualiza os dias ativos e remove (folga) os
+ * inativos — a semana nunca fica meio-salva.
  *
- * Endpoint: POST /agenda/jornada/:barbeiroId
  * Header: x-tenant-id = barbearia.codigo
- * Body por chamada: { diaSemana: number; inicio: string; fim: string; almocoIni: string; almocoFim: string }
+ * Body: { dias: [{ diaSemana, ativo, inicio, fim, almocoIni, almocoFim }] }
  *
  * onSuccess: invalida queryKey ['jornada'] para forçar refetch.
+ *
+ * Almoço: a tela ainda não coleta — placeholder "12:00"/"13:00" (substituir
+ * quando a UI for expandida).
  */
 export function useSalvarJornada() {
   const { barbearia, user } = useAuth();
   const qc = useQueryClient();
 
   return useMutation<JornadaResult[], Error, DiaSemanaPayload[]>({
-    mutationFn: async (dias) => {
-      const tenant = tenantApi(barbearia!.codigo);
-      const barbeiroId = user!.codigo;
-      const ativas = dias.filter((d) => d.ativo);
-
-      const results = await Promise.all(
-        ativas.map((d) =>
-          tenant.post<JornadaResult>(`/agenda/jornada/${barbeiroId}`, {
+    mutationFn: (dias) =>
+      tenantApi(barbearia!.codigo).put<JornadaResult[]>(
+        `/agenda/jornada/${user!.codigo}`,
+        {
+          dias: dias.map((d) => ({
             diaSemana: d.dia,
+            ativo: d.ativo,
             inicio: d.inicio,
             fim: d.fim,
-            // Placeholder de almoço — a tela de jornada ainda não coleta esses campos.
-            // Quando a UI for expandida, substituir pelo valor real.
             almocoIni: "12:00",
             almocoFim: "13:00",
-          }),
-        ),
-      );
-
-      return results;
-    },
+          })),
+        },
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["jornada"] });
     },
