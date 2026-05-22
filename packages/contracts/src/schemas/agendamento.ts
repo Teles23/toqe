@@ -97,6 +97,7 @@ export const listAgendamentoSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato inválido — use YYYY-MM-DD")
     .optional(),
   barbeiroId: z.coerce.number().int().positive().optional(),
+  clienteId: z.coerce.number().int().positive().optional(),
   status: z
     .enum([
       "pendente",

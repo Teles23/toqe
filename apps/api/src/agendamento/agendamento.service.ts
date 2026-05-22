@@ -12,7 +12,7 @@ import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
-import { addMinutes, startOfDay, endOfDay } from 'date-fns';
+import { addMinutes, startOfDay, endOfDay, subDays } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendamentoConfirmadoJob } from '../notificacao/notificacao.types';
 import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
@@ -277,8 +277,13 @@ export class AgendamentoService {
     if (filtros.data) {
       const dia = new Date(filtros.data);
       where.inicio = { gte: startOfDay(dia), lte: endOfDay(dia) };
+    } else if (!filtros.clienteId) {
+      // Sem data e sem cliente específico: aplica janela de 90 dias para evitar
+      // full scan crescente conforme a barbearia acumula histórico.
+      where.inicio = { gte: subDays(new Date(), 90) };
     }
     if (filtros.barbeiroId) where.barbeiroId = filtros.barbeiroId;
+    if (filtros.clienteId) where.clienteId = filtros.clienteId;
     if (filtros.status) where.status = filtros.status;
     if (filtros.tipo) where.tipo = filtros.tipo;
 

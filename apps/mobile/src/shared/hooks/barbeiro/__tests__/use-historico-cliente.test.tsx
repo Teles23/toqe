@@ -69,20 +69,18 @@ describe("useHistoricoCliente", () => {
     expect(mockGet).not.toHaveBeenCalled();
   });
 
-  it("dispara request com status=concluido", async () => {
+  it("dispara request com status=concluido e clienteId no path", async () => {
     mockGet.mockResolvedValueOnce([]);
     renderHook(() => useHistoricoCliente(42, true), { wrapper });
     await waitFor(() => expect(mockGet).toHaveBeenCalled());
-    expect(mockGet.mock.calls[0][0]).toContain("status=concluido");
+    const url: string = mockGet.mock.calls[0][0] as string;
+    expect(url).toContain("status=concluido");
+    expect(url).toContain("clienteId=42");
   });
 
-  it("filtra resultado por cliente.usrCodigo === clienteId", async () => {
-    mockGet.mockResolvedValueOnce([
-      mockAgendamento(1, 42),
-      mockAgendamento(2, 99),
-      mockAgendamento(3, 42),
-      mockAgendamento(4, 100),
-    ]);
+  it("retorna o que a API entrega sem filtro client-side", async () => {
+    const dados = [mockAgendamento(1, 42), mockAgendamento(3, 42)];
+    mockGet.mockResolvedValueOnce(dados);
     const { result } = renderHook(() => useHistoricoCliente(42, true), {
       wrapper,
     });

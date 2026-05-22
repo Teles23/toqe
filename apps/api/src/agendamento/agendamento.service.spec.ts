@@ -284,6 +284,32 @@ describe('AgendamentoService', () => {
       );
       expect(result).toHaveLength(1);
     });
+
+    it('filtra por clienteId quando fornecido e não aplica janela de data', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([mockAgendamento]);
+      const filtros: ListAgendamentoDto = { clienteId: 20 };
+      await service.findAll(barCodigo, filtros);
+      const [call] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: { clienteId?: number; inicio?: unknown } },
+      ];
+      expect(call.where.clienteId).toBe(20);
+      expect(call.where.inicio).toBeUndefined();
+    });
+
+    it('aplica janela default de 90 dias quando não há data nem clienteId', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      const before = new Date();
+      await service.findAll(barCodigo, { status: 'concluido' });
+      const [call] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: { inicio?: { gte: Date } } },
+      ];
+      expect(call.where.inicio).toBeDefined();
+      const gte = call.where.inicio!.gte;
+      const diffMs = before.getTime() - gte.getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      expect(diffDays).toBeGreaterThanOrEqual(89);
+      expect(diffDays).toBeLessThanOrEqual(91);
+    });
   });
 
   describe('findOne', () => {

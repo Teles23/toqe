@@ -25,10 +25,10 @@ app/(barbeiro)/clientes.tsx                                    ← tela principa
 
 ### Hooks
 
-| Hook                                      | Endpoint                             | Detalhe                                                                                                                            |
-| ----------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `useClientesDaBarbearia`                  | `GET /barbearias/:codigo/clientes`   | staleTime 5min — clientes mudam pouco                                                                                              |
-| `useHistoricoCliente(clienteId, enabled)` | `GET /agendamentos?status=concluido` | Lazy (só busca quando modal abre). Filtro client-side por `cliente.usrCodigo === clienteId` porque backend não expõe `?clienteId=` |
+| Hook                                      | Endpoint                                           | Detalhe                                                                               |
+| ----------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `useClientesDaBarbearia`                  | `GET /barbearias/:codigo/clientes`                 | staleTime 5min — clientes mudam pouco                                                 |
+| `useHistoricoCliente(clienteId, enabled)` | `GET /agendamentos?status=concluido&clienteId=:id` | Lazy (só busca quando modal abre). Filtro feito no backend — API aceita `?clienteId=` |
 
 ### Componentes novos
 
@@ -48,7 +48,7 @@ app/(barbeiro)/clientes.tsx                                    ← tela principa
 | **Sort: nome (default) ou última visita** | Os 2 critérios mais usados; outros (mais gasto, mais visitas) podem ser adicionados ao toggle se houver demanda                                                                                 |
 | **Normalização sem acentos**              | `String.normalize('NFD').replace(/[̀-ͯ]/g, '')` — "andre" encontra "André", padrão pt-BR                                                                                                          |
 | **Modal de detalhe (não rota)**           | Cliente é uma "preview" — não deeplink, não rota. Modal pageSheet do iOS/Android dá UX nativa                                                                                                   |
-| **Filtro client-side do histórico**       | Backend `/agendamentos?status=concluido` retorna todos da barbearia; filter no array por `cliente.usrCodigo`. Aceitável para histórico (pequeno por cliente)                                    |
+| **Filtro server-side do histórico**       | Backend aceita `?clienteId=` no `GET /agendamentos`. Filtra no banco; não carrega toda a barbearia no mobile. Janela default de 90 dias aplica quando não há `?data=` nem `?clienteId=`         |
 
 ---
 
@@ -67,13 +67,13 @@ app/(barbeiro)/clientes.tsx                                    ← tela principa
 pnpm --filter mobile test
 ```
 
-| Spec                                 | Cenários                                                                                            |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `use-clientes-da-barbearia.test.tsx` | enabled sem barbearia, tenantId correto, queryKey por barbearia                                     |
-| `use-historico-cliente.test.tsx`     | lazy (enabled=false), status=concluido na query, filtro por usrCodigo, clienteId=0 não dispara      |
-| `SearchInput.test.tsx`               | placeholder+ícone, clear button condicional, onChangeText                                           |
-| `ClienteCard.test.tsx`               | nome/email/métricas formatadas (BRL), data dd/MM/yyyy, "Sem visitas", favorito condicional, onPress |
-| `clientes.test.tsx`                  | loading/empty/error/lista, contagem, busca filtra, ignora acentos, sort toggle, tap abre modal      |
+| Spec                                 | Cenários                                                                                                        |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `use-clientes-da-barbearia.test.tsx` | enabled sem barbearia, tenantId correto, queryKey por barbearia                                                 |
+| `use-historico-cliente.test.tsx`     | lazy (enabled=false), status=concluido + clienteId na URL, retorna dados da API direto, clienteId=0 não dispara |
+| `SearchInput.test.tsx`               | placeholder+ícone, clear button condicional, onChangeText                                                       |
+| `ClienteCard.test.tsx`               | nome/email/métricas formatadas (BRL), data dd/MM/yyyy, "Sem visitas", favorito condicional, onPress             |
+| `clientes.test.tsx`                  | loading/empty/error/lista, contagem, busca filtra, ignora acentos, sort toggle, tap abre modal                  |
 
 ### Maestro
 
