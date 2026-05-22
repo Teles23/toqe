@@ -6,6 +6,15 @@ import { ExpoConfig } from "expo/config";
 // gerenciar o link do projeto via `eas init` / `eas credentials`.
 const projectId = "d9c90eca-f4b9-4a14-a740-523935615a09";
 
+// URL da API resolvida por ambiente:
+//  - dev (expo start): vem de EXPO_PUBLIC_API_URL (definido em .env.local →
+//    aponta para o container dev na sua máquina). Ver docs/dev.
+//  - build EAS (APK/loja): cada perfil em eas.json define EXPO_PUBLIC_API_URL;
+//    production usa a URL de produção.
+//  - fallback (nada definido): produção, para nunca vazar dev num build.
+const API_URL_PROD = "https://toqe.duckdns.org/api/v1";
+const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? API_URL_PROD;
+
 const config: ExpoConfig = {
   name: "Toqe",
   slug: "toqe-mobile",
@@ -81,7 +90,7 @@ const config: ExpoConfig = {
   runtimeVersion: { policy: "appVersion" },
 
   extra: {
-    apiUrl: "https://toqe.duckdns.org/api/v1",
+    apiUrl,
     googleWebClientId:
       "1095847529893-b71gjl8nqpjl5vo0ppd5c5iljfof684m.apps.googleusercontent.com",
     eas: { projectId },

@@ -38,11 +38,18 @@ services:
     volumes:
       # Packages compartilhados — tipos, validators, config
       #- ./packages:/app/packages
-      # Isola node_modules do container (não usa o da máquina host)
+      # Isola node_modules do container (não usa o da máquina host).
+      # IMPORTANTE: o `pnpm install` no workspace toca o node_modules de TODOS os
+      # packages. Sem volume, ele reescreveria o node_modules do host (Windows)
+      # com symlinks/binários Linux e quebraria o tooling Windows (e vice-versa).
+      # Por isso isolamos cada package usado pelo container OU pelo tooling.
       - .:/app
       - api_dev_node_modules:/app/node_modules
       - api_dev_app_node_modules:/app/apps/api/node_modules
       - api_dev_contracts_node_modules:/app/packages/contracts/node_modules
+      - api_dev_mobile_node_modules:/app/apps/mobile/node_modules
+      - api_dev_shared_node_modules:/app/packages/shared/node_modules
+      - api_dev_config_node_modules:/app/packages/config/node_modules
     healthcheck:
       test:
         [
@@ -132,6 +139,9 @@ volumes:
   api_dev_node_modules:
   api_dev_app_node_modules:
   api_dev_contracts_node_modules:
+  api_dev_mobile_node_modules:
+  api_dev_shared_node_modules:
+  api_dev_config_node_modules:
   web_dev_node_modules:
   web_dev_app_node_modules:
   web_dev_next_cache:
