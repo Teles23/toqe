@@ -13,17 +13,25 @@
  */
 
 import { Feather } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  BackHandler,
+  Keyboard,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/src/shared/hooks/use-auth";
@@ -45,10 +53,13 @@ interface Props {
 export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
   const { palette, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { user } = useAuth();
   const { data: servicos = [] } = useServicos();
   const criarWalkIn = useCriarWalkIn();
   const { showToast } = useToast();
+
+  const translateY = useSharedValue(screenHeight);
 
   const ativos = useMemo(() => servicos.filter((s) => s.ativo), [servicos]);
 
@@ -65,17 +76,40 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
     }
   }, [ativos, servicoId]);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setNome("");
     setServicoId(ativos[0]?.codigo ?? null);
     setDuration(ativos[0]?.duracaoBase ?? 30);
     setErro(null);
-  };
+  }, [ativos]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    Keyboard.dismiss();
     reset();
     onClose();
-  };
+  }, [reset, onClose]);
+
+  // Slide up/down ao abrir/fechar (substitui o animationType do Modal removido).
+  useEffect(() => {
+    translateY.value = withTiming(visible ? 0 : screenHeight, {
+      duration: visible ? 280 : 220,
+      easing: visible ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+    });
+  }, [visible, screenHeight, translateY]);
+
+  // Back-button do Android fecha o sheet (substitui onRequestClose do Modal).
+  useEffect(() => {
+    if (!visible) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      handleClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [visible, handleClose]);
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const handleSelectServico = (codigo: number, duracaoBase: number) => {
     setServicoId(codigo);
@@ -106,28 +140,26 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
       reset();
       onSuccess?.();
       onClose();
-    } catch {
-      setErro("Não foi possível adicionar à fila. Tente novamente.");
+    } catch (err) {
+      const detalhe = err instanceof Error ? err.message : "tente novamente";
+      setErro(`Não foi possível adicionar o encaixe · ${detalhe}`);
     }
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={handleClose}
-    >
+    <View style={styles.overlayRoot} testID="walkin-sheet">
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <Pressable
           style={[styles.backdrop, { backgroundColor: palette.overlay }]}
           onPress={handleClose}
           accessibilityLabel="Fechar"
         />
-        <View style={styles.sheet}>
+        <Animated.View style={[styles.sheet, sheetStyle]}>
           {/* Drag handle */}
           <View style={styles.dragHandle} />
 
@@ -278,13 +310,20 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
               disabled={!nome.trim() || criarWalkIn.isPending}
             />
           </View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
-    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Overlay in-screen (não Modal): cobre só a área de conteúdo, deixando a
+  // tab bar do Expo Router visível abaixo. zIndex/elevation acima do FAB (10).
+  overlayRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    elevation: 20,
+  },
   flex: { flex: 1, justifyContent: "flex-end" },
   backdrop: { ...StyleSheet.absoluteFillObject },
   sheet: {
