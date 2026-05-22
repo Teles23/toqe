@@ -43,8 +43,8 @@ function pickStorage(): Storage {
   // window.localStorage pode não estar disponível em SSR
   const hasLocalStorage =
     typeof globalThis !== "undefined" &&
-    typeof (globalThis as { localStorage?: Storage }).localStorage !==
-      "undefined";
+    typeof (globalThis as { localStorage?: globalThis.Storage })
+      .localStorage !== "undefined";
 
   if (!hasLocalStorage) {
     return {
