@@ -1,5 +1,9 @@
+// Home do cliente — exercita os hooks reais (useProximoAgendamento /
+// useProximosSlots / useAgendamentosMeus) + api-client real. Só o boundary
+// HTTP (global.fetch) e a sessão (useAuth) são mockados.
+
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue("fake-access-token"),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -14,58 +18,66 @@ jest.mock("expo-router", () => ({
   router: { replace: jest.fn(), push: jest.fn() },
 }));
 
-jest.mock("@/src/shared/hooks/cliente/use-proximo-agendamento", () => ({
-  useProximoAgendamento: jest.fn(),
-}));
-
-jest.mock("@/src/shared/hooks/cliente/use-proximos-slots", () => ({
-  useProximosSlots: jest.fn(),
-}));
-
-jest.mock("@/src/shared/hooks/cliente/use-agendamentos-meus", () => ({
-  useAgendamentosMeus: jest.fn(),
-}));
-
 const mockUseAuth = jest.fn();
 jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
-import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
-import { useProximoAgendamento } from "@/src/shared/hooks/cliente/use-proximo-agendamento";
-import { useProximosSlots } from "@/src/shared/hooks/cliente/use-proximos-slots";
 import ClienteHomeScreen from "../home";
 
-const mockUseProximoAgendamento = useProximoAgendamento as jest.Mock;
-const mockUseProximosSlots = useProximosSlots as jest.Mock;
-const mockUseAgendamentosMeus = useAgendamentosMeus as jest.Mock;
+// ─── Boundary HTTP ───────────────────────────────────────────────────────────
+
+const originalFetch = global.fetch;
+
+function makeRes(body: unknown, status = 200) {
+  return {
+    ok: status < 400,
+    status,
+    url: "http://localhost:3000/api/v1",
+    json: async () => body,
+  };
+}
+
+function setupFetch(opts: {
+  proximo?: unknown;
+  slots?: unknown;
+  slotsStatus?: number;
+  meus?: unknown[];
+}) {
+  const { proximo = null, slots = null, slotsStatus = 200, meus = [] } = opts;
+  global.fetch = jest.fn(async (url: unknown) => {
+    const u = String(url);
+    if (u.includes("/agendamentos/proximo")) return makeRes(proximo);
+    if (u.includes("/agenda/proximos")) return makeRes(slots, slotsStatus);
+    if (u.includes("/agendamentos/meus")) return makeRes(meus);
+    return makeRes([]);
+  }) as unknown as typeof fetch;
+}
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+function renderScreen() {
+  return render(<ClienteHomeScreen />, { wrapper });
+}
 
 function authWithBarbearia(nome = "Urban Flow") {
   return {
-    user: {
-      codigo: 1,
-      nome: "Carlos Silva",
-      email: "c@x.com",
-      telefone: null,
-      avatarUrl: null,
-    },
+    user: { codigo: 1, nome: "Carlos Silva", email: "c@x.com" },
     barbearia: { codigo: 1, nome, perfil: "cliente" },
     barbearias: [{ codigo: 1, nome, perfil: "cliente" }],
   };
 }
-
 function authWithoutBarbearia() {
   return {
-    user: {
-      codigo: 1,
-      nome: "Carlos Silva",
-      email: "c@x.com",
-      telefone: null,
-      avatarUrl: null,
-    },
+    user: { codigo: 1, nome: "Carlos Silva", email: "c@x.com" },
     barbearia: null,
     barbearias: [],
   };
@@ -85,115 +97,89 @@ const slotsMock = {
 
 describe("ClienteHomeScreen", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    jest.clearAllMocks();
     mockUseAuth.mockReset();
-    mockUseProximoAgendamento.mockReturnValue({ data: null });
-    mockUseProximosSlots.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: false,
-    });
-    mockUseAgendamentosMeus.mockReturnValue({ data: null });
+    setupFetch({}); // default: tudo vazio/null
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
-  it('1. renderiza "Início" no header quando barbearia está configurada', () => {
+  it('1. renderiza "Início" no header quando barbearia está configurada', async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    render(<ClienteHomeScreen />);
+    renderScreen();
+    await screen.findByTestId("quick-book-empty"); // aguarda hooks resolverem
     expect(screen.getByText("Início")).toBeTruthy();
   });
 
-  it("2. mostra nome da barbearia no header pill", () => {
+  it("2. mostra nome da barbearia no header pill", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia("Urban Flow"));
-    render(<ClienteHomeScreen />);
+    renderScreen();
+    await screen.findByTestId("quick-book-empty");
     expect(screen.getByText("Urban Flow")).toBeTruthy();
   });
 
   it("3. mostra home-sem-barbearia quando sem barbearia", () => {
     mockUseAuth.mockReturnValue(authWithoutBarbearia());
-    render(<ClienteHomeScreen />);
+    renderScreen();
     expect(screen.getByTestId("home-sem-barbearia")).toBeTruthy();
     expect(
       screen.getByText(/Encontre e agende em barbearias perto de você/),
     ).toBeTruthy();
   });
 
-  it("4. mostra quick-book-empty quando slots retorna array vazio", () => {
+  it("4. mostra quick-book-empty quando a API retorna slots vazios", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    mockUseProximosSlots.mockReturnValue({
-      data: { ...slotsMock, slots: [] },
-      isLoading: false,
-      isError: false,
-    });
-    render(<ClienteHomeScreen />);
-    expect(screen.getByTestId("quick-book-empty")).toBeTruthy();
+    setupFetch({ slots: { ...slotsMock, slots: [] } });
+    renderScreen();
+    expect(await screen.findByTestId("quick-book-empty")).toBeTruthy();
   });
 
-  it("5. mostra quick-book-empty quando slots hook retorna data null", () => {
+  it("5. mostra quick-book-empty quando a API retorna null", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    mockUseProximosSlots.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ClienteHomeScreen />);
-    expect(screen.getByTestId("quick-book-empty")).toBeTruthy();
+    setupFetch({ slots: null });
+    renderScreen();
+    expect(await screen.findByTestId("quick-book-empty")).toBeTruthy();
   });
 
-  it("6. mostra quick-book-btn-ver-horarios quando há slots disponíveis", () => {
+  it("6. mostra botão Ver horários quando há slots disponíveis", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    mockUseProximosSlots.mockReturnValue({
-      data: slotsMock,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ClienteHomeScreen />);
-    expect(screen.getByTestId("quick-book-btn-ver-horarios")).toBeTruthy();
+    setupFetch({ slots: slotsMock });
+    renderScreen();
+    expect(
+      await screen.findByTestId("quick-book-btn-ver-horarios"),
+    ).toBeTruthy();
   });
 
-  it("7. pressionar Ver horários mostra os slots disponíveis", () => {
+  it("7. pressionar Ver horários mostra os slots disponíveis", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    mockUseProximosSlots.mockReturnValue({
-      data: slotsMock,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ClienteHomeScreen />);
-    fireEvent.press(screen.getByTestId("quick-book-btn-ver-horarios"));
+    setupFetch({ slots: slotsMock });
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("quick-book-btn-ver-horarios"));
     expect(screen.getByTestId("slot-14-30")).toBeTruthy();
     expect(screen.getByTestId("slot-15-00")).toBeTruthy();
   });
 
-  it("8. mostra quick-book-confirmed após pressionar confirmar", async () => {
+  it("8. mostra quick-book-confirmed após confirmar (fluxo client-side)", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    mockUseProximosSlots.mockReturnValue({
-      data: slotsMock,
-      isLoading: false,
-      isError: false,
-    });
-    render(<ClienteHomeScreen />);
-
-    // Navigate to loaded view
-    fireEvent.press(screen.getByTestId("quick-book-btn-ver-horarios"));
-
-    // Press confirm
+    setupFetch({ slots: slotsMock });
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("quick-book-btn-ver-horarios"));
     fireEvent.press(screen.getByTestId("quick-book-btn-confirmar"));
-
-    // Advance timers to complete the mock setTimeout (1000ms)
-    await act(async () => {
-      jest.advanceTimersByTime(1100);
-    });
-
-    expect(screen.getByTestId("quick-book-confirmed")).toBeTruthy();
+    // handleConfirm aguarda ~1s antes de marcar como confirmado.
+    expect(
+      await screen.findByTestId("quick-book-confirmed", undefined, {
+        timeout: 4000,
+      }),
+    ).toBeTruthy();
   });
 
-  it("9. mostra next-apt-card quando há próximo agendamento", () => {
+  it("9. mostra next-apt-card quando há próximo agendamento", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    mockUseProximoAgendamento.mockReturnValue({
-      data: {
+    setupFetch({
+      slots: slotsMock,
+      proximo: {
         codigo: 1,
         inicio: "2026-05-22T14:30:00Z",
         status: "confirmado",
@@ -201,14 +187,15 @@ describe("ClienteHomeScreen", () => {
         barbeiro: { nome: "João" },
       },
     });
-    render(<ClienteHomeScreen />);
-    expect(screen.getByTestId("next-apt-card")).toBeTruthy();
+    renderScreen();
+    expect(await screen.findByTestId("next-apt-card")).toBeTruthy();
   });
 
-  it("10. não mostra next-apt-card quando não há próximo agendamento", () => {
+  it("10. não mostra next-apt-card quando não há próximo agendamento", async () => {
     mockUseAuth.mockReturnValue(authWithBarbearia());
-    mockUseProximoAgendamento.mockReturnValue({ data: null });
-    render(<ClienteHomeScreen />);
+    setupFetch({ proximo: null, slots: slotsMock });
+    renderScreen();
+    await screen.findByTestId("quick-book-btn-ver-horarios"); // settle
     expect(screen.queryByTestId("next-apt-card")).toBeNull();
   });
 });
