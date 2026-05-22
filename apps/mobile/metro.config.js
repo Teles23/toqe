@@ -12,6 +12,9 @@ const escape = (p) => p.replace(/[/\\]/g, "[\\\\/]").replace(/\./g, "\\.");
 config.resolver.blockList = [
   new RegExp(`^${escape(path.resolve(monorepoRoot, "apps/web"))}[\\/].*$`),
   new RegExp(`^${escape(path.resolve(monorepoRoot, "apps/api"))}[\\/].*$`),
+  /.*[/\\]__tests__[/\\].*/,
+  /.*\.test\.[jt]sx?$/,
+  /.*\.spec\.[jt]sx?$/,
 ];
 // watchFolders: apenas os packages que mudam durante o desenvolvimento.
 //
