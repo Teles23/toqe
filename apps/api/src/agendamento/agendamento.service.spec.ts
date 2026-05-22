@@ -400,9 +400,9 @@ describe('AgendamentoService', () => {
     it('inclui em_andamento entre os status considerados "atual"', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
       await service.agendamentoAtual(10, barCodigo);
-      const arg = mockPrisma.agendamento.findFirst.mock.calls.at(-1)?.[0] as {
-        where: { status: { in: string[] } };
-      };
+      const calls = mockPrisma.agendamento.findFirst.mock
+        .calls as unknown as Array<[{ where: { status: { in: string[] } } }]>;
+      const arg = calls[calls.length - 1][0];
       expect(arg.where.status.in).toContain('em_andamento');
     });
   });

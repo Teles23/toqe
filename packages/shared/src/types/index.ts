@@ -29,6 +29,8 @@ export interface UsuarioMe {
   avatarUrl: string | null;
   twoFaEnabled?: boolean;
   superAdmin?: boolean;
+  /** Link público compartilhável do barbeiro (ex.: "toqe.app/u/carlos-mendes"). */
+  linkPublico?: string;
   barbearias: BarbeariaResumo[];
 }
 

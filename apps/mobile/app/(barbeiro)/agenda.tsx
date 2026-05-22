@@ -41,9 +41,11 @@ import { useTheme } from "@/src/shared/theme";
 import {
   DataListWrapper,
   EmptyScreen,
+  GhostButton,
   ListSkeleton,
   TenantSwitcherSheet,
 } from "@/src/shared/ui";
+import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 
 import type { DetailAction } from "@/src/features/barbeiro/AppointmentDetailSheet";
@@ -184,8 +186,9 @@ const nowStyles = StyleSheet.create({
 export default function BarbeiroAgendaScreen() {
   const { palette, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  const { barbearia, barbearias } = useAuth();
+  const { user, barbearia, barbearias } = useAuth();
   const { showToast } = useToast();
+  const compartilharLink = useCompartilharLink();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data, isLoading, isRefetching, refetch, isError } =
@@ -421,6 +424,16 @@ export default function BarbeiroAgendaScreen() {
               title="Dia livre"
               description="Sem agendamentos hoje. Bom momento pra walk-in ou organizar a semana."
               testID="agenda-empty"
+              action={
+                user?.linkPublico ? (
+                  <GhostButton
+                    label="Copiar link público"
+                    icon="link"
+                    testID="btn-copiar-link"
+                    onPress={() => compartilharLink(user.linkPublico!)}
+                  />
+                ) : undefined
+              }
             />
           ) : (
             <EmptyScreen

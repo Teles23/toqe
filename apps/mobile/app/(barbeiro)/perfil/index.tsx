@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { usePerfilBasePath } from "@/src/features/perfil/use-perfil-base-path";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
 import { useBarbeiroStats } from "@/src/shared/hooks/barbeiro/use-barbeiro-stats";
 import { useTheme } from "@/src/shared/theme";
 import { Avatar, Divider, SkeletonBox } from "@/src/shared/ui";
@@ -251,6 +252,7 @@ export default function PerfilIndexScreen() {
   const basePath = usePerfilBasePath();
   const { user, perfil, barbearias, barbearia, switchBarbearia, logout } =
     useAuth();
+  const compartilharLink = useCompartilharLink();
   const {
     data: barbeiroStats,
     isLoading: statsLoading,
@@ -353,9 +355,13 @@ export default function PerfilIndexScreen() {
             {roleLabel}
             {barbearia ? ` · ${barbearia.nome}` : ""}
           </Text>
-          {barbearia?.slug ? (
+          {user?.linkPublico ? (
             <Pressable
-              style={[
+              testID="btn-copiar-link"
+              accessibilityRole="button"
+              accessibilityLabel="Copiar link público"
+              onPress={() => compartilharLink(user.linkPublico!)}
+              style={({ pressed }) => [
                 styles.urlPill,
                 {
                   marginTop: spacing.sm,
@@ -365,11 +371,12 @@ export default function PerfilIndexScreen() {
                   backgroundColor: palette.primary + "14",
                   paddingHorizontal: spacing.md,
                   paddingVertical: 7,
+                  opacity: pressed ? 0.7 : 1,
                 },
               ]}
             >
               <Text style={[styles.urlPillText, { color: palette.primary }]}>
-                toqe.app/u/{barbearia.slug}
+                {user.linkPublico}
               </Text>
             </Pressable>
           ) : null}

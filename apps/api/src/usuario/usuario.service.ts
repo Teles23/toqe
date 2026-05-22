@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import { linkPublicoBarbeiro } from '../common/utils/slug.utils';
 import * as bcrypt from 'bcrypt';
 
 const SELECT_PERFIL = {
@@ -65,6 +66,7 @@ export class UsuarioService {
     const { membros, ...rest } = usuario;
     return {
       ...rest,
+      linkPublico: linkPublicoBarbeiro(usuario.nome),
       barbearias: membros.map((m) => ({
         codigo: m.barbearia.codigo,
         nome: m.barbearia.nome,
