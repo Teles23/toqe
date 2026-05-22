@@ -1,5 +1,5 @@
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue("fake-access-token"),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -20,11 +20,6 @@ jest.mock("expo-router", () => ({
   useSegments: jest.fn(() => ["(cliente)", "agendamentos"]),
 }));
 
-const mockUseAgendamentos = jest.fn();
-jest.mock("@/src/shared/hooks/cliente/use-agendamentos-meus", () => ({
-  useAgendamentosMeus: () => mockUseAgendamentos(),
-}));
-
 jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: () => ({
     barbearia: { codigo: 1, nome: "Urban Flow", perfil: "cliente" },
@@ -33,23 +28,67 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
   }),
 }));
 
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import React from "react";
 
 import type { AgendamentoResponse } from "@toqe/shared";
 
 import ClienteAgendamentosScreen from "../index";
 
+// ─── Infra: mock APENAS o boundary HTTP (global.fetch). O api-client real,
+// o hook real (useAgendamentosMeus) e a tela real são exercitados de verdade. ──
+
+const originalFetch = global.fetch;
+
+interface FakeResponse {
+  ok: boolean;
+  status: number;
+  url: string;
+  json: () => Promise<unknown>;
+}
+
+function makeRes(body: unknown, status = 200): FakeResponse {
+  return {
+    ok: status < 400,
+    status,
+    url: "http://localhost:3000/api/v1/agendamentos/meus",
+    json: async () => body,
+  };
+}
+
+/** Resolve toda chamada GET /agendamentos/meus com o payload informado. */
+function respondWith(body: unknown, status = 200) {
+  global.fetch = jest.fn(async () =>
+    makeRes(body, status),
+  ) as unknown as typeof fetch;
+}
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
+function renderScreen() {
+  return render(<ClienteAgendamentosScreen />, { wrapper });
+}
+
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-/** Agendamento futuro (próximos) */
 function makeProximo(
   codigo: number,
   over: Partial<AgendamentoResponse> = {},
 ): AgendamentoResponse {
   return {
     codigo,
-    inicio: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), // +1 day
+    inicio: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), // +1 dia
     fim: new Date(Date.now() + 1000 * 60 * 60 * 25).toISOString(),
     status: "confirmado",
     barbeiro: { usrCodigo: 10, nome: "Carlos Barbeiro", avatarUrl: null },
@@ -67,14 +106,13 @@ function makeProximo(
   };
 }
 
-/** Agendamento passado (histórico) */
 function makeHistorico(
   codigo: number,
   over: Partial<AgendamentoResponse> = {},
 ): AgendamentoResponse {
   return {
     codigo,
-    inicio: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // -1 day
+    inicio: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // -1 dia
     fim: new Date(Date.now() - 1000 * 60 * 60 * 23).toISOString(),
     status: "concluido",
     barbeiro: { usrCodigo: 10, nome: "Carlos Barbeiro", avatarUrl: null },
@@ -92,17 +130,6 @@ function makeHistorico(
   };
 }
 
-function mockQ(over = {}) {
-  return {
-    data: undefined as AgendamentoResponse[] | undefined,
-    isLoading: false,
-    isError: false,
-    isRefetching: false,
-    refetch: jest.fn(),
-    ...over,
-  };
-}
-
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("ClienteAgendamentosScreen", () => {
@@ -110,66 +137,78 @@ describe("ClienteAgendamentosScreen", () => {
     jest.clearAllMocks();
   });
 
-  it("mostra loading state", () => {
-    mockUseAgendamentos.mockReturnValue(mockQ({ isLoading: true }));
-    render(<ClienteAgendamentosScreen />);
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
+  it("mostra loading enquanto a query do hook real está pendente", () => {
+    // fetch nunca resolve → useAgendamentosMeus fica em isLoading.
+    global.fetch = jest.fn(
+      () => new Promise<never>(() => {}),
+    ) as unknown as typeof fetch;
+    renderScreen();
     expect(screen.getByTestId("lista-meus-agendamentos-loading")).toBeTruthy();
   });
 
-  it("renderiza container principal com testID", () => {
-    mockUseAgendamentos.mockReturnValue(mockQ({ data: [] }));
-    render(<ClienteAgendamentosScreen />);
+  it("renderiza container e abas a partir do hook real (lista vazia)", async () => {
+    respondWith([]);
+    renderScreen();
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("lista-meus-agendamentos-loading"),
+      ).toBeNull(),
+    );
     expect(screen.getByTestId("lista-meus-agendamentos")).toBeTruthy();
-  });
-
-  it("tabs proximos e historico são renderizadas", () => {
-    mockUseAgendamentos.mockReturnValue(mockQ({ data: [] }));
-    render(<ClienteAgendamentosScreen />);
     expect(screen.getByTestId("tab-proximos")).toBeTruthy();
     expect(screen.getByTestId("tab-historico")).toBeTruthy();
-  });
-
-  it("tab proximos vazia mostra mensagem de vazio", () => {
-    mockUseAgendamentos.mockReturnValue(mockQ({ data: [] }));
-    render(<ClienteAgendamentosScreen />);
     expect(screen.getByText(/nenhum agendamento futuro/i)).toBeTruthy();
+    // chamou o endpoint de tenant correto
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://localhost:3000/api/v1/agendamentos/meus",
+      expect.objectContaining({ method: "GET" }),
+    );
   });
 
-  it("renderiza item de agendamento próximo", () => {
-    const item = makeProximo(99);
-    mockUseAgendamentos.mockReturnValue(mockQ({ data: [item] }));
-    render(<ClienteAgendamentosScreen />);
-    expect(screen.getByTestId("apt-row-99")).toBeTruthy();
+  it("renderiza item de agendamento próximo vindo da API", async () => {
+    respondWith([makeProximo(99)]);
+    renderScreen();
+    expect(await screen.findByTestId("apt-row-99")).toBeTruthy();
   });
 
-  it("tap em row navega para detalhe", () => {
-    const item = makeProximo(42);
-    mockUseAgendamentos.mockReturnValue(mockQ({ data: [item] }));
-    render(<ClienteAgendamentosScreen />);
-    fireEvent.press(screen.getByTestId("apt-row-42"));
+  it("tap em row navega para o detalhe", async () => {
+    respondWith([makeProximo(42)]);
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("apt-row-42"));
     expect(mockPush).toHaveBeenCalledWith("/(cliente)/agendamentos/42");
   });
 
-  it("trocar para tab histórico mostra agendamentos passados", () => {
-    const futuro = makeProximo(1);
-    const passado = makeHistorico(2);
-    mockUseAgendamentos.mockReturnValue(mockQ({ data: [futuro, passado] }));
-    render(<ClienteAgendamentosScreen />);
+  it("alterna para a aba histórico e filtra passados x futuros (lógica real)", async () => {
+    respondWith([makeProximo(1), makeHistorico(2)]);
+    renderScreen();
 
-    // Inicialmente na tab próximos — item passado não visível
+    // Aba próximos: só o futuro aparece.
+    expect(await screen.findByTestId("apt-row-1")).toBeTruthy();
     expect(screen.queryByTestId("apt-row-2")).toBeNull();
 
-    // Trocar para histórico
+    // Troca para histórico: inverte.
     fireEvent.press(screen.getByTestId("tab-historico"));
     expect(screen.getByTestId("apt-row-2")).toBeTruthy();
-    // item futuro some
     expect(screen.queryByTestId("apt-row-1")).toBeNull();
   });
 
-  it("mostra mensagem de vazio no histórico quando não há passados", () => {
-    mockUseAgendamentos.mockReturnValue(mockQ({ data: [makeProximo(1)] }));
-    render(<ClienteAgendamentosScreen />);
+  it("mostra vazio no histórico quando só há futuros", async () => {
+    respondWith([makeProximo(1)]);
+    renderScreen();
+    await screen.findByTestId("apt-row-1");
     fireEvent.press(screen.getByTestId("tab-historico"));
     expect(screen.getByText(/nenhum agendamento no histórico/i)).toBeTruthy();
+  });
+
+  it("mostra erro quando a API responde 500", async () => {
+    respondWith({ message: "Erro interno" }, 500);
+    renderScreen();
+    expect(
+      await screen.findByText(/não foi possível carregar seus agendamentos/i),
+    ).toBeTruthy();
   });
 });

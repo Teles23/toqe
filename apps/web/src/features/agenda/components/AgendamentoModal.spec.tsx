@@ -1,130 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { http, HttpResponse, delay } from "msw";
 import React from "react";
 import { AgendamentoModal } from "./AgendamentoModal";
 import { createWrapper, mockAuthContext } from "@/test/render-helpers";
+import { server } from "@/test/msw-handlers";
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
+// ─── Mocks: só infra/sessão. Os hooks de dados (useBarbeiros/useClientes/
+// useServicos/useAgenda*) rodam de VERDADE, alimentados pelos handlers MSW. ──
 
 vi.mock("@/shared/hooks/use-auth", () => ({
-  useAuth: vi.fn(),
-}));
-
-vi.mock("@/features/barbeiros/hooks/use-barbeiros", () => ({
-  useBarbeiros: vi.fn(),
-}));
-
-vi.mock("@/features/clientes/hooks/use-clientes", () => ({
-  useClientes: vi.fn(),
-}));
-
-vi.mock("@/features/servicos/hooks/use-servicos", () => ({
-  useServicos: vi.fn(),
-}));
-
-vi.mock("../hooks/use-agenda", () => ({
-  useAgendaMutations: vi.fn(),
-  useDisponibilidade: vi.fn(),
+  useAuth: vi.fn(() => mockAuthContext),
 }));
 
 vi.mock("sonner", () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-  },
+  toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-import { useAuth } from "@/shared/hooks/use-auth";
-import { useBarbeiros } from "@/features/barbeiros/hooks/use-barbeiros";
-import { useClientes } from "@/features/clientes/hooks/use-clientes";
-import { useServicos } from "@/features/servicos/hooks/use-servicos";
-import { useAgendaMutations, useDisponibilidade } from "../hooks/use-agenda";
 import { toast } from "sonner";
 
-const mockUseAuth = useAuth as unknown as ReturnType<typeof vi.fn>;
-const mockUseBarbeiros = useBarbeiros as unknown as ReturnType<typeof vi.fn>;
-const mockUseClientes = useClientes as unknown as ReturnType<typeof vi.fn>;
-const mockUseServicos = useServicos as unknown as ReturnType<typeof vi.fn>;
-const mockUseAgendaMutations = useAgendaMutations as unknown as ReturnType<
-  typeof vi.fn
->;
-const mockUseDisponibilidade = useDisponibilidade as unknown as ReturnType<
-  typeof vi.fn
->;
 const mockToast = toast as unknown as {
   success: ReturnType<typeof vi.fn>;
   error: ReturnType<typeof vi.fn>;
 };
 
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
-
+const BASE = "http://localhost:3000/api/v1";
 const TEST_DATE = new Date("2026-05-15T12:00:00.000Z");
-
-const mockBarbeiro = {
-  codigo: 1,
-  nome: "Carlos",
-  email: "carlos@test.com",
-  telefone: null,
-  avatarUrl: null,
-  perfil: "BARBEIRO",
-  atendimentosHoje: 0,
-  atendimentosMes: 0,
-  faturamentoMes: 0,
-  ticketMedio: 0,
-  initial: "C",
-  estado: "idle",
-  especialidade: "",
-  avaliacao: 0,
-  horarioEntrada: "08:00",
-  diasSemana: ["Seg", "Ter", "Qua", "Qui", "Sex"],
-};
-
-const mockCliente = {
-  codigo: 2,
-  nome: "João Silva",
-  email: "joao@test.com",
-  telefone: null,
-  avatarUrl: null,
-  perfil: "CLIENTE",
-  totalVisitas: 0,
-  totalGasto: 0,
-  ticketMedio: 0,
-  ultimaVisita: null,
-  servicoFav: null,
-  initial: "J",
-  status: "novo",
-};
-
-const mockServico = {
-  codigo: 1,
-  barCodigo: 1,
-  nome: "Corte",
-  precoBase: 25,
-  duracaoBase: 30,
-  ativo: true,
-};
-
-function makeCriar(overrides: Record<string, unknown> = {}) {
-  return {
-    mutate: vi.fn(),
-    isPending: false,
-    isError: false,
-    error: null,
-    ...overrides,
-  };
-}
-
-function setupMocks(criar = makeCriar()) {
-  mockUseAuth.mockReturnValue(mockAuthContext);
-  mockUseBarbeiros.mockReturnValue({ data: [mockBarbeiro] });
-  mockUseClientes.mockReturnValue({ data: [mockCliente] });
-  mockUseServicos.mockReturnValue({ data: [mockServico] });
-  mockUseAgendaMutations.mockReturnValue({ criar });
-  mockUseDisponibilidade.mockReturnValue({
-    data: ["09:00", "09:30"],
-    isFetching: false,
-  });
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -138,73 +39,97 @@ function renderModal(onClose = vi.fn()) {
   };
 }
 
-async function fillAndSubmit() {
-  const selects = screen.getAllByRole("combobox");
-  // selects[0] = barbeiro, selects[1] = cliente, selects[2] = horário
-  fireEvent.change(selects[0]!, { target: { value: "1" } });
-  fireEvent.change(selects[1]!, { target: { value: "2" } });
-  // Selecionar slot de horário
-  fireEvent.change(selects[2]!, { target: { value: "09:00" } });
-  fireEvent.click(screen.getByRole("checkbox"));
+/** Preenche barbeiro (10), cliente (20), aguarda os slots e seleciona 09:00,
+ *  marca o serviço (Corte) e submete. Exercita os hooks reais + MSW. */
+async function fillValidAndSubmit() {
+  // Espera as opções (vindas dos hooks reais) renderizarem.
+  await screen.findByText("Carlos Silva");
+  fireEvent.change(screen.getAllByRole("combobox")[0]!, {
+    target: { value: "10" },
+  });
+  fireEvent.change(screen.getAllByRole("combobox")[1]!, {
+    target: { value: "20" },
+  });
+  // Disponibilidade carrega após escolher o barbeiro.
+  await screen.findByRole("option", { name: "09:00" });
+  fireEvent.change(screen.getAllByRole("combobox")[2]!, {
+    target: { value: "09:00" },
+  });
+  fireEvent.click(await screen.findByRole("checkbox"));
   fireEvent.click(screen.getByRole("button", { name: /^agendar$/i }));
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("AgendamentoModal", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // servicoService.list usa tenantApi("/servicos") → ${BASE}/servicos
+    // (não há handler default para essa rota exata). Registramos aqui para
+    // que o hook real useServicos resolva com o fixture esperado.
+    server.use(
+      http.get(`${BASE}/servicos`, () =>
+        HttpResponse.json([
+          {
+            codigo: 1,
+            barCodigo: 1,
+            nome: "Corte",
+            precoBase: 25,
+            duracaoBase: 30,
+            ativo: true,
+          },
+        ]),
+      ),
+    );
+  });
 
-  it("renderiza campos de barbeiro, cliente, horário e serviços", () => {
-    setupMocks();
+  it("renderiza barbeiros, clientes e serviços vindos da API (hooks reais)", async () => {
     renderModal();
 
     expect(screen.getByText("Novo agendamento")).toBeInTheDocument();
-    expect(screen.getByText("Carlos")).toBeInTheDocument();
-    expect(screen.getByText("João Silva")).toBeInTheDocument();
-    expect(screen.getByText(/Corte/)).toBeInTheDocument();
-    // 3 selects: barbeiro, cliente, horário
+    expect(await screen.findByText("Carlos Silva")).toBeInTheDocument();
+    expect(await screen.findByText("Ana Lima")).toBeInTheDocument();
+    expect(await screen.findByText(/Corte/)).toBeInTheDocument();
     expect(screen.getAllByRole("combobox")).toHaveLength(3);
     expect(screen.getByRole("checkbox")).toBeInTheDocument();
   });
 
-  it("botão 'Agendar' fica desabilitado enquanto isPending", () => {
-    setupMocks(makeCriar({ isPending: true }));
+  it("desabilita o botão e mostra 'Agendando...' enquanto o POST está pendente", async () => {
+    server.use(
+      http.post(`${BASE}/agendamentos`, async () => {
+        await delay("infinite");
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
     renderModal();
+    await fillValidAndSubmit();
 
-    const btn = screen.getByRole("button", { name: /agendando/i });
+    const btn = await screen.findByRole("button", { name: /agendando/i });
     expect(btn).toBeDisabled();
   });
 
-  it("chama criar.mutate com os dados corretos ao submeter", async () => {
-    const mutate = vi.fn();
-    setupMocks(makeCriar({ mutate }));
-    renderModal();
-
-    await fillAndSubmit();
-
-    await waitFor(() => {
-      expect(mutate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          barbeiroId: 1,
-          clienteId: 2,
-          servicosIds: [1],
-        }),
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        }),
-      );
-    });
-  });
-
-  it("fecha o modal (onClose) e exibe toast de sucesso após criação", async () => {
-    const mutate = vi.fn().mockImplementation((_data, cbs) => {
-      cbs.onSuccess();
-    });
-    setupMocks(makeCriar({ mutate }));
+  it("POSTa o agendamento com os dados corretos e fecha com toast de sucesso", async () => {
+    let captured: Record<string, unknown> | null = null;
+    server.use(
+      http.post(`${BASE}/agendamentos`, async ({ request }) => {
+        captured = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(
+          { codigo: 999, status: "pendente" },
+          { status: 201 },
+        );
+      }),
+    );
     const { onClose } = renderModal();
+    await fillValidAndSubmit();
 
-    await fillAndSubmit();
+    await waitFor(() => expect(captured).not.toBeNull());
+    expect(captured).toMatchObject({
+      barbeiroId: 10,
+      clienteId: 20,
+      servicosIds: [1],
+    });
+    // ISO de 15/05 09:00 — pode deslocar ±1 dia conforme TZ do runner.
+    expect(String(captured!.inicio)).toMatch(/^2026-05-1\d/);
 
     await waitFor(() => {
       expect(onClose).toHaveBeenCalled();
@@ -214,97 +139,91 @@ describe("AgendamentoModal", () => {
     });
   });
 
-  it("exibe mensagem de erro inline e toast quando a mutation falha", async () => {
-    const errMsg = "Conflito de horário";
-    const mutate = vi.fn().mockImplementation((_data, cbs) => {
-      cbs.onError(new Error(errMsg));
-    });
-    setupMocks(makeCriar({ mutate, isError: true, error: new Error(errMsg) }));
+  it("mostra erro inline e toast quando o POST falha (409)", async () => {
+    server.use(
+      http.post(`${BASE}/agendamentos`, () =>
+        HttpResponse.json({ message: "Conflito de horário" }, { status: 409 }),
+      ),
+    );
     renderModal();
+    await fillValidAndSubmit();
 
-    expect(screen.getByText(errMsg)).toBeInTheDocument();
-
-    await fillAndSubmit();
-
-    await waitFor(() => {
-      expect(mockToast.error).toHaveBeenCalledWith(errMsg);
-    });
+    await waitFor(() =>
+      expect(mockToast.error).toHaveBeenCalledWith("Conflito de horário"),
+    );
+    expect(await screen.findByText("Conflito de horário")).toBeInTheDocument();
   });
 
-  it("não submete com campos obrigatórios vazios — exibe erro de validação", async () => {
-    const mutate = vi.fn();
-    setupMocks(makeCriar({ mutate }));
+  it("não submete com campos vazios — validação real do schema", async () => {
     renderModal();
-
+    await screen.findByText("Carlos Silva"); // garante hooks resolvidos
     fireEvent.click(screen.getByRole("button", { name: /^agendar$/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText("Selecione um barbeiro")).toBeInTheDocument();
-    });
-    expect(mutate).not.toHaveBeenCalled();
-  });
-
-  it("não submete sem serviço selecionado — exibe erro de validação", async () => {
-    const mutate = vi.fn();
-    setupMocks(makeCriar({ mutate }));
-    renderModal();
-
-    const selects = screen.getAllByRole("combobox");
-    fireEvent.change(selects[0]!, { target: { value: "1" } });
-    fireEvent.change(selects[1]!, { target: { value: "2" } });
-    fireEvent.change(selects[2]!, { target: { value: "09:00" } });
-    fireEvent.click(screen.getByRole("button", { name: /^agendar$/i }));
-
-    await waitFor(() => {
-      expect(
-        screen.getByText("Selecione ao menos um serviço"),
-      ).toBeInTheDocument();
-    });
-    expect(mutate).not.toHaveBeenCalled();
-  });
-
-  it("exibe mensagem quando não há horários disponíveis", () => {
-    setupMocks();
-    mockUseDisponibilidade.mockReturnValue({ data: [], isFetching: false });
-    renderModal();
-
-    const selects = screen.getAllByRole("combobox");
-    fireEvent.change(selects[0]!, { target: { value: "1" } });
 
     expect(
-      screen.getByText("Nenhum horário disponível para esta data"),
+      await screen.findByText("Selecione um barbeiro"),
     ).toBeInTheDocument();
   });
 
-  it("desabilita slot picker quando nenhum barbeiro selecionado", () => {
-    setupMocks();
+  it("não submete sem serviço selecionado", async () => {
     renderModal();
+    await screen.findByText("Carlos Silva");
+    fireEvent.change(screen.getAllByRole("combobox")[0]!, {
+      target: { value: "10" },
+    });
+    fireEvent.change(screen.getAllByRole("combobox")[1]!, {
+      target: { value: "20" },
+    });
+    await screen.findByRole("option", { name: "09:00" });
+    fireEvent.change(screen.getAllByRole("combobox")[2]!, {
+      target: { value: "09:00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^agendar$/i }));
 
-    const selects = screen.getAllByRole("combobox");
-    // O terceiro select (horário) deve estar desabilitado antes de selecionar barbeiro
-    expect(selects[2]).toBeDisabled();
+    expect(
+      await screen.findByText("Selecione ao menos um serviço"),
+    ).toBeInTheDocument();
+  });
+
+  it("não submete sem horário selecionado", async () => {
+    renderModal();
+    await screen.findByText("Carlos Silva");
+    fireEvent.change(screen.getAllByRole("combobox")[0]!, {
+      target: { value: "10" },
+    });
+    fireEvent.change(screen.getAllByRole("combobox")[1]!, {
+      target: { value: "20" },
+    });
+    fireEvent.click(await screen.findByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /^agendar$/i }));
+
+    expect(
+      await screen.findByText("Data/hora de início inválida"),
+    ).toBeInTheDocument();
+  });
+
+  it("exibe mensagem quando não há horários disponíveis", async () => {
+    server.use(
+      http.get(`${BASE}/agenda/disponibilidade/:barbeiroId`, () =>
+        HttpResponse.json([]),
+      ),
+    );
+    renderModal();
+    await screen.findByText("Carlos Silva");
+    fireEvent.change(screen.getAllByRole("combobox")[0]!, {
+      target: { value: "10" },
+    });
+
+    expect(
+      await screen.findByText("Nenhum horário disponível para esta data"),
+    ).toBeInTheDocument();
+  });
+
+  it("desabilita o slot picker quando nenhum barbeiro está selecionado", async () => {
+    renderModal();
+    await screen.findByText("Carlos Silva");
+    expect(screen.getAllByRole("combobox")[2]).toBeDisabled();
     expect(
       screen.getByText("Selecione um barbeiro primeiro"),
     ).toBeInTheDocument();
-  });
-
-  it("não submete sem horário selecionado — exibe erro de validação", async () => {
-    const mutate = vi.fn();
-    setupMocks(makeCriar({ mutate }));
-    renderModal();
-
-    const selects = screen.getAllByRole("combobox");
-    fireEvent.change(selects[0]!, { target: { value: "1" } });
-    fireEvent.change(selects[1]!, { target: { value: "2" } });
-    // Não selecionar horário
-    fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: /^agendar$/i }));
-
-    await waitFor(() => {
-      expect(
-        screen.getByText("Data/hora de início inválida"),
-      ).toBeInTheDocument();
-    });
-    expect(mutate).not.toHaveBeenCalled();
   });
 });
