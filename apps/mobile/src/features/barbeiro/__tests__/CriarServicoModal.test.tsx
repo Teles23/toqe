@@ -1,5 +1,8 @@
+// CriarServicoModal — exercita o hook real useCriarServico + api-client real.
+// Só o boundary HTTP (global.fetch) e a sessão (useAuth) são mockados.
+
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue("fake-access-token"),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -10,8 +13,8 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
-jest.mock("@/src/shared/hooks/barbeiro/use-criar-servico", () => ({
-  useCriarServico: jest.fn(),
+jest.mock("@/src/shared/hooks/use-auth", () => ({
+  useAuth: () => ({ barbearia: { codigo: 1, nome: "Centro" } }),
 }));
 
 import {
@@ -21,36 +24,61 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-
-import { useCriarServico } from "@/src/shared/hooks/barbeiro/use-criar-servico";
 
 import { CriarServicoModal } from "../CriarServicoModal";
 
-const mockUseCriar = useCriarServico as jest.MockedFunction<
-  typeof useCriarServico
->;
+const originalFetch = global.fetch;
+
+function makeRes(body: unknown, status = 200) {
+  return {
+    ok: status < 400,
+    status,
+    url: "http://localhost:3000/api/v1/servicos",
+    json: async () => body,
+  };
+}
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+function renderModal(onClose = jest.fn()) {
+  return {
+    onClose,
+    ...render(<CriarServicoModal visible onClose={onClose} />, { wrapper }),
+  };
+}
 
 describe("CriarServicoModal", () => {
-  const mutateAsync = jest.fn();
-
   beforeEach(() => {
     jest.clearAllMocks();
-    mutateAsync.mockResolvedValue({ codigo: 10 });
-    mockUseCriar.mockReturnValue({
-      mutateAsync,
-      isPending: false,
-    } as unknown as ReturnType<typeof useCriarServico>);
+    global.fetch = jest.fn(async () =>
+      makeRes({
+        codigo: 10,
+        nome: "x",
+        precoBase: 0,
+        duracaoBase: 0,
+        ativo: true,
+      }),
+    ) as unknown as typeof fetch;
+  });
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   it("não renderiza quando visible=false", () => {
-    render(<CriarServicoModal visible={false} onClose={jest.fn()} />);
+    render(<CriarServicoModal visible={false} onClose={jest.fn()} />, {
+      wrapper,
+    });
     expect(screen.queryByText("Novo serviço")).toBeNull();
   });
 
-  it("submete com nome, preço e duração convertidos para número", async () => {
-    const onClose = jest.fn();
-    render(<CriarServicoModal visible onClose={onClose} />);
+  it("submete via POST /servicos com preço e duração numéricos", async () => {
+    const { onClose } = renderModal();
 
     fireEvent.changeText(
       screen.getByLabelText("Nome do serviço"),
@@ -63,19 +91,25 @@ describe("CriarServicoModal", () => {
       fireEvent.press(screen.getByRole("button", { name: "Criar serviço" }));
     });
 
-    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-    expect(mutateAsync.mock.calls[0][0]).toMatchObject({
-      nome: "Corte + Barba",
-      precoBase: 75.5,
-      duracaoBase: 45,
+    await waitFor(() => {
+      const post = (global.fetch as jest.Mock).mock.calls.find(
+        ([u, init]) =>
+          /\/servicos$/.test(String(u)) &&
+          (init as { method?: string })?.method === "POST",
+      );
+      expect(post).toBeTruthy();
+      const body = JSON.parse(String((post?.[1] as { body?: string }).body));
+      expect(body).toMatchObject({
+        nome: "Corte + Barba",
+        precoBase: 75.5,
+        duracaoBase: 45,
+      });
     });
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
-  it("mostra erro de validação quando campos inválidos", async () => {
-    render(<CriarServicoModal visible onClose={jest.fn()} />);
-
-    // nome muito curto + sem preço/duração
+  it("mostra erro de validação quando campos inválidos (não faz POST)", async () => {
+    renderModal();
     fireEvent.changeText(screen.getByLabelText("Nome do serviço"), "A");
 
     await act(async () => {
@@ -85,6 +119,11 @@ describe("CriarServicoModal", () => {
     await waitFor(() => {
       expect(screen.getByText(/Nome deve ter ao menos 2/i)).toBeTruthy();
     });
-    expect(mutateAsync).not.toHaveBeenCalled();
+    const post = (global.fetch as jest.Mock).mock.calls.find(
+      ([u, init]) =>
+        /\/servicos$/.test(String(u)) &&
+        (init as { method?: string })?.method === "POST",
+    );
+    expect(post).toBeUndefined();
   });
 });

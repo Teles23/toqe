@@ -1,5 +1,8 @@
+// Perfil do cliente — exercita o hook real useAgendamentosMeus + api-client
+// real. Só o boundary HTTP (global.fetch) e a sessão (useAuth) são mockados.
+
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue("fake-access-token"),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -25,12 +28,8 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-const mockUseAgendamentos = jest.fn();
-jest.mock("@/src/shared/hooks/cliente/use-agendamentos-meus", () => ({
-  useAgendamentosMeus: () => mockUseAgendamentos(),
-}));
-
 import { Alert } from "react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
@@ -38,7 +37,33 @@ import type { AgendamentoResponse } from "@toqe/shared";
 
 import ClientePerfilScreen from "../index";
 
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
+const originalFetch = global.fetch;
+
+function makeRes(body: unknown, status = 200) {
+  return {
+    ok: status < 400,
+    status,
+    url: "http://localhost:3000/api/v1/agendamentos/meus",
+    json: async () => body,
+  };
+}
+function respondWith(body: unknown) {
+  global.fetch = jest.fn(async () => makeRes(body)) as unknown as typeof fetch;
+}
+function neverResolve() {
+  global.fetch = jest.fn(
+    () => new Promise<never>(() => {}),
+  ) as unknown as typeof fetch;
+}
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+function renderScreen() {
+  return render(<ClientePerfilScreen />, { wrapper });
+}
 
 function makeAuthBase(over = {}) {
   return {
@@ -71,8 +96,8 @@ function makeAg(
 ): AgendamentoResponse {
   return {
     codigo,
-    inicio: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    fim: new Date(Date.now() - 1000 * 60 * 60 * 23).toISOString(),
+    inicio: new Date(Date.now() - 864e5).toISOString(),
+    fim: new Date(Date.now() - 82_800_000).toISOString(),
     status,
     barbeiro: { usrCodigo: 10, nome: "Carlos Barbeiro", avatarUrl: null },
     cliente: { usrCodigo: 1, nome: "Maria Cliente", telefone: null },
@@ -88,42 +113,39 @@ function makeAg(
   };
 }
 
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
 describe("ClientePerfilScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseAgendamentos.mockReturnValue({ data: undefined });
+    respondWith([]);
+  });
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   it("renderiza nome do usuário", () => {
     mockUseAuth.mockReturnValue(makeAuthBase());
-    render(<ClientePerfilScreen />);
+    renderScreen();
     expect(screen.getByText("Maria Cliente")).toBeTruthy();
   });
 
-  it("mostra stats com cortes feitos", () => {
+  it("mostra stats com cortes feitos (da API)", async () => {
     mockUseAuth.mockReturnValue(makeAuthBase());
-    mockUseAgendamentos.mockReturnValue({
-      data: [
-        makeAg(1, "concluido"),
-        makeAg(2, "concluido"),
-        makeAg(3, "pendente"),
-      ],
-    });
-    render(<ClientePerfilScreen />);
-    // 2 concluídos
-    expect(screen.getByText("2")).toBeTruthy();
-    // 1 barbearia
-    expect(screen.getByText("1")).toBeTruthy();
+    respondWith([
+      makeAg(1, "concluido"),
+      makeAg(2, "concluido"),
+      makeAg(3, "pendente"),
+    ]);
+    renderScreen();
+    expect(await screen.findByText("2")).toBeTruthy(); // 2 concluídos
+    expect(screen.getByText("1")).toBeTruthy(); // 1 barbearia (sessão)
     expect(screen.getByText("CORTES FEITOS")).toBeTruthy();
     expect(screen.getByText("BARBEARIAS")).toBeTruthy();
   });
 
-  it("mostra traço quando sem agendamentos", () => {
+  it("mostra traço enquanto os agendamentos não carregaram", () => {
     mockUseAuth.mockReturnValue(makeAuthBase());
-    mockUseAgendamentos.mockReturnValue({ data: undefined });
-    render(<ClientePerfilScreen />);
+    neverResolve();
+    renderScreen();
     expect(screen.getByText("—")).toBeTruthy();
   });
 
@@ -137,7 +159,7 @@ describe("ClientePerfilScreen", () => {
         sair?.onPress?.();
       });
 
-    render(<ClientePerfilScreen />);
+    renderScreen();
     fireEvent.press(screen.getByTestId("btn-logout"));
 
     expect(alertSpy).toHaveBeenCalled();
@@ -147,21 +169,21 @@ describe("ClientePerfilScreen", () => {
 
   it("perfil-scroll e ir-editar existem", () => {
     mockUseAuth.mockReturnValue(makeAuthBase());
-    render(<ClientePerfilScreen />);
+    renderScreen();
     expect(screen.getByTestId("perfil-scroll")).toBeTruthy();
     expect(screen.getByTestId("ir-editar")).toBeTruthy();
   });
 
   it("ir-senha navega para senha", () => {
     mockUseAuth.mockReturnValue(makeAuthBase());
-    render(<ClientePerfilScreen />);
+    renderScreen();
     fireEvent.press(screen.getByTestId("ir-senha"));
     expect(mockPush).toHaveBeenCalledWith("/(cliente)/perfil/senha");
   });
 
   it("ir-notificacoes navega para notificacoes", () => {
     mockUseAuth.mockReturnValue(makeAuthBase());
-    render(<ClientePerfilScreen />);
+    renderScreen();
     fireEvent.press(screen.getByTestId("ir-notificacoes"));
     expect(mockPush).toHaveBeenCalledWith("/(cliente)/perfil/notificacoes");
   });

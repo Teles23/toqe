@@ -1,5 +1,10 @@
+// Perfil do barbeiro — exercita o hook real useBarbeiroStats + api-client real.
+// Só o boundary HTTP (global.fetch) e a sessão (useAuth) são mockados. As
+// asserções dependem da sessão (useAuth); as stats (GET /me/stats) ficam
+// pendentes — a tela não precisa delas para os cenários abaixo.
+
 jest.mock("expo-secure-store", () => ({
-  getItemAsync: jest.fn(),
+  getItemAsync: jest.fn().mockResolvedValue("fake-access-token"),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
@@ -17,7 +22,6 @@ jest.mock("expo-router", () => ({
     replace: jest.fn(),
     back: jest.fn(),
   },
-  // Mock do useSegments — usado por usePerfilBasePath para detectar grupo.
   useSegments: jest.fn(() => ["(barbeiro)", "perfil"]),
 }));
 
@@ -26,107 +30,102 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-// useBarbeiroStats — retorna undefined por padrão (stats não carregadas)
-jest.mock("@/src/shared/hooks/barbeiro/use-barbeiro-stats", () => ({
-  useBarbeiroStats: () => ({ data: undefined, isLoading: false }),
-}));
-
 import { Alert } from "react-native";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
 import PerfilIndexScreen from "../index";
 
+const originalFetch = global.fetch;
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+function renderScreen() {
+  return render(<PerfilIndexScreen />, { wrapper });
+}
+
+function makeAuth(over = {}) {
+  return {
+    user: {
+      codigo: 1,
+      nome: "Carlos",
+      email: "c@x.com",
+      telefone: null,
+      avatarUrl: null,
+    },
+    perfil: "barbeiro",
+    barbearias: [{ codigo: 1, nome: "Centro", perfil: "barbeiro" }],
+    barbearia: { codigo: 1, nome: "Centro" },
+    switchBarbearia: jest.fn(),
+    logout: jest.fn(),
+    ...over,
+  };
+}
+
 describe("PerfilIndexScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // GET /me/stats fica pendente — sem churn de estado durante o teste.
+    global.fetch = jest.fn(
+      () => new Promise<never>(() => {}),
+    ) as unknown as typeof fetch;
+  });
+  afterAll(() => {
+    global.fetch = originalFetch;
   });
 
   it("renderiza nome e email do user", () => {
-    mockUseAuth.mockReturnValue({
-      user: {
-        codigo: 1,
-        nome: "Carlos",
-        email: "c@x.com",
-        telefone: null,
-        avatarUrl: null,
-      },
-      perfil: "barbeiro",
-      barbearias: [{ codigo: 1, nome: "Centro", perfil: "barbeiro" }],
-      barbearia: { codigo: 1, nome: "Centro" },
-      switchBarbearia: jest.fn(),
-      logout: jest.fn(),
-    });
-    render(<PerfilIndexScreen />);
+    mockUseAuth.mockReturnValue(
+      makeAuth({
+        user: {
+          codigo: 1,
+          nome: "Carlos",
+          email: "c@x.com",
+          telefone: null,
+          avatarUrl: null,
+        },
+      }),
+    );
+    renderScreen();
     expect(screen.getByText("Carlos")).toBeTruthy();
     expect(screen.getByText("c@x.com")).toBeTruthy();
   });
 
-  it("renderiza 3 seções: Conta, Segurança (sem Barbearia se 1 só)", () => {
-    mockUseAuth.mockReturnValue({
-      user: {
-        codigo: 1,
-        nome: "X",
-        email: "x@x.com",
-        telefone: null,
-        avatarUrl: null,
-      },
-      perfil: "barbeiro",
-      barbearias: [{ codigo: 1, nome: "Centro", perfil: "barbeiro" }],
-      barbearia: { codigo: 1, nome: "Centro" },
-      switchBarbearia: jest.fn(),
-      logout: jest.fn(),
-    });
-    render(<PerfilIndexScreen />);
+  it("renderiza seções Conta e Segurança (sem Barbearia se 1 só)", () => {
+    mockUseAuth.mockReturnValue(makeAuth());
+    renderScreen();
     expect(screen.getByText("Conta")).toBeTruthy();
     expect(screen.getByText("Segurança")).toBeTruthy();
     expect(screen.queryByText("Barbearia ativa")).toBeNull();
   });
 
-  it("mostra seção Barbearia quando >1", () => {
+  it("mostra seção Barbearia quando >1 e troca ao tocar", () => {
     const switchBarb = jest.fn();
-    mockUseAuth.mockReturnValue({
-      user: {
-        codigo: 1,
-        nome: "X",
-        email: "x@x.com",
-        telefone: null,
-        avatarUrl: null,
-      },
-      perfil: "barbeiro",
-      barbearias: [
-        { codigo: 1, nome: "Centro", perfil: "barbeiro" },
-        { codigo: 2, nome: "Norte", perfil: "dono" },
-      ],
-      barbearia: { codigo: 1, nome: "Centro" },
-      switchBarbearia: switchBarb,
-      logout: jest.fn(),
-    });
-    render(<PerfilIndexScreen />);
+    mockUseAuth.mockReturnValue(
+      makeAuth({
+        barbearias: [
+          { codigo: 1, nome: "Centro", perfil: "barbeiro" },
+          { codigo: 2, nome: "Norte", perfil: "dono" },
+        ],
+        switchBarbearia: switchBarb,
+      }),
+    );
+    renderScreen();
     expect(screen.getByText("Barbearia ativa")).toBeTruthy();
     expect(screen.getByTestId("barbearia-1")).toBeTruthy();
     expect(screen.getByTestId("barbearia-2")).toBeTruthy();
-
     fireEvent.press(screen.getByTestId("barbearia-2"));
     expect(switchBarb).toHaveBeenCalledWith(2);
   });
 
   it("navega para /editar ao tap em 'Editar perfil'", () => {
-    mockUseAuth.mockReturnValue({
-      user: {
-        codigo: 1,
-        nome: "X",
-        email: "x@x.com",
-        telefone: null,
-        avatarUrl: null,
-      },
-      perfil: "barbeiro",
-      barbearias: [{ codigo: 1, nome: "Centro", perfil: "barbeiro" }],
-      barbearia: { codigo: 1, nome: "Centro" },
-      switchBarbearia: jest.fn(),
-      logout: jest.fn(),
-    });
-    render(<PerfilIndexScreen />);
+    mockUseAuth.mockReturnValue(makeAuth());
+    renderScreen();
     fireEvent.press(screen.getByTestId("ir-editar"));
     expect(mockPush).toHaveBeenCalledWith("/(barbeiro)/perfil/editar");
   });
@@ -135,27 +134,12 @@ describe("PerfilIndexScreen", () => {
     const logout = jest.fn();
     const alertSpy = jest
       .spyOn(Alert, "alert")
-      // simula tap em "Sair"
       .mockImplementation((_t, _m, buttons) => {
         const sair = buttons?.find((b) => b.text === "Sair");
         sair?.onPress?.();
       });
-
-    mockUseAuth.mockReturnValue({
-      user: {
-        codigo: 1,
-        nome: "X",
-        email: "x@x.com",
-        telefone: null,
-        avatarUrl: null,
-      },
-      perfil: "barbeiro",
-      barbearias: [{ codigo: 1, nome: "Centro", perfil: "barbeiro" }],
-      barbearia: { codigo: 1, nome: "Centro" },
-      switchBarbearia: jest.fn(),
-      logout,
-    });
-    render(<PerfilIndexScreen />);
+    mockUseAuth.mockReturnValue(makeAuth({ logout }));
+    renderScreen();
 
     fireEvent.press(screen.getByRole("button", { name: "Sair da conta" }));
 

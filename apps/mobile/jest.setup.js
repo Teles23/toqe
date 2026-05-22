@@ -12,3 +12,10 @@ jest.mock("react-native-safe-area-context", () => {
     useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
   };
 });
+
+// Timeout de utilitários async (findBy*/waitFor): o default de 1000ms é apertado
+// quando os ~92 suites rodam em paralelo e a máquina fica sob carga — causava
+// flakes intermitentes em telas que carregam dados via React Query. 5000ms dá
+// folga sem mascarar travas reais (o timeout do Jest por teste continua maior).
+const { configure } = require("@testing-library/react-native");
+configure({ asyncUtilTimeout: 5000 });
