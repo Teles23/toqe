@@ -31,6 +31,8 @@ export interface DataListWrapperProps<T> extends Omit<
   errorMessage?: string;
   /** Componente opcional para renderizar como empty state customizado (override) */
   emptyComponent?: ReactElement;
+  /** Componente opcional de loading (ex.: skeletons). Default: ActivityIndicator */
+  loadingComponent?: ReactElement;
 }
 
 /**
@@ -51,6 +53,7 @@ export function DataListWrapper<T>({
   emptyMessage = "Nada por aqui ainda.",
   errorMessage = "Não foi possível carregar. Puxe para tentar novamente.",
   emptyComponent,
+  loadingComponent,
   contentContainerStyle,
   testID,
   ...flatListProps
@@ -65,8 +68,16 @@ export function DataListWrapper<T>({
   };
 
   if (isLoading) {
+    const loadingTestID = `${testID ?? "data-list"}-loading`;
+    if (loadingComponent) {
+      return (
+        <View style={styles.fill} testID={loadingTestID}>
+          {loadingComponent}
+        </View>
+      );
+    }
     return (
-      <View style={styles.center} testID={`${testID ?? "data-list"}-loading`}>
+      <View style={styles.center} testID={loadingTestID}>
         <ActivityIndicator color={palette.text} />
       </View>
     );
@@ -115,5 +126,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
+  },
+  fill: {
+    flex: 1,
   },
 });

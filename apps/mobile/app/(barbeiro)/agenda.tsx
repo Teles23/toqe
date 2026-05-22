@@ -38,7 +38,12 @@ import { useCriarBloqueio } from "@/src/shared/hooks/barbeiro/use-criar-bloqueio
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useToast } from "@/src/shared/hooks/use-toast";
 import { useTheme } from "@/src/shared/theme";
-import { DataListWrapper, TenantSwitcherSheet } from "@/src/shared/ui";
+import {
+  DataListWrapper,
+  EmptyScreen,
+  ListSkeleton,
+  TenantSwitcherSheet,
+} from "@/src/shared/ui";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 
 import type { DetailAction } from "@/src/features/barbeiro/AppointmentDetailSheet";
@@ -404,14 +409,27 @@ export default function BarbeiroAgendaScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
+        loadingComponent={<ListSkeleton testID="agenda-skeleton" />}
         contentContainerStyle={{
           paddingHorizontal: spacing.md,
           paddingBottom: 120,
         }}
-        emptyMessage={
-          isSameDay(selectedDate, new Date())
-            ? "Sem agendamentos para hoje."
-            : "Sem agendamentos para este dia."
+        emptyComponent={
+          isSameDay(selectedDate, new Date()) ? (
+            <EmptyScreen
+              featherIcon="sun"
+              title="Dia livre"
+              description="Sem agendamentos hoje. Bom momento pra walk-in ou organizar a semana."
+              testID="agenda-empty"
+            />
+          ) : (
+            <EmptyScreen
+              featherIcon="calendar"
+              title="Sem agendamentos"
+              description="Nada marcado para este dia."
+              testID="agenda-empty"
+            />
+          )
         }
         errorMessage="Não foi possível carregar a agenda. Puxe para tentar novamente."
         keyExtractor={(item) => String(item.codigo)}

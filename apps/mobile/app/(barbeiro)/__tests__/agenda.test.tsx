@@ -227,7 +227,7 @@ describe("BarbeiroAgendaScreen", () => {
 
     render(<BarbeiroAgendaScreen />);
 
-    expect(screen.getByText(/Sem agendamentos para hoje/i)).toBeTruthy();
+    expect(screen.getByText("Dia livre")).toBeTruthy();
   });
 
   it("mostra erro quando isError=true", () => {
@@ -274,8 +274,8 @@ describe("BarbeiroAgendaScreen", () => {
     expect(format(lastCallArg, "yyyy-MM-dd")).toBe(
       format(amanha, "yyyy-MM-dd"),
     );
-    // Empty state textual muda para "este dia" (não "hoje")
-    expect(screen.getByText(/Sem agendamentos para este dia/i)).toBeTruthy();
+    // Empty state muda para o dia não-hoje
+    expect(screen.getByText(/Nada marcado para este dia/i)).toBeTruthy();
   });
 
   it("muda a data ao tocar em 'Dia anterior'", () => {

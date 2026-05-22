@@ -1,11 +1,18 @@
 import { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { Feather } from "@expo/vector-icons";
+
 import { useTheme } from "@/src/shared/theme";
 
 export interface EmptyScreenProps {
   /** Emoji ou ícone como string (ex: "📅", "🔍") */
   icon?: string;
+  /**
+   * Ícone Feather exibido num container com tint do accent (estilo Urban Flow).
+   * Tem precedência sobre `icon` (emoji) quando ambos forem passados.
+   */
+  featherIcon?: keyof typeof Feather.glyphMap;
   /** Título principal */
   title: string;
   /** Descrição opcional */
@@ -20,24 +27,43 @@ export interface EmptyScreenProps {
  * que ocupam a tela inteira. Centralizada, com ícone grande, título e
  * descrição secundária.
  *
- * Para empty state DENTRO de uma lista, use `DataListWrapper` com
- * `emptyMessage` (mais leve, fica no contexto da lista).
+ * Dois estilos de ícone:
+ * - `featherIcon`: ícone Feather num box 64×64 com tint do accent (redesign
+ *   Urban Flow — preferir nas telas novas).
+ * - `icon`: emoji/string grande (legado).
+ *
+ * Para empty state DENTRO de uma lista, passe este componente em
+ * `DataListWrapper.emptyComponent`.
  */
 export function EmptyScreen({
   icon,
+  featherIcon,
   title,
   description,
   action,
   testID,
 }: EmptyScreenProps) {
-  const { palette, spacing, typography } = useTheme();
+  const { palette, spacing, typography, radius } = useTheme();
 
   return (
     <View
       testID={testID ?? "empty-screen"}
       style={[styles.container, { backgroundColor: palette.bg }]}
     >
-      {icon ? (
+      {featherIcon ? (
+        <View
+          style={[
+            styles.featherBox,
+            {
+              backgroundColor: palette.primary + "14",
+              borderColor: palette.primary + "38",
+              borderRadius: radius.lg,
+            },
+          ]}
+        >
+          <Feather name={featherIcon} size={28} color={palette.primary} />
+        </View>
+      ) : icon ? (
         <Text style={[styles.icon, { color: palette.textMuted }]}>{icon}</Text>
       ) : null}
       <Text
@@ -89,5 +115,13 @@ const styles = StyleSheet.create({
   icon: {
     fontSize: 64,
     textAlign: "center",
+  },
+  featherBox: {
+    width: 64,
+    height: 64,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
   },
 });

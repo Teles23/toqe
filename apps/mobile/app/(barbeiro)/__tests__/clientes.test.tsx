@@ -107,7 +107,7 @@ describe("BarbeiroClientesScreen", () => {
   it("mostra empty state quando lista vazia", () => {
     mockHook.mockReturnValue(mockResult({ data: [] }));
     render(<BarbeiroClientesScreen />);
-    expect(screen.getByText(/Nenhum cliente cadastrado/i)).toBeTruthy();
+    expect(screen.getByText("Sem clientes ainda")).toBeTruthy();
   });
 
   it("mostra erro state quando isError", () => {

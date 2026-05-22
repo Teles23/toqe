@@ -27,7 +27,7 @@ import { ClienteCard } from "@/src/features/barbeiro/ClienteCard";
 import { ClienteDetalhe } from "@/src/features/barbeiro/ClienteDetalhe";
 import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
 import { useTheme } from "@/src/shared/theme";
-import { DataListWrapper } from "@/src/shared/ui";
+import { DataListWrapper, EmptyScreen, ListSkeleton } from "@/src/shared/ui";
 import type { ClienteAPI } from "@toqe/contracts";
 
 // ─── Filtros ──────────────────────────────────────────────────────────────────
@@ -258,10 +258,23 @@ export default function BarbeiroClientesScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
-        emptyMessage={
-          busca || filter !== "todos"
-            ? "Nenhum cliente encontrado para sua busca."
-            : "Nenhum cliente cadastrado ainda."
+        loadingComponent={<ListSkeleton testID="clientes-skeleton" />}
+        emptyComponent={
+          busca || filter !== "todos" ? (
+            <EmptyScreen
+              featherIcon="search"
+              title="Ninguém encontrado"
+              description="Tenta outro nome ou número. Ou desative os filtros."
+              testID="clientes-empty"
+            />
+          ) : (
+            <EmptyScreen
+              featherIcon="user"
+              title="Sem clientes ainda"
+              description="Seus clientes aparecem aqui depois do primeiro atendimento."
+              testID="clientes-empty"
+            />
+          )
         }
         errorMessage="Não foi possível carregar os clientes. Puxe para tentar novamente."
         keyExtractor={(item) => String(item.codigo)}

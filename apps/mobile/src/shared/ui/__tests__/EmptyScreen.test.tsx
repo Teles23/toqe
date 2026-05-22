@@ -15,6 +15,13 @@ describe("EmptyScreen", () => {
     expect(screen.getByText("📅")).toBeTruthy();
   });
 
+  it("featherIcon tem precedência sobre o emoji", () => {
+    render(<EmptyScreen featherIcon="sun" icon="📅" title="Dia livre" />);
+    // o emoji não é renderizado quando há featherIcon
+    expect(screen.queryByText("📅")).toBeNull();
+    expect(screen.getByText("Dia livre")).toBeTruthy();
+  });
+
   it("renderiza description quando fornecida", () => {
     render(<EmptyScreen title="X" description="explicação detalhada" />);
     expect(screen.getByText("explicação detalhada")).toBeTruthy();
