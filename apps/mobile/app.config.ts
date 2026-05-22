@@ -23,6 +23,7 @@ const config: ExpoConfig = {
 
   android: {
     package: "com.teles23.toqe",
+    googleServicesFile: "./google-services.json",
     adaptiveIcon: {
       // Cor da marca Toqe (âmbar) — bate com splash + icon principal
       backgroundColor: "#F4B400",
