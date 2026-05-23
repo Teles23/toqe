@@ -15,6 +15,10 @@ import {
   Request,
 } from '@nestjs/common';
 import { AgendamentoService } from './agendamento.service';
+import {
+  serializeAgendamento,
+  serializeAgendamentos,
+} from './serialize-agendamento';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
@@ -46,11 +50,13 @@ export class AgendamentoController {
   @ApiOperation({ summary: 'Cria um novo agendamento' })
   @ApiResponse({ status: 201, description: 'Agendamento criado.' })
   @ApiResponse({ status: 409, description: 'Conflito de horário.' })
-  create(
+  async create(
     @Body() dto: CreateAgendamentoDto,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
-    return this.agendamentoService.create(dto, Number(barCodigo));
+    return serializeAgendamento(
+      await this.agendamentoService.create(dto, Number(barCodigo)),
+    );
   }
 
   @Post('walk-in')
@@ -61,11 +67,13 @@ export class AgendamentoController {
   })
   @ApiResponse({ status: 201, description: 'Walk-in criado.' })
   @ApiResponse({ status: 400, description: 'Dados inválidos.' })
-  criarWalkIn(
+  async criarWalkIn(
     @Body() dto: CreateWalkInDto,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
-    return this.agendamentoService.createWalkIn(dto, Number(barCodigo));
+    return serializeAgendamento(
+      await this.agendamentoService.createWalkIn(dto, Number(barCodigo)),
+    );
   }
 
   @Get()
@@ -75,11 +83,13 @@ export class AgendamentoController {
       'Lista agendamentos da barbearia (filtros: data, barbeiroId, status)',
   })
   @ApiResponse({ status: 200, description: 'Lista de agendamentos.' })
-  findAll(
+  async findAll(
     @Query() filtros: ListAgendamentoDto,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
-    return this.agendamentoService.findAll(Number(barCodigo), filtros);
+    return serializeAgendamentos(
+      await this.agendamentoService.findAll(Number(barCodigo), filtros),
+    );
   }
 
   @Get('meus')
@@ -91,13 +101,15 @@ export class AgendamentoController {
     status: 200,
     description: 'Lista de agendamentos do cliente.',
   })
-  meusAgendamentos(
+  async meusAgendamentos(
     @Request() req: TenantRequest,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
-    return this.agendamentoService.meusAgendamentos(
-      req.user.sub,
-      Number(barCodigo),
+    return serializeAgendamentos(
+      await this.agendamentoService.meusAgendamentos(
+        req.user.sub,
+        Number(barCodigo),
+      ),
     );
   }
 
@@ -105,13 +117,15 @@ export class AgendamentoController {
   @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
   @ApiOperation({ summary: 'Próximo agendamento futuro do cliente logado' })
   @ApiResponse({ status: 200, description: 'Agendamento ou null.' })
-  proximoAgendamento(
+  async proximoAgendamento(
     @Request() req: TenantRequest,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
-    return this.agendamentoService.proximoAgendamento(
-      req.user.sub,
-      Number(barCodigo),
+    return serializeAgendamento(
+      await this.agendamentoService.proximoAgendamento(
+        req.user.sub,
+        Number(barCodigo),
+      ),
     );
   }
 
@@ -121,13 +135,15 @@ export class AgendamentoController {
     summary: 'Agendamento em atendimento agora pelo barbeiro logado',
   })
   @ApiResponse({ status: 200, description: 'Agendamento atual ou null.' })
-  agendamentoAtual(
+  async agendamentoAtual(
     @Request() req: TenantRequest,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
-    return this.agendamentoService.agendamentoAtual(
-      req.user.sub,
-      Number(barCodigo),
+    return serializeAgendamento(
+      await this.agendamentoService.agendamentoAtual(
+        req.user.sub,
+        Number(barCodigo),
+      ),
     );
   }
 
@@ -136,20 +152,24 @@ export class AgendamentoController {
   @ApiOperation({ summary: 'Detalha um agendamento pelo código' })
   @ApiResponse({ status: 200, description: 'Agendamento encontrado.' })
   @ApiResponse({ status: 404, description: 'Agendamento não encontrado.' })
-  findOne(
+  async findOne(
     @Param('codigo', ParseIntPipe) codigo: number,
     @Headers('x-tenant-id') barCodigo: string,
     @Request() req: TenantRequest,
   ) {
     // Cliente só pode ver seus próprios agendamentos
     if (req.user.perfil === 'cliente') {
-      return this.agendamentoService.findOneForCliente(
-        codigo,
-        Number(barCodigo),
-        req.user.sub,
+      return serializeAgendamento(
+        await this.agendamentoService.findOneForCliente(
+          codigo,
+          Number(barCodigo),
+          req.user.sub,
+        ),
       );
     }
-    return this.agendamentoService.findOne(codigo, Number(barCodigo));
+    return serializeAgendamento(
+      await this.agendamentoService.findOne(codigo, Number(barCodigo)),
+    );
   }
 
   @Patch(':codigo/status')
@@ -160,12 +180,14 @@ export class AgendamentoController {
   })
   @ApiResponse({ status: 200, description: 'Status atualizado.' })
   @ApiResponse({ status: 404, description: 'Agendamento não encontrado.' })
-  patchStatus(
+  async patchStatus(
     @Param('codigo', ParseIntPipe) codigo: number,
     @Body() dto: PatchStatusAgendamentoDto,
     @Headers('x-tenant-id') barCodigo: string,
   ) {
-    return this.agendamentoService.patchStatus(codigo, dto, Number(barCodigo));
+    return serializeAgendamento(
+      await this.agendamentoService.patchStatus(codigo, dto, Number(barCodigo)),
+    );
   }
 
   @Delete(':codigo')
@@ -182,7 +204,7 @@ export class AgendamentoController {
     description: 'Cliente tentando cancelar agendamento de outro.',
   })
   @ApiResponse({ status: 404, description: 'Agendamento não encontrado.' })
-  cancel(
+  async cancel(
     @Param('codigo', ParseIntPipe) codigo: number,
     @Headers('x-tenant-id') barCodigo: string,
     @Request() req: TenantRequest,
@@ -191,10 +213,12 @@ export class AgendamentoController {
     // Para staff: callerUserId=undefined (sem restrição de ownership)
     const callerUserId =
       req.user.perfil === 'cliente' ? req.user.sub : undefined;
-    return this.agendamentoService.cancel(
-      codigo,
-      Number(barCodigo),
-      callerUserId,
+    return serializeAgendamento(
+      await this.agendamentoService.cancel(
+        codigo,
+        Number(barCodigo),
+        callerUserId,
+      ),
     );
   }
 

@@ -88,6 +88,26 @@ Arquivos: `hooks/use-pull-to-refresh.ts` (novo), `ui/DataListWrapper.tsx`,
 `(barbeiro)/agenda.tsx`, `(barbeiro)/perfil/index.tsx`,
 `(cliente)/perfil/index.tsx`, `(cliente)/agendamentos/index.tsx`.
 
+### Causa raiz do histórico zerado: API não honrava o contrato `cliente`
+
+Investigando por que o "Ver histórico" continuava zerado mesmo após o
+enriquecimento: a API retornava `agendamento.cliente` como `{ codigo, nome,
+email }`, mas o contrato `AgendamentoResponse.cliente` (@toqe/shared, consumido
+pelo mobile) é `{ usrCodigo, nome, telefone }`. Em runtime,
+`cliente.usrCodigo` era **`undefined`** → a agenda passava código indefinido →
+o enriquecimento por código nunca casava. O `telefone` (ligar/WhatsApp do
+detalhe) também vinha `undefined` (nem era selecionado).
+
+**Correção (API honra o contrato):** `INCLUDE_COMPLETO` passa a selecionar
+`telefone`/`avatarUrl` (mantendo `codigo`/`email` para uso interno — checks de
+ownership e job de notificação), e um serializador (`serialize-agendamento.ts`)
+mapeia, na **saída do controller**, `cliente.codigo → usrCodigo` (+ telefone,
+descartando email) e `barbeiro.codigo → usrCodigo` (+ avatarUrl). Aplicado em
+todos os endpoints que retornam agendamento(s). O service segue retornando o
+objeto cru (internamente usa `.cliente.codigo`). Zero mudança no mobile.
+Arquivos: `agendamento.service.ts` (select), `serialize-agendamento.ts` (novo +
+spec), `agendamento.controller.ts`.
+
 ### Healthcheck do dev no path errado (404 + flood de WARN)
 
 `main.ts` exclui `health/*path` do prefixo `api/v1` → a rota real é

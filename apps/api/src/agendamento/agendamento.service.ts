@@ -22,8 +22,13 @@ import { StatusAgendamento } from '../common/constants/agendamento-status';
 
 const INCLUDE_COMPLETO = {
   itens: { include: { servico: true } },
-  cliente: { select: { codigo: true, nome: true, email: true } },
-  barbeiro: { select: { codigo: true, nome: true } },
+  // `email` é usado internamente (job de notificação); `codigo` é o Usuario.codigo
+  // usado nos checks de ownership. A serialização da resposta (serialize-agendamento)
+  // expõe `usrCodigo`/`telefone` ao cliente e descarta `email`.
+  cliente: {
+    select: { codigo: true, nome: true, email: true, telefone: true },
+  },
+  barbeiro: { select: { codigo: true, nome: true, avatarUrl: true } },
   barbearia: { select: { codigo: true, nome: true } },
 } as const;
 
