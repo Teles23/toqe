@@ -480,13 +480,6 @@ export default function PerfilIndexScreen() {
             title="Serviços e preços"
             onTap={() => go("/servicos")}
             testID="ir-servicos"
-          />
-          <SettingsRow
-            icon="link"
-            iconColor="#3b82f6"
-            title="Convites"
-            onTap={() => go("/notificacoes")}
-            testID="ir-notificacoes"
             last
           />
         </SettingsGroup>
@@ -496,7 +489,7 @@ export default function PerfilIndexScreen() {
           <SettingsRow
             icon="bell"
             iconColor="#F4B400"
-            title="Push notifications"
+            title="Notificações push"
             value="Ligado"
           />
           <SettingsRow

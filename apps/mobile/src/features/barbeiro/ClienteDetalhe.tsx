@@ -315,9 +315,7 @@ export function ClienteDetalhe({
                 },
               ]}
             >
-              <Text
-                style={[styles.sectionLabel, { color: palette.textDisabled }]}
-              >
+              <Text style={[styles.sectionLabel, { color: palette.textMuted }]}>
                 SERVIÇO FAVORITO
               </Text>
               <Text
@@ -369,7 +367,7 @@ export function ClienteDetalhe({
               <View style={styles.sectionLabelRow}>
                 <Feather name="edit-2" size={12} color={palette.textDisabled} />
                 <Text
-                  style={[styles.sectionLabel, { color: palette.textDisabled }]}
+                  style={[styles.sectionLabel, { color: palette.textMuted }]}
                 >
                   NOTAS DO BARBEIRO
                 </Text>
@@ -431,7 +429,7 @@ export function ClienteDetalhe({
               <View style={styles.sectionLabelRow}>
                 <Feather name="clock" size={12} color={palette.textDisabled} />
                 <Text
-                  style={[styles.sectionLabel, { color: palette.textDisabled }]}
+                  style={[styles.sectionLabel, { color: palette.textMuted }]}
                 >
                   HISTÓRICO
                 </Text>
@@ -567,7 +565,7 @@ function StatCol({
       <Text style={[styles.statValue, { color, fontSize: smaller ? 16 : 22 }]}>
         {value}
       </Text>
-      <Text style={[styles.statLabel, { color: palette.textDisabled }]}>
+      <Text style={[styles.statLabel, { color: palette.textMuted }]}>
         {label}
       </Text>
     </View>
