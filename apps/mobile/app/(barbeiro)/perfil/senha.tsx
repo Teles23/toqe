@@ -93,6 +93,7 @@ export default function PerfilSenhaScreen() {
       />
 
       <ScrollView
+        style={styles.scrollFlex}
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
       >
@@ -206,8 +207,8 @@ export default function PerfilSenhaScreen() {
         </View>
       </ScrollView>
 
-      {/* CTA sticky */}
-      <View style={[styles.ctaWrapper, { bottom: insets.bottom + 18 }]}>
+      {/* CTA em fluxo (dentro do KAV) — sobe junto com o teclado */}
+      <View style={[styles.ctaWrapper, { paddingBottom: insets.bottom + 18 }]}>
         <Pressable
           testID="btn-salvar-senha"
           onPress={onSubmit}
@@ -255,10 +256,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollFlex: {
+    flex: 1,
+  },
   scroll: {
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 120,
+    paddingBottom: 24,
   },
   infoBox: {
     backgroundColor: "#F4B40010",
@@ -313,7 +317,10 @@ const styles = StyleSheet.create({
   fieldInput: {
     fontSize: 15,
     color: FG,
-    height: 30,
+    // Sem height fixo: com secureTextEntry o placeholder "Mínimo 8 caracteres"
+    // era cortado verticalmente. minHeight garante área de toque sem clipar.
+    minHeight: 24,
+    paddingVertical: 2,
     fontFamily: "Inter_400Regular",
   },
   fieldError: {
@@ -359,10 +366,8 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
   ctaWrapper: {
-    position: "absolute",
-    bottom: 18,
-    left: 16,
-    right: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   ctaBtn: {
     height: 52,
