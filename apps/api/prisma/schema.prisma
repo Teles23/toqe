@@ -36,6 +36,7 @@ model Usuario {
   bloqueios      BloqueioAgenda[]
   jornadas       JornadaTrabalho[]
   servicosProps  BarbeiroServico[]
+  servicosExcl   Servico[]          @relation("ServicoExclusivo")
   preferencias   NotificacaoPreferencia[]
   pushTokens     PushToken[]
   notasFeitas    ClienteNota[]      @relation("NotaBarbeiro")
@@ -84,6 +85,9 @@ model Barbearia {
   planoStatus String   @default("ativo") @map("TQE_BAR_PLANO_STATUS") // ativo | inadimplente | suspenso | cancelado
   bloqueadaEm DateTime? @map("TQE_BAR_BLOQUEADA_EM") @db.Timestamptz
   ativo       Boolean  @default(true) @map("TQE_BAR_ATIVO")
+  // Permissões que o dono concede aos barbeiros sobre serviços
+  barbeiroCriaServico Boolean @default(false) @map("TQE_BAR_BARBEIRO_CRIA_SERVICO")
+  barbeiroAlteraPreco Boolean @default(false) @map("TQE_BAR_BARBEIRO_ALTERA_PRECO")
   criadoEm    DateTime @default(now()) @map("TQE_BAR_CRIADO_EM") @db.Timestamptz
 
   membros        MembroBarbearia[]
@@ -174,8 +178,11 @@ model Servico {
   precoBase  Decimal? @map("TQE_SRV_PRECO_BASE") @db.Decimal(10, 2)
   duracaoBase Int?    @map("TQE_SRV_DURACAO_BASE") // em minutos
   ativo      Boolean  @default(true) @map("TQE_SRV_ATIVO")
+  // Quando preenchido, é um serviço EXCLUSIVO daquele barbeiro (não da barbearia).
+  exclusivoBarbeiroId Int? @map("TQE_SRV_EXCLUSIVO_BARBEIRO_ID")
 
   barbearia  Barbearia         @relation(fields: [barCodigo], references: [codigo])
+  exclusivoBarbeiro Usuario?    @relation("ServicoExclusivo", fields: [exclusivoBarbeiroId], references: [codigo])
   itens      AgendamentoItem[]
   barbeiros  BarbeiroServico[]
 
@@ -190,6 +197,8 @@ model BarbeiroServico {
   srvCodigo     Int      @map("TQE_BSV_SRV_CODIGO")
   duracaoMin    Int      @map("TQE_BSV_DURACAO_MIN")
   precoProprio  Decimal? @map("TQE_BSV_PRECO_PROPRIO") @db.Decimal(10, 2)
+  // false = o barbeiro NÃO realiza esse serviço (continua na lista, desativado)
+  ativo         Boolean  @default(true) @map("TQE_BSV_ATIVO")
 
   barbearia Barbearia @relation(fields: [barCodigo], references: [codigo])
   barbeiro  Usuario   @relation(fields: [barbeiroId], references: [codigo])

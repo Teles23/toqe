@@ -47,7 +47,33 @@ export interface BarbeariaResponse {
   timezone: string;
   plano: string;
   ativo: boolean;
+  /** Dono permite que barbeiros cadastrem serviços exclusivos. */
+  barbeiroCriaServico: boolean;
+  /** Dono permite que barbeiros alterem o preço dos serviços. */
+  barbeiroAlteraPreco: boolean;
   criadoEm: string;
+}
+
+/** Visão consolidada de um serviço sob a ótica de um barbeiro. */
+export interface ServicoBarbeiroResponse {
+  servico: {
+    codigo: number;
+    nome: string;
+    precoBase: number;
+    duracaoBase: number;
+  };
+  /** Registro próprio do barbeiro (null = sem personalização). */
+  barbeiro: {
+    precoProprio: number | null;
+    duracaoMin: number;
+    ativo: boolean;
+  } | null;
+  /** Preço efetivo: precoProprio ?? precoBase. */
+  precoEfetivo: number;
+  /** Duração efetiva: barbeiro.duracaoMin ?? duracaoBase. */
+  duracaoEfetiva: number;
+  /** true = serviço exclusivo do barbeiro (não da barbearia). */
+  exclusivo: boolean;
 }
 
 export interface MembroResponse {
