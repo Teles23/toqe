@@ -48,6 +48,25 @@ Após validação visual, dois ajustes na seção de fila (`FilaSection`):
 > `em_andamento` que voltava no GET (`tipo=WALK_IN` retorna todos os status). O
 > filtro client-side resolve sem novo endpoint.
 
+### "Ver histórico" agora mostra os mesmos stats da aba Clientes
+
+O `ClienteDetalhe` lê `totalVisitas`/`ticketMedio`/`ultimaVisita`/`servicoFav`
+**direto da prop `cliente`** (só o histórico/nota são buscados por id). Aberto
+pela agenda, o objeto era montado do agendamento com zeros → stats em branco
+("—"), divergindo da aba Clientes. Correção: a agenda agora resolve o
+**`ClienteAPI` real** via `useClientesDaBarbearia()` (mesma query
+`["clientes"]`/endpoint da aba), casando por `codigo === cliente.usrCodigo`; só
+cai no fallback (zeros) se o cliente ainda não estiver na lista (ex.: encaixe
+recém-criado). Arquivos: `agenda.tsx`.
+
+### Healthcheck do dev no path errado (404 + flood de WARN)
+
+`main.ts` exclui `health/*path` do prefixo `api/v1` → a rota real é
+`/health/ready`. O `docker-compose.dev.yml` fazia o probe em
+`/api/v1/health/ready` (404 a cada 30s, agora logado como WARN pela melhoria de
+observabilidade 4xx). Corrigido para `/health/ready`, alinhando com
+`docker-compose.yml` e `docker-compose.prod.yml`. Arquivo: `docker-compose.dev.yml`.
+
 ## Checks
 
 mobile: tsc + lint limpos, suíte completa verde. api: tsc + specs verdes. web: tsc verde.

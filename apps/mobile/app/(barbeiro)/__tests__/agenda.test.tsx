@@ -168,9 +168,14 @@ function makeRes(body: unknown, status = 200): FakeRes {
   };
 }
 
-/** Roteia por URL/método. `dia` alimenta GET /agendamentos?... */
-function setupFetch(opts: { dia?: AgendamentoResponse[]; diaStatus?: number }) {
-  const { dia = [], diaStatus = 200 } = opts;
+/** Roteia por URL/método. `dia` alimenta GET /agendamentos?...; `clientes`
+ * alimenta GET /barbearias/:id/clientes (usado pelo "Ver histórico"). */
+function setupFetch(opts: {
+  dia?: AgendamentoResponse[];
+  diaStatus?: number;
+  clientes?: unknown[];
+}) {
+  const { dia = [], diaStatus = 200, clientes = [] } = opts;
   global.fetch = jest.fn(async (url: unknown, init?: { method?: string }) => {
     const u = String(url);
     const method = (init?.method ?? "GET").toUpperCase();
@@ -179,6 +184,7 @@ function setupFetch(opts: { dia?: AgendamentoResponse[]; diaStatus?: number }) {
     }
     if (u.includes("/agendamentos/atual")) return makeRes(null);
     if (u.includes("/agendamentos?")) return makeRes(dia, diaStatus);
+    if (/\/clientes(\?|$)/.test(u)) return makeRes(clientes);
     return makeRes([]);
   }) as unknown as typeof fetch;
 }
@@ -420,6 +426,41 @@ describe("BarbeiroAgendaScreen", () => {
     fireEvent.press(await screen.findByTestId("agenda-row-5"));
     fireEvent.press(screen.getByTestId("action-historico-btn"));
     expect(await screen.findByTestId("cliente-detalhe-modal")).toBeTruthy();
+  });
+
+  it("ação 'histórico' usa os MESMOS stats da aba Clientes (visitas reais)", async () => {
+    setupFetch({
+      dia: [
+        makeAgendamento({
+          codigo: 5,
+          status: "concluido",
+          cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+        }),
+      ],
+      clientes: [
+        {
+          codigo: 42,
+          nome: "Pedro",
+          email: "pedro@x.com",
+          telefone: null,
+          avatarUrl: null,
+          perfil: "cliente",
+          totalVisitas: 12,
+          totalGasto: 480,
+          ticketMedio: 40,
+          ultimaVisita: null,
+          servicoFav: "Degradê VIP",
+        },
+      ],
+    });
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("agenda-row-5"));
+    fireEvent.press(screen.getByTestId("action-historico-btn"));
+    await screen.findByTestId("cliente-detalhe-modal");
+    // Stats vêm do ClienteAPI real (12 visitas + serviço favorito), não do
+    // fallback (0 visitas, sem favorito).
+    expect(await screen.findByText("12")).toBeTruthy();
+    expect(screen.getByText("Degradê VIP")).toBeTruthy();
   });
 
   it("stats strip aparece com dados e some quando vazio", async () => {

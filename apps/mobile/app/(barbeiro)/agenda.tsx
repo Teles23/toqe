@@ -35,6 +35,7 @@ import { FilaSection } from "@/src/features/barbeiro/FilaSection";
 import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInModal";
 import { ClienteDetalhe } from "@/src/features/barbeiro/ClienteDetalhe";
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
+import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import { useCriarBloqueio } from "@/src/shared/hooks/barbeiro/use-criar-bloqueio";
 import { useAuth } from "@/src/shared/hooks/use-auth";
@@ -208,6 +209,9 @@ export default function BarbeiroAgendaScreen() {
 
   const updateStatus = useUpdateStatus();
   const criarBloqueio = useCriarBloqueio();
+  // Lista de clientes da barbearia (com métricas) — usada para enriquecer o
+  // "Ver histórico" com os MESMOS stats da aba Clientes (visitas/ticket/etc).
+  const { data: clientes } = useClientesDaBarbearia();
 
   const [selectedApt, setSelectedApt] = useState<AgendamentoResponse | null>(
     null,
@@ -251,22 +255,27 @@ export default function BarbeiroAgendaScreen() {
       // ── Ações secundárias (não mudam status) ──
       if (action === "historico") {
         setDetailOpen(false);
-        // O agendamento só carrega usrCodigo/nome/telefone — montamos um
-        // ClienteAPI completo com fallbacks; o ClienteDetalhe busca o histórico
-        // e a nota por id e degrada graciosamente nos campos ausentes.
-        setClienteDetalhe({
-          codigo: selectedApt.cliente.usrCodigo,
-          nome: selectedApt.cliente.nome,
-          email: "",
-          telefone: selectedApt.cliente.telefone,
-          avatarUrl: null,
-          perfil: "cliente",
-          totalVisitas: 0,
-          totalGasto: 0,
-          ticketMedio: 0,
-          ultimaVisita: null,
-          servicoFav: null,
-        });
+        // Reusa o ClienteAPI REAL (mesmos stats da aba Clientes) buscando pelo
+        // código do cliente. Só cai no fallback (zeros) se o cliente ainda não
+        // estiver na lista — ex.: encaixe recém-criado sem refetch ainda.
+        const real = clientes?.find(
+          (c) => c.codigo === selectedApt.cliente.usrCodigo,
+        );
+        setClienteDetalhe(
+          real ?? {
+            codigo: selectedApt.cliente.usrCodigo,
+            nome: selectedApt.cliente.nome,
+            email: "",
+            telefone: selectedApt.cliente.telefone,
+            avatarUrl: null,
+            perfil: "cliente",
+            totalVisitas: 0,
+            totalGasto: 0,
+            ticketMedio: 0,
+            ultimaVisita: null,
+            servicoFav: null,
+          },
+        );
         return;
       }
       if (action === "reagendar") {
@@ -317,7 +326,7 @@ export default function BarbeiroAgendaScreen() {
 
       setDetailOpen(false);
     },
-    [selectedApt, updateStatus, showToast],
+    [selectedApt, updateStatus, showToast, clientes],
   );
 
   const handleBloqueioConfirm = useCallback(
