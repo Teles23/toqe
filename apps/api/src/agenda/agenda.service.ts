@@ -142,6 +142,7 @@ export class AgendaService {
     barCodigo: number,
     dateStr: string,
     totalDuration: number,
+    srvCodigo?: number,
   ) {
     const targetDate = new Date(dateStr);
     const dayOfWeek = getDay(targetDate);
@@ -156,6 +157,16 @@ export class AgendaService {
     });
     if (!membroDoTenant) {
       throw new NotFoundException('Barbeiro não encontrado nesta barbearia');
+    }
+
+    // Se um serviço foi informado e o barbeiro o DESATIVOU (TQE_BARBEIRO_SERVICO
+    // ativo=false), ele não realiza esse serviço → sem slots. Sem registro =
+    // realiza com os valores base (segue normalmente).
+    if (srvCodigo != null) {
+      const vinculo = await this.prisma.barbeiroServico.findUnique({
+        where: { barbeiroId_srvCodigo: { barbeiroId, srvCodigo } },
+      });
+      if (vinculo && !vinculo.ativo) return [];
     }
 
     const barbearia = await this.prisma.barbearia.findUnique({

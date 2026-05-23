@@ -102,6 +102,53 @@ describe('AgendamentoService', () => {
       expect(mockAgendaGateway.emitAgendamentoCriado).toHaveBeenCalled();
     });
 
+    it('snapshot usa precoProprio/duracaoMin do barbeiro quando definidos (regressão Bloco 3)', async () => {
+      const dto: CreateAgendamentoDto = {
+        barbeiroId: 10,
+        clienteId: 20,
+        servicosIds: [1],
+        inicio: '2024-06-01T09:00:00Z',
+      };
+      // serviço base 25/30, mas o barbeiro tem precoProprio 99 e duracaoMin 50
+      mockPrisma.servico.findMany.mockResolvedValue([
+        {
+          codigo: 1,
+          nome: 'Corte',
+          duracaoBase: 30,
+          precoBase: 25,
+          barbeiros: [{ precoProprio: 99, duracaoMin: 50 }],
+        },
+      ]);
+
+      let capturados: { preco: number; duracaoMin: number }[] | undefined;
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: unknown) => unknown) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
+            agendamento: {
+              create: jest.fn().mockImplementation(
+                (args: {
+                  data: {
+                    itens: {
+                      create: { preco: number; duracaoMin: number }[];
+                    };
+                  };
+                }) => {
+                  capturados = args.data.itens.create;
+                  return Promise.resolve(mockAgendamento);
+                },
+              ),
+            },
+          };
+          return fn(tx);
+        },
+      );
+
+      await service.create(dto, barCodigo);
+
+      expect(capturados?.[0]).toMatchObject({ preco: 99, duracaoMin: 50 });
+    });
+
     it('lança BadRequestException se serviço não encontrado', async () => {
       const dto: CreateAgendamentoDto = {
         barbeiroId: 10,

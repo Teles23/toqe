@@ -40,7 +40,16 @@ describe('PublicoController', () => {
   it('GET /:slug/barbeiros delega para service', async () => {
     mockService.listarBarbeiros.mockResolvedValue([]);
     await controller.listarBarbeiros('urban');
-    expect(mockService.listarBarbeiros).toHaveBeenCalledWith('urban');
+    expect(mockService.listarBarbeiros).toHaveBeenCalledWith(
+      'urban',
+      undefined,
+    );
+  });
+
+  it('GET /:slug/barbeiros?srvCodigo repassa o serviço (filtro)', async () => {
+    mockService.listarBarbeiros.mockResolvedValue([]);
+    await controller.listarBarbeiros('urban', '5');
+    expect(mockService.listarBarbeiros).toHaveBeenCalledWith('urban', 5);
   });
 
   describe('GET /:slug/slots', () => {

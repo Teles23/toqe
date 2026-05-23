@@ -146,8 +146,23 @@ describe('AgendaController', () => {
         3,
         '2024-06-01',
         30,
+        undefined,
       );
       expect(result).toEqual(['09:00', '09:30']);
+    });
+
+    it('repassa srvCodigo quando informado (filtro de serviço)', async () => {
+      mockAgendaService.getAvailableSlots.mockResolvedValue([]);
+
+      await controller.obterDisponibilidade(5, '3', '2024-06-01', 30, '9');
+
+      expect(mockAgendaService.getAvailableSlots).toHaveBeenCalledWith(
+        5,
+        3,
+        '2024-06-01',
+        30,
+        9,
+      );
     });
   });
 });

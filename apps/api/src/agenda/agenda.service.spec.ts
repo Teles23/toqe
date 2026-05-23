@@ -150,6 +150,47 @@ describe('AgendaService', () => {
       expect(result).toEqual([]);
     });
 
+    it('retorna [] quando o barbeiro DESATIVOU o serviço informado (srvCodigo)', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
+      mockPrisma.barbeiroServico.findUnique.mockResolvedValue({ ativo: false });
+
+      const result = await service.getAvailableSlots(
+        5,
+        1,
+        '2025-01-06T15:00:00',
+        30,
+        9, // srvCodigo desativado
+      );
+
+      expect(result).toEqual([]);
+      // nem chega a calcular jornada
+      expect(mockPrisma.jornadaTrabalho.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('sem registro do serviço, calcula normalmente (fallback base)', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
+      mockPrisma.barbeiroServico.findUnique.mockResolvedValue(null);
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
+        inicio: '09:00',
+        fim: '10:00',
+        almocoIni: null,
+        almocoFim: null,
+      });
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
+
+      const result = await service.getAvailableSlots(
+        5,
+        1,
+        '2025-01-06T15:00:00',
+        30,
+        9,
+      );
+
+      expect(result).toEqual(['09:00', '09:30']);
+    });
+
     it('exclui slots ocupados por agendamentos existentes', async () => {
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
       mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });

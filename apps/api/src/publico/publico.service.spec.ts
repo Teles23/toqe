@@ -123,6 +123,35 @@ describe('PublicoService', () => {
       const result = await service.listarBarbeiros('urban');
       expect(result).toEqual([{ codigo: 10, nome: 'Carlos', avatarUrl: null }]);
     });
+
+    it('exclui barbeiros que desativaram o serviço (srvCodigo)', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        codigo: 1,
+        ativo: true,
+      });
+      mockPrisma.membroBarbearia.findMany.mockResolvedValue([
+        {
+          usrCodigo: 10,
+          usuario: { codigo: 10, nome: 'Carlos', avatarUrl: null },
+        },
+        {
+          usrCodigo: 11,
+          usuario: { codigo: 11, nome: 'Bruno', avatarUrl: null },
+        },
+      ]);
+      // Bruno (11) desativou o serviço 5
+      mockPrisma.barbeiroServico.findMany.mockResolvedValue([
+        { barbeiroId: 11 },
+      ]);
+
+      const result = await service.listarBarbeiros('urban', 5);
+
+      expect(result).toEqual([{ codigo: 10, nome: 'Carlos', avatarUrl: null }]);
+      expect(mockPrisma.barbeiroServico.findMany).toHaveBeenCalledWith({
+        where: { barCodigo: 1, srvCodigo: 5, ativo: false },
+        select: { barbeiroId: true },
+      });
+    });
   });
 
   describe('listarSlots', () => {

@@ -47,8 +47,15 @@ export class PublicoController {
   @Get(':slug/barbeiros')
   @ApiOperation({ summary: 'Barbeiros da barbearia (público, sem stats)' })
   @ApiResponse({ status: 200, description: 'Lista de barbeiros.' })
-  listarBarbeiros(@Param('slug') slug: string) {
-    return this.publicoService.listarBarbeiros(slug);
+  listarBarbeiros(
+    @Param('slug') slug: string,
+    @Query('srvCodigo') srvCodigo?: string,
+  ) {
+    // srvCodigo opcional: exclui barbeiros que não realizam aquele serviço.
+    return this.publicoService.listarBarbeiros(
+      slug,
+      srvCodigo ? Number(srvCodigo) : undefined,
+    );
   }
 
   @Get(':slug/slots')

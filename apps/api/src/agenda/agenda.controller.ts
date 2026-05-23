@@ -136,6 +136,7 @@ export class AgendaController {
     @Headers('x-tenant-id') barCodigo: string,
     @Query('data') data: string,
     @Query('duracao', ParseIntPipe) duracao: number,
+    @Query('srvCodigo') srvCodigo?: string,
   ) {
     // barCodigo é passado ao service que valida que barbeiroId pertence ao tenant
     return this.agendaService.getAvailableSlots(
@@ -143,6 +144,7 @@ export class AgendaController {
       Number(barCodigo),
       data,
       duracao,
+      srvCodigo ? Number(srvCodigo) : undefined,
     );
   }
 

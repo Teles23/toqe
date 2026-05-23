@@ -65,18 +65,32 @@ export class PublicoService {
    * booking (nome, avatar, e-mail só por id). NÃO inclui faturamento,
    * ticket médio ou contagens internas.
    */
-  async listarBarbeiros(slug: string) {
+  async listarBarbeiros(slug: string, srvCodigo?: number) {
     const { codigo } = await this.getBarbeariaPorSlug(slug);
     const membros = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo: codigo, perfil: 'barbeiro' },
       include: { usuario: { select: SELECT_USUARIO_PERFIL } },
       orderBy: { usuario: { nome: 'asc' } },
     });
-    return membros.map((m) => ({
-      codigo: m.usuario.codigo,
-      nome: m.usuario.nome,
-      avatarUrl: m.usuario.avatarUrl,
-    }));
+
+    // Filtra barbeiros que DESATIVARAM o serviço escolhido (ativo=false).
+    // Sem registro em TQE_BARBEIRO_SERVICO = realiza por padrão (permanece).
+    let excluidos = new Set<number>();
+    if (srvCodigo != null) {
+      const desativados = await this.prisma.barbeiroServico.findMany({
+        where: { barCodigo: codigo, srvCodigo, ativo: false },
+        select: { barbeiroId: true },
+      });
+      excluidos = new Set(desativados.map((d) => d.barbeiroId));
+    }
+
+    return membros
+      .filter((m) => !excluidos.has(m.usuario.codigo))
+      .map((m) => ({
+        codigo: m.usuario.codigo,
+        nome: m.usuario.nome,
+        avatarUrl: m.usuario.avatarUrl,
+      }));
   }
 
   /**
