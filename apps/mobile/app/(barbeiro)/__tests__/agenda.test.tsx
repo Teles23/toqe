@@ -92,6 +92,18 @@ jest.mock("@/src/features/barbeiro/AppointmentDetailSheet", () => {
           >
             iniciar
           </RN.Text>
+          <RN.Text
+            testID="action-historico-btn"
+            onPress={() => onAction("historico")}
+          >
+            historico
+          </RN.Text>
+          <RN.Text
+            testID="action-reagendar-btn"
+            onPress={() => onAction("reagendar")}
+          >
+            reagendar
+          </RN.Text>
         </RN.View>
       ) : null,
   };
@@ -376,6 +388,38 @@ describe("BarbeiroAgendaScreen", () => {
     fireEvent.press(await screen.findByTestId("agenda-row-5"));
     expect(screen.getByTestId("detail-sheet")).toBeTruthy();
     expect(screen.getAllByText("Pedro").length).toBeGreaterThan(0);
+  });
+
+  it("ação 'reagendar' abre o modal de Encaixe", async () => {
+    setupFetch({
+      dia: [
+        makeAgendamento({
+          codigo: 5,
+          status: "concluido",
+          cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+        }),
+      ],
+    });
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("agenda-row-5"));
+    fireEvent.press(screen.getByTestId("action-reagendar-btn"));
+    expect(screen.getByTestId("walkin-modal")).toBeTruthy();
+  });
+
+  it("ação 'histórico' abre o ClienteDetalhe do cliente", async () => {
+    setupFetch({
+      dia: [
+        makeAgendamento({
+          codigo: 5,
+          status: "concluido",
+          cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+        }),
+      ],
+    });
+    renderScreen();
+    fireEvent.press(await screen.findByTestId("agenda-row-5"));
+    fireEvent.press(screen.getByTestId("action-historico-btn"));
+    expect(await screen.findByTestId("cliente-detalhe-modal")).toBeTruthy();
   });
 
   it("stats strip aparece com dados e some quando vazio", async () => {

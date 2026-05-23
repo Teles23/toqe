@@ -48,9 +48,19 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** Pré-preenche o nome ao abrir (ex.: reagendar um cliente conhecido). */
+  prefillNome?: string;
+  /** Pré-seleciona um serviço ao abrir (codigo). */
+  prefillServicoId?: number;
 }
 
-export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
+export function AdicionarWalkInModal({
+  visible,
+  onClose,
+  onSuccess,
+  prefillNome,
+  prefillServicoId,
+}: Props) {
   const { palette, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
@@ -75,6 +85,19 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
       setDuration(ativos[0].duracaoBase);
     }
   }, [ativos, servicoId]);
+
+  // Prefill ao abrir (ex.: reagendar) — sobrepõe o default acima.
+  useEffect(() => {
+    if (!visible) return;
+    if (prefillNome !== undefined) setNome(prefillNome);
+    if (prefillServicoId !== undefined) {
+      const svc = ativos.find((s) => s.codigo === prefillServicoId);
+      if (svc) {
+        setServicoId(svc.codigo);
+        setDuration(svc.duracaoBase);
+      }
+    }
+  }, [visible, prefillNome, prefillServicoId, ativos]);
 
   const reset = useCallback(() => {
     setNome("");

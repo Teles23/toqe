@@ -32,6 +32,7 @@ import { AppointmentDetailSheet } from "@/src/features/barbeiro/AppointmentDetai
 import { BloqueioSheet } from "@/src/features/barbeiro/BloqueioSheet";
 import { FilaSection } from "@/src/features/barbeiro/FilaSection";
 import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInModal";
+import { ClienteDetalhe } from "@/src/features/barbeiro/ClienteDetalhe";
 import { useAgendaDia } from "@/src/shared/hooks/barbeiro/use-agenda-dia";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 import { useCriarBloqueio } from "@/src/shared/hooks/barbeiro/use-criar-bloqueio";
@@ -47,6 +48,7 @@ import {
 } from "@/src/shared/ui";
 import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
+import type { ClienteAPI } from "@toqe/contracts";
 
 import type { DetailAction } from "@/src/features/barbeiro/AppointmentDetailSheet";
 
@@ -203,8 +205,14 @@ export default function BarbeiroAgendaScreen() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [walkinOpen, setWalkinOpen] = useState(false);
+  const [walkinPrefill, setWalkinPrefill] = useState<{
+    nome?: string;
+    servicoId?: number;
+  } | null>(null);
   const [bloqueioOpen, setBloqueioOpen] = useState(false);
   const [tenantSwitcherOpen, setTenantSwitcherOpen] = useState(false);
+  // "Ver histórico" reusa o ClienteDetalhe — montado a partir do agendamento.
+  const [clienteDetalhe, setClienteDetalhe] = useState<ClienteAPI | null>(null);
 
   const goPrev = useCallback(() => setSelectedDate((d) => subDays(d, 1)), []);
   const goNext = useCallback(() => setSelectedDate((d) => addDays(d, 1)), []);
@@ -229,6 +237,37 @@ export default function BarbeiroAgendaScreen() {
   const handleDetailAction = useCallback(
     (action: DetailAction) => {
       if (!selectedApt) return;
+
+      // ── Ações secundárias (não mudam status) ──
+      if (action === "historico") {
+        setDetailOpen(false);
+        // O agendamento só carrega usrCodigo/nome/telefone — montamos um
+        // ClienteAPI completo com fallbacks; o ClienteDetalhe busca o histórico
+        // e a nota por id e degrada graciosamente nos campos ausentes.
+        setClienteDetalhe({
+          codigo: selectedApt.cliente.usrCodigo,
+          nome: selectedApt.cliente.nome,
+          email: "",
+          telefone: selectedApt.cliente.telefone,
+          avatarUrl: null,
+          perfil: "cliente",
+          totalVisitas: 0,
+          totalGasto: 0,
+          ticketMedio: 0,
+          ultimaVisita: null,
+          servicoFav: null,
+        });
+        return;
+      }
+      if (action === "reagendar") {
+        setDetailOpen(false);
+        setWalkinPrefill({
+          nome: selectedApt.cliente.nome,
+          servicoId: selectedApt.itens[0]?.servico.codigo,
+        });
+        setWalkinOpen(true);
+        return;
+      }
 
       type UpdatableStatus = Exclude<StatusAgendamento, "pendente">;
       const statusMap: Partial<Record<DetailAction, UpdatableStatus>> = {
@@ -506,7 +545,19 @@ export default function BarbeiroAgendaScreen() {
 
       <AdicionarWalkInModal
         visible={walkinOpen}
-        onClose={() => setWalkinOpen(false)}
+        onClose={() => {
+          setWalkinOpen(false);
+          setWalkinPrefill(null);
+        }}
+        prefillNome={walkinPrefill?.nome}
+        prefillServicoId={walkinPrefill?.servicoId}
+      />
+
+      {/* Detalhe do cliente (histórico) — reaproveitado a partir do agendamento */}
+      <ClienteDetalhe
+        cliente={clienteDetalhe}
+        visible={!!clienteDetalhe}
+        onClose={() => setClienteDetalhe(null)}
       />
 
       <TenantSwitcherSheet

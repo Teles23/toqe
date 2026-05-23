@@ -138,6 +138,34 @@ describe("AppointmentDetailSheet", () => {
     expect(screen.getByTestId("action-reagendar")).toBeTruthy();
   });
 
+  it("tap em Histórico dispara onAction('historico')", () => {
+    const onAction = jest.fn();
+    render(
+      <AppointmentDetailSheet
+        agendamento={makeApt({ status: "concluido" })}
+        visible
+        onClose={jest.fn()}
+        onAction={onAction}
+      />,
+    );
+    fireEvent.press(screen.getByTestId("action-historico"));
+    expect(onAction).toHaveBeenCalledWith("historico");
+  });
+
+  it("tap em Reagendar dispara onAction('reagendar')", () => {
+    const onAction = jest.fn();
+    render(
+      <AppointmentDetailSheet
+        agendamento={makeApt({ status: "concluido" })}
+        visible
+        onClose={jest.fn()}
+        onAction={onAction}
+      />,
+    );
+    fireEvent.press(screen.getByTestId("action-reagendar"));
+    expect(onAction).toHaveBeenCalledWith("reagendar");
+  });
+
   it("status no_show → exibe Tentar reagendar", () => {
     render(
       <AppointmentDetailSheet
