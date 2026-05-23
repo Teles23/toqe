@@ -30,6 +30,7 @@ import { usePerfilBasePath } from "@/src/features/perfil/use-perfil-base-path";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
 import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
+import { useToast } from "@/src/shared/hooks/use-toast";
 import { useBarbeiroStats } from "@/src/shared/hooks/barbeiro/use-barbeiro-stats";
 import {
   type DiaJornadaView,
@@ -281,6 +282,7 @@ export default function PerfilIndexScreen() {
   const { user, perfil, barbearias, barbearia, switchBarbearia, logout } =
     useAuth();
   const compartilharLink = useCompartilharLink();
+  const { showToast } = useToast();
   const {
     data: barbeiroStats,
     isLoading: statsLoading,
@@ -499,7 +501,8 @@ export default function PerfilIndexScreen() {
             iconColor="#22c55e"
             title="WhatsApp"
             value="Confirmações + lembretes"
-            onTap={() => go("/notificacoes")}
+            onTap={() => showToast("Integração com WhatsApp em breve", "info")}
+            testID="ir-whatsapp"
             last
           />
         </SettingsGroup>

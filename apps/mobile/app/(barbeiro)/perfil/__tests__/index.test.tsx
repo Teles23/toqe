@@ -30,6 +30,11 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+const mockShowToast = jest.fn();
+jest.mock("@/src/shared/hooks/use-toast", () => ({
+  useToast: () => ({ showToast: mockShowToast }),
+}));
+
 import { Alert } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
@@ -135,6 +140,17 @@ describe("PerfilIndexScreen", () => {
     renderScreen();
     fireEvent.press(screen.getByTestId("ir-notificacoes"));
     expect(mockPush).toHaveBeenCalledWith("/(barbeiro)/perfil/notificacoes");
+  });
+
+  it("mostra toast 'em breve' ao tap em WhatsApp (não navega)", () => {
+    mockUseAuth.mockReturnValue(makeAuth());
+    renderScreen();
+    fireEvent.press(screen.getByTestId("ir-whatsapp"));
+    expect(mockShowToast).toHaveBeenCalledWith(
+      "Integração com WhatsApp em breve",
+      "info",
+    );
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it("Sair pede confirmação e chama logout", () => {
