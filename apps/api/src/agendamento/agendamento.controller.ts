@@ -184,9 +184,15 @@ export class AgendamentoController {
     @Param('codigo', ParseIntPipe) codigo: number,
     @Body() dto: PatchStatusAgendamentoDto,
     @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
   ) {
     return serializeAgendamento(
-      await this.agendamentoService.patchStatus(codigo, dto, Number(barCodigo)),
+      await this.agendamentoService.patchStatus(
+        codigo,
+        dto,
+        Number(barCodigo),
+        req.user.sub,
+      ),
     );
   }
 

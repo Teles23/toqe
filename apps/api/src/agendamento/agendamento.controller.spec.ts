@@ -117,20 +117,22 @@ describe('AgendamentoController', () => {
   });
 
   describe('patchStatus', () => {
-    it('delega para service.patchStatus', () => {
+    it('delega para service.patchStatus com o executor (req.user.sub)', () => {
       const dto: PatchStatusAgendamentoDto = {
         status: StatusAgendamento.CONCLUIDO,
       };
       mockAgendamentoService.patchStatus.mockResolvedValue({
         status: 'concluido',
       });
+      const req = { user: { sub: 77, perfil: 'barbeiro' } } as never;
 
-      void controller.patchStatus(42, dto, '3');
+      void controller.patchStatus(42, dto, '3', req);
 
       expect(mockAgendamentoService.patchStatus).toHaveBeenCalledWith(
         42,
         dto,
         3,
+        77,
       );
     });
   });

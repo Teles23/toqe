@@ -405,6 +405,120 @@ describe('AgendamentoService', () => {
       expect(result.status).toBe('em_andamento');
       expect(mockAgendaGateway.emitStatusAtualizado).toHaveBeenCalled();
     });
+
+    // ── Guard de compatibilidade ao iniciar encaixe (WALK_IN → em_andamento) ──
+
+    const walkIn = {
+      ...mockAgendamento,
+      tipo: 'WALK_IN',
+      status: 'pendente',
+      itens: [{ srvCodigo: 5 }],
+    };
+
+    it('WALK_IN em_andamento: barbeiro SEM registro em BarbeiroServico pode atender', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(walkIn);
+      mockPrisma.barbeiroServico.findFirst.mockResolvedValue(null);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...walkIn,
+        status: 'em_andamento',
+      });
+
+      const result = await service.patchStatus(
+        1,
+        { status: StatusAgendamento.EM_ANDAMENTO },
+        barCodigo,
+        77,
+      );
+      expect(result.status).toBe('em_andamento');
+      // Buscou pelos serviços desativados do executor (77), nenhum encontrado.
+      expect(mockPrisma.barbeiroServico.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            barbeiroId: 77,
+            barCodigo,
+            srvCodigo: { in: [5] },
+            ativo: false,
+          }) as Record<string, unknown>,
+        }),
+      );
+    });
+
+    it('WALK_IN em_andamento: barbeiro com serviço ATIVO (sem registro inativo) pode atender', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(walkIn);
+      // ativo=true → a query por ativo:false não retorna nada
+      mockPrisma.barbeiroServico.findFirst.mockResolvedValue(null);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...walkIn,
+        status: 'em_andamento',
+      });
+
+      const result = await service.patchStatus(
+        1,
+        { status: StatusAgendamento.EM_ANDAMENTO },
+        barCodigo,
+        77,
+      );
+      expect(result.status).toBe('em_andamento');
+    });
+
+    it('WALK_IN em_andamento: barbeiro com serviço DESATIVADO (ativo=false) → ForbiddenException', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(walkIn);
+      mockPrisma.barbeiroServico.findFirst.mockResolvedValue({
+        codigo: 1,
+        barbeiroId: 77,
+        srvCodigo: 5,
+        barCodigo,
+        ativo: false,
+      });
+
+      await expect(
+        service.patchStatus(
+          1,
+          { status: StatusAgendamento.EM_ANDAMENTO },
+          barCodigo,
+          77,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.agendamento.update).not.toHaveBeenCalled();
+    });
+
+    it('em_andamento em agendamento NORMAL (não WALK_IN) NÃO verifica BarbeiroServico', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...mockAgendamento,
+        tipo: 'AGENDADO',
+        itens: [{ srvCodigo: 5 }],
+      });
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...mockAgendamento,
+        status: 'em_andamento',
+      });
+
+      const result = await service.patchStatus(
+        1,
+        { status: StatusAgendamento.EM_ANDAMENTO },
+        barCodigo,
+        77,
+      );
+      expect(result.status).toBe('em_andamento');
+      expect(mockPrisma.barbeiroServico.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('confirmado em WALK_IN NÃO verifica BarbeiroServico', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(walkIn);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...walkIn,
+        status: 'confirmado',
+      });
+
+      const result = await service.patchStatus(
+        1,
+        { status: StatusAgendamento.CONFIRMADO },
+        barCodigo,
+        77,
+      );
+      expect(result.status).toBe('confirmado');
+      expect(mockPrisma.barbeiroServico.findFirst).not.toHaveBeenCalled();
+    });
   });
 
   describe('cancel', () => {

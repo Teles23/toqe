@@ -312,8 +312,37 @@ export class AgendamentoService {
     codigo: number,
     dto: PatchStatusAgendamentoDto,
     barCodigo: number,
+    executorId?: number,
   ) {
-    await this.findOne(codigo, barCodigo);
+    const agendamento = await this.findOne(codigo, barCodigo);
+
+    // Iniciar um encaixe (WALK_IN → em_andamento): a fila não tem barbeiro
+    // designado — qualquer um pode atender, EXCETO se o barbeiro desativou
+    // explicitamente algum serviço do encaixe (BarbeiroServico.ativo=false).
+    // Sem registro = usa o padrão da barbearia = pode atender.
+    if (
+      (dto.status as StatusAgendamento) === StatusAgendamento.EM_ANDAMENTO &&
+      agendamento.tipo === 'WALK_IN' &&
+      executorId !== undefined
+    ) {
+      const srvCodigos = agendamento.itens.map((i) => i.srvCodigo);
+      if (srvCodigos.length > 0) {
+        const desativado = await this.prisma.barbeiroServico.findFirst({
+          where: {
+            barbeiroId: executorId,
+            barCodigo,
+            srvCodigo: { in: srvCodigos },
+            ativo: false,
+          },
+        });
+        if (desativado) {
+          throw new ForbiddenException(
+            'Você não realiza este serviço. Outro barbeiro deve atender.',
+          );
+        }
+      }
+    }
+
     // Inclui barCodigo no update para evitar TOCTOU: garante que o registro
     // continua sendo do mesmo tenant mesmo com concorrência
     const atualizado = await this.prisma.agendamento.update({
