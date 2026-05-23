@@ -484,19 +484,22 @@ export default function PerfilIndexScreen() {
           />
         </SettingsGroup>
 
-        {/* ── NOTIFICAÇÕES (display) ── */}
+        {/* ── NOTIFICAÇÕES ── */}
         <SettingsGroup label="Notificações">
           <SettingsRow
             icon="bell"
             iconColor="#F4B400"
             title="Notificações push"
             value="Ligado"
+            onTap={() => go("/notificacoes")}
+            testID="ir-notificacoes"
           />
           <SettingsRow
             icon="message-circle"
             iconColor="#22c55e"
             title="WhatsApp"
             value="Confirmações + lembretes"
+            onTap={() => go("/notificacoes")}
             last
           />
         </SettingsGroup>

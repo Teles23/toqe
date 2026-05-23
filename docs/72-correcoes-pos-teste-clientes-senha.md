@@ -128,6 +128,15 @@ Já estava correto: o sino (`btn-notificacoes` em `agenda.tsx`) dispara
 Não existe tela de **feed** de notificações (só a de **preferências**, em
 Perfil), então o toast é o fallback pedido. **Sem mudança de código.**
 
+### Addendum — linha "Notificações" do Perfil → preferências
+
+A linha "Notificações push" (e "WhatsApp") em `perfil/index.tsx` era só display
+(sem `onTap`). Agora navega para a tela de **preferências** já existente via
+`go("/notificacoes")` (`/(barbeiro)/perfil/notificacoes`, sibling com `notificacoes.tsx`
+nos dois grupos — barbeiro e cliente). `testID` `ir-notificacoes` + spec de
+navegação. Distinção mantida: **sino da agenda = feed (toast)**, **linha do
+Perfil = preferências (tela)**.
+
 ## Decisões
 
 - **Bug 3:** `CampoSenha` local em vez de `shared/ui` — o padrão card é exclusivo

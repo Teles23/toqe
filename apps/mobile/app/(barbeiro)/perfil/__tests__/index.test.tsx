@@ -130,6 +130,13 @@ describe("PerfilIndexScreen", () => {
     expect(mockPush).toHaveBeenCalledWith("/(barbeiro)/perfil/editar");
   });
 
+  it("navega para /notificacoes ao tap em 'Notificações push'", () => {
+    mockUseAuth.mockReturnValue(makeAuth());
+    renderScreen();
+    fireEvent.press(screen.getByTestId("ir-notificacoes"));
+    expect(mockPush).toHaveBeenCalledWith("/(barbeiro)/perfil/notificacoes");
+  });
+
   it("Sair pede confirmação e chama logout", () => {
     const logout = jest.fn();
     const alertSpy = jest
