@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { CanActivate } from '@nestjs/common';
+import { CanActivate, ForbiddenException } from '@nestjs/common';
 import { ServicoController } from './servico.controller';
 import { ServicoService } from './servico.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,6 +7,7 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateServicoDto } from './dto/create-servico.dto';
 import { UpdateServicoDto } from './dto/update-servico.dto';
+import type { TenantRequest } from '../common/types/jwt-request';
 
 const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
 
@@ -16,7 +17,14 @@ const mockServicoService = {
   findOne: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
+  findServicosBarbeiro: jest.fn(),
+  toggleServicoBarbeiro: jest.fn(),
+  atualizarServicoBarbeiro: jest.fn(),
+  criarServicoExclusivo: jest.fn(),
 };
+
+const reqAs = (perfil: string, sub: number) =>
+  ({ user: { sub, perfil } }) as unknown as TenantRequest;
 
 describe('ServicoController', () => {
   let controller: ServicoController;
@@ -91,6 +99,106 @@ describe('ServicoController', () => {
       void controller.remove(5, '3');
 
       expect(mockServicoService.remove).toHaveBeenCalledWith(5, 3);
+    });
+  });
+
+  // ─── Serviços do barbeiro ───────────────────────────────────────────────────
+
+  describe('findServicosBarbeiro', () => {
+    it('delega com barbeiroId e barCodigo convertido', () => {
+      mockServicoService.findServicosBarbeiro.mockResolvedValue([]);
+      void controller.findServicosBarbeiro(7, '3');
+      expect(mockServicoService.findServicosBarbeiro).toHaveBeenCalledWith(
+        3,
+        7,
+      );
+    });
+  });
+
+  describe('toggleServicoBarbeiro', () => {
+    it('dono pode togglar de qualquer barbeiro', () => {
+      mockServicoService.toggleServicoBarbeiro.mockResolvedValue({});
+      void controller.toggleServicoBarbeiro(
+        7,
+        5,
+        { ativo: false },
+        '3',
+        reqAs('dono', 99),
+      );
+      expect(mockServicoService.toggleServicoBarbeiro).toHaveBeenCalledWith(
+        3,
+        7,
+        5,
+        false,
+      );
+    });
+
+    it('barbeiro mexendo em OUTRO barbeiro → 403', () => {
+      expect(() =>
+        controller.toggleServicoBarbeiro(
+          7,
+          5,
+          { ativo: true },
+          '3',
+          reqAs('barbeiro', 8),
+        ),
+      ).toThrow(ForbiddenException);
+      expect(mockServicoService.toggleServicoBarbeiro).not.toHaveBeenCalled();
+    });
+
+    it('barbeiro nos PRÓPRIOS serviços → delega', () => {
+      mockServicoService.toggleServicoBarbeiro.mockResolvedValue({});
+      void controller.toggleServicoBarbeiro(
+        7,
+        5,
+        { ativo: true },
+        '3',
+        reqAs('barbeiro', 7),
+      );
+      expect(mockServicoService.toggleServicoBarbeiro).toHaveBeenCalled();
+    });
+  });
+
+  describe('atualizarServicoBarbeiro', () => {
+    it('delega passando o perfil do caller', () => {
+      mockServicoService.atualizarServicoBarbeiro.mockResolvedValue({});
+      const dto = { precoProprio: 50, duracaoMin: 30 };
+      void controller.atualizarServicoBarbeiro(
+        7,
+        5,
+        dto,
+        '3',
+        reqAs('barbeiro', 7),
+      );
+      expect(mockServicoService.atualizarServicoBarbeiro).toHaveBeenCalledWith(
+        3,
+        7,
+        5,
+        dto,
+        'barbeiro',
+      );
+    });
+  });
+
+  describe('criarServicoExclusivo', () => {
+    it('delega com perfil; barbeiro em outro → 403', () => {
+      mockServicoService.criarServicoExclusivo.mockResolvedValue({});
+      const dto: CreateServicoDto = {
+        nome: 'Navalhado',
+        precoBase: 60,
+        duracaoBase: 45,
+      };
+      void controller.criarServicoExclusivo(7, dto, '3', reqAs('gerente', 1));
+      expect(mockServicoService.criarServicoExclusivo).toHaveBeenCalledWith(
+        3,
+        7,
+        dto,
+        'gerente',
+      );
+
+      expect(() =>
+        controller.criarServicoExclusivo(7, dto, '3', reqAs('barbeiro', 8)),
+      ).toThrow(ForbiddenException);
     });
   });
 });

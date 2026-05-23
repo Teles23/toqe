@@ -18,6 +18,7 @@ export function createPrismaMock() {
     barbearia: makeMethods(),
     membroBarbearia: makeMethods(),
     servico: makeMethods(),
+    barbeiroServico: makeMethods(),
     agendamento: makeMethods(),
     agendamentoItem: makeMethods(),
     refreshToken: makeMethods(),

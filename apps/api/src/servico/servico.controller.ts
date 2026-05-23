@@ -1,24 +1,30 @@
 import {
   Controller,
   Post,
+  Patch,
   Body,
   Get,
   Put,
   Delete,
   Param,
+  Request,
   UseGuards,
   Headers,
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ServicoService } from './servico.service';
 import { CreateServicoDto } from './dto/create-servico.dto';
 import { UpdateServicoDto } from './dto/update-servico.dto';
+import { ToggleServicoBarbeiroDto } from './dto/toggle-servico-barbeiro.dto';
+import { AtualizarServicoBarbeiroDto } from './dto/atualizar-servico-barbeiro.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { TenantRequest } from '../common/types/jwt-request';
 import {
   ApiTags,
   ApiOperation,
@@ -64,6 +70,102 @@ export class ServicoController {
   @ApiResponse({ status: 200, description: 'Métricas calculadas.' })
   getMetricas(@Headers('x-tenant-id') barCodigo: string) {
     return this.servicoService.getMetricas(Number(barCodigo));
+  }
+
+  // ─── Serviços do barbeiro ───────────────────────────────────────────────────
+
+  @Get('barbeiro/:barbeiroId')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
+  @ApiOperation({
+    summary: 'Lista consolidada dos serviços sob a ótica de um barbeiro',
+  })
+  @ApiResponse({ status: 200, description: 'Lista consolidada.' })
+  findServicosBarbeiro(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
+    return this.servicoService.findServicosBarbeiro(
+      Number(barCodigo),
+      barbeiroId,
+    );
+  }
+
+  @Patch('barbeiro/:barbeiroId/:srvCodigo')
+  @Roles('dono', 'gerente', 'barbeiro')
+  @ApiOperation({ summary: 'Ativa/desativa um serviço para o barbeiro' })
+  @ApiResponse({ status: 200, description: 'Status atualizado.' })
+  toggleServicoBarbeiro(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Param('srvCodigo', ParseIntPipe) srvCodigo: number,
+    @Body() dto: ToggleServicoBarbeiroDto,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
+  ) {
+    this.assertProprioOuStaff(req, barbeiroId);
+    return this.servicoService.toggleServicoBarbeiro(
+      Number(barCodigo),
+      barbeiroId,
+      srvCodigo,
+      dto.ativo,
+    );
+  }
+
+  @Put('barbeiro/:barbeiroId/:srvCodigo')
+  @Roles('dono', 'gerente', 'barbeiro')
+  @ApiOperation({ summary: 'Atualiza preço/duração próprios do barbeiro' })
+  @ApiResponse({ status: 200, description: 'Atualizado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para alterar preço.',
+  })
+  atualizarServicoBarbeiro(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Param('srvCodigo', ParseIntPipe) srvCodigo: number,
+    @Body() dto: AtualizarServicoBarbeiroDto,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
+  ) {
+    this.assertProprioOuStaff(req, barbeiroId);
+    return this.servicoService.atualizarServicoBarbeiro(
+      Number(barCodigo),
+      barbeiroId,
+      srvCodigo,
+      dto,
+      req.user.perfil,
+    );
+  }
+
+  @Post('barbeiro/:barbeiroId')
+  @Roles('dono', 'gerente', 'barbeiro')
+  @ApiOperation({ summary: 'Cria um serviço exclusivo do barbeiro' })
+  @ApiResponse({ status: 201, description: 'Serviço exclusivo criado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para criar serviço.',
+  })
+  @ApiResponse({ status: 409, description: 'Nome de serviço já existe.' })
+  criarServicoExclusivo(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Body() dto: CreateServicoDto,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
+  ) {
+    this.assertProprioOuStaff(req, barbeiroId);
+    return this.servicoService.criarServicoExclusivo(
+      Number(barCodigo),
+      barbeiroId,
+      dto,
+      req.user.perfil,
+    );
+  }
+
+  /** Barbeiro só mexe nos PRÓPRIOS serviços; dono/gerente, em qualquer um. */
+  private assertProprioOuStaff(req: TenantRequest, barbeiroId: number) {
+    if (req.user.perfil === 'barbeiro' && req.user.sub !== barbeiroId) {
+      throw new ForbiddenException(
+        'Você só pode gerenciar os seus próprios serviços',
+      );
+    }
   }
 
   @Get(':codigo')
