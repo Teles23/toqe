@@ -46,6 +46,7 @@ describe('GlobalExceptionFilter', () => {
   beforeEach(() => {
     filter = new GlobalExceptionFilter();
     jest.spyOn(filter['logger'], 'error').mockImplementation(() => undefined);
+    jest.spyOn(filter['logger'], 'warn').mockImplementation(() => undefined);
   });
 
   describe('erros 5xx — InternalServerError', () => {
@@ -108,6 +109,35 @@ describe('GlobalExceptionFilter', () => {
       const payload: ApiErrorPayload = jsonMock.mock.calls[0][0];
       expect(payload.statusCode).toBe(400);
       expect(payload.message).toBe('Campo obrigatório');
+    });
+
+    it('loga 4xx em warn com o detalhe da exceção (ex.: validação Zod)', () => {
+      const warnSpy = jest.spyOn(filter['logger'], 'warn');
+      const { host } = makeHost({ url: '/api/v1/agendamentos/walk-in' });
+      filter.catch(
+        new HttpException(
+          { statusCode: 400, message: ['cliente.nome: Obrigatório'] },
+          HttpStatus.BAD_REQUEST,
+        ),
+        host,
+      );
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const meta = warnSpy.mock.calls[0][0] as {
+        statusCode: number;
+        detail: { message: string[] };
+      };
+      expect(meta.statusCode).toBe(400);
+      expect(meta.detail).toMatchObject({
+        message: ['cliente.nome: Obrigatório'],
+      });
+    });
+
+    it('NÃO loga 4xx em error (reservado p/ 5xx)', () => {
+      const errorSpy = jest.spyOn(filter['logger'], 'error');
+      const { host } = makeHost({});
+      filter.catch(new HttpException('x', HttpStatus.BAD_REQUEST), host);
+      expect(errorSpy).not.toHaveBeenCalled();
     });
   });
 

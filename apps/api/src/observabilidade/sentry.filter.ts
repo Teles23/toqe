@@ -48,6 +48,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
     }
 
+    const message = isHttp
+      ? ((exception.getResponse() as { message?: string })?.message ??
+        exception.message)
+      : status >= 500
+        ? 'Erro interno do servidor'
+        : errorMessage;
+
     if (status >= 500) {
       this.logger.error(
         {
@@ -61,14 +68,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         },
         errorMessage,
       );
+    } else if (status >= 400) {
+      // 4xx: loga em `warn` COM o detalhe da exceção (ex.: mensagens de
+      // validação Zod). O pino-http registra apenas o status — sem isto, o
+      // motivo do erro fica só no corpo da resposta ao cliente, nunca no log.
+      this.logger.warn(
+        {
+          tenantId,
+          userId,
+          method: req.method,
+          url: req.url,
+          statusCode: status,
+          detail: isHttp ? exception.getResponse() : errorMessage,
+        },
+        `Requisição ${status}: ${req.method} ${req.url}`,
+      );
     }
-
-    const message = isHttp
-      ? ((exception.getResponse() as { message?: string })?.message ??
-        exception.message)
-      : status >= 500
-        ? 'Erro interno do servidor'
-        : errorMessage;
 
     const errorCode: string =
       status >= 500 ? ApiErrorCode.INTERNAL : String(status);

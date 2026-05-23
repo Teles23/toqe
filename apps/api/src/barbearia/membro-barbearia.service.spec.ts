@@ -87,7 +87,14 @@ describe('MembroBarbeariaService', () => {
     });
 
     it('walk-in sem email: gera email único server-side e NÃO faz dedup por email', async () => {
-      mockPrisma.usuario.create.mockResolvedValue({ codigo: 300 });
+      // Captura o email gerado no create (param tipado → leitura segura p/ lint).
+      let createdEmail: string | undefined;
+      mockPrisma.usuario.create.mockImplementation(
+        (args: { data: { email: string } }) => {
+          createdEmail = args.data.email;
+          return Promise.resolve({ codigo: 300 });
+        },
+      );
       mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
       mockPrisma.membroBarbearia.create.mockResolvedValue({
         usrCodigo: 300,
@@ -100,12 +107,9 @@ describe('MembroBarbeariaService', () => {
 
       // sem dedup por email (não havia email para buscar)
       expect(mockPrisma.usuario.findUnique).not.toHaveBeenCalled();
-      // cria usuário com um email gerado e único
+      // cria usuário com um email gerado e único (@toqe.internal)
       expect(mockPrisma.usuario.create).toHaveBeenCalled();
-      const createArg = mockPrisma.usuario.create.mock.calls[0][0] as {
-        data: { email: string };
-      };
-      expect(createArg.data.email).toMatch(/@toqe\.internal$/);
+      expect(createdEmail).toMatch(/@toqe\.internal$/);
     });
   });
 
