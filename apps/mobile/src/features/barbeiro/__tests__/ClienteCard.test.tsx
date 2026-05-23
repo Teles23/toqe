@@ -33,9 +33,35 @@ describe("ClienteCard", () => {
     expect(screen.getByText(/R\$\s?250,50/)).toBeTruthy();
   });
 
-  it("cai para email quando telefone é null (não some o identificador)", () => {
+  it("cai para email REAL quando telefone é null (não some o identificador)", () => {
     render(<ClienteCard cliente={make({ telefone: null })} />);
     expect(screen.getByText("carlos@toqe.com")).toBeTruthy();
+  });
+
+  it("NÃO exibe e-mail sintético (@toqe.internal) quando telefone é null", () => {
+    render(
+      <ClienteCard
+        cliente={make({
+          telefone: null,
+          email: "encaixe-1-abc@toqe.internal",
+        })}
+      />,
+    );
+    // Nenhum identificador secundário falso aparece
+    expect(screen.queryByText(/@toqe\.internal/)).toBeNull();
+  });
+
+  it("prefere telefone ao e-mail mesmo quando há e-mail sintético", () => {
+    render(
+      <ClienteCard
+        cliente={make({
+          telefone: "+5511988887777",
+          email: "encaixe-2-xyz@toqe.internal",
+        })}
+      />,
+    );
+    expect(screen.getByText("+5511988887777")).toBeTruthy();
+    expect(screen.queryByText(/@toqe\.internal/)).toBeNull();
   });
 
   it("formata última visita como dd/MM/yyyy", () => {

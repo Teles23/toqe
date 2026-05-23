@@ -27,7 +27,8 @@ errada **deslogava** o usuário. Causa raiz dupla:
 | Bug 1 + 2 (API) | `changePassword`: senha atual incorreta → **`BadRequestException` (400)**, não 401. Revoga apenas as **outras** sessões — identifica a atual pelo `refreshToken` enviado e a preserva. + specs            | `546f0d0` |
 | Bug 1 (mobile)  | `useMudarSenha` anexa o `refreshToken` da sessão atual e passa `skipRefresh: true`; `senha.tsx` trata `400` como erro de campo e mostra toast de sucesso (sem Alert, sem logout). + specs                 | `0892ae3` |
 | Bug 3           | Toggle de visibilidade (olho) nos 3 campos de `senha.tsx` via `CampoSenha` (sub-componente local, mantém o padrão card da tela). testID `<campo>-toggle`.                                                 | `1fbdd1b` |
-| UX 1            | `+` da tela Clientes abre **cadastro de cliente** (nome+telefone obrig., e-mail opcional) em vez do encaixe. Endpoint passa a aceitar e-mail opcional + role `barbeiro`. Invalida `['clientes']` + toast. | —         |
+| UX 1            | `+` da tela Clientes abre **cadastro de cliente** (nome+telefone obrig., e-mail opcional) em vez do encaixe. Endpoint passa a aceitar e-mail opcional + role `barbeiro`. Invalida `['clientes']` + toast. | `a310eb1` |
+| UX 2            | E-mails sintéticos (`@toqe.internal`, `@walk-in.local`, vazio/nulo) não aparecem na UI. Helper `emailVisivel` no `ClienteCard` (telefone > e-mail real > nada) e na busca. + specs.                       | —         |
 
 ## Detalhes técnicos
 
@@ -88,6 +89,21 @@ encaixe já vive no FAB da agenda. Agora abre `AdicionarClienteModal`, que apena
   abre esse sheet. + specs (hook + tela).
 - **Telefone obrigatório** é regra da UI mobile (validação client-side); o
   endpoint mantém telefone opcional por ser compartilhado com a web.
+
+### UX 2 — ocultar e-mails sintéticos
+
+Clientes sem e-mail real recebem um e-mail sintético server-side
+(`encaixe-…@toqe.internal`) por causa da constraint `@unique NOT NULL`. Esses
+e-mails vazavam no `ClienteCard` (fallback quando não há telefone).
+
+- **`shared/utils/cliente.ts` `emailVisivel(email)`:** retorna `null` para
+  domínios sintéticos (`@toqe.internal`, `@walk-in.local`), vazio ou nulo;
+  senão retorna o e-mail. + spec dedicado.
+- **`ClienteCard`:** identificador secundário agora é telefone > e-mail real >
+  nada (antes caía no e-mail sintético). + specs.
+- **`clientes.tsx`:** a busca textual por e-mail também usa `emailVisivel` —
+  não casa em e-mail sintético.
+- **`ClienteDetalhe`** não exibe e-mail (só telefone) → nada a fazer lá.
 
 ## Decisões
 

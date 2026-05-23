@@ -17,6 +17,7 @@ import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/src/shared/theme";
+import { emailVisivel } from "@/src/shared/utils/cliente";
 import type { ClienteAPI } from "@toqe/contracts";
 
 import { ClienteAvatar } from "./clientes/components/ClienteAvatar";
@@ -47,6 +48,9 @@ function ClienteCardImpl({ cliente, onPress, testID }: Props) {
   const { palette, spacing, typography } = useTheme();
 
   const isNovo = cliente.totalVisitas <= 1;
+  // E-mail só aparece se for real; sintéticos (@toqe.internal/@walk-in.local)
+  // são detalhe de implementação — caímos no telefone ou em nada.
+  const emailReal = emailVisivel(cliente.email);
 
   const content = (
     <>
@@ -67,7 +71,8 @@ function ClienteCardImpl({ cliente, onPress, testID }: Props) {
               </View>
             )}
           </View>
-          {/* Identificador secundário: telefone ou email */}
+          {/* Identificador secundário: telefone > e-mail real > nada
+              (e-mails sintéticos de walk-in/encaixe não são exibidos) */}
           {cliente.telefone ? (
             <Text
               style={[
@@ -78,7 +83,7 @@ function ClienteCardImpl({ cliente, onPress, testID }: Props) {
             >
               {cliente.telefone}
             </Text>
-          ) : (
+          ) : emailReal ? (
             <Text
               style={[
                 typography.caption,
@@ -86,9 +91,9 @@ function ClienteCardImpl({ cliente, onPress, testID }: Props) {
               ]}
               numberOfLines={1}
             >
-              {cliente.email}
+              {emailReal}
             </Text>
-          )}
+          ) : null}
         </View>
       </View>
 

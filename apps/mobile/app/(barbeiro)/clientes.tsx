@@ -27,6 +27,7 @@ import { ClienteCard } from "@/src/features/barbeiro/ClienteCard";
 import { ClienteDetalhe } from "@/src/features/barbeiro/ClienteDetalhe";
 import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
 import { useTheme } from "@/src/shared/theme";
+import { emailVisivel } from "@/src/shared/utils/cliente";
 import { DataListWrapper, EmptyScreen, ListSkeleton } from "@/src/shared/ui";
 import type { ClienteAPI } from "@toqe/contracts";
 
@@ -104,11 +105,12 @@ export default function BarbeiroClientesScreen() {
       result = result.filter(filterFn.test);
     }
 
-    // Aplica busca textual
+    // Aplica busca textual (e-mail só conta se for real, não sintético)
     if (q) {
-      result = result.filter(
-        (c) => normalize(c.nome).includes(q) || normalize(c.email).includes(q),
-      );
+      result = result.filter((c) => {
+        const email = emailVisivel(c.email) ?? "";
+        return normalize(c.nome).includes(q) || normalize(email).includes(q);
+      });
     }
 
     // Aplica ordenação
