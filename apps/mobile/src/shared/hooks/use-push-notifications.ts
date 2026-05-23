@@ -50,20 +50,27 @@ export function usePushNotifications() {
 
     let mounted = true;
 
-    void registerForPushNotificationsAsync().then(async (token) => {
-      if (!token || !mounted) return;
-      try {
-        const plataforma = Constants.platform?.ios
-          ? "ios"
-          : Constants.platform?.android
-            ? "android"
-            : "unknown";
+    void registerForPushNotificationsAsync()
+      .then(async (token) => {
+        if (!token || !mounted) return;
+        try {
+          const plataforma = Constants.platform?.ios
+            ? "ios"
+            : Constants.platform?.android
+              ? "android"
+              : "unknown";
 
-        await api.post("/push-tokens", { token, plataforma });
-      } catch {
-        // Token registration is non-critical — don't crash app
-      }
-    });
+          await api.post("/push-tokens", { token, plataforma });
+        } catch {
+          // Token registration is non-critical — don't crash app
+        }
+      })
+      .catch(() => {
+        // registerForPushNotificationsAsync pode rejeitar (ex.: serviço da Expo
+        // fora do ar → 503 "no healthy upstream", permissão negada, sem
+        // projectId). Push é best-effort: engolimos para não virar unhandled
+        // rejection (que estoura o LogBox/red-box e degrada a UI no dev).
+      });
 
     notificationListener.current =
       Notifications.addNotificationReceivedListener((_notification) => {
