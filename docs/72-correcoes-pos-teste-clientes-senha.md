@@ -25,7 +25,8 @@ errada **deslogava** o usuário. Causa raiz dupla:
 | Item            | Mudança                                                                                                                                                                                        | Commit    |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | Bug 1 + 2 (API) | `changePassword`: senha atual incorreta → **`BadRequestException` (400)**, não 401. Revoga apenas as **outras** sessões — identifica a atual pelo `refreshToken` enviado e a preserva. + specs | `546f0d0` |
-| Bug 1 (mobile)  | `useMudarSenha` anexa o `refreshToken` da sessão atual e passa `skipRefresh: true`; `senha.tsx` trata `400` como erro de campo e mostra toast de sucesso (sem Alert, sem logout). + specs      | —         |
+| Bug 1 (mobile)  | `useMudarSenha` anexa o `refreshToken` da sessão atual e passa `skipRefresh: true`; `senha.tsx` trata `400` como erro de campo e mostra toast de sucesso (sem Alert, sem logout). + specs      | `0892ae3` |
+| Bug 3           | Toggle de visibilidade (olho) nos 3 campos de `senha.tsx` via `CampoSenha` (sub-componente local, mantém o padrão card da tela). testID `<campo>-toggle`.                                      | —         |
 
 ## Detalhes técnicos
 
@@ -57,6 +58,19 @@ errada **deslogava** o usuário. Causa raiz dupla:
   (era 401); sucesso vira `showToast(...)` (removido `Alert` nativo).
 - **Specs (`use-mudar-senha.test.tsx`):** anexa refreshToken + skipRefresh; token
   ausente → `refreshToken: undefined`; propaga 400 sem deslogar.
+
+### Bug 3 — toggle de senha (`senha.tsx`)
+
+Os 3 campos viram `<CampoSenha>` (sub-componente `forwardRef` local): card com
+label uppercase + `TextInput` + botão de olho (`Feather eye`/`eye-off`) que
+alterna `secureTextEntry`. Decisão: **não** reusar o `FormInput` global (visual
+diferente, de login/cadastro) nem criar componente em `shared/ui` usado por uma
+só tela — extração local mantém o design e elimina a repetição.
+
+## Decisões
+
+- **Bug 3:** `CampoSenha` local em vez de `shared/ui` — o padrão card é exclusivo
+  desta tela; um componente global seria usado por um único consumidor.
 
 ## Checks
 

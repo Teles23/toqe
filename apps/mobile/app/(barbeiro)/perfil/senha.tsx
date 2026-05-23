@@ -1,5 +1,6 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { forwardRef, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -9,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  type TextInputProps,
   View,
 } from "react-native";
 
@@ -116,72 +118,46 @@ export default function PerfilSenhaScreen() {
         ) : null}
 
         {/* Senha atual */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>SENHA ATUAL</Text>
-          <TextInput
-            testID="input-senha-atual"
-            style={styles.fieldInput}
-            placeholder="••••••••"
-            placeholderTextColor="#444"
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="password"
-            maxLength={128}
-            value={senhaAtual}
-            onChangeText={(v) => {
-              setSenhaAtual(v);
-              setSenhaAtualError(null);
-            }}
-            returnKeyType="next"
-            onSubmitEditing={() => novaSenhaRef.current?.focus()}
-          />
-          {senhaAtualError ? (
-            <Text style={styles.fieldError}>{senhaAtualError}</Text>
-          ) : null}
-        </View>
+        <CampoSenha
+          label="SENHA ATUAL"
+          testID="input-senha-atual"
+          placeholder="••••••••"
+          autoComplete="password"
+          value={senhaAtual}
+          onChangeText={(v) => {
+            setSenhaAtual(v);
+            setSenhaAtualError(null);
+          }}
+          returnKeyType="next"
+          onSubmitEditing={() => novaSenhaRef.current?.focus()}
+          error={senhaAtualError}
+        />
 
         {/* Nova senha */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>NOVA SENHA</Text>
-          <TextInput
-            testID="input-nova-senha"
-            ref={novaSenhaRef}
-            style={styles.fieldInput}
-            placeholder="Mínimo 8 caracteres"
-            placeholderTextColor="#444"
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="new-password"
-            maxLength={128}
-            value={novaSenha}
-            onChangeText={setNovaSenha}
-            returnKeyType="next"
-            onSubmitEditing={() => confirmarRef.current?.focus()}
-          />
-        </View>
+        <CampoSenha
+          ref={novaSenhaRef}
+          label="NOVA SENHA"
+          testID="input-nova-senha"
+          placeholder="Mínimo 8 caracteres"
+          autoComplete="new-password"
+          value={novaSenha}
+          onChangeText={setNovaSenha}
+          returnKeyType="next"
+          onSubmitEditing={() => confirmarRef.current?.focus()}
+        />
 
         {/* Confirmar nova senha */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.fieldLabel}>CONFIRMAR NOVA SENHA</Text>
-          <TextInput
-            testID="input-confirmar"
-            ref={confirmarRef}
-            style={styles.fieldInput}
-            placeholder="Repita a senha"
-            placeholderTextColor="#444"
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="new-password"
-            maxLength={128}
-            value={confirmar}
-            onChangeText={setConfirmar}
-            returnKeyType="done"
-            onSubmitEditing={onSubmit}
-          />
-        </View>
+        <CampoSenha
+          ref={confirmarRef}
+          label="CONFIRMAR NOVA SENHA"
+          testID="input-confirmar"
+          placeholder="Repita a senha"
+          autoComplete="new-password"
+          value={confirmar}
+          onChangeText={setConfirmar}
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
+        />
 
         {/* Requisitos */}
         <View style={styles.reqContainer}>
@@ -233,6 +209,75 @@ export default function PerfilSenhaScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+/**
+ * Campo de senha no estilo card desta tela (label uppercase + input sem borda),
+ * com toggle de visibilidade (olho). Os 3 campos são idênticos em estrutura —
+ * extrair evita repetição e mantém o design da tela (o FormInput global tem
+ * outro visual, usado em login/cadastro).
+ */
+type CampoSenhaProps = {
+  label: string;
+  testID: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  autoComplete: TextInputProps["autoComplete"];
+  returnKeyType: TextInputProps["returnKeyType"];
+  onSubmitEditing?: () => void;
+  error?: string | null;
+};
+
+const CampoSenha = forwardRef<TextInput, CampoSenhaProps>(function CampoSenha(
+  {
+    label,
+    testID,
+    placeholder,
+    value,
+    onChangeText,
+    autoComplete,
+    returnKeyType,
+    onSubmitEditing,
+    error,
+  },
+  ref,
+) {
+  const [hidden, setHidden] = useState(true);
+  return (
+    <View style={styles.fieldContainer}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.inputRow}>
+        <TextInput
+          testID={testID}
+          ref={ref}
+          style={styles.fieldInput}
+          placeholder={placeholder}
+          placeholderTextColor="#444"
+          secureTextEntry={hidden}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete={autoComplete}
+          maxLength={128}
+          value={value}
+          onChangeText={onChangeText}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
+        />
+        <Pressable
+          testID={`${testID}-toggle`}
+          onPress={() => setHidden((h) => !h)}
+          style={styles.eyeBtn}
+          accessibilityRole="button"
+          accessibilityLabel={hidden ? "Mostrar senha" : "Ocultar senha"}
+          hitSlop={8}
+        >
+          <Feather name={hidden ? "eye" : "eye-off"} size={18} color={FG4} />
+        </Pressable>
+      </View>
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+    </View>
+  );
+});
 
 function RequisitRow({
   ok,
@@ -317,7 +362,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontFamily: "Inter_600SemiBold",
   },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   fieldInput: {
+    flex: 1,
     fontSize: 15,
     color: FG,
     // Sem height fixo: com secureTextEntry o placeholder "Mínimo 8 caracteres"
@@ -325,6 +375,10 @@ const styles = StyleSheet.create({
     minHeight: 24,
     paddingVertical: 2,
     fontFamily: "Inter_400Regular",
+  },
+  eyeBtn: {
+    paddingLeft: 10,
+    paddingVertical: 4,
   },
   fieldError: {
     fontSize: 11,
