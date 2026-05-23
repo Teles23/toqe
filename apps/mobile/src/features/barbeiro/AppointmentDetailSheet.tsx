@@ -272,27 +272,25 @@ function Actions({
               />
             </View>
           </View>
-        </View>
-      );
-    case "em_andamento":
-      return (
-        <View style={styles.actionRow}>
-          <View style={{ flex: 1 }}>
+          {/* Não compareceu só faz sentido ANTES de iniciar (cliente não veio) */}
+          <View style={{ marginTop: 8 }}>
             <GhostButton
               label="Não compareceu"
               onPress={() => onAction("no_show")}
               testID="action-no_show"
             />
           </View>
-          <View style={{ flex: 1 }}>
-            <AmberButton
-              label="Concluir"
-              icon="check"
-              onPress={() => onAction("concluir")}
-              testID="action-concluir"
-            />
-          </View>
         </View>
+      );
+    case "em_andamento":
+      // Atendimento já iniciado → o cliente compareceu; só resta concluir.
+      return (
+        <AmberButton
+          label="Concluir"
+          icon="check"
+          onPress={() => onAction("concluir")}
+          testID="action-concluir"
+        />
       );
     case "concluido":
       return (

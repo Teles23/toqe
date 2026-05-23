@@ -97,7 +97,7 @@ describe("AppointmentDetailSheet", () => {
     expect(screen.getByTestId("action-aceitar")).toBeTruthy();
   });
 
-  it("status confirmado → exibe Iniciar atendimento", () => {
+  it("status confirmado → exibe Iniciar + Não compareceu (cliente ainda pode faltar)", () => {
     render(
       <AppointmentDetailSheet
         agendamento={makeApt({ status: "confirmado" })}
@@ -107,10 +107,11 @@ describe("AppointmentDetailSheet", () => {
       />,
     );
     expect(screen.getByTestId("action-iniciar")).toBeTruthy();
+    expect(screen.getByTestId("action-no_show")).toBeTruthy();
     expect(screen.queryByTestId("action-aceitar")).toBeNull();
   });
 
-  it("status em_andamento → exibe Não compareceu e Concluir", () => {
+  it("status em_andamento → só Concluir (sem Não compareceu — já iniciou)", () => {
     render(
       <AppointmentDetailSheet
         agendamento={makeApt({ status: "em_andamento" })}
@@ -120,7 +121,7 @@ describe("AppointmentDetailSheet", () => {
       />,
     );
     expect(screen.getByTestId("action-concluir")).toBeTruthy();
-    expect(screen.getByTestId("action-no_show")).toBeTruthy();
+    expect(screen.queryByTestId("action-no_show")).toBeNull();
     expect(screen.queryByTestId("action-iniciar")).toBeNull();
   });
 

@@ -431,7 +431,7 @@ export default function BarbeiroAgendaScreen() {
             <EmptyScreen
               featherIcon="sun"
               title="Dia livre"
-              description="Sem agendamentos hoje. Bom momento pra walk-in ou organizar a semana."
+              description="Sem agendamentos hoje. Bom momento pra encaixe ou organizar a semana."
               testID="agenda-empty"
               action={
                 user?.linkPublico ? (

@@ -280,14 +280,6 @@ export function AdicionarWalkInModal({ visible, onClose, onSuccess }: Props) {
                 })}
               </View>
             </View>
-
-            {/* Info verde */}
-            <View style={styles.infoBox}>
-              <Feather name="check-circle" size={14} color="#22c55e" />
-              <Text style={styles.infoBoxText}>
-                Será inserido como WALK_IN · ocupa o próximo slot livre
-              </Text>
-            </View>
           </ScrollView>
 
           {/* CTA */}
@@ -439,23 +431,6 @@ const styles = StyleSheet.create({
   chipDurText: {
     fontFamily: "JetBrainsMono_500Medium",
     fontSize: 13,
-  },
-  infoBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: "rgba(34,197,94,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(34,197,94,0.25)",
-  },
-  infoBoxText: {
-    flex: 1,
-    fontSize: 11,
-    color: "#9bd9b4",
-    fontFamily: "Inter_400Regular",
   },
   footer: {
     paddingTop: 14,
