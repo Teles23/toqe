@@ -3,7 +3,6 @@ import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEditarPerfil } from "@/src/shared/hooks/perfil/use-editar-perfil";
 import { maskTelefone } from "@/src/shared/utils/masks";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { useToast } from "@/src/shared/hooks/use-toast";
 import { ScreenHeader } from "@/src/shared/ui";
 import { updateUsuarioSchema, type UpdateUsuarioInput } from "@toqe/contracts";
 
@@ -33,6 +33,7 @@ export default function PerfilEditarScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const editar = useEditarPerfil();
+  const { showToast } = useToast();
 
   const {
     control,
@@ -58,7 +59,7 @@ export default function PerfilEditarScreen() {
           data.telefone && data.telefone.trim() ? data.telefone : undefined,
       };
       await editar.mutateAsync(payload);
-      Alert.alert("Tudo certo", "Dados atualizados com sucesso.");
+      showToast("Dados atualizados com sucesso.", "success");
       router.back();
     } catch {
       setError("root", {
@@ -91,7 +92,7 @@ export default function PerfilEditarScreen() {
             </View>
             <Pressable
               style={styles.avatarEditBtn}
-              onPress={() => Alert.alert("Em breve", "Upload de foto em breve")}
+              onPress={() => showToast("Upload de foto em breve", "info")}
               accessibilityRole="button"
               accessibilityLabel="Editar foto"
             >
