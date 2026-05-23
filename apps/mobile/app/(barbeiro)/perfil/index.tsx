@@ -31,6 +31,11 @@ import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
 import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useBarbeiroStats } from "@/src/shared/hooks/barbeiro/use-barbeiro-stats";
+import {
+  type DiaJornadaView,
+  mergeJornadaComSemana,
+  useJornada,
+} from "@/src/shared/hooks/barbeiro/use-jornada";
 import { useTheme } from "@/src/shared/theme";
 import { Avatar, Divider, SkeletonBox } from "@/src/shared/ui";
 
@@ -247,6 +252,28 @@ const ROLE_LABEL: Record<string, string> = {
  * perfil-scroll, ir-editar, ir-jornada, ir-servicos, ir-senha, btn-logout
  * barbearia-{codigo}
  */
+/** Resumo dinâmico dos dias ativos da jornada: "Seg–Sex · Sáb" / "Ter · Qui". */
+function resumoJornada(dias: DiaJornadaView[]): string {
+  const label = (s: string) => s.charAt(0) + s.slice(1).toLowerCase(); // SEG → Seg
+  const grupos: string[] = [];
+  let i = 0;
+  while (i < dias.length) {
+    if (!dias[i].ativo) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j + 1 < dias.length && dias[j + 1].ativo) j++;
+    if (j - i + 1 >= 3) {
+      grupos.push(`${label(dias[i].diaShort)}–${label(dias[j].diaShort)}`);
+    } else {
+      for (let k = i; k <= j; k++) grupos.push(label(dias[k].diaShort));
+    }
+    i = j + 1;
+  }
+  return grupos.length ? grupos.join(" · ") : "Nenhum dia configurado";
+}
+
 export default function PerfilIndexScreen() {
   const { palette, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
@@ -261,6 +288,16 @@ export default function PerfilIndexScreen() {
     refetch: refetchStats,
   } = useBarbeiroStats();
   const refreshProps = usePullToRefresh(refetchStats, statsRefetching);
+  const {
+    data: jornadaData,
+    isLoading: jornadaLoading,
+    isError: jornadaError,
+  } = useJornada();
+  const jornadaResumo = jornadaLoading
+    ? "Carregando…"
+    : jornadaError
+      ? "Ver jornada"
+      : resumoJornada(mergeJornadaComSemana(jornadaData));
 
   const handleLogout = useCallback(() => {
     Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
@@ -433,7 +470,7 @@ export default function PerfilIndexScreen() {
             icon="clock"
             iconColor="#F4B400"
             title="Jornada de trabalho"
-            value="Seg-Sex · Sáb"
+            value={jornadaResumo}
             onTap={() => go("/jornada")}
             testID="ir-jornada"
           />
