@@ -11,6 +11,9 @@ export interface DiaSemanaPayload {
   inicio: string;
   fim: string;
   ativo: boolean;
+  /** Janela de almoço em "HH:mm" (a tela coleta dos campos editáveis). */
+  almocoIni: string;
+  almocoFim: string;
 }
 
 /** Registro de jornada retornado pela API (um por dia ativo). */
@@ -30,9 +33,6 @@ interface JornadaResult {
  * Body: { dias: [{ diaSemana, ativo, inicio, fim, almocoIni, almocoFim }] }
  *
  * onSuccess: invalida queryKey ['jornada'] para forçar refetch.
- *
- * Almoço: a tela ainda não coleta — placeholder "12:00"/"13:00" (substituir
- * quando a UI for expandida).
  */
 export function useSalvarJornada() {
   const { barbearia, user } = useAuth();
@@ -48,8 +48,8 @@ export function useSalvarJornada() {
             ativo: d.ativo,
             inicio: d.inicio,
             fim: d.fim,
-            almocoIni: "12:00",
-            almocoFim: "13:00",
+            almocoIni: d.almocoIni,
+            almocoFim: d.almocoFim,
           })),
         },
       ),

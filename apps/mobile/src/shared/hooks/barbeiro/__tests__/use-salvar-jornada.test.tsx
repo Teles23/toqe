@@ -55,14 +55,29 @@ describe("useSalvarJornada", () => {
 
     await act(async () => {
       await result.current.mutateAsync([
-        { dia: 1, inicio: "09:00", fim: "18:00", ativo: true },
-        { dia: 0, inicio: "09:00", fim: "18:00", ativo: false },
+        {
+          dia: 1,
+          inicio: "09:00",
+          fim: "18:00",
+          ativo: true,
+          almocoIni: "12:00",
+          almocoFim: "13:00",
+        },
+        {
+          dia: 0,
+          inicio: "09:00",
+          fim: "18:00",
+          ativo: false,
+          almocoIni: "11:30",
+          almocoFim: "12:30",
+        },
       ]);
     });
 
     await waitFor(() => expect(mockPut).toHaveBeenCalledTimes(1));
 
-    // Envia os 2 dias (inclusive o inativo) num único body { dias: [...] }
+    // Envia os 2 dias (inclusive o inativo) num único body { dias: [...] },
+    // repassando o almoço REAL coletado da UI (sem placeholder hardcoded).
     expect(mockPut).toHaveBeenCalledWith(`/agenda/jornada/${USER.codigo}`, {
       dias: [
         {
@@ -78,8 +93,8 @@ describe("useSalvarJornada", () => {
           ativo: false,
           inicio: "09:00",
           fim: "18:00",
-          almocoIni: "12:00",
-          almocoFim: "13:00",
+          almocoIni: "11:30",
+          almocoFim: "12:30",
         },
       ],
     });
@@ -110,7 +125,14 @@ describe("useSalvarJornada", () => {
 
     await act(async () => {
       await result.current.mutateAsync([
-        { dia: 2, inicio: "09:00", fim: "18:00", ativo: true },
+        {
+          dia: 2,
+          inicio: "09:00",
+          fim: "18:00",
+          ativo: true,
+          almocoIni: "12:00",
+          almocoFim: "13:00",
+        },
       ]);
     });
 
@@ -128,7 +150,14 @@ describe("useSalvarJornada", () => {
     await expect(
       act(async () => {
         await result.current.mutateAsync([
-          { dia: 3, inicio: "09:00", fim: "18:00", ativo: true },
+          {
+            dia: 3,
+            inicio: "09:00",
+            fim: "18:00",
+            ativo: true,
+            almocoIni: "12:00",
+            almocoFim: "13:00",
+          },
         ]);
       }),
     ).rejects.toThrow("Server error");

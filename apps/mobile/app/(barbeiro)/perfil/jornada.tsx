@@ -1,6 +1,13 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -23,27 +30,53 @@ type DiaJornada = DiaJornadaView;
 
 const VIOLET = "#a78bfa";
 
-/** Chip de horário read-only no estilo do protótipo. */
-function TimeChip({
+const HORA_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** Aplica máscara HH:mm conforme o usuário digita (só dígitos, `:` após 2). */
+function maskHora(raw: string): string {
+  const d = raw.replace(/\D/g, "").slice(0, 4);
+  return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
+}
+
+/** Campo de horário editável (TextInput com máscara HH:mm). */
+function TimeField({
   label,
   value,
+  onChangeText,
   accentColor,
+  invalid,
+  testID,
 }: {
   label: string;
   value: string;
+  onChangeText: (v: string) => void;
   accentColor: string;
+  invalid?: boolean;
+  testID?: string;
 }) {
   return (
-    <View style={timeChipStyles.chip}>
-      <Text style={timeChipStyles.label}>{label}</Text>
-      <Text style={[timeChipStyles.value, { color: accentColor }]}>
-        {value}
-      </Text>
+    <View
+      style={[
+        timeFieldStyles.chip,
+        invalid ? timeFieldStyles.chipInvalid : null,
+      ]}
+    >
+      <Text style={timeFieldStyles.label}>{label}</Text>
+      <TextInput
+        testID={testID}
+        value={value}
+        onChangeText={(t) => onChangeText(maskHora(t))}
+        keyboardType="number-pad"
+        maxLength={5}
+        placeholder="HH:mm"
+        placeholderTextColor="#555555"
+        style={[timeFieldStyles.value, { color: accentColor }]}
+      />
     </View>
   );
 }
 
-const timeChipStyles = StyleSheet.create({
+const timeFieldStyles = StyleSheet.create({
   chip: {
     flexBasis: "47%",
     flexGrow: 1,
@@ -53,6 +86,9 @@ const timeChipStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#262626",
     backgroundColor: "#1c1c1c",
+  },
+  chipInvalid: {
+    borderColor: "#ff3b30",
   },
   label: {
     fontSize: 9,
@@ -67,6 +103,7 @@ const timeChipStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     marginTop: 3,
+    padding: 0,
   },
 });
 
@@ -92,18 +129,91 @@ export default function JornadaScreen() {
 
   const toggleDia = useCallback((index: number, value: boolean) => {
     setJornada((prev) =>
-      prev.map((d, i) => (i === index ? { ...d, ativo: value } : d)),
+      prev.map((d, i) =>
+        i !== index
+          ? d
+          : {
+              ...d,
+              ativo: value,
+              // Ao ativar, inicializa com defaults se ainda estiver vazio.
+              abre: value ? (d.abre ?? "09:00") : d.abre,
+              fecha: value ? (d.fecha ?? "18:00") : d.fecha,
+              almoco: value
+                ? (d.almoco ?? { de: "12:00", ate: "13:00" })
+                : d.almoco,
+            },
+      ),
     );
   }, []);
 
+  const updateHora = useCallback(
+    (
+      index: number,
+      campo: "abre" | "fecha" | "almocoDe" | "almocoAte",
+      valor: string,
+    ) => {
+      setJornada((prev) =>
+        prev.map((d, i) => {
+          if (i !== index) return d;
+          if (campo === "abre") return { ...d, abre: valor };
+          if (campo === "fecha") return { ...d, fecha: valor };
+          const almoco = d.almoco ?? { de: "12:00", ate: "13:00" };
+          return {
+            ...d,
+            almoco:
+              campo === "almocoDe"
+                ? { ...almoco, de: valor }
+                : { ...almoco, ate: valor },
+          };
+        }),
+      );
+    },
+    [],
+  );
+
   const handleSalvar = useCallback(() => {
     setErro(null);
+
+    // Validação client-side dos dias ATIVOS (espelha o schema do backend):
+    // formato HH:mm, início < fim e almoço dentro do expediente — evita 400.
+    for (const d of jornada) {
+      if (!d.ativo) continue;
+      const { abre, fecha, almoco } = d;
+      const de = almoco?.de ?? "12:00";
+      const ate = almoco?.ate ?? "13:00";
+      if (
+        !abre ||
+        !fecha ||
+        !HORA_RE.test(abre) ||
+        !HORA_RE.test(fecha) ||
+        !HORA_RE.test(de) ||
+        !HORA_RE.test(ate)
+      ) {
+        setErro(`${d.dia}: horário inválido — use HH:mm.`);
+        return;
+      }
+      if (abre >= fecha) {
+        setErro(`${d.dia}: a abertura deve ser antes do fechamento.`);
+        return;
+      }
+      if (de >= ate) {
+        setErro(`${d.dia}: o início do almoço deve ser antes do fim.`);
+        return;
+      }
+      if (de < abre || ate > fecha) {
+        setErro(`${d.dia}: o almoço deve estar dentro do expediente.`);
+        return;
+      }
+    }
+
     mutate(
       jornada.map((d) => ({
         dia: d.diaSemana,
         inicio: d.abre ?? "09:00",
         fim: d.fecha ?? "18:00",
         ativo: d.ativo,
+        almocoIni: d.almoco?.de ?? "12:00",
+        almocoFim: d.almoco?.ate ?? "13:00",
       })),
       {
         onSuccess: () => router.back(),
@@ -234,38 +344,46 @@ export default function JornadaScreen() {
                   />
                 </View>
 
-                {/* ── Time chips (read-only) ── */}
-                {d.ativo && d.abre && d.fecha ? (
+                {/* ── Time fields (editáveis) ── */}
+                {d.ativo ? (
                   <View
                     style={[
                       styles.timeGrid,
                       { marginTop: spacing.sm, borderTopColor: palette.border },
                     ]}
                   >
-                    <TimeChip
+                    <TimeField
                       label="Abertura"
-                      value={d.abre}
+                      value={d.abre ?? ""}
+                      onChangeText={(v) => updateHora(index, "abre", v)}
                       accentColor={palette.primary}
+                      invalid={!!d.abre && !HORA_RE.test(d.abre)}
+                      testID={`hora-abre-${d.diaShort.toLowerCase()}`}
                     />
-                    <TimeChip
+                    <TimeField
                       label="Fechamento"
-                      value={d.fecha}
+                      value={d.fecha ?? ""}
+                      onChangeText={(v) => updateHora(index, "fecha", v)}
                       accentColor={palette.primary}
+                      invalid={!!d.fecha && !HORA_RE.test(d.fecha)}
+                      testID={`hora-fecha-${d.diaShort.toLowerCase()}`}
                     />
-                    {d.almoco ? (
-                      <>
-                        <TimeChip
-                          label="Almoço de"
-                          value={d.almoco.de}
-                          accentColor={VIOLET}
-                        />
-                        <TimeChip
-                          label="Almoço até"
-                          value={d.almoco.ate}
-                          accentColor={VIOLET}
-                        />
-                      </>
-                    ) : null}
+                    <TimeField
+                      label="Almoço de"
+                      value={d.almoco?.de ?? ""}
+                      onChangeText={(v) => updateHora(index, "almocoDe", v)}
+                      accentColor={VIOLET}
+                      invalid={!!d.almoco?.de && !HORA_RE.test(d.almoco.de)}
+                      testID={`hora-almoco-de-${d.diaShort.toLowerCase()}`}
+                    />
+                    <TimeField
+                      label="Almoço até"
+                      value={d.almoco?.ate ?? ""}
+                      onChangeText={(v) => updateHora(index, "almocoAte", v)}
+                      accentColor={VIOLET}
+                      invalid={!!d.almoco?.ate && !HORA_RE.test(d.almoco.ate)}
+                      testID={`hora-almoco-ate-${d.diaShort.toLowerCase()}`}
+                    />
                   </View>
                 ) : null}
               </View>
