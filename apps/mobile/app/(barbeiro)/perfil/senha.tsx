@@ -2,7 +2,6 @@ import { router } from "expo-router";
 import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ApiError } from "@/src/shared/api/api-client";
 import { useMudarSenha } from "@/src/shared/hooks/perfil/use-mudar-senha";
+import { useToast } from "@/src/shared/hooks/use-toast";
 import { ScreenHeader } from "@/src/shared/ui";
 
 const AMBER = "#F4B400";
@@ -29,6 +29,7 @@ const FG4 = "#666666";
 export default function PerfilSenhaScreen() {
   const mudar = useMudarSenha();
   const insets = useSafeAreaInsets();
+  const { showToast } = useToast();
 
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -64,13 +65,15 @@ export default function PerfilSenhaScreen() {
     setSubmitting(true);
     try {
       await mudar.mutateAsync({ senhaAtual, novaSenha });
-      Alert.alert(
-        "Senha alterada",
-        "Sua senha foi alterada. Outras sessões foram encerradas por segurança.",
+      showToast(
+        "Senha alterada. Outros dispositivos foram desconectados.",
+        "success",
       );
       router.back();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      // 400 = senha atual incorreta (erro de campo, sem logout). Antes era 401,
+      // que disparava o interceptor de refresh e deslogava o usuário.
+      if (err instanceof ApiError && err.status === 400) {
         setSenhaAtualError("Senha atual incorreta.");
       } else {
         setRootError("Não foi possível alterar a senha. Tente novamente.");

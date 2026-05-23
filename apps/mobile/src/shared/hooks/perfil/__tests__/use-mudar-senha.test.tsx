@@ -12,6 +12,11 @@ jest.mock("expo-constants", () => ({
 
 jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
 
+const mockGetRefreshToken = jest.fn();
+jest.mock("@/src/shared/lib/secure-storage", () => ({
+  TokenStorage: { getRefreshToken: () => mockGetRefreshToken() },
+}));
+
 const mockPost = jest.fn();
 jest.mock("@/src/shared/api/api-client", () => ({
   api: { post: (...args: unknown[]) => mockPost(...args) },
@@ -41,7 +46,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe("useMudarSenha", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("envia payload correto para /auth/change-password", async () => {
+  it("anexa o refreshToken atual e pula o interceptor de refresh", async () => {
+    mockGetRefreshToken.mockResolvedValueOnce("rt-sessao-atual");
     mockPost.mockResolvedValueOnce({ message: "ok" });
     const { result } = renderHook(() => useMudarSenha(), { wrapper });
 
@@ -52,18 +58,47 @@ describe("useMudarSenha", () => {
       });
     });
 
-    expect(mockPost).toHaveBeenCalledWith("/auth/change-password", {
-      senhaAtual: "antiga",
-      novaSenha: "nova_senha",
-    });
+    expect(mockPost).toHaveBeenCalledWith(
+      "/auth/change-password",
+      {
+        senhaAtual: "antiga",
+        novaSenha: "nova_senha",
+        refreshToken: "rt-sessao-atual",
+      },
+      { skipRefresh: true },
+    );
   });
 
-  it("propaga erro 401 do backend (senha atual incorreta)", async () => {
-    mockPost.mockRejectedValueOnce(new ApiError(401, "Senha atual incorreta"));
+  it("envia refreshToken undefined quando não há token armazenado", async () => {
+    mockGetRefreshToken.mockResolvedValueOnce(null);
+    mockPost.mockResolvedValueOnce({ message: "ok" });
+    const { result } = renderHook(() => useMudarSenha(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        senhaAtual: "antiga",
+        novaSenha: "nova_senha",
+      });
+    });
+
+    expect(mockPost).toHaveBeenCalledWith(
+      "/auth/change-password",
+      {
+        senhaAtual: "antiga",
+        novaSenha: "nova_senha",
+        refreshToken: undefined,
+      },
+      { skipRefresh: true },
+    );
+  });
+
+  it("propaga erro 400 do backend (senha atual incorreta) sem deslogar", async () => {
+    mockGetRefreshToken.mockResolvedValueOnce("rt-sessao-atual");
+    mockPost.mockRejectedValueOnce(new ApiError(400, "Senha atual incorreta"));
     const { result } = renderHook(() => useMudarSenha(), { wrapper });
 
     await expect(
       result.current.mutateAsync({ senhaAtual: "errada", novaSenha: "x" }),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ status: 400 });
   });
 });

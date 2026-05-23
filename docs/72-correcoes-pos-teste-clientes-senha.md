@@ -22,9 +22,10 @@ errada **deslogava** o usuário. Causa raiz dupla:
 
 ## Itens
 
-| Item            | Mudança                                                                                                                                                                                        | Commit |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Bug 1 + 2 (API) | `changePassword`: senha atual incorreta → **`BadRequestException` (400)**, não 401. Revoga apenas as **outras** sessões — identifica a atual pelo `refreshToken` enviado e a preserva. + specs | —      |
+| Item            | Mudança                                                                                                                                                                                        | Commit    |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Bug 1 + 2 (API) | `changePassword`: senha atual incorreta → **`BadRequestException` (400)**, não 401. Revoga apenas as **outras** sessões — identifica a atual pelo `refreshToken` enviado e a preserva. + specs | `546f0d0` |
+| Bug 1 (mobile)  | `useMudarSenha` anexa o `refreshToken` da sessão atual e passa `skipRefresh: true`; `senha.tsx` trata `400` como erro de campo e mostra toast de sucesso (sem Alert, sem logout). + specs      | —         |
 
 ## Detalhes técnicos
 
@@ -46,10 +47,22 @@ errada **deslogava** o usuário. Causa raiz dupla:
   sem `refreshToken` → `updateMany` sem filtro de `codigo`; com `refreshToken` →
   `updateMany` com `codigo: { not: <atual> }`.
 
+### Bug 1 — mobile (`apps/mobile/`)
+
+- **`use-mudar-senha.ts`:** lê `TokenStorage.getRefreshToken()`, anexa ao payload
+  e envia `{ skipRefresh: true }` — assim um 401 dessa rota não dispara o
+  interceptor de refresh (que deslogaria). Input do caller é só `senhaAtual` +
+  `novaSenha`.
+- **`senha.tsx`:** `catch` passa a tratar **`400`** como "senha atual incorreta"
+  (era 401); sucesso vira `showToast(...)` (removido `Alert` nativo).
+- **Specs (`use-mudar-senha.test.tsx`):** anexa refreshToken + skipRefresh; token
+  ausente → `refreshToken: undefined`; propaga 400 sem deslogar.
+
 ## Checks
 
 api: `pnpm --filter api test -- auth.service` (28 verdes), `tsc --noEmit` (api +
-contracts) e `lint` limpos.
+contracts) e `lint` limpos. mobile: `use-mudar-senha` (3 verdes), `tsc` + `lint`
+limpos.
 
 ## Pendente (validação manual — só o usuário)
 
