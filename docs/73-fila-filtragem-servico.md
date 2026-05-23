@@ -30,9 +30,10 @@ múltiplos serviços: basta **um** serviço desativado para bloquear/filtrar.
 
 ## Itens
 
-| Item   | Mudança                                                                                                                                     | Commit |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Item 1 | Guard no `patchStatus`: `WALK_IN` → `em_andamento` valida `BarbeiroServico.ativo` do executor (`req.user.sub`); incompatível → 403. + specs | —      |
+| Item   | Mudança                                                                                                                                                       | Commit    |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Item 1 | Guard no `patchStatus`: `WALK_IN` → `em_andamento` valida `BarbeiroServico.ativo` do executor (`req.user.sub`); incompatível → 403. + specs                   | `e46c9e0` |
+| Item 2 | `findAll` ganha modo `barbeiroCompativel`: com `barbeiroId`, exclui encaixes com serviço `ativo=false` do barbeiro (em vez de filtrar por designado). + specs | —         |
 
 ## Detalhes técnicos
 
@@ -50,10 +51,26 @@ múltiplos serviços: basta **um** serviço desativado para bloquear/filtrar.
   ok; `ativo=false` → 403 (sem `update`); NORMAL em_andamento → ok sem consulta;
   `confirmado` em WALK_IN → ok sem consulta. Controller spec passa `req.user.sub`.
 
+### Item 2 — Fila compatível (`findAll` + `listAgendamentoSchema`)
+
+- Contract: `listAgendamentoSchema` ganha `barbeiroCompativel: z.enum(["true","false"]).optional()`
+  (string de query param; comparado com `=== 'true'` — sem `coerce`, que trataria
+  `"false"` como truthy).
+- `findAll` vira `async`. Quando `barbeiroId` **e** `barbeiroCompativel === 'true'`:
+  busca os `BarbeiroServico` do barbeiro com `ativo=false`, e filtra
+  `where.itens = { none: { srvCodigo: { in: [...] } } }` — exclui encaixes que
+  tenham **algum** serviço desativado. Sem desativados → sem restrição.
+  Sem `barbeiroCompativel`, `barbeiroId` mantém o filtro por barbeiro **designado**
+  (comportamento anterior, usado fora da fila).
+- Specs: exclui por itens quando há desativados; sem desativados não restringe;
+  `barbeiroId` puro mantém filtro por designado.
+
 ## Endpoints afetados
 
 - `PATCH /agendamentos/:codigo/status` — passa a validar compatibilidade ao
   iniciar um encaixe (403 quando incompatível).
+- `GET /agendamentos?tipo=WALK_IN&barbeiroId=:id&barbeiroCompativel=true` —
+  retorna a fila compatível com o barbeiro.
 
 ## Comportamento no mobile
 

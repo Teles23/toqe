@@ -276,7 +276,7 @@ export class AgendamentoService {
     return { itensData, totalDuration };
   }
 
-  findAll(barCodigo: number, filtros: ListAgendamentoDto) {
+  async findAll(barCodigo: number, filtros: ListAgendamentoDto) {
     const where: Prisma.AgendamentoWhereInput = { barCodigo };
 
     if (filtros.data) {
@@ -287,10 +287,25 @@ export class AgendamentoService {
       // full scan crescente conforme a barbearia acumula histórico.
       where.inicio = { gte: subDays(new Date(), 90) };
     }
-    if (filtros.barbeiroId) where.barbeiroId = filtros.barbeiroId;
     if (filtros.clienteId) where.clienteId = filtros.clienteId;
     if (filtros.status) where.status = filtros.status;
     if (filtros.tipo) where.tipo = filtros.tipo;
+
+    if (filtros.barbeiroId && filtros.barbeiroCompativel === 'true') {
+      // Modo "fila": barbeiroId significa "compatível com este barbeiro", não
+      // "designado a ele". Exclui encaixes com algum serviço que o barbeiro
+      // desativou (BarbeiroServico.ativo=false). Sem registro = pode atender.
+      const desativados = await this.prisma.barbeiroServico.findMany({
+        where: { barbeiroId: filtros.barbeiroId, barCodigo, ativo: false },
+        select: { srvCodigo: true },
+      });
+      const srvDesativados = desativados.map((b) => b.srvCodigo);
+      if (srvDesativados.length > 0) {
+        where.itens = { none: { srvCodigo: { in: srvDesativados } } };
+      }
+    } else if (filtros.barbeiroId) {
+      where.barbeiroId = filtros.barbeiroId;
+    }
 
     return this.prisma.agendamento.findMany({
       where,

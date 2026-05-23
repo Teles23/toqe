@@ -357,6 +357,64 @@ describe('AgendamentoService', () => {
       expect(diffDays).toBeGreaterThanOrEqual(89);
       expect(diffDays).toBeLessThanOrEqual(91);
     });
+
+    it('barbeiroCompativel: exclui encaixes com serviço desativado (ativo=false) do barbeiro', async () => {
+      mockPrisma.barbeiroServico.findMany.mockResolvedValue([
+        { srvCodigo: 5 },
+        { srvCodigo: 9 },
+      ]);
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      await service.findAll(barCodigo, {
+        data: '2024-06-01',
+        tipo: 'WALK_IN',
+        barbeiroId: 77,
+        barbeiroCompativel: 'true',
+      });
+
+      expect(mockPrisma.barbeiroServico.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { barbeiroId: 77, barCodigo, ativo: false },
+        }),
+      );
+      const [call] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: Record<string, unknown> },
+      ];
+      // Filtra por compatibilidade, NÃO por barbeiro designado.
+      expect(call.where.barbeiroId).toBeUndefined();
+      expect(call.where.itens).toEqual({
+        none: { srvCodigo: { in: [5, 9] } },
+      });
+    });
+
+    it('barbeiroCompativel sem serviços desativados: não restringe por itens', async () => {
+      mockPrisma.barbeiroServico.findMany.mockResolvedValue([]);
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      await service.findAll(barCodigo, {
+        tipo: 'WALK_IN',
+        barbeiroId: 77,
+        barbeiroCompativel: 'true',
+      });
+
+      const [call] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: Record<string, unknown> },
+      ];
+      expect(call.where.itens).toBeUndefined();
+      expect(call.where.barbeiroId).toBeUndefined();
+    });
+
+    it('barbeiroId SEM barbeiroCompativel mantém filtro por barbeiro designado', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      await service.findAll(barCodigo, { barbeiroId: 77 });
+
+      expect(mockPrisma.barbeiroServico.findMany).not.toHaveBeenCalled();
+      const [call] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: Record<string, unknown> },
+      ];
+      expect(call.where.barbeiroId).toBe(77);
+    });
   });
 
   describe('findOne', () => {

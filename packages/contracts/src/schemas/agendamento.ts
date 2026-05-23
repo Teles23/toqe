@@ -112,6 +112,13 @@ export const listAgendamentoSchema = z.object({
     ])
     .optional(),
   tipo: tipoAgendamentoSchema.optional(),
+  // Quando "true" (combinado com barbeiroId), muda o sentido de `barbeiroId`:
+  // em vez de filtrar pelo barbeiro DESIGNADO, retorna os encaixes que o
+  // barbeiro PODE atender (exclui serviços que ele desativou). A fila de
+  // encaixe não tem barbeiro designado — qualquer um compatível atende.
+  // String ("true"/"false") porque vem de query param; o service compara
+  // explicitamente com "true" (sem coerce, que trataria "false" como truthy).
+  barbeiroCompativel: z.enum(["true", "false"]).optional(),
 });
 
 export type TipoAgendamento = z.infer<typeof tipoAgendamentoSchema>;
