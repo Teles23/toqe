@@ -23,6 +23,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 
 import { FilaCard } from "@/src/features/barbeiro/FilaCard";
+import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useFilaDia } from "@/src/shared/hooks/barbeiro/use-fila-dia";
 import { useToast } from "@/src/shared/hooks/use-toast";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
@@ -87,7 +88,10 @@ function RedPulsingDot() {
  * iniciar o atendimento o item vira `em_andamento` e sai da fila.
  */
 export function FilaSection() {
-  const { data } = useFilaDia();
+  const { user } = useAuth();
+  // Fila filtrada por compatibilidade do barbeiro logado: só encaixes cujos
+  // serviços ele realiza (o backend exclui os que ele desativou).
+  const { data } = useFilaDia(new Date(), user?.codigo);
   const updateStatus = useUpdateStatus();
   const { showToast } = useToast();
   const [expanded, setExpanded] = useState(false);

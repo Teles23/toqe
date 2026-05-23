@@ -72,7 +72,7 @@ describe("useFilaDia", () => {
     expect(calledPath).toContain("data=2026-05-15");
   });
 
-  it("opcionalmente filtra por barbeiroId", async () => {
+  it("ao filtrar por barbeiroId, anexa barbeiroCompativel=true (fila compatível)", async () => {
     mockUseAuth.mockReturnValue({
       barbearia: { codigo: 7, nome: "Centro" },
     });
@@ -84,6 +84,22 @@ describe("useFilaDia", () => {
 
     const calledPath = mockGet.mock.calls[0][0] as string;
     expect(calledPath).toContain("barbeiroId=42");
+    expect(calledPath).toContain("barbeiroCompativel=true");
+  });
+
+  it("sem barbeiroId não envia barbeiroCompativel", async () => {
+    mockUseAuth.mockReturnValue({
+      barbearia: { codigo: 7, nome: "Centro" },
+    });
+    mockGet.mockResolvedValueOnce([]);
+
+    renderHook(() => useFilaDia(new Date(2026, 4, 15)), { wrapper });
+
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(1));
+
+    const calledPath = mockGet.mock.calls[0][0] as string;
+    expect(calledPath).not.toContain("barbeiroCompativel");
+    expect(calledPath).not.toContain("barbeiroId=");
   });
 
   it("queryKey muda quando barbeiroId muda — evita cache cross-barbeiro", async () => {

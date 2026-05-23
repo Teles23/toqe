@@ -33,7 +33,8 @@ múltiplos serviços: basta **um** serviço desativado para bloquear/filtrar.
 | Item   | Mudança                                                                                                                                                       | Commit    |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | Item 1 | Guard no `patchStatus`: `WALK_IN` → `em_andamento` valida `BarbeiroServico.ativo` do executor (`req.user.sub`); incompatível → 403. + specs                   | `e46c9e0` |
-| Item 2 | `findAll` ganha modo `barbeiroCompativel`: com `barbeiroId`, exclui encaixes com serviço `ativo=false` do barbeiro (em vez de filtrar por designado). + specs | —         |
+| Item 2 | `findAll` ganha modo `barbeiroCompativel`: com `barbeiroId`, exclui encaixes com serviço `ativo=false` do barbeiro (em vez de filtrar por designado). + specs | `f015a2a` |
+| Item 3 | `useFilaDia` anexa `barbeiroCompativel=true` quando há `barbeiroId`; `FilaSection` passa `user.codigo` do barbeiro logado. + specs do hook                    | —         |
 
 ## Detalhes técnicos
 

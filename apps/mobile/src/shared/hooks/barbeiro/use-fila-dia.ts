@@ -8,11 +8,17 @@ import type { AgendamentoResponse } from "@toqe/shared";
 /**
  * Lista os walk-ins (tipo=WALK_IN) na fila para uma data específica.
  *
- * Endpoint: GET /agendamentos?data=YYYY-MM-DD&tipo=WALK_IN[&barbeiroId=X]
+ * Endpoint:
+ *   GET /agendamentos?data=YYYY-MM-DD&tipo=WALK_IN[&barbeiroId=X&barbeiroCompativel=true]
  * Header obrigatório: x-tenant-id (código da barbearia ativa)
  *
+ * A fila não tem barbeiro designado — qualquer um compatível atende. Quando um
+ * `barbeiroId` é informado, anexa `barbeiroCompativel=true`: o backend então
+ * trata o `barbeiroId` como "compatível com este barbeiro" (exclui encaixes com
+ * serviço que o barbeiro desativou) em vez de "designado a este barbeiro".
+ *
  * @param data data alvo (default: hoje)
- * @param barbeiroId opcional — filtra fila de um barbeiro específico
+ * @param barbeiroId opcional — filtra a fila por compatibilidade deste barbeiro
  */
 export function useFilaDia(data: Date = new Date(), barbeiroId?: number) {
   const { barbearia } = useAuth();
@@ -22,7 +28,10 @@ export function useFilaDia(data: Date = new Date(), barbeiroId?: number) {
     queryKey: ["fila", barbearia?.codigo, barbeiroId ?? null, dataStr],
     queryFn: () => {
       const params = new URLSearchParams({ data: dataStr, tipo: "WALK_IN" });
-      if (barbeiroId) params.set("barbeiroId", String(barbeiroId));
+      if (barbeiroId) {
+        params.set("barbeiroId", String(barbeiroId));
+        params.set("barbeiroCompativel", "true");
+      }
       return tenantApi(barbearia!.codigo).get<AgendamentoResponse[]>(
         `/agendamentos?${params.toString()}`,
       );
