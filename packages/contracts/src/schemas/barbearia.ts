@@ -51,6 +51,10 @@ export const updateBarbeariaSchema = z.object({
     .or(z.literal("")),
 
   logoUrl: z.string().url("URL de logo inválida").optional().or(z.literal("")),
+
+  // Permissões que o dono concede aos barbeiros sobre serviços
+  barbeiroCriaServico: z.boolean().optional(),
+  barbeiroAlteraPreco: z.boolean().optional(),
 });
 
 export const convidarMembroSchema = z.object({

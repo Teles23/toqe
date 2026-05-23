@@ -14,7 +14,9 @@ export const configuracaoService = {
     barCodigo: number,
     data: Partial<BarbeariaConfig>,
   ): Promise<BarbeariaConfig> {
-    return barbeariaApi(barCodigo).patch<BarbeariaConfig>("", data);
+    // A API expõe PUT /barbearias/:barCodigo (UpdateBarbeariaDto é todo
+    // opcional — funciona como atualização parcial).
+    return barbeariaApi(barCodigo).put<BarbeariaConfig>("", data);
   },
 
   getHorarios(barCodigo: number): Promise<HorarioDia[]> {

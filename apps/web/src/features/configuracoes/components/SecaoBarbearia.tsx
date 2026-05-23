@@ -17,6 +17,12 @@ export function SecaoBarbearia({ barCodigo }: Props) {
   const [tel, setTel] = useState(data?.telefone ?? "");
   const [email, setEmail] = useState(data?.email ?? "");
   const [end, setEnd] = useState(data?.endereco ?? "");
+  const [criaServico, setCriaServico] = useState(
+    data?.barbeiroCriaServico ?? false,
+  );
+  const [alteraPreco, setAlteraPreco] = useState(
+    data?.barbeiroAlteraPreco ?? false,
+  );
   const [salvo, setSalvo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,6 +32,8 @@ export function SecaoBarbearia({ barCodigo }: Props) {
       setTel(data.telefone);
       setEmail(data.email);
       setEnd(data.endereco);
+      setCriaServico(data.barbeiroCriaServico ?? false);
+      setAlteraPreco(data.barbeiroAlteraPreco ?? false);
     }
   }, [data]);
 
@@ -41,7 +49,14 @@ export function SecaoBarbearia({ barCodigo }: Props) {
 
   function salvar() {
     update.mutate(
-      { nome, telefone: tel, email, endereco: end },
+      {
+        nome,
+        telefone: tel,
+        email,
+        endereco: end,
+        barbeiroCriaServico: criaServico,
+        barbeiroAlteraPreco: alteraPreco,
+      },
       {
         onSuccess: () => {
           setSalvo(true);
@@ -202,6 +217,80 @@ export function SecaoBarbearia({ barCodigo }: Props) {
               />
             </div>
           </div>
+        ))}
+      </div>
+
+      {/* Permissões dos barbeiros */}
+      <div className="space-y-3 pt-2">
+        <div>
+          <h3
+            className="text-[13px] font-bold mb-0.5"
+            style={{
+              fontFamily: "var(--font-heading)",
+              color: "var(--text-primary)",
+            }}
+          >
+            Permissões dos barbeiros
+          </h3>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            Controle o que cada barbeiro pode fazer com os serviços.
+          </p>
+        </div>
+
+        {[
+          {
+            testId: "toggle-barbeiro-cria-servico",
+            label: "Cadastrar serviços exclusivos",
+            value: criaServico,
+            set: setCriaServico,
+          },
+          {
+            testId: "toggle-barbeiro-altera-preco",
+            label: "Alterar o preço dos serviços",
+            value: alteraPreco,
+            set: setAlteraPreco,
+          },
+        ].map(({ testId, label, value, set }) => (
+          <button
+            key={testId}
+            type="button"
+            data-testid={testId}
+            role="switch"
+            aria-checked={value}
+            onClick={() => set((v) => !v)}
+            className="flex w-full items-center justify-between rounded-lg px-3 py-2.5"
+            style={{
+              background: "var(--surface-2, rgba(255,255,255,0.03))",
+              border: "1px solid var(--border, rgba(255,255,255,0.08))",
+            }}
+          >
+            <span
+              className="text-[13px] font-medium"
+              style={{ color: "var(--text-primary)" }}
+            >
+              {label}
+            </span>
+            <span
+              className="relative inline-flex items-center rounded-full transition-colors"
+              style={{
+                width: 38,
+                height: 22,
+                background: value ? "var(--primary)" : "rgba(255,255,255,0.15)",
+              }}
+            >
+              <span
+                className="absolute rounded-full"
+                style={{
+                  width: 16,
+                  height: 16,
+                  top: 3,
+                  left: value ? 19 : 3,
+                  background: "#0D0D0D",
+                  transition: "left 0.15s ease",
+                }}
+              />
+            </span>
+          </button>
         ))}
       </div>
 

@@ -29,6 +29,9 @@ export interface BarbeariaConfig {
   email: string;
   endereco: string;
   logoUrl?: string | null;
+  /** Permissões concedidas aos barbeiros (definidas pelo dono). */
+  barbeiroCriaServico?: boolean;
+  barbeiroAlteraPreco?: boolean;
 }
 
 export interface Plano {
