@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RefreshToken } from '../generated/prisma';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from '../usuario/usuario.service';
@@ -227,6 +232,7 @@ export class AuthService {
     usrCodigo: number,
     senhaAtual: string,
     novaSenha: string,
+    refreshTokenAtual?: string,
   ): Promise<void> {
     const user = await this.usuarioService.findById(usrCodigo);
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
@@ -236,15 +242,38 @@ export class AuthService {
       );
     }
     const match = await bcrypt.compare(senhaAtual, user.senhaHash);
-    if (!match) throw new UnauthorizedException('Senha atual incorreta');
+    // Senha atual incorreta é um erro de validação do input (400), não de
+    // autenticação (401). Um 401 dispararia o interceptor de refresh do mobile,
+    // que ao falhar deslogaria o usuário — exatamente o que NÃO queremos aqui.
+    if (!match) throw new BadRequestException('Senha atual incorreta');
     const senhaHash = await bcrypt.hash(novaSenha, await bcrypt.genSalt());
+
+    // Identifica a sessão atual (pelo refresh token enviado) para preservá-la:
+    // trocar a senha revoga apenas as OUTRAS sessões (outros dispositivos).
+    let manterCodigo: number | null = null;
+    if (refreshTokenAtual) {
+      const ativos = await this.prisma.refreshToken.findMany({
+        where: { usrCodigo, revogado: false, expiraEm: { gt: new Date() } },
+      });
+      for (const t of ativos) {
+        if (await bcrypt.compare(refreshTokenAtual, t.hash)) {
+          manterCodigo = t.codigo;
+          break;
+        }
+      }
+    }
+
     await this.prisma.$transaction([
       this.prisma.usuario.update({
         where: { codigo: usrCodigo },
         data: { senhaHash },
       }),
       this.prisma.refreshToken.updateMany({
-        where: { usrCodigo, revogado: false },
+        where: {
+          usrCodigo,
+          revogado: false,
+          ...(manterCodigo !== null ? { codigo: { not: manterCodigo } } : {}),
+        },
         data: { revogado: true },
       }),
     ]);

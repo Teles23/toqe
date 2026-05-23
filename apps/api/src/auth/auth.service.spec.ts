@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
@@ -418,16 +418,64 @@ describe('AuthService', () => {
       );
     });
 
-    it('lança UnauthorizedException quando senha atual está errada', async () => {
+    it('lança BadRequestException (400, não 401) quando senha atual está errada', async () => {
       const hash = await bcrypt.hash('correta', await bcrypt.genSalt());
       usuarioService.findById.mockResolvedValue({
         ...mockUsuario,
         senhaHash: hash,
       });
 
+      // 400 e NÃO 401: um 401 dispararia o interceptor de refresh do mobile,
+      // que ao falhar deslogaria o usuário (bug de segurança).
       await expect(
         service.changePassword(1, 'errada', 'nova123'),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('revoga TODAS as sessões quando nenhum refreshToken atual é informado', async () => {
+      const senhaAtual = 'senha123';
+      const hash = await bcrypt.hash(senhaAtual, await bcrypt.genSalt());
+      usuarioService.findById.mockResolvedValue({
+        ...mockUsuario,
+        senhaHash: hash,
+      });
+      (prisma.$transaction as jest.Mock).mockImplementation((ops: unknown[]) =>
+        Promise.resolve(ops),
+      );
+
+      await service.changePassword(1, senhaAtual, 'novaSenha456');
+
+      // updateMany sem filtro de codigo → revoga tudo
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { usrCodigo: 1, revogado: false },
+        data: { revogado: true },
+      });
+    });
+
+    it('preserva a sessão atual e revoga apenas as outras quando refreshToken é informado', async () => {
+      const senhaAtual = 'senha123';
+      const hash = await bcrypt.hash(senhaAtual, await bcrypt.genSalt());
+      const tokenAtual = 'rt-atual-em-uso';
+      const hashAtual = await bcrypt.hash(tokenAtual, await bcrypt.genSalt());
+      usuarioService.findById.mockResolvedValue({
+        ...mockUsuario,
+        senhaHash: hash,
+      });
+      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([
+        { codigo: 7, usrCodigo: 1, hash: hashAtual, revogado: false },
+        { codigo: 8, usrCodigo: 1, hash: 'outro-hash', revogado: false },
+      ]);
+      (prisma.$transaction as jest.Mock).mockImplementation((ops: unknown[]) =>
+        Promise.resolve(ops),
+      );
+
+      await service.changePassword(1, senhaAtual, 'novaSenha456', tokenAtual);
+
+      // updateMany exclui o codigo da sessão atual (7)
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { usrCodigo: 1, revogado: false, codigo: { not: 7 } },
+        data: { revogado: true },
+      });
     });
   });
 

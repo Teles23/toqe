@@ -97,6 +97,10 @@ export const changePasswordSchema = z
       .string()
       .min(8, "Nova senha deve ter ao menos 8 caracteres")
       .max(128, "Senha muito longa"),
+    // Refresh token da sessão atual. Quando enviado, o backend revoga apenas
+    // as OUTRAS sessões (outros dispositivos), mantendo a sessão atual ativa —
+    // trocar a senha não deve deslogar quem fez a troca.
+    refreshToken: z.string().optional(),
   })
   .strict()
   .refine((d) => d.senhaAtual !== d.novaSenha, {

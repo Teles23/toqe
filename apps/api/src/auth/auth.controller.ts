@@ -139,7 +139,7 @@ export class AuthController {
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Altera a senha do usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Senha alterada.' })
-  @ApiResponse({ status: 401, description: 'Senha atual incorreta.' })
+  @ApiResponse({ status: 400, description: 'Senha atual incorreta.' })
   async changePassword(
     @Request() req: JwtRequest,
     @Body() dto: ChangePasswordDto,
@@ -148,6 +148,7 @@ export class AuthController {
       req.user.sub,
       dto.senhaAtual,
       dto.novaSenha,
+      dto.refreshToken,
     );
     return { message: 'Senha alterada com sucesso.' };
   }
