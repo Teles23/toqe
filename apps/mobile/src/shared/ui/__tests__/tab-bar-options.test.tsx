@@ -20,9 +20,10 @@ describe("buildTabBarOptions", () => {
     expect(options.tabBarActiveTintColor).toBe(palette.dark.primary);
   });
 
-  it("aplica textDisabled no tint inativo (não compete com primary)", () => {
+  it("aplica tabInactive (#888888, legível WCAG AA) no tint inativo", () => {
     const options = buildTabBarOptions(themeDark);
-    expect(options.tabBarInactiveTintColor).toBe(palette.dark.textDisabled);
+    expect(options.tabBarInactiveTintColor).toBe(palette.dark.tabInactive);
+    expect(palette.dark.tabInactive).toBe("#888888");
   });
 
   it("tabBarStyle usa bg + border-top do tema", () => {

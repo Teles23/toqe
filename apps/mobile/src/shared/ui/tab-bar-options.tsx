@@ -12,7 +12,7 @@ import type { Theme } from "@/src/shared/theme";
  * Princípio Urban Flow:
  * - Fundo `palette.bg` (não destaca-se da tela base — barra continua o conteúdo)
  * - Active `palette.primary` (âmbar Urban Flow)
- * - Inactive `palette.textDisabled` (cinza muito apagado para não competir)
+ * - Inactive `palette.tabInactive` (#888888 — legível, passa WCAG AA)
  * - Border-top `palette.border` sutil
  * - Label em `Inter_500Medium 11pt` — mesma família do design system
  *
@@ -24,7 +24,7 @@ export function buildTabBarOptions(theme: Theme): BottomTabNavigationOptions {
   return {
     headerShown: false,
     tabBarActiveTintColor: palette.primary,
-    tabBarInactiveTintColor: palette.textDisabled,
+    tabBarInactiveTintColor: palette.tabInactive,
     tabBarStyle: {
       backgroundColor: palette.bg,
       borderTopColor: palette.border,

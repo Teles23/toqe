@@ -35,6 +35,8 @@ export interface Palette {
   text: string;
   textMuted: string;
   textDisabled: string;
+  /** Tab bar inativa — contraste mínimo WCAG AA sobre `bg` (≠ textDisabled) */
+  tabInactive: string;
 
   // Marca — Urban Flow
   primary: string;
@@ -83,6 +85,7 @@ const darkPalette: Palette = {
   text: "#f0f0f0",
   textMuted: "#777777",
   textDisabled: "#333333",
+  tabInactive: "#888888", // ≈5.3:1 sobre #0a0a0a — passa WCAG AA
 
   // Marca — Urban Flow
   primary: "#f4b400",
@@ -125,6 +128,7 @@ const lightPalette: Palette = {
   text: "#0a0a0a",
   textMuted: "#666666",
   textDisabled: "#bbbbbb",
+  tabInactive: "#666666", // contraste suficiente sobre #f8f8f8
 
   primary: "#d4a000",
   primaryDim: "#fff8e0",
