@@ -1,25 +1,25 @@
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  type DiaJornadaView,
+  mergeJornadaComSemana,
+  useJornada,
+} from "@/src/shared/hooks/barbeiro/use-jornada";
 import { useSalvarJornada } from "@/src/shared/hooks/barbeiro/use-salvar-jornada";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, ScreenHeader } from "@/src/shared/ui";
+import {
+  AmberButton,
+  GhostButton,
+  ScreenHeader,
+  SkeletonBox,
+} from "@/src/shared/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface DiaJornada {
-  /** 0 = domingo, 1 = segunda … 6 = sábado (padrão ISO/API) */
-  diaSemana: number;
-  dia: string;
-  diaShort: string;
-  abre: string | null;
-  fecha: string | null;
-  ativo: boolean;
-  /** Janela de almoço (exibição; persistência fica para fase futura). */
-  almoco: { de: string; ate: string } | null;
-}
+type DiaJornada = DiaJornadaView;
 
 const VIOLET = "#a78bfa";
 
@@ -70,86 +70,25 @@ const timeChipStyles = StyleSheet.create({
   },
 });
 
-// ─── Initial state ────────────────────────────────────────────────────────────
-
-const INITIAL_JORNADA: DiaJornada[] = [
-  {
-    diaSemana: 1,
-    dia: "Segunda",
-    diaShort: "SEG",
-    abre: "09:00",
-    fecha: "18:00",
-    ativo: true,
-    almoco: { de: "12:00", ate: "13:00" },
-  },
-  {
-    diaSemana: 2,
-    dia: "Terça",
-    diaShort: "TER",
-    abre: "09:00",
-    fecha: "18:00",
-    ativo: true,
-    almoco: { de: "12:00", ate: "13:00" },
-  },
-  {
-    diaSemana: 3,
-    dia: "Quarta",
-    diaShort: "QUA",
-    abre: "09:00",
-    fecha: "18:00",
-    ativo: true,
-    almoco: { de: "12:00", ate: "13:00" },
-  },
-  {
-    diaSemana: 4,
-    dia: "Quinta",
-    diaShort: "QUI",
-    abre: "09:00",
-    fecha: "18:00",
-    ativo: true,
-    almoco: { de: "12:00", ate: "13:00" },
-  },
-  {
-    diaSemana: 5,
-    dia: "Sexta",
-    diaShort: "SEX",
-    abre: "09:00",
-    fecha: "20:00",
-    ativo: true,
-    almoco: { de: "12:00", ate: "13:00" },
-  },
-  {
-    diaSemana: 6,
-    dia: "Sábado",
-    diaShort: "SAB",
-    abre: "08:00",
-    fecha: "17:00",
-    ativo: true,
-    almoco: null,
-  },
-  {
-    diaSemana: 0,
-    dia: "Domingo",
-    diaShort: "DOM",
-    abre: null,
-    fecha: null,
-    ativo: false,
-    almoco: null,
-  },
-];
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 /**
  * Sub-tela de jornada de trabalho.
- * Salvar persiste via POST /agenda/jornada/:barbeiroId por dia ativo.
+ * Carrega a jornada salva (GET /agenda/jornada/:barbeiroId) e persiste a semana
+ * inteira numa transação (PUT) ao salvar.
  */
 export default function JornadaScreen() {
   const { palette, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
-  const [jornada, setJornada] = useState<DiaJornada[]>(INITIAL_JORNADA);
+  const { data: jornadaSalva, isLoading, isError, refetch } = useJornada();
+  const [jornada, setJornada] = useState<DiaJornada[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const { mutate, isPending } = useSalvarJornada();
+
+  // Hidrata o estado local quando os dados salvos chegam (merge com os 7 dias).
+  useEffect(() => {
+    if (jornadaSalva) setJornada(mergeJornadaComSemana(jornadaSalva));
+  }, [jornadaSalva]);
 
   const toggleDia = useCallback((index: number, value: boolean) => {
     setJornada((prev) =>
@@ -179,165 +118,210 @@ export default function JornadaScreen() {
       {/* ── Top bar ── */}
       <ScreenHeader title="Jornada de trabalho" onBack={() => router.back()} />
 
-      <ScrollView
-        contentContainerStyle={{
-          padding: spacing.md,
-          paddingBottom: spacing.xxxl + 64,
-        }}
-      >
-        {jornada.map((d, index) => (
-          <View
-            key={d.diaShort}
+      {isLoading ? (
+        <View
+          testID="jornada-loading"
+          style={{ padding: spacing.md, gap: spacing.sm }}
+        >
+          {Array.from({ length: 7 }).map((_, i) => (
+            <SkeletonBox
+              key={i}
+              width="100%"
+              height={64}
+              borderRadius={radius.md}
+            />
+          ))}
+        </View>
+      ) : isError ? (
+        <View testID="jornada-error-state" style={styles.centerState}>
+          <Text
             style={[
-              styles.card,
-              {
-                backgroundColor: palette.surface,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: palette.border,
-                marginBottom: spacing.sm,
-                padding: spacing.md,
-              },
+              typography.body,
+              { color: palette.textMuted, textAlign: "center" },
             ]}
           >
-            {/* ── Card header ── */}
-            <View style={styles.cardHeader}>
-              {/* Day pill — quadrado 36×36 mono */}
+            Não foi possível carregar sua jornada.
+          </Text>
+          <GhostButton
+            label="Tentar novamente"
+            onPress={() => void refetch()}
+          />
+        </View>
+      ) : (
+        <>
+          <ScrollView
+            contentContainerStyle={{
+              padding: spacing.md,
+              paddingBottom: spacing.xxxl + 64,
+            }}
+          >
+            {jornada.map((d, index) => (
               <View
+                key={d.diaShort}
                 style={[
-                  styles.dayPill,
+                  styles.card,
                   {
-                    backgroundColor: d.ativo
-                      ? palette.primary + "1a"
-                      : palette.surfaceHigh,
+                    backgroundColor: palette.surface,
+                    borderRadius: radius.md,
+                    borderWidth: 1,
+                    borderColor: palette.border,
+                    marginBottom: spacing.sm,
+                    padding: spacing.md,
                   },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.dayPillText,
-                    { color: d.ativo ? palette.primary : palette.textMuted },
-                  ]}
-                >
-                  {d.diaShort}
-                </Text>
-              </View>
-
-              {/* Full day name + hours/Folga */}
-              <View style={{ flex: 1, marginLeft: spacing.sm }}>
-                <Text style={[typography.label, { color: palette.text }]}>
-                  {d.dia}
-                </Text>
-                {d.ativo && d.abre && d.fecha ? (
-                  <Text
-                    style={[typography.caption, { color: palette.textMuted }]}
-                  >
-                    {d.abre} – {d.fecha}
-                  </Text>
-                ) : (
-                  <Text
+                {/* ── Card header ── */}
+                <View style={styles.cardHeader}>
+                  {/* Day pill — quadrado 36×36 mono */}
+                  <View
                     style={[
-                      typography.caption,
-                      { color: palette.textDisabled },
+                      styles.dayPill,
+                      {
+                        backgroundColor: d.ativo
+                          ? palette.primary + "1a"
+                          : palette.surfaceHigh,
+                      },
                     ]}
                   >
-                    Folga
-                  </Text>
-                )}
-              </View>
+                    <Text
+                      style={[
+                        styles.dayPillText,
+                        {
+                          color: d.ativo ? palette.primary : palette.textMuted,
+                        },
+                      ]}
+                    >
+                      {d.diaShort}
+                    </Text>
+                  </View>
 
-              {/* Toggle */}
-              <Switch
-                testID={`toggle-${d.diaShort.toLowerCase()}`}
-                value={d.ativo}
-                onValueChange={(val) => toggleDia(index, val)}
-                trackColor={{
-                  false: palette.border,
-                  true: palette.primary,
-                }}
-                thumbColor={palette.bg}
-              />
-            </View>
+                  {/* Full day name + hours/Folga */}
+                  <View style={{ flex: 1, marginLeft: spacing.sm }}>
+                    <Text style={[typography.label, { color: palette.text }]}>
+                      {d.dia}
+                    </Text>
+                    {d.ativo && d.abre && d.fecha ? (
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: palette.textMuted },
+                        ]}
+                      >
+                        {d.abre} – {d.fecha}
+                      </Text>
+                    ) : (
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: palette.textDisabled },
+                        ]}
+                      >
+                        Folga
+                      </Text>
+                    )}
+                  </View>
 
-            {/* ── Time chips (read-only) ── */}
-            {d.ativo && d.abre && d.fecha ? (
-              <View
-                style={[
-                  styles.timeGrid,
-                  { marginTop: spacing.sm, borderTopColor: palette.border },
-                ]}
-              >
-                <TimeChip
-                  label="Abertura"
-                  value={d.abre}
-                  accentColor={palette.primary}
-                />
-                <TimeChip
-                  label="Fechamento"
-                  value={d.fecha}
-                  accentColor={palette.primary}
-                />
-                {d.almoco ? (
-                  <>
+                  {/* Toggle */}
+                  <Switch
+                    testID={`toggle-${d.diaShort.toLowerCase()}`}
+                    value={d.ativo}
+                    onValueChange={(val) => toggleDia(index, val)}
+                    trackColor={{
+                      false: palette.border,
+                      true: palette.primary,
+                    }}
+                    thumbColor={palette.bg}
+                  />
+                </View>
+
+                {/* ── Time chips (read-only) ── */}
+                {d.ativo && d.abre && d.fecha ? (
+                  <View
+                    style={[
+                      styles.timeGrid,
+                      { marginTop: spacing.sm, borderTopColor: palette.border },
+                    ]}
+                  >
                     <TimeChip
-                      label="Almoço de"
-                      value={d.almoco.de}
-                      accentColor={VIOLET}
+                      label="Abertura"
+                      value={d.abre}
+                      accentColor={palette.primary}
                     />
                     <TimeChip
-                      label="Almoço até"
-                      value={d.almoco.ate}
-                      accentColor={VIOLET}
+                      label="Fechamento"
+                      value={d.fecha}
+                      accentColor={palette.primary}
                     />
-                  </>
+                    {d.almoco ? (
+                      <>
+                        <TimeChip
+                          label="Almoço de"
+                          value={d.almoco.de}
+                          accentColor={VIOLET}
+                        />
+                        <TimeChip
+                          label="Almoço até"
+                          value={d.almoco.ate}
+                          accentColor={VIOLET}
+                        />
+                      </>
+                    ) : null}
+                  </View>
                 ) : null}
               </View>
-            ) : null}
-          </View>
-        ))}
-      </ScrollView>
+            ))}
+          </ScrollView>
 
-      {/* ── Sticky bottom ── */}
-      <View
-        style={[
-          styles.stickyBottom,
-          {
-            padding: spacing.md,
-            paddingBottom: insets.bottom + spacing.md,
-            borderTopWidth: 1,
-            borderTopColor: palette.border,
-            backgroundColor: palette.bg,
-          },
-        ]}
-      >
-        {erro ? (
-          <Text
-            testID="jornada-error"
+          {/* ── Sticky bottom ── */}
+          <View
             style={[
-              typography.caption,
+              styles.stickyBottom,
               {
-                color: palette.danger,
-                marginBottom: spacing.sm,
-                textAlign: "center",
+                padding: spacing.md,
+                paddingBottom: insets.bottom + spacing.md,
+                borderTopWidth: 1,
+                borderTopColor: palette.border,
+                backgroundColor: palette.bg,
               },
             ]}
           >
-            {erro}
-          </Text>
-        ) : null}
-        <AmberButton
-          testID="btn-salvar-jornada"
-          label="Salvar mudanças"
-          onPress={handleSalvar}
-          loading={isPending}
-        />
-      </View>
+            {erro ? (
+              <Text
+                testID="jornada-error"
+                style={[
+                  typography.caption,
+                  {
+                    color: palette.danger,
+                    marginBottom: spacing.sm,
+                    textAlign: "center",
+                  },
+                ]}
+              >
+                {erro}
+              </Text>
+            ) : null}
+            <AmberButton
+              testID="btn-salvar-jornada"
+              label="Salvar mudanças"
+              onPress={handleSalvar}
+              loading={isPending}
+            />
+          </View>
+        </>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    padding: 24,
+  },
   card: {},
   cardHeader: { flexDirection: "row", alignItems: "center" },
   dayPill: {
