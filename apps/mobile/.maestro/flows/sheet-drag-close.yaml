@@ -1,0 +1,39 @@
+appId: com.teles23.toqe
+---
+# E2E — Item 6: arrastar o bottom sheet para baixo (pelo handle) fecha.
+# Pré-requisito: usuário autenticado como barbeiro (logar antes deste flow).
+- launchApp
+
+# Garante que está na aba Agenda
+- tapOn:
+    text: "Agenda"
+    optional: true
+
+# Abre o FAB → ActionMenuSheet
+- assertVisible:
+    id: "fab-adicionar"
+- tapOn:
+    id: "fab-adicionar"
+- assertVisible:
+    id: "action-menu-sheet"
+- assertVisible: "Adicionar"
+
+# Arrasta o handle para baixo → o sheet deve fechar
+- swipe:
+    start: { id: "sheet-handle" }
+    direction: DOWN
+- assertNotVisible:
+    id: "action-menu-sheet"
+
+# Repete no sheet de Encaixe (modal próprio, mesmo gesto)
+- tapOn:
+    id: "fab-adicionar"
+- tapOn:
+    id: "menu-walkin"
+- assertVisible:
+    id: "walkin-sheet"
+- swipe:
+    start: { id: "sheet-handle" }
+    direction: DOWN
+- assertNotVisible:
+    id: "walkin-sheet"

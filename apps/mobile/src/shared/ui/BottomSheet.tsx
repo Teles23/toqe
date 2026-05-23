@@ -6,6 +6,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
   runOnJS,
@@ -119,6 +120,29 @@ export function BottomSheet({
     );
   }
 
+  // Arrastar o handle para baixo fecha (padrão iOS/Android). Só permite arrasto
+  // para baixo; no release, fecha se passar do limiar/velocidade, senão volta.
+  const dragGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      if (e.translationY > 0) translateY.value = e.translationY;
+    })
+    .onEnd((e) => {
+      if (e.translationY > 80 || e.velocityY > 600) {
+        translateY.value = withTiming(
+          hideOffset,
+          { duration: 180, easing: Easing.in(Easing.cubic) },
+          (finished) => {
+            if (finished) runOnJS(onClose)();
+          },
+        );
+      } else {
+        translateY.value = withTiming(0, {
+          duration: 160,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
+    });
+
   if (!visible) return null;
 
   return (
@@ -167,16 +191,22 @@ export function BottomSheet({
           animatedStyle,
         ]}
       >
-        <View
-          style={[
-            styles.handle,
-            {
-              backgroundColor: palette.borderStrong,
-              borderRadius: radius.full,
-              marginBottom: spacing.md,
-            },
-          ]}
-        />
+        <GestureDetector gesture={dragGesture}>
+          <View
+            testID="sheet-handle"
+            style={[styles.handleArea, { marginBottom: spacing.md }]}
+          >
+            <View
+              style={[
+                styles.handle,
+                {
+                  backgroundColor: palette.borderStrong,
+                  borderRadius: radius.full,
+                },
+              ]}
+            />
+          </View>
+        </GestureDetector>
         {children}
       </Animated.View>
     </View>
@@ -197,6 +227,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 21,
     elevation: 21,
+  },
+  // Área de toque ampla ao redor da barrinha — alvo confortável p/ o arrasto.
+  handleArea: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
   },
   handle: {
     width: 40,

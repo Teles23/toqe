@@ -42,6 +42,15 @@ describe("BottomSheet", () => {
     expect(screen.getByLabelText("Fechar")).toBeTruthy();
   });
 
+  it("expõe o handle arrastável (testID sheet-handle) para fechar por gesto", () => {
+    render(
+      <BottomSheet visible onClose={jest.fn()}>
+        <Text>x</Text>
+      </BottomSheet>,
+    );
+    expect(screen.getByTestId("sheet-handle")).toBeTruthy();
+  });
+
   it("height='content' não aplica altura fixa (ajusta-se ao conteúdo)", () => {
     render(
       <BottomSheet visible onClose={jest.fn()} height="content">

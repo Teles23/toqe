@@ -26,8 +26,10 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -134,6 +136,28 @@ export function AdicionarWalkInModal({
     transform: [{ translateY: translateY.value }],
   }));
 
+  // Arrastar o handle para baixo fecha (padrão iOS/Android).
+  const dragGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      if (e.translationY > 0) translateY.value = e.translationY;
+    })
+    .onEnd((e) => {
+      if (e.translationY > 80 || e.velocityY > 600) {
+        translateY.value = withTiming(
+          screenHeight,
+          { duration: 180, easing: Easing.in(Easing.cubic) },
+          (finished) => {
+            if (finished) runOnJS(handleClose)();
+          },
+        );
+      } else {
+        translateY.value = withTiming(0, {
+          duration: 160,
+          easing: Easing.out(Easing.cubic),
+        });
+      }
+    });
+
   const handleSelectServico = (codigo: number, duracaoBase: number) => {
     setServicoId(codigo);
     setDuration(duracaoBase);
@@ -181,8 +205,12 @@ export function AdicionarWalkInModal({
           accessibilityLabel="Fechar"
         />
         <Animated.View style={[styles.sheet, sheetStyle]}>
-          {/* Drag handle */}
-          <View style={styles.dragHandle} />
+          {/* Drag handle — arrastar p/ baixo fecha */}
+          <GestureDetector gesture={dragGesture}>
+            <View testID="sheet-handle" style={styles.dragHandleArea}>
+              <View style={styles.dragHandle} />
+            </View>
+          </GestureDetector>
 
           {/* Header */}
           <View style={styles.headerRow}>
@@ -354,6 +382,11 @@ const styles = StyleSheet.create({
     color: "#888888",
     fontFamily: "Inter_400Regular",
     marginBottom: 4,
+  },
+  dragHandleArea: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
   },
   dragHandle: {
     width: 36,

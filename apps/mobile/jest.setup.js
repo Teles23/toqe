@@ -1,5 +1,10 @@
 // Setup global de testes do app mobile.
 //
+// react-native-gesture-handler: mock nativo oficial para os GestureDetector
+// (ex.: arrastar o bottom sheet) renderizarem nos specs sem o módulo nativo.
+require("react-native-gesture-handler/jestSetup");
+
+//
 // `react-native-safe-area-context`: em produção o provider é fornecido pelo
 // expo-router/react-navigation, mas os testes renderizam telas isoladamente
 // (sem SafeAreaProvider). `useSafeAreaInsets` lança nesse cenário, então

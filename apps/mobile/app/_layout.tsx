@@ -13,6 +13,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
 import { hideSplash } from "@/src/_init/splash";
@@ -60,12 +61,16 @@ export default function RootLayout() {
   const [fontsReady] = useFonts(FONT_MAP);
 
   return (
-    <QueryProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <RootNavigator fontsReady={fontsReady} />
-        </ToastProvider>
-      </AuthProvider>
-    </QueryProvider>
+    // Raiz do gesture-handler — necessária para os GestureDetector (ex.: arrastar
+    // o bottom sheet para baixo para fechar).
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <RootNavigator fontsReady={fontsReady} />
+          </ToastProvider>
+        </AuthProvider>
+      </QueryProvider>
+    </GestureHandlerRootView>
   );
 }
