@@ -28,7 +28,7 @@ import { TemaTenantService } from './tema-tenant.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
-import { CriarClienteRapidoDto } from './dto/criar-cliente-rapido.dto';
+import { CriarClienteManualDto } from './dto/criar-cliente-manual.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
 import { UpsertHorariosDto } from './dto/upsert-horarios.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -130,15 +130,17 @@ export class BarbeariaController {
 
   @Post(':barCodigo/clientes')
   @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
-  @Roles('dono', 'gerente', 'recepcionista')
+  @Roles('dono', 'gerente', 'recepcionista', 'barbeiro')
   @HttpCode(HttpStatus.CREATED)
   @ApiSecurity('x-tenant-id')
-  @ApiOperation({ summary: 'Cria ou vincula cliente rápido à barbearia' })
+  @ApiOperation({
+    summary: 'Cria ou vincula cliente à barbearia (e-mail opcional)',
+  })
   @ApiResponse({ status: 201, description: 'Cliente criado/vinculado.' })
   @ApiResponse({ status: 409, description: 'Usuário já é cliente.' })
   criarCliente(
     @Param('barCodigo', ParseIntPipe) barCodigo: number,
-    @Body() dto: CriarClienteRapidoDto,
+    @Body() dto: CriarClienteManualDto,
     @Headers('x-tenant-id') _tenantId: string,
   ) {
     return this.membroService.criarCliente(barCodigo, dto);

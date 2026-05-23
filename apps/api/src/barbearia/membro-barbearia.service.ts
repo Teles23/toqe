@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../generated/prisma';
 import * as bcrypt from 'bcrypt';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
-import { CriarClienteRapidoDto } from './dto/criar-cliente-rapido.dto';
+import { CriarClienteManualDto } from './dto/criar-cliente-manual.dto';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
 import { SELECT_USUARIO_PERFIL } from '../common/constants/prisma-selects';
 import {
@@ -188,7 +188,7 @@ export class MembroBarbeariaService {
     });
   }
 
-  async criarCliente(barCodigo: number, dto: CriarClienteRapidoDto) {
+  async criarCliente(barCodigo: number, dto: CriarClienteManualDto) {
     const { usuario, jaEraMembro } = await this.upsertClienteUsuario(
       barCodigo,
       dto,

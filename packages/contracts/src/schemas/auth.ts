@@ -48,6 +48,19 @@ export const criarClienteRapidoSchema = z
   })
   .strict();
 
+/**
+ * Cadastro manual de cliente pelo barbeiro (tela Clientes do app).
+ *
+ * Diferente do `criarClienteRapidoSchema` (booking público, e-mail
+ * obrigatório), aqui o e-mail é OPCIONAL — quando ausente o backend gera um
+ * sintético determinístico, igual ao walk-in. `nome` continua obrigatório e
+ * `telefone` é validado quando presente. A obrigatoriedade do telefone é regra
+ * da UI mobile (o endpoint é compartilhado com a web, onde telefone é opcional).
+ */
+export const criarClienteManualSchema = criarClienteRapidoSchema.partial({
+  email: true,
+});
+
 export const refreshTokenSchema = z
   .object({
     refreshToken: z.string().min(1, "Refresh token é obrigatório"),

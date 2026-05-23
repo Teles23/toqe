@@ -22,11 +22,12 @@ errada **deslogava** o usuário. Causa raiz dupla:
 
 ## Itens
 
-| Item            | Mudança                                                                                                                                                                                        | Commit    |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| Bug 1 + 2 (API) | `changePassword`: senha atual incorreta → **`BadRequestException` (400)**, não 401. Revoga apenas as **outras** sessões — identifica a atual pelo `refreshToken` enviado e a preserva. + specs | `546f0d0` |
-| Bug 1 (mobile)  | `useMudarSenha` anexa o `refreshToken` da sessão atual e passa `skipRefresh: true`; `senha.tsx` trata `400` como erro de campo e mostra toast de sucesso (sem Alert, sem logout). + specs      | `0892ae3` |
-| Bug 3           | Toggle de visibilidade (olho) nos 3 campos de `senha.tsx` via `CampoSenha` (sub-componente local, mantém o padrão card da tela). testID `<campo>-toggle`.                                      | —         |
+| Item            | Mudança                                                                                                                                                                                                   | Commit    |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Bug 1 + 2 (API) | `changePassword`: senha atual incorreta → **`BadRequestException` (400)**, não 401. Revoga apenas as **outras** sessões — identifica a atual pelo `refreshToken` enviado e a preserva. + specs            | `546f0d0` |
+| Bug 1 (mobile)  | `useMudarSenha` anexa o `refreshToken` da sessão atual e passa `skipRefresh: true`; `senha.tsx` trata `400` como erro de campo e mostra toast de sucesso (sem Alert, sem logout). + specs                 | `0892ae3` |
+| Bug 3           | Toggle de visibilidade (olho) nos 3 campos de `senha.tsx` via `CampoSenha` (sub-componente local, mantém o padrão card da tela). testID `<campo>-toggle`.                                                 | `1fbdd1b` |
+| UX 1            | `+` da tela Clientes abre **cadastro de cliente** (nome+telefone obrig., e-mail opcional) em vez do encaixe. Endpoint passa a aceitar e-mail opcional + role `barbeiro`. Invalida `['clientes']` + toast. | —         |
 
 ## Detalhes técnicos
 
@@ -67,10 +68,35 @@ alterna `secureTextEntry`. Decisão: **não** reusar o `FormInput` global (visua
 diferente, de login/cadastro) nem criar componente em `shared/ui` usado por uma
 só tela — extração local mantém o design e elimina a repetição.
 
+### UX 1 — cadastro de cliente pelo `+` (Clientes)
+
+O `+` abria o `AdicionarWalkInModal` (encaixe/agendamento) — confuso, pois
+encaixe já vive no FAB da agenda. Agora abre `AdicionarClienteModal`, que apenas
+**registra o cliente** (sem agendamento):
+
+- **Contract:** `criarClienteManualSchema = criarClienteRapidoSchema.partial({ email: true })`
+  → `nome` obrigatório, `email` opcional. `criarClienteRapidoSchema` (booking
+  público, e-mail obrigatório) fica **intacto**.
+- **API:** `POST /barbearias/:barCodigo/clientes` passa a usar `CriarClienteManualDto`
+  e inclui a role `barbeiro` (antes só dono/gerente/recepcionista). O service
+  `criarCliente` já aceitava e-mail ausente — gera sintético `@toqe.internal`,
+  igual ao walk-in. + specs (`membro-barbearia.service.spec`: com e-mail, sem
+  e-mail/sintético, conflito 409).
+- **Mobile:** `useCriarCliente` (POST tenant + invalida `['clientes']`);
+  `AdicionarClienteModal` (nome + telefone obrigatórios na UI, e-mail opcional)
+  com toast "Cliente cadastrado". `clientes.tsx`: `+` (`btn-adicionar-cliente`)
+  abre esse sheet. + specs (hook + tela).
+- **Telefone obrigatório** é regra da UI mobile (validação client-side); o
+  endpoint mantém telefone opcional por ser compartilhado com a web.
+
 ## Decisões
 
 - **Bug 3:** `CampoSenha` local em vez de `shared/ui` — o padrão card é exclusivo
   desta tela; um componente global seria usado por um único consumidor.
+- **UX 1:** novo `criarClienteManualSchema` em vez de relaxar o `rapido` —
+  o `rapido` é compartilhado com o booking público (e-mail obrigatório). A web
+  (que usa `criarClienteRapidoSchema` e exige e-mail no próprio form) continua
+  funcionando sem alteração.
 
 ## Checks
 

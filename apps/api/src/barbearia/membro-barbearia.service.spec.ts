@@ -113,6 +113,84 @@ describe('MembroBarbeariaService', () => {
     });
   });
 
+  describe('criarCliente (cadastro manual pelo barbeiro)', () => {
+    it('cria cliente com nome + telefone e e-mail informado', async () => {
+      let createdData:
+        | { nome: string; telefone?: string; email: string }
+        | undefined;
+      mockPrisma.usuario.findUnique.mockResolvedValue(null);
+      mockPrisma.usuario.create.mockImplementation(
+        (args: {
+          data: { nome: string; telefone?: string; email: string };
+        }) => {
+          createdData = args.data;
+          return Promise.resolve({ codigo: 400, email: 'novo@x.com' });
+        },
+      );
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        usrCodigo: 400,
+        barCodigo: 1,
+        perfil: 'cliente',
+        usuario: { codigo: 400, nome: 'Novo', email: 'novo@x.com' },
+      });
+
+      const result = await service.criarCliente(1, {
+        nome: 'Novo',
+        telefone: '(11) 99999-9999',
+        email: 'novo@x.com',
+      });
+
+      expect(result).toHaveProperty('perfil', 'cliente');
+      // E-mail informado → usado direto (sem sintético) + telefone persistido.
+      expect(createdData?.email).toBe('novo@x.com');
+      expect(createdData?.telefone).toBe('(11) 99999-9999');
+      expect(createdData?.nome).toBe('Novo');
+    });
+
+    it('cria cliente SEM e-mail: gera sintético @toqe.internal (e-mail opcional)', async () => {
+      let createdEmail: string | undefined;
+      mockPrisma.usuario.create.mockImplementation(
+        (args: { data: { email: string } }) => {
+          createdEmail = args.data.email;
+          return Promise.resolve({ codigo: 401 });
+        },
+      );
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        usrCodigo: 401,
+        barCodigo: 1,
+        perfil: 'cliente',
+        usuario: { codigo: 401, nome: 'Sem Email', email: 'x' },
+      });
+
+      await service.criarCliente(1, {
+        nome: 'Sem Email',
+        telefone: '(11) 98888-7777',
+      });
+
+      // sem e-mail informado → não tenta dedup por email; gera sintético
+      expect(mockPrisma.usuario.findUnique).not.toHaveBeenCalled();
+      expect(createdEmail).toMatch(/@toqe\.internal$/);
+    });
+
+    it('lança ConflictException quando o usuário já é cliente da barbearia', async () => {
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 50,
+        email: 'ja@x.com',
+      });
+      // upsertClienteUsuario → jaEraMembro = true
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue({
+        usrCodigo: 50,
+      });
+
+      await expect(
+        service.criarCliente(1, { nome: 'Já', email: 'ja@x.com' }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrisma.membroBarbearia.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('convidarMembro', () => {
     it('convida membro com sucesso', async () => {
       mockPrisma.usuario.findUnique.mockResolvedValue({

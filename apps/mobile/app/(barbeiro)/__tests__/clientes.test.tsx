@@ -26,11 +26,11 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
   }),
 }));
 
-jest.mock("@/src/features/barbeiro/AdicionarWalkInModal", () => {
+jest.mock("@/src/features/barbeiro/AdicionarClienteModal", () => {
   const RN = jest.requireActual("react-native");
   return {
-    AdicionarWalkInModal: ({ visible }: { visible: boolean }) =>
-      visible ? <RN.View testID="walkin-modal" /> : null,
+    AdicionarClienteModal: ({ visible }: { visible: boolean }) =>
+      visible ? <RN.View testID="cliente-modal" /> : null,
   };
 });
 
@@ -227,12 +227,12 @@ describe("BarbeiroClientesScreen", () => {
     expect(screen.getByText("Sumido")).toBeTruthy();
   });
 
-  it("botão + abre modal de walk-in", async () => {
+  it("botão + abre modal de cadastro de cliente", async () => {
     respondWith([]);
     renderScreen();
     await screen.findByText("Sem clientes ainda");
-    expect(screen.queryByTestId("walkin-modal")).toBeNull();
-    fireEvent.press(screen.getByTestId("btn-adicionar-walkin"));
-    expect(screen.getByTestId("walkin-modal")).toBeTruthy();
+    expect(screen.queryByTestId("cliente-modal")).toBeNull();
+    fireEvent.press(screen.getByTestId("btn-adicionar-cliente"));
+    expect(screen.getByTestId("cliente-modal")).toBeTruthy();
   });
 });

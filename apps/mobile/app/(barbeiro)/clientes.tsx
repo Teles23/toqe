@@ -22,7 +22,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { AdicionarWalkInModal } from "@/src/features/barbeiro/AdicionarWalkInModal";
+import { AdicionarClienteModal } from "@/src/features/barbeiro/AdicionarClienteModal";
 import { ClienteCard } from "@/src/features/barbeiro/ClienteCard";
 import { ClienteDetalhe } from "@/src/features/barbeiro/ClienteDetalhe";
 import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
@@ -83,7 +83,7 @@ export default function BarbeiroClientesScreen() {
   const [filter, setFilter] = useState<string>("todos");
   const [sort, setSort] = useState<Sort>("nome");
   const [selected, setSelected] = useState<ClienteAPI | null>(null);
-  const [walkinOpen, setWalkinOpen] = useState(false);
+  const [addClienteOpen, setAddClienteOpen] = useState(false);
 
   const handleSelect = useCallback((cliente: ClienteAPI) => {
     setSelected(cliente);
@@ -142,8 +142,8 @@ export default function BarbeiroClientesScreen() {
           )}
         </View>
         <Pressable
-          testID="btn-adicionar-walkin"
-          onPress={() => setWalkinOpen(true)}
+          testID="btn-adicionar-cliente"
+          onPress={() => setAddClienteOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Adicionar cliente"
           style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
@@ -290,10 +290,10 @@ export default function BarbeiroClientesScreen() {
         onClose={handleClose}
       />
 
-      {/* Walk-in modal */}
-      <AdicionarWalkInModal
-        visible={walkinOpen}
-        onClose={() => setWalkinOpen(false)}
+      {/* Cadastro manual de cliente */}
+      <AdicionarClienteModal
+        visible={addClienteOpen}
+        onClose={() => setAddClienteOpen(false)}
       />
     </View>
   );
