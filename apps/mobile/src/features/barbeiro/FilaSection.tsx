@@ -22,11 +22,27 @@ import {
 
 import { Feather } from "@expo/vector-icons";
 
+import { ApiError } from "@/src/shared/api/api-client";
 import { FilaCard } from "@/src/features/barbeiro/FilaCard";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useFilaDia } from "@/src/shared/hooks/barbeiro/use-fila-dia";
 import { useToast } from "@/src/shared/hooks/use-toast";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
+
+/**
+ * Extrai a mensagem REAL do backend de um erro do api-client. O `ApiError.message`
+ * é genérico ("HTTP 403: ..."); a mensagem amigável (ex.: "Você não realiza este
+ * serviço.") vem no corpo JSON do Nest (`body.message`, string ou array).
+ */
+function mensagemBackend(err: unknown): string | null {
+  if (err instanceof ApiError) {
+    const body = err.body as { message?: unknown } | undefined;
+    const m = body?.message;
+    if (typeof m === "string" && m.trim()) return m;
+    if (Array.isArray(m) && typeof m[0] === "string") return m[0];
+  }
+  return null;
+}
 
 // LayoutAnimation já vem habilitado na New Architecture (Fabric) — não é mais
 // preciso chamar UIManager.setLayoutAnimationEnabledExperimental (era no-op e
@@ -102,8 +118,14 @@ export function FilaSection() {
         { codigo, status: "em_andamento" },
         {
           onSuccess: () => showToast("Em atendimento", "success"),
-          onError: () =>
-            showToast("Não foi possível atender. Tente novamente.", "error"),
+          onError: (err) =>
+            // Mostra a mensagem real do backend (ex.: 403 "Você não realiza
+            // este serviço.") quando houver; senão um fallback genérico.
+            showToast(
+              mensagemBackend(err) ??
+                "Não foi possível atender. Tente novamente.",
+              "error",
+            ),
         },
       );
     },

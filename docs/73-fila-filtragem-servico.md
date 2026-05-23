@@ -1,6 +1,6 @@
 # 73 — Fila de encaixe: filtragem por compatibilidade de serviço
 
-**Status:** Em andamento
+**Status:** Implementado (validação no device pendente — só o usuário)
 **Branch:** develop
 **Base:** doc 72 (correções Clientes + senha)
 
@@ -34,7 +34,9 @@ múltiplos serviços: basta **um** serviço desativado para bloquear/filtrar.
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | Item 1 | Guard no `patchStatus`: `WALK_IN` → `em_andamento` valida `BarbeiroServico.ativo` do executor (`req.user.sub`); incompatível → 403. + specs                   | `e46c9e0` |
 | Item 2 | `findAll` ganha modo `barbeiroCompativel`: com `barbeiroId`, exclui encaixes com serviço `ativo=false` do barbeiro (em vez de filtrar por designado). + specs | `f015a2a` |
-| Item 3 | `useFilaDia` anexa `barbeiroCompativel=true` quando há `barbeiroId`; `FilaSection` passa `user.codigo` do barbeiro logado. + specs do hook                    | —         |
+| Item 3 | `useFilaDia` anexa `barbeiroCompativel=true` quando há `barbeiroId`; `FilaSection` passa `user.codigo` do barbeiro logado. + specs do hook                    | `71f1c63` |
+| Item 4 | `FilaSection.handleAtender` mostra a mensagem REAL do backend (`err.body.message`) no toast de erro (ex.: 403); fallback genérico. + spec 403 na tela         | —         |
+| Item 5 | Indicador visual de incompatibilidade — **pulado** (filtro no backend + toast já cobrem o MVP).                                                               | —         |
 
 ## Detalhes técnicos
 
@@ -73,6 +75,19 @@ múltiplos serviços: basta **um** serviço desativado para bloquear/filtrar.
 - `GET /agendamentos?tipo=WALK_IN&barbeiroId=:id&barbeiroCompativel=true` —
   retorna a fila compatível com o barbeiro.
 
+### Item 4 — Toast com a mensagem do backend (`FilaSection`)
+
+- `mensagemBackend(err)` extrai `err.body.message` de um `ApiError` (string ou
+  array do Nest). O `ApiError.message` é genérico ("HTTP 403: …"); a mensagem
+  amigável vem no corpo.
+- `handleAtender` `onError` → `showToast(mensagemBackend(err) ?? fallback, "error")`.
+- Spec: PATCH 403 com `{ message }` → `showToast` chamado com a mensagem exata.
+
+### Item 5 — Indicador visual (pulado)
+
+Sem UI de "incompatível": o filtro no backend (item 3) tira os encaixes que o
+barbeiro não faz, e o toast (item 4) cobre o caso de borda. Suficiente p/ o MVP.
+
 ## Comportamento no mobile
 
 - A fila (`FilaSection`) só lista encaixes compatíveis (filtro no backend, item 3).
@@ -81,4 +96,12 @@ múltiplos serviços: basta **um** serviço desativado para bloquear/filtrar.
 
 ## Checks
 
-api: `pnpm --filter api test -- agendamento` (45 verdes), `tsc` + `lint` limpos.
+- api: `pnpm --filter api test -- agendamento` (45 verdes), `tsc` + `lint` limpos.
+- mobile: `use-fila-dia` + `FilaSection` (11 verdes), `tsc` + `lint` limpos.
+
+## Pendente (validação manual — só o usuário)
+
+- Barbeiro **sem** `BarbeiroServico` → pode atender qualquer encaixe.
+- Barbeiro com serviço **ativo** → atende o encaixe desse serviço.
+- Barbeiro com serviço **desativado** → "Atender →" mostra toast com a mensagem.
+- A fila só mostra encaixes compatíveis com o barbeiro logado.

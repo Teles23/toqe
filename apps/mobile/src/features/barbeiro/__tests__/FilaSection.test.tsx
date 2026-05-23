@@ -15,7 +15,12 @@ jest.mock("expo-constants", () => ({
 }));
 
 jest.mock("@/src/shared/hooks/use-auth", () => ({
-  useAuth: () => ({ barbearia: { codigo: 1 } }),
+  useAuth: () => ({ barbearia: { codigo: 1 }, user: { codigo: 99 } }),
+}));
+
+const mockShowToast = jest.fn();
+jest.mock("@/src/shared/hooks/use-toast", () => ({
+  useToast: () => ({ showToast: mockShowToast }),
 }));
 
 jest.mock("@/src/features/barbeiro/FilaCard", () => {
@@ -204,6 +209,28 @@ describe("FilaSection", () => {
       expect(String((patch?.[1] as { body?: string }).body)).toContain(
         "em_andamento",
       );
+    });
+  });
+
+  it("exibe toast com a mensagem do backend quando o PATCH retorna 403", async () => {
+    const msg403 =
+      "Você não realiza este serviço. Outro barbeiro deve atender.";
+    // GET da fila → 1 encaixe; PATCH /status → 403 com a mensagem do backend.
+    global.fetch = jest.fn(async (url: unknown, init?: { method?: string }) => {
+      const u = String(url);
+      const m = (init?.method ?? "GET").toUpperCase();
+      if (m === "PATCH" && /\/agendamentos\/\d+\/status/.test(u)) {
+        return makeRes({ statusCode: 403, message: msg403 }, 403);
+      }
+      if (u.includes("tipo=WALK_IN")) return makeRes([makeAg({ codigo: 7 })]);
+      return makeRes([]);
+    }) as unknown as typeof fetch;
+
+    renderFila();
+    fireEvent.press(await screen.findByTestId("btn-atender-7"));
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith(msg403, "error");
     });
   });
 });
