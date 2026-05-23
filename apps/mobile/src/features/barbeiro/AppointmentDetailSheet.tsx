@@ -24,6 +24,7 @@ import { Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton, Avatar, BottomSheet, GhostButton } from "@/src/shared/ui";
+import { maskCurrency } from "@/src/shared/utils/masks";
 import type { AgendamentoResponse } from "@toqe/shared";
 
 import { STATUS_DOT_COLORS, getStatusLabel } from "./AgendaRow";
@@ -143,7 +144,7 @@ export function AppointmentDetailSheet({
                 </Text>
               </View>
               <Text style={[styles.servicePrice, { color: palette.text }]}>
-                R$ {totalPreco}
+                {maskCurrency(totalPreco)}
               </Text>
             </View>
 

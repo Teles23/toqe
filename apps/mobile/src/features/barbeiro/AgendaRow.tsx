@@ -16,6 +16,7 @@ import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/src/shared/theme";
+import { maskCurrency } from "@/src/shared/utils/masks";
 import type { AgendamentoResponse } from "@toqe/shared";
 
 // ─── Cores por status ─────────────────────────────────────────────────────────
@@ -178,7 +179,7 @@ function AgendaRowImpl({
                   },
                 ]}
               >
-                R$ {totalPreco}
+                {maskCurrency(totalPreco)}
               </Text>
             </>
           )}

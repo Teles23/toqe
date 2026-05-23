@@ -33,6 +33,7 @@ import { useTheme } from "@/src/shared/theme";
 import { Avatar } from "@/src/shared/ui";
 import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
 import { useHistoricoCliente } from "@/src/shared/hooks/barbeiro/use-historico-cliente";
+import { maskCurrency } from "@/src/shared/utils/masks";
 import {
   useClienteNota,
   useSalvarNotaCliente,
@@ -591,7 +592,10 @@ function HistoryRow({
       ? agendamento.itens[0].servico.nome
       : `${agendamento.itens[0]?.servico.nome ?? "Serviço"} +${agendamento.itens.length - 1}`;
 
-  const totalPreco = agendamento.itens.reduce((sum, i) => sum + i.preco, 0);
+  const totalPreco = agendamento.itens.reduce(
+    (sum, i) => sum + Number(i.preco),
+    0,
+  );
   const isNoShow = agendamento.status === "no_show";
 
   return (
@@ -683,7 +687,7 @@ function HistoryRow({
                   },
                 ]}
               >
-                R$ {totalPreco}
+                {maskCurrency(totalPreco)}
               </Text>
             </View>
           </View>
