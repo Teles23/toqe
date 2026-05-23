@@ -31,6 +31,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/src/shared/theme";
 import { Avatar } from "@/src/shared/ui";
+import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
 import { useHistoricoCliente } from "@/src/shared/hooks/barbeiro/use-historico-cliente";
 import {
   useClienteNota,
@@ -70,6 +71,14 @@ export function ClienteDetalhe({
     visible && !!cliente,
   );
 
+  // Enriquecimento dos stats pela MESMA fonte da aba Clientes
+  // (`/barbearias/:id/clientes`). Garante que abrir o detalhe pela agenda
+  // ("Ver histórico") mostre visitas/ticket/última visita/favorito idênticos
+  // ao abrir pela aba Clientes — e atualize sozinho quando a query resolver
+  // (sem corrida de cache). O caller só precisa passar `codigo`/`nome`.
+  const { data: clientesLista } = useClientesDaBarbearia();
+  const enriched = clientesLista?.find((c) => c.codigo === cliente?.codigo);
+
   // Nota privada do barbeiro sobre o cliente (persistida via API).
   const clienteId = cliente?.codigo ?? 0;
   const { data: notaData } = useClienteNota(clienteId, visible && !!cliente);
@@ -88,38 +97,41 @@ export function ClienteDetalhe({
     setEditingNote((v) => !v);
   }, [editingNote, note, salvarNota]);
 
+  const telefone = enriched?.telefone ?? cliente?.telefone ?? null;
+
   const handleLigar = useCallback(() => {
-    if (cliente?.telefone) {
-      void Linking.openURL(`tel:${cliente.telefone}`);
+    if (telefone) {
+      void Linking.openURL(`tel:${telefone}`);
     }
-  }, [cliente?.telefone]);
+  }, [telefone]);
 
   const handleWhatsApp = useCallback(() => {
-    if (cliente?.telefone) {
-      const digits = cliente.telefone.replace(/\D/g, "");
+    if (telefone) {
+      const digits = telefone.replace(/\D/g, "");
       void Linking.openURL(`https://wa.me/55${digits}`);
     }
-  }, [cliente?.telefone]);
+  }, [telefone]);
 
   if (!cliente) return null;
 
-  const ticketFormatado =
-    cliente.ticketMedio > 0 ? `R$${Math.round(cliente.ticketMedio)}` : "—";
+  // Dados de exibição: prefere o registro completo da lista (stats reais);
+  // cai no `cliente` recebido enquanto a lista não chegou.
+  const view = enriched ?? cliente;
 
-  const ultimaVisitaLabel = cliente.ultimaVisita
+  const ticketFormatado =
+    view.ticketMedio > 0 ? `R$${Math.round(view.ticketMedio)}` : "—";
+
+  const ultimaVisitaLabel = view.ultimaVisita
     ? (() => {
-        const diff = differenceInDays(
-          new Date(),
-          parseISO(cliente.ultimaVisita),
-        );
+        const diff = differenceInDays(new Date(), parseISO(view.ultimaVisita));
         if (diff === 0) return "hoje";
         if (diff === 1) return "ontem";
         return `há ${diff}d`;
       })()
     : "—";
 
-  const isNovo = cliente.totalVisitas === 0;
-  const isVip = cliente.totalVisitas >= 10;
+  const isNovo = view.totalVisitas === 0;
+  const isVip = view.totalVisitas >= 10;
 
   return (
     <Modal
@@ -168,7 +180,7 @@ export function ClienteDetalhe({
             ]}
             numberOfLines={1}
           >
-            {cliente.nome}
+            {view.nome}
           </Text>
 
           {/* Espaço visual para centralizar o título */}
@@ -186,11 +198,11 @@ export function ClienteDetalhe({
         >
           {/* Identity block */}
           <View style={[styles.identityBlock, { paddingTop: spacing.sm }]}>
-            <Avatar uri={cliente.avatarUrl} name={cliente.nome} size="lg" />
+            <Avatar uri={view.avatarUrl} name={view.nome} size="lg" />
             <Text style={[styles.clienteName, { color: palette.text }]}>
-              {cliente.nome}
+              {view.nome}
             </Text>
-            {cliente.telefone && (
+            {telefone && (
               <Text
                 style={[
                   typography.caption,
@@ -201,7 +213,7 @@ export function ClienteDetalhe({
                   },
                 ]}
               >
-                {cliente.telefone}
+                {telefone}
               </Text>
             )}
 
@@ -241,7 +253,7 @@ export function ClienteDetalhe({
               iconColor="#3b82f6"
               onPress={handleLigar}
               testID="qa-ligar"
-              disabled={!cliente.telefone}
+              disabled={!telefone}
             />
             <QuickAction
               icon="message-circle"
@@ -250,7 +262,7 @@ export function ClienteDetalhe({
               iconColor="#22c55e"
               onPress={handleWhatsApp}
               testID="qa-whatsapp"
-              disabled={!cliente.telefone}
+              disabled={!telefone}
             />
           </View>
 
@@ -266,7 +278,7 @@ export function ClienteDetalhe({
             ]}
           >
             <StatCol
-              value={String(cliente.totalVisitas)}
+              value={String(view.totalVisitas)}
               label="Visitas"
               color={palette.primary}
             />
@@ -290,7 +302,7 @@ export function ClienteDetalhe({
           </View>
 
           {/* Serviço favorito */}
-          {cliente.servicoFav && (
+          {view.servicoFav && (
             <View
               style={[
                 styles.servicoFavCard,
@@ -313,7 +325,7 @@ export function ClienteDetalhe({
                   { color: palette.text, marginTop: 4 },
                 ]}
               >
-                {cliente.servicoFav}
+                {view.servicoFav}
               </Text>
             </View>
           )}

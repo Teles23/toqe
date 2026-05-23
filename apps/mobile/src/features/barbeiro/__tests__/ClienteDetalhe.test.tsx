@@ -49,9 +49,13 @@ function makeRes(body: unknown, status = 200) {
 }
 
 function setupFetch(
-  opts: { historico?: AgendamentoResponse[]; nota?: string } = {},
+  opts: {
+    historico?: AgendamentoResponse[];
+    nota?: string;
+    clientes?: ClienteAPI[];
+  } = {},
 ) {
-  const { historico = [], nota = "" } = opts;
+  const { historico = [], nota = "", clientes = [] } = opts;
   global.fetch = jest.fn(async (url: unknown, init?: { method?: string }) => {
     const u = String(url);
     const m = (init?.method ?? "GET").toUpperCase();
@@ -59,6 +63,9 @@ function setupFetch(
       if (m === "PUT") return makeRes({ conteudo: "", atualizadoEm: null });
       return makeRes({ conteudo: nota, atualizadoEm: null });
     }
+    // GET /barbearias/:id/clientes (enriquecimento de stats) — antes de
+    // /agendamentos pois a URL não contém "agendamentos".
+    if (/\/clientes(\?|$)/.test(u)) return makeRes(clientes);
     if (u.includes("/agendamentos")) return makeRes(historico);
     return makeRes([]);
   }) as unknown as typeof fetch;
@@ -145,6 +152,39 @@ describe("ClienteDetalhe", () => {
     expect(screen.getAllByText("João Barbosa").length).toBeGreaterThan(0);
     expect(screen.getByText("5")).toBeTruthy();
     expect(screen.getByText("R$50")).toBeTruthy();
+  });
+
+  it("enriquece stats pela lista de clientes quando recebe só dados parciais (abrir pela agenda)", async () => {
+    // Caller (agenda "Ver histórico") passa só codigo/nome com stats zerados.
+    // O detalhe deve buscar os stats reais pela mesma fonte da aba Clientes.
+    setupFetch({
+      clientes: [
+        makeCliente({
+          codigo: 7,
+          nome: "Maria Silva",
+          totalVisitas: 9,
+          ticketMedio: 70,
+          servicoFav: "Coloração",
+        }),
+      ],
+    });
+    renderDetalhe({
+      cliente: makeCliente({
+        codigo: 7,
+        nome: "Maria Silva",
+        telefone: null,
+        avatarUrl: null,
+        totalVisitas: 0,
+        totalGasto: 0,
+        ticketMedio: 0,
+        ultimaVisita: null,
+        servicoFav: null,
+      }),
+    });
+    // stats reais aparecem após a query resolver (não os zeros do parcial)
+    expect(await screen.findByText("9")).toBeTruthy();
+    expect(screen.getByText("R$70")).toBeTruthy();
+    expect(screen.getByText("Coloração")).toBeTruthy();
   });
 
   it("exibe telefone no formato mono", () => {

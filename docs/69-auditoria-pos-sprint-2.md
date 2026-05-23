@@ -48,16 +48,45 @@ Após validação visual, dois ajustes na seção de fila (`FilaSection`):
 > `em_andamento` que voltava no GET (`tipo=WALK_IN` retorna todos os status). O
 > filtro client-side resolve sem novo endpoint.
 
-### "Ver histórico" agora mostra os mesmos stats da aba Clientes
+### "Ver histórico" mostra os mesmos dados da aba Clientes
 
-O `ClienteDetalhe` lê `totalVisitas`/`ticketMedio`/`ultimaVisita`/`servicoFav`
-**direto da prop `cliente`** (só o histórico/nota são buscados por id). Aberto
-pela agenda, o objeto era montado do agendamento com zeros → stats em branco
-("—"), divergindo da aba Clientes. Correção: a agenda agora resolve o
-**`ClienteAPI` real** via `useClientesDaBarbearia()` (mesma query
-`["clientes"]`/endpoint da aba), casando por `codigo === cliente.usrCodigo`; só
-cai no fallback (zeros) se o cliente ainda não estiver na lista (ex.: encaixe
-recém-criado). Arquivos: `agenda.tsx`.
+O `ClienteDetalhe` lia `totalVisitas`/`ticketMedio`/`ultimaVisita`/`servicoFav`
+**direto da prop `cliente`** (só histórico/nota eram buscados por id). Aberto
+pela agenda, o objeto vinha do agendamento com zeros → stats em branco ("—"),
+divergindo da aba Clientes.
+
+**Correção (enriquecimento dentro do `ClienteDetalhe`):** o próprio componente
+agora busca os stats pela **mesma** fonte da aba Clientes
+(`useClientesDaBarbearia()` → `GET /barbearias/:id/clientes`, query key
+`["clientes"]`) e casa por `codigo`. O caller só precisa passar `codigo`/`nome`;
+os campos exibidos usam `enriched ?? cliente`. Como o componente **assina** a
+query, ele re-renderiza sozinho quando ela resolve — **sem corrida de cache**
+(diferente de resolver no `onPress` da agenda, que fixava os dados uma vez).
+Backend confirma o casamento de id: `findClientes` retorna `usuario.codigo`, e o
+`cliente.usrCodigo` do agendamento é o mesmo código. Arquivos:
+`ClienteDetalhe.tsx`, `agenda.tsx` (passa só o parcial).
+
+### Pull-to-refresh padronizado (DRY) + refresh de todas as abas
+
+Havia **3** implementações soltas de `RefreshControl` (agenda/clientes com
+spinner preto `palette.text`; perfis com âmbar; agendamentos sem cor) — falta de
+reuso. Centralizado no hook `usePullToRefresh(refetch?, isRefetching?, offset?)`:
+
+- **Cor única (âmbar `palette.primary`)** em iOS e Android, em todas as abas.
+- **Refresh global:** ao puxar, além do `refetch` da tela, faz
+  `queryClient.invalidateQueries()` (sem filtro) → a aba atual recarrega na hora
+  e as inativas ficam stale e recarregam **ao abrir** (lazy). Um gesto cobre o
+  app inteiro sem disparar N requisições de uma vez. Removeu o `handleRefresh`
+  manual da agenda (que só invalidava `["fila"]`).
+- **Posição:** a agenda tem o header **dentro** da lista (rola junto), então o
+  spinner aparecia colado no topo (sob a status bar). Passando
+  `refreshProgressViewOffset={insets.top}` o spinner desce para baixo da status
+  bar — alinhado com as telas de header fixo (perfil/clientes/agendamentos), cujo
+  scroll já começa abaixo do header. Único caso que precisou de offset.
+
+Arquivos: `hooks/use-pull-to-refresh.ts` (novo), `ui/DataListWrapper.tsx`,
+`(barbeiro)/agenda.tsx`, `(barbeiro)/perfil/index.tsx`,
+`(cliente)/perfil/index.tsx`, `(cliente)/agendamentos/index.tsx`.
 
 ### Healthcheck do dev no path errado (404 + flood de WARN)
 
