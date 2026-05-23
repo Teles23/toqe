@@ -1,6 +1,6 @@
 # 72 — Correções pós-teste: aba Clientes + troca de senha
 
-**Status:** Em andamento (validação no device pendente — só o usuário)
+**Status:** Implementado (validação no device pendente — só o usuário)
 **Branch:** develop
 **Base:** doc 71 (correções perfil + preços)
 
@@ -29,7 +29,8 @@ errada **deslogava** o usuário. Causa raiz dupla:
 | Bug 3           | Toggle de visibilidade (olho) nos 3 campos de `senha.tsx` via `CampoSenha` (sub-componente local, mantém o padrão card da tela). testID `<campo>-toggle`.                                                 | `1fbdd1b` |
 | UX 1            | `+` da tela Clientes abre **cadastro de cliente** (nome+telefone obrig., e-mail opcional) em vez do encaixe. Endpoint passa a aceitar e-mail opcional + role `barbeiro`. Invalida `['clientes']` + toast. | `a310eb1` |
 | UX 2            | E-mails sintéticos (`@toqe.internal`, `@walk-in.local`, vazio/nulo) não aparecem na UI. Helper `emailVisivel` no `ClienteCard` (telefone > e-mail real > nada) e na busca. + specs.                       | `2dd3e07` |
-| UX 3            | Chips de ordenação soltos saem; ícone `sliders` no header abre `OrdenarClientesSheet` com 5 opções (Nome A→Z/Z→A, Última recente/antiga, Total gasto), selecionada com âmbar + check. + specs.            | —         |
+| UX 3            | Chips de ordenação soltos saem; ícone `sliders` no header abre `OrdenarClientesSheet` com 5 opções (Nome A→Z/Z→A, Última recente/antiga, Total gasto), selecionada com âmbar + check. + specs.            | `42051a7` |
+| UX 4            | Sino da agenda → toast "Notificações em breve" (já implementado em rodada anterior; não há feed de notificações, só preferências). **Sem ação.**                                                          | —         |
 
 ## Detalhes técnicos
 
@@ -120,6 +121,13 @@ A opção ativa é destacada (âmbar + check) com `accessibilityState.checked`.
 `testID`: `btn-ordenar`, `sort-option-<id>`. + specs (sheet isolado + fluxo
 abrir/selecionar na tela).
 
+### UX 4 — sino da agenda
+
+Já estava correto: o sino (`btn-notificacoes` em `agenda.tsx`) dispara
+`showToast("Notificações em breve", "info")` — com spec em `agenda.test.tsx`.
+Não existe tela de **feed** de notificações (só a de **preferências**, em
+Perfil), então o toast é o fallback pedido. **Sem mudança de código.**
+
 ## Decisões
 
 - **Bug 3:** `CampoSenha` local em vez de `shared/ui` — o padrão card é exclusivo
@@ -128,15 +136,27 @@ abrir/selecionar na tela).
   o `rapido` é compartilhado com o booking público (e-mail obrigatório). A web
   (que usa `criarClienteRapidoSchema` e exige e-mail no próprio form) continua
   funcionando sem alteração.
+- **UX 4:** bell roteia para toast, não para a tela de preferências — um sino
+  abre um feed de notificações (inexistente), não as configurações.
 
 ## Checks
 
-api: `pnpm --filter api test -- auth.service` (28 verdes), `tsc --noEmit` (api +
-contracts) e `lint` limpos. mobile: `use-mudar-senha` (3 verdes), `tsc` + `lint`
-limpos.
+Suítes completas verdes ao final:
+
+- **api:** 306 testes (38 suites), `tsc --noEmit` e `lint` limpos.
+- **mobile:** 582 testes (99 suites), `tsc --noEmit` e `lint` limpos.
+- **contracts:** `tsc --noEmit` limpo.
+
+A web não foi alterada (importa o `criarClienteRapidoSchema` intacto).
 
 ## Pendente (validação manual — só o usuário)
 
-Trocar senha com a atual **errada**: mostra "senha atual incorreta" e **não**
-desloga; trocar com sucesso: sessão atual **permanece** logada; demais
-dispositivos saem.
+- **Senha errada:** mostra "senha atual incorreta" e **não** desloga.
+- **Senha trocada com sucesso:** sessão atual **permanece** logada; demais
+  dispositivos saem.
+- **Olho:** alterna visibilidade em cada campo de senha.
+- **Clientes `+`:** cadastra cliente (nome + telefone; e-mail opcional) e ele
+  aparece na lista; toast "Cliente cadastrado".
+- **E-mails sintéticos** de walk-in/encaixe não aparecem no card do cliente.
+- **Ordenação:** ícone abre o sheet; opção escolhida reordena e fica destacada.
+- **Sino da agenda:** toast "Notificações em breve".
