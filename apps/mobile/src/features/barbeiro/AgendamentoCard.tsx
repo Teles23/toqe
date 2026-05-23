@@ -121,7 +121,7 @@ function AgendamentoCardImpl({ agendamento, onChangeStatus, testID }: Props) {
       <BottomSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        height={0.45}
+        height="content"
         testID={`agendamento-${agendamento.codigo}-sheet`}
       >
         <Text

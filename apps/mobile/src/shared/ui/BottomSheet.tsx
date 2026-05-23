@@ -157,7 +157,12 @@ export function BottomSheet({
             paddingTop: spacing.sm,
             paddingBottom: spacing.xl,
             paddingHorizontal: spacing.lg,
-            ...(sheetHeight === undefined ? null : { height: sheetHeight }),
+            // `content`: sem altura fixa — abraça o conteúdo, com teto de 85%
+            // da tela (conteúdo longo rola via ScrollView do filho, que deve
+            // usar flexGrow:0 + flexShrink:1).
+            ...(sheetHeight === undefined
+              ? { maxHeight: screenHeight * 0.85 }
+              : { height: sheetHeight }),
           },
           animatedStyle,
         ]}

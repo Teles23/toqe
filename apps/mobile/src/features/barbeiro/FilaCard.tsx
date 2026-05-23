@@ -229,7 +229,7 @@ function FilaCardImpl({ agendamento, posicao, onChangeStatus, testID }: Props) {
       <BottomSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        height={0.42}
+        height="content"
         testID={`fila-${agendamento.codigo}-sheet`}
       >
         <Text

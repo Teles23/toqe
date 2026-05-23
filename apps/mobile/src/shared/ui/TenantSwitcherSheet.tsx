@@ -28,7 +28,7 @@ export function TenantSwitcherSheet({
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      height="auto"
+      height="content"
       testID="tenant-switcher-sheet"
     >
       {/* Título + subtítulo */}
@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
   },
   list: {
     flexGrow: 0,
+    flexShrink: 1,
   },
   listContent: {
     paddingBottom: 8,

@@ -101,7 +101,7 @@ export function AvaliacaoSheet({
     <BottomSheet
       visible={visible}
       onClose={handleClose}
-      height={0.65}
+      height="content"
       testID="avaliacao-sheet"
     >
       <ScrollView
@@ -231,7 +231,8 @@ export function AvaliacaoSheet({
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   minutosAtras: {
     color: "#666666",

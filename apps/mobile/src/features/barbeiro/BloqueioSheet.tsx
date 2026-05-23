@@ -80,7 +80,7 @@ export function BloqueioSheet({
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      height={0.78}
+      height="content"
       testID="bloqueio-sheet"
     >
       <View style={styles.root}>
@@ -114,7 +114,7 @@ export function BloqueioSheet({
         </View>
 
         <ScrollView
-          style={{ flex: 1 }}
+          style={{ flexGrow: 0, flexShrink: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ gap: spacing.md, paddingBottom: spacing.md }}
         >

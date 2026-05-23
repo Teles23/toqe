@@ -91,7 +91,7 @@ export function AppointmentDetailSheet({
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      height={0.78}
+      height="content"
       testID="detail-sheet"
     >
       <View style={styles.root}>
@@ -120,7 +120,7 @@ export function AppointmentDetailSheet({
 
         {/* ── Conteúdo scrollável ── */}
         <ScrollView
-          style={{ flex: 1 }}
+          style={{ flexGrow: 0, flexShrink: 1 }}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
