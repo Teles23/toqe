@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useTheme } from "@/src/shared/theme";
 import { TenantSwitcherSheet } from "@/src/shared/ui";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
@@ -171,6 +172,7 @@ export default function ClienteAgendamentosScreen() {
   const { barbearia } = useAuth();
   const { data, isLoading, isError, isRefetching, refetch } =
     useAgendamentosMeus();
+  const refreshProps = usePullToRefresh(refetch, isRefetching);
   const [tab, setTab] = useState<Tab>("proximos");
   const [showSwitcher, setShowSwitcher] = useState(false);
   const letraBarbearia = barbearia?.nome?.trim()[0]?.toUpperCase() ?? "?";
@@ -229,9 +231,7 @@ export default function ClienteAgendamentosScreen() {
     return (
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-        }
+        refreshControl={<RefreshControl {...refreshProps} />}
       >
         {currentList.map((item, i) => (
           <View
@@ -243,7 +243,7 @@ export default function ClienteAgendamentosScreen() {
         ))}
       </ScrollView>
     );
-  }, [isLoading, isError, currentList, tab, palette, isRefetching, refetch]);
+  }, [isLoading, isError, currentList, tab, palette, refreshProps]);
 
   return (
     <View

@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePerfilBasePath } from "@/src/features/perfil/use-perfil-base-path";
 import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos-meus";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useTheme } from "@/src/shared/theme";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -166,6 +167,7 @@ export default function ClientePerfilScreen() {
   const basePath = usePerfilBasePath();
   const { user, barbearias, barbearia, switchBarbearia, logout } = useAuth();
   const { data, isRefetching, refetch } = useAgendamentosMeus();
+  const refreshProps = usePullToRefresh(refetch, isRefetching);
 
   const go = useCallback(
     (path: string) => router.push(`${basePath}${path}` as never),
@@ -214,14 +216,7 @@ export default function ClientePerfilScreen() {
         testID="perfil-scroll"
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        }
+        refreshControl={<RefreshControl {...refreshProps} />}
       >
         {/* ── Identity ── */}
         <View style={styles.identitySection}>

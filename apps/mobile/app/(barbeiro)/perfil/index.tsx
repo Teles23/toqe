@@ -29,6 +29,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePerfilBasePath } from "@/src/features/perfil/use-perfil-base-path";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
+import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useBarbeiroStats } from "@/src/shared/hooks/barbeiro/use-barbeiro-stats";
 import { useTheme } from "@/src/shared/theme";
 import { Avatar, Divider, SkeletonBox } from "@/src/shared/ui";
@@ -259,6 +260,7 @@ export default function PerfilIndexScreen() {
     isRefetching: statsRefetching,
     refetch: refetchStats,
   } = useBarbeiroStats();
+  const refreshProps = usePullToRefresh(refetchStats, statsRefetching);
 
   const handleLogout = useCallback(() => {
     Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
@@ -331,14 +333,7 @@ export default function PerfilIndexScreen() {
         testID="perfil-scroll"
         contentContainerStyle={{ paddingBottom: spacing.xxxl }}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={statsRefetching}
-            onRefresh={refetchStats}
-            tintColor={palette.primary}
-            colors={[palette.primary]}
-          />
-        }
+        refreshControl={<RefreshControl {...refreshProps} />}
       >
         {/* ── Identity hero ── */}
         <View

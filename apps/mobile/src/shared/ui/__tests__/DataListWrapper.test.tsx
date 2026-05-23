@@ -1,6 +1,9 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react-native";
 import React from "react";
 import { Text } from "react-native";
+
+import { palette } from "@/src/shared/theme/tokens";
 
 import { DataListWrapper } from "../DataListWrapper";
 
@@ -16,6 +19,14 @@ const baseProps = {
   ),
 };
 
+// DataListWrapper usa usePullToRefresh → useQueryClient: precisa do provider.
+function wrapper({ children }: { children: React.ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
 describe("DataListWrapper", () => {
   it("mostra ActivityIndicator quando isLoading=true", () => {
     render(
@@ -26,6 +37,7 @@ describe("DataListWrapper", () => {
         isError={false}
         testID="lista"
       />,
+      { wrapper },
     );
     expect(screen.getByTestId("lista-loading")).toBeTruthy();
   });
@@ -40,6 +52,7 @@ describe("DataListWrapper", () => {
         errorMessage="erro custom"
         testID="lista"
       />,
+      { wrapper },
     );
     expect(screen.getByTestId("lista-error")).toBeTruthy();
     expect(screen.getByText("erro custom")).toBeTruthy();
@@ -57,6 +70,7 @@ describe("DataListWrapper", () => {
         isError={false}
         testID="lista"
       />,
+      { wrapper },
     );
     expect(screen.getByTestId("item-1")).toBeTruthy();
     expect(screen.getByTestId("item-2")).toBeTruthy();
@@ -71,6 +85,7 @@ describe("DataListWrapper", () => {
         isError={false}
         emptyMessage="vazio mesmo"
       />,
+      { wrapper },
     );
     expect(screen.getByText("vazio mesmo")).toBeTruthy();
   });
@@ -87,12 +102,19 @@ describe("DataListWrapper", () => {
         refetch={refetch}
         testID="lista"
       />,
+      { wrapper },
     );
     const list = screen.getByTestId("lista");
     const refreshControl = list.props.refreshControl;
     expect(refreshControl).toBeTruthy();
+    // Spinner âmbar padronizado (DRY) — primary do tema (light ou dark).
+    const primaries = [palette.light.primary, palette.dark.primary];
+    expect(primaries).toContain(refreshControl.props.tintColor);
+    expect(refreshControl.props.colors).toEqual([
+      refreshControl.props.tintColor,
+    ]);
     // Invoca o callback diretamente — equivalente ao pull-to-refresh
-    refreshControl.props.onRefresh();
+    void refreshControl.props.onRefresh();
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
@@ -107,6 +129,7 @@ describe("DataListWrapper", () => {
         refetch={jest.fn()}
         testID="lista"
       />,
+      { wrapper },
     );
     const list = screen.getByTestId("lista");
     expect(list.props.refreshControl.props.refreshing).toBe(true);
@@ -121,6 +144,7 @@ describe("DataListWrapper", () => {
         isError={false}
         testID="lista"
       />,
+      { wrapper },
     );
     expect(screen.getByTestId("lista").props.refreshControl).toBeUndefined();
   });

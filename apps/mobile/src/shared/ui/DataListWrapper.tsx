@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 
+import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useTheme } from "@/src/shared/theme";
 
 export interface DataListWrapperProps<T> extends Omit<
@@ -25,6 +26,10 @@ export interface DataListWrapperProps<T> extends Omit<
   isRefetching?: boolean;
   /** Função chamada no pull-to-refresh */
   refetch?: () => void;
+  /** Desloca o spinner de refresh para baixo (px) — telas cujo header rola
+   * junto com a lista (ex.: agenda) passam `insets.top` p/ alinhar o spinner
+   * abaixo da status bar, como nas telas de header fixo. */
+  refreshProgressViewOffset?: number;
   /** Mensagem do estado vazio (default: "Nada por aqui ainda.") */
   emptyMessage?: string;
   /** Mensagem de erro (default genérica) */
@@ -50,6 +55,7 @@ export function DataListWrapper<T>({
   isError,
   isRefetching = false,
   refetch,
+  refreshProgressViewOffset,
   emptyMessage = "Nada por aqui ainda.",
   errorMessage = "Não foi possível carregar. Puxe para tentar novamente.",
   emptyComponent,
@@ -60,6 +66,12 @@ export function DataListWrapper<T>({
   ...flatListProps
 }: DataListWrapperProps<T>): ReactNode {
   const { palette, spacing, typography } = useTheme();
+  // Pull-to-refresh padronizado (âmbar) + refresh global de todas as abas.
+  const refreshProps = usePullToRefresh(
+    refetch,
+    isRefetching,
+    refreshProgressViewOffset,
+  );
 
   const muted = {
     ...typography.body,
@@ -112,13 +124,7 @@ export function DataListWrapper<T>({
         contentContainerStyle,
       ]}
       refreshControl={
-        refetch ? (
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={palette.text}
-          />
-        ) : undefined
+        refetch ? <RefreshControl {...refreshProps} /> : undefined
       }
       ListEmptyComponent={
         emptyComponent ?? (
