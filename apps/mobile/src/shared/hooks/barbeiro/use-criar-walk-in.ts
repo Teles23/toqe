@@ -6,8 +6,11 @@ import type { AgendamentoResponse } from "@toqe/shared";
 import type { CriarClienteRapidoInput } from "@toqe/contracts";
 
 export interface CriarWalkInInput {
-  /** Dados do cliente novo. Se omitido, usar `clienteId` existente. */
-  cliente?: CriarClienteRapidoInput;
+  /**
+   * Dados do cliente novo. Se omitido, usar `clienteId` existente.
+   * `email` é opcional no encaixe — o servidor gera um único quando ausente.
+   */
+  cliente?: Omit<CriarClienteRapidoInput, "email"> & { email?: string };
   /** Cliente já existente — passado em vez de criar um novo. */
   clienteId?: number;
   barbeiroId: number;

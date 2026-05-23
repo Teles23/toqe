@@ -85,6 +85,28 @@ describe('MembroBarbeariaService', () => {
       expect(mockPrisma.usuario.create).not.toHaveBeenCalled();
       expect(mockPrisma.membroBarbearia.create).toHaveBeenCalled();
     });
+
+    it('walk-in sem email: gera email único server-side e NÃO faz dedup por email', async () => {
+      mockPrisma.usuario.create.mockResolvedValue({ codigo: 300 });
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        usrCodigo: 300,
+        barCodigo: 1,
+        perfil: 'cliente',
+        usuario: { codigo: 300, nome: 'Encaixe', email: 'x' },
+      });
+
+      await service.findOrCreateCliente(1, { nome: 'Encaixe' });
+
+      // sem dedup por email (não havia email para buscar)
+      expect(mockPrisma.usuario.findUnique).not.toHaveBeenCalled();
+      // cria usuário com um email gerado e único
+      expect(mockPrisma.usuario.create).toHaveBeenCalled();
+      const createArg = mockPrisma.usuario.create.mock.calls[0][0] as {
+        data: { email: string };
+      };
+      expect(createArg.data.email).toMatch(/@toqe\.internal$/);
+    });
   });
 
   describe('convidarMembro', () => {

@@ -133,7 +133,8 @@ describe("AdicionarWalkInModal", () => {
         servicosIds: [2],
         cliente: { nome: "João" },
       });
-      expect(body.cliente.email).toMatch(/@walk-in\.local$/);
+      // Encaixe anônimo: o app NÃO envia email (servidor gera um único).
+      expect(body.cliente.email).toBeUndefined();
     });
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });

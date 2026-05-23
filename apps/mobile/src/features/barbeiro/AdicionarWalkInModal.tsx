@@ -151,11 +151,9 @@ export function AdicionarWalkInModal({
     setErro(null);
     try {
       await criarWalkIn.mutateAsync({
-        cliente: {
-          nome: nome.trim(),
-          // E-mail sintético — contrato exige email; encaixe não o coleta.
-          email: `walkin-${Date.now()}@walk-in.local`,
-        },
+        // Encaixe é anônimo: enviamos só o nome — o servidor gera um e-mail
+        // único quando ausente (o contrato walk-in tornou email opcional).
+        cliente: { nome: nome.trim() },
         barbeiroId: user!.codigo,
         servicosIds: [servicoId],
       });

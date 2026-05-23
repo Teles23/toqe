@@ -49,7 +49,10 @@ export const createWalkInSchema = z
       .array(z.number().int().positive())
       .min(1, "Selecione ao menos um serviço"),
 
-    cliente: criarClienteRapidoSchema.optional(),
+    // Encaixe (walk-in) pode ser anônimo: e-mail é opcional aqui (o servidor
+    // gera um único quando ausente). NÃO afeta o `criarClienteRapidoSchema`
+    // base, usado por outros fluxos onde o e-mail continua obrigatório.
+    cliente: criarClienteRapidoSchema.partial({ email: true }).optional(),
 
     clienteId: z.number().int().positive("Cliente inválido").optional(),
   })

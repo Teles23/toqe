@@ -19,6 +19,17 @@ import {
 } from '../common/utils/date.utils';
 import { somarAgendamentos } from '../common/utils/price.utils';
 
+/**
+ * Entrada de cliente "rápido" aceita por findOrCreateCliente/upsertClienteUsuario.
+ * `email` é opcional: o walk-in (encaixe) pode ser anônimo — nesse caso o servidor
+ * gera um e-mail único determinístico (a coluna é @unique NOT NULL).
+ */
+type ClienteRapidoInput = {
+  nome: string;
+  email?: string;
+  telefone?: string | null;
+};
+
 @Injectable()
 export class MembroBarbeariaService {
   constructor(private prisma: PrismaService) {}
@@ -207,7 +218,7 @@ export class MembroBarbeariaService {
    */
   async findOrCreateCliente(
     barCodigo: number,
-    dto: CriarClienteRapidoDto,
+    dto: ClienteRapidoInput,
     tx: Prisma.TransactionClient = this.prisma,
   ) {
     const { usuario } = await this.upsertClienteUsuario(barCodigo, dto, tx);
@@ -230,12 +241,20 @@ export class MembroBarbeariaService {
 
   private async upsertClienteUsuario(
     barCodigo: number,
-    dto: CriarClienteRapidoDto,
+    dto: ClienteRapidoInput,
     tx: Prisma.TransactionClient = this.prisma,
   ) {
-    let usuario = await tx.usuario.findUnique({
-      where: { email: dto.email },
-    });
+    // Walk-in anônimo (sem e-mail): gera um único determinístico — a coluna é
+    // @unique NOT NULL. Com e-mail informado, mantém o dedup (cliente recorrente).
+    const email =
+      dto.email ??
+      `encaixe-${barCodigo}-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}@toqe.internal`;
+
+    let usuario = dto.email
+      ? await tx.usuario.findUnique({ where: { email: dto.email } })
+      : null;
 
     if (!usuario) {
       const tempSenha = Math.random().toString(36).slice(-10);
@@ -243,7 +262,7 @@ export class MembroBarbeariaService {
       usuario = await tx.usuario.create({
         data: {
           nome: dto.nome,
-          email: dto.email,
+          email,
           telefone: dto.telefone ?? null,
           senhaHash,
         },
