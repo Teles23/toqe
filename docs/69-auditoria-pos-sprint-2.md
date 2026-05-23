@@ -33,6 +33,21 @@ um commit por item.
   O fechamento por backdrop e por back do Android foram preservados.
 - **Decisão de produto mantida:** navegação de dias (← →) na agenda.
 
+## Follow-up (feedback de tela — fila do barbeiro)
+
+Após validação visual, dois ajustes na seção de fila (`FilaSection`):
+
+| Ponto                               | Problema                                                                                                   | Correção                                                                                                                                                                                | Arquivos-chave                    |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Cliente não saía da fila ao iniciar | a lista renderizava **todos** os itens da fila (inclusive `em_andamento`); o contador só somava `pendente` | a fila agora filtra **só quem aguarda** (`pendente`/`confirmado`); ao iniciar (`em_andamento`) o item sai da lista e o contador bate com o que aparece                                  | `FilaSection.tsx`                 |
+| Bloco redundante                    | cada item mostrava nome/serviço/tempo **duas vezes** (linha `WalkInCard` + `FilaCard` logo abaixo)         | removido o `WalkInCard`; renderiza só o `FilaCard` (ordem + barra de espera). O CTA "Atender →" migrou para o header do `FilaCard` (nova prop `onAtender`), no lugar do badge de status | `FilaCard.tsx`, `FilaSection.tsx` |
+| Pull-to-refresh não atualizava fila | o pull só refazia `useAgendaDia`; a fila (`useFilaDia`, query key `["fila"]`) ficava com cache stale       | o `refetch` do pull agora também invalida `["fila"]` (via `queryClient.invalidateQueries`) — puxar a agenda recarrega agenda **e** fila                                                 | `agenda.tsx`                      |
+
+> **Por que o item já saía no backend mas continuava na tela:** `useUpdateStatus`
+> já invalidava `["fila"]` ao atender, mas a `FilaSection` exibia o item
+> `em_andamento` que voltava no GET (`tipo=WALK_IN` retorna todos os status). O
+> filtro client-side resolve sem novo endpoint.
+
 ## Checks
 
 mobile: tsc + lint limpos, suíte completa verde. api: tsc + specs verdes. web: tsc verde.

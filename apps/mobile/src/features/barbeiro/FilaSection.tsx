@@ -77,59 +77,6 @@ function RedPulsingDot() {
   return <Animated.View style={[styles.redDot, { opacity: anim }]} />;
 }
 
-// ─── WalkInCard — linha rápida + FilaCard ────────────────────────────────────
-
-function WalkInCard({
-  agendamento,
-  posicao,
-  onAtender,
-  onChangeStatus,
-}: {
-  agendamento: Parameters<typeof FilaCard>[0]["agendamento"];
-  posicao: number;
-  onAtender: (codigo: number) => void;
-  onChangeStatus?: Parameters<typeof FilaCard>[0]["onChangeStatus"];
-}) {
-  const servicoNome = resumoServico(agendamento);
-  const minutos = minutosAguardando(agendamento.criadoEm);
-
-  return (
-    <View
-      testID={`walkin-card-${agendamento.codigo}`}
-      style={styles.walkInCard}
-    >
-      <View style={styles.walkInRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.walkInNome} numberOfLines={1}>
-            {agendamento.cliente.nome}
-          </Text>
-          <Text style={styles.walkInServico} numberOfLines={1}>
-            {servicoNome}
-          </Text>
-          <Text style={styles.walkInTempo}>Aguardando {minutos} min</Text>
-        </View>
-
-        <Pressable
-          testID={`btn-atender-${agendamento.codigo}`}
-          accessibilityRole="button"
-          accessibilityLabel={`Atender ${agendamento.cliente.nome}`}
-          onPress={() => onAtender(agendamento.codigo)}
-          style={styles.atenderBtn}
-        >
-          <Text style={styles.atenderBtnText}>Atender →</Text>
-        </Pressable>
-      </View>
-
-      <FilaCard
-        agendamento={agendamento}
-        posicao={posicao}
-        onChangeStatus={onChangeStatus}
-        testID={`fila-card-${agendamento.codigo}`}
-      />
-    </View>
-  );
-}
-
 // ─── FilaSection ──────────────────────────────────────────────────────────────
 
 /**
@@ -139,7 +86,11 @@ function WalkInCard({
  *
  * - **Colapsado** (padrão): linha única com contador, prévia do primeiro da
  *   fila e um atalho "Atender →" para ele.
- * - **Expandido** (tap no banner): mostra todos os walk-ins com `WalkInCard`.
+ * - **Expandido** (tap no banner): mostra todos os que aguardam via `FilaCard`,
+ *   cada um com o CTA "Atender →" no header (sem duplicar nome/serviço/tempo).
+ *
+ * A fila lista **apenas** quem ainda aguarda (`pendente`/`confirmado`); ao
+ * iniciar o atendimento o item vira `em_andamento` e sai da fila.
  */
 export function FilaSection() {
   const { data } = useFilaDia();
@@ -166,10 +117,12 @@ export function FilaSection() {
     setExpanded((e) => !e);
   }, []);
 
-  const filaItems = data ?? [];
+  // Só quem ainda aguarda: ao iniciar (em_andamento) ou encerrar, sai da fila.
+  const filaItems = (data ?? []).filter(
+    (a) => a.status === "pendente" || a.status === "confirmado",
+  );
   if (filaItems.length === 0) return null;
 
-  const pendentes = filaItems.filter((a) => a.status === "pendente");
   const primeiro = filaItems[0];
 
   return (
@@ -184,7 +137,7 @@ export function FilaSection() {
         >
           <RedPulsingDot />
           <Text style={styles.sectionTitle}>
-            FILA · esperando ({pendentes.length})
+            FILA · esperando ({filaItems.length})
           </Text>
           {!expanded && (
             <Text style={styles.preview} numberOfLines={1}>
@@ -217,10 +170,11 @@ export function FilaSection() {
         <View testID="fila-expanded">
           {filaItems.map((item, idx) => (
             <View key={item.codigo} style={styles.cardWrap}>
-              <WalkInCard
+              <FilaCard
                 agendamento={item}
                 posicao={idx + 1}
                 onAtender={handleAtender}
+                testID={`fila-card-${item.codigo}`}
               />
             </View>
           ))}
@@ -270,34 +224,6 @@ const styles = StyleSheet.create({
   },
   cardWrap: {
     marginTop: 8,
-  },
-  walkInCard: {
-    gap: 8,
-  },
-  walkInRow: {
-    backgroundColor: "#171717",
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  walkInNome: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    fontWeight: "700",
-    color: "#f5f5f5",
-    marginBottom: 2,
-  },
-  walkInServico: {
-    fontSize: 12,
-    color: "#888888",
-    fontFamily: "Inter_400Regular",
-    marginBottom: 4,
-  },
-  walkInTempo: {
-    fontFamily: "JetBrainsMono_400Regular",
-    fontSize: 11,
-    color: "#ef4444",
   },
   atenderBtn: {
     height: 40,

@@ -21,8 +21,21 @@ jest.mock("@/src/shared/hooks/use-auth", () => ({
 jest.mock("@/src/features/barbeiro/FilaCard", () => {
   const RN = jest.requireActual("react-native");
   return {
-    FilaCard: ({ testID }: { testID?: string }) => (
-      <RN.View testID={testID ?? "fila-card"} />
+    FilaCard: ({
+      agendamento,
+      onAtender,
+      testID,
+    }: {
+      agendamento: { codigo: number; cliente: { nome: string } };
+      onAtender?: (codigo: number) => void;
+      testID?: string;
+    }) => (
+      <RN.Pressable
+        testID={testID ?? "fila-card"}
+        onPress={() => onAtender?.(agendamento.codigo)}
+      >
+        <RN.Text>{agendamento.cliente.nome}</RN.Text>
+      </RN.Pressable>
     ),
   };
 });
@@ -123,11 +136,11 @@ describe("FilaSection", () => {
     renderFila();
     await screen.findByTestId("fila-section");
     expect(screen.queryByTestId("fila-expanded")).toBeNull();
-    expect(screen.queryByTestId("walkin-card-2")).toBeNull();
+    expect(screen.queryByTestId("fila-card-2")).toBeNull();
     expect(screen.getByText(/João/)).toBeTruthy();
   });
 
-  it("expande ao tocar no banner e revela os walk-in cards", async () => {
+  it("expande ao tocar no banner e revela os cards da fila", async () => {
     setupFetch([
       makeAg({
         codigo: 1,
@@ -141,18 +154,39 @@ describe("FilaSection", () => {
     renderFila();
     fireEvent.press(await screen.findByTestId("fila-banner-toggle"));
     expect(screen.getByTestId("fila-expanded")).toBeTruthy();
-    expect(screen.getByTestId("walkin-card-1")).toBeTruthy();
-    expect(screen.getByTestId("walkin-card-2")).toBeTruthy();
+    expect(screen.getByTestId("fila-card-1")).toBeTruthy();
+    expect(screen.getByTestId("fila-card-2")).toBeTruthy();
     expect(screen.getByText("Maria")).toBeTruthy();
   });
 
-  it("o cabeçalho mostra a contagem de pendentes", async () => {
+  it("o cabeçalho conta quem aguarda (pendente + confirmado)", async () => {
     setupFetch([
       makeAg({ codigo: 1, status: "pendente" }),
       makeAg({ codigo: 2, status: "confirmado" }),
     ]);
     renderFila();
+    expect(await screen.findByText(/FILA · esperando \(2\)/)).toBeTruthy();
+  });
+
+  it("remove da fila quem já está em atendimento (em_andamento)", async () => {
+    setupFetch([
+      makeAg({
+        codigo: 1,
+        status: "pendente",
+        cliente: { usrCodigo: 1, nome: "João", telefone: null },
+      }),
+      makeAg({
+        codigo: 2,
+        status: "em_andamento",
+        cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
+      }),
+    ]);
+    renderFila();
+    // Só 1 aguardando — o em_andamento não conta nem aparece ao expandir.
     expect(await screen.findByText(/FILA · esperando \(1\)/)).toBeTruthy();
+    fireEvent.press(screen.getByTestId("fila-banner-toggle"));
+    expect(screen.getByTestId("fila-card-1")).toBeTruthy();
+    expect(screen.queryByTestId("fila-card-2")).toBeNull();
   });
 
   it("atalho Atender faz PATCH /agendamentos/7/status com em_andamento", async () => {

@@ -20,6 +20,7 @@ import {
   subDays,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -192,9 +193,18 @@ export default function BarbeiroAgendaScreen() {
   const { showToast } = useToast();
   const compartilharLink = useCompartilharLink();
 
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data, isLoading, isRefetching, refetch, isError } =
     useAgendaDia(selectedDate);
+
+  // Pull-to-refresh: recarrega a agenda do dia E a fila (queries separadas).
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      refetch(),
+      queryClient.invalidateQueries({ queryKey: ["fila"] }),
+    ]);
+  }, [refetch, queryClient]);
 
   const updateStatus = useUpdateStatus();
   const criarBloqueio = useCriarBloqueio();
@@ -457,7 +467,7 @@ export default function BarbeiroAgendaScreen() {
         isLoading={isLoading}
         isError={isError}
         isRefetching={isRefetching}
-        refetch={refetch}
+        refetch={handleRefresh}
         ListHeaderComponent={listHeader}
         loadingComponent={<ListSkeleton testID="agenda-skeleton" />}
         contentContainerStyle={{

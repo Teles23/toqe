@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
 import { FilaCard } from "../FilaCard";
@@ -88,5 +88,25 @@ describe("FilaCard", () => {
       <FilaCard agendamento={make({ codigo: 777 })} posicao={1} testID="x" />,
     );
     expect(screen.getByTestId("x")).toBeTruthy();
+  });
+
+  it("sem onAtender: mostra o badge de status (não o CTA Atender)", () => {
+    render(<FilaCard agendamento={make({ codigo: 5 })} posicao={1} />);
+    expect(screen.getByTestId("status-badge")).toBeTruthy();
+    expect(screen.queryByTestId("btn-atender-5")).toBeNull();
+  });
+
+  it("com onAtender: exibe o CTA 'Atender →' no lugar do badge e dispara o callback", () => {
+    const onAtender = jest.fn();
+    render(
+      <FilaCard
+        agendamento={make({ codigo: 5 })}
+        posicao={1}
+        onAtender={onAtender}
+      />,
+    );
+    expect(screen.queryByTestId("status-badge")).toBeNull();
+    fireEvent.press(screen.getByTestId("btn-atender-5"));
+    expect(onAtender).toHaveBeenCalledWith(5);
   });
 });

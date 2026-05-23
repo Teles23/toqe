@@ -22,6 +22,8 @@ interface Props {
     codigo: number,
     status: Exclude<StatusAgendamento, "pendente">,
   ) => void;
+  /** Quando fornecido, exibe o CTA "Atender →" no header (inicia o atendimento). */
+  onAtender?: (codigo: number) => void;
   testID?: string;
 }
 
@@ -74,7 +76,13 @@ function waitToneColor(
   }
 }
 
-function FilaCardImpl({ agendamento, posicao, onChangeStatus, testID }: Props) {
+function FilaCardImpl({
+  agendamento,
+  posicao,
+  onChangeStatus,
+  onAtender,
+  testID,
+}: Props) {
   const { palette, spacing, radius, typography } = useTheme();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -155,27 +163,54 @@ function FilaCardImpl({ agendamento, posicao, onChangeStatus, testID }: Props) {
               >
                 {agendamento.cliente.nome}
               </Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor: status.bg,
-                    borderRadius: radius.full,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: 2,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: status.fg, fontFamily: "Inter_600SemiBold" },
+              {onAtender ? (
+                <Pressable
+                  testID={`btn-atender-${agendamento.codigo}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Atender ${agendamento.cliente.nome}`}
+                  onPress={() => onAtender(agendamento.codigo)}
+                  style={({ pressed }) => [
+                    styles.atenderBtn,
+                    {
+                      backgroundColor: palette.primary,
+                      borderRadius: radius.full,
+                      paddingHorizontal: spacing.md,
+                      opacity: pressed ? 0.7 : 1,
+                    },
                   ]}
-                  testID="status-badge"
                 >
-                  {STATUS_LABEL[agendamento.status]}
-                </Text>
-              </View>
+                  <Text
+                    style={[
+                      typography.captionBold,
+                      { color: palette.primaryOn },
+                    ]}
+                  >
+                    Atender →
+                  </Text>
+                </Pressable>
+              ) : (
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor: status.bg,
+                      borderRadius: radius.full,
+                      paddingHorizontal: spacing.sm,
+                      paddingVertical: 2,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      typography.caption,
+                      { color: status.fg, fontFamily: "Inter_600SemiBold" },
+                    ]}
+                    testID="status-badge"
+                  >
+                    {STATUS_LABEL[agendamento.status]}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text
@@ -297,6 +332,11 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     alignSelf: "flex-start",
+  },
+  atenderBtn: {
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   progressTrack: {
     height: 6,
