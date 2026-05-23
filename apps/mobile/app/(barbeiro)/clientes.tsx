@@ -25,6 +25,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdicionarClienteModal } from "@/src/features/barbeiro/AdicionarClienteModal";
 import { ClienteCard } from "@/src/features/barbeiro/ClienteCard";
 import { ClienteDetalhe } from "@/src/features/barbeiro/ClienteDetalhe";
+import {
+  OrdenarClientesSheet,
+  type SortClientes,
+} from "@/src/features/barbeiro/OrdenarClientesSheet";
 import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
 import { useTheme } from "@/src/shared/theme";
 import { emailVisivel } from "@/src/shared/utils/cliente";
@@ -34,7 +38,6 @@ import type { ClienteAPI } from "@toqe/contracts";
 // ─── Filtros ──────────────────────────────────────────────────────────────────
 
 type FilterId = "todos" | "recentes" | "sumidos";
-type Sort = "nome" | "ultimaVisita";
 
 interface FilterChip {
   id: FilterId | "vip" | "novos";
@@ -82,7 +85,8 @@ export default function BarbeiroClientesScreen() {
 
   const [busca, setBusca] = useState("");
   const [filter, setFilter] = useState<string>("todos");
-  const [sort, setSort] = useState<Sort>("nome");
+  const [sort, setSort] = useState<SortClientes>("nomeAsc");
+  const [sortOpen, setSortOpen] = useState(false);
   const [selected, setSelected] = useState<ClienteAPI | null>(null);
   const [addClienteOpen, setAddClienteOpen] = useState(false);
 
@@ -115,13 +119,28 @@ export default function BarbeiroClientesScreen() {
 
     // Aplica ordenação
     return [...result].sort((a, b) => {
-      if (sort === "nome") return a.nome.localeCompare(b.nome, "pt-BR");
-      const av = a.ultimaVisita ?? "";
-      const bv = b.ultimaVisita ?? "";
-      if (!av && !bv) return 0;
-      if (!av) return 1;
-      if (!bv) return -1;
-      return bv.localeCompare(av);
+      switch (sort) {
+        case "nomeAsc":
+          return a.nome.localeCompare(b.nome, "pt-BR");
+        case "nomeDesc":
+          return b.nome.localeCompare(a.nome, "pt-BR");
+        case "totalGasto":
+          return b.totalGasto - a.totalGasto;
+        case "ultimaRecente":
+        case "ultimaAntiga": {
+          // Clientes sem visita vão sempre para o fim, em ambas as direções.
+          const av = a.ultimaVisita ?? "";
+          const bv = b.ultimaVisita ?? "";
+          if (!av && !bv) return 0;
+          if (!av) return 1;
+          if (!bv) return -1;
+          return sort === "ultimaRecente"
+            ? bv.localeCompare(av)
+            : av.localeCompare(bv);
+        }
+        default:
+          return 0;
+      }
     });
   }, [data, busca, filter, sort]);
 
@@ -143,15 +162,26 @@ export default function BarbeiroClientesScreen() {
             </View>
           )}
         </View>
-        <Pressable
-          testID="btn-adicionar-cliente"
-          onPress={() => setAddClienteOpen(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Adicionar cliente"
-          style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
-        >
-          <Feather name="plus" size={20} color={palette.primary} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            testID="btn-ordenar"
+            onPress={() => setSortOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Ordenar clientes"
+            style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+          >
+            <Feather name="sliders" size={18} color="#888888" />
+          </Pressable>
+          <Pressable
+            testID="btn-adicionar-cliente"
+            onPress={() => setAddClienteOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Adicionar cliente"
+            style={({ pressed }) => [styles.addBtn, pressed && styles.pressed]}
+          >
+            <Feather name="plus" size={20} color={palette.primary} />
+          </Pressable>
+        </View>
       </View>
 
       {/* Search + filtros */}
@@ -221,22 +251,6 @@ export default function BarbeiroClientesScreen() {
             );
           })}
         </ScrollView>
-
-        {/* Ordenação */}
-        <View style={styles.sortRow}>
-          <SortButton
-            active={sort === "nome"}
-            label="Nome"
-            onPress={() => setSort("nome")}
-            testID="sort-nome"
-          />
-          <SortButton
-            active={sort === "ultimaVisita"}
-            label="Última visita"
-            onPress={() => setSort("ultimaVisita")}
-            testID="sort-ultimaVisita"
-          />
-        </View>
       </View>
 
       {/* Contagem */}
@@ -297,45 +311,15 @@ export default function BarbeiroClientesScreen() {
         visible={addClienteOpen}
         onClose={() => setAddClienteOpen(false)}
       />
+
+      {/* Ordenação */}
+      <OrdenarClientesSheet
+        visible={sortOpen}
+        onClose={() => setSortOpen(false)}
+        value={sort}
+        onSelect={setSort}
+      />
     </View>
-  );
-}
-
-// ─── Sub-componentes ──────────────────────────────────────────────────────────
-
-function SortButton({
-  active,
-  label,
-  onPress,
-  testID,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-  testID?: string;
-}) {
-  return (
-    <Pressable
-      testID={testID}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Ordenar por ${label}`}
-      accessibilityState={{ selected: active }}
-      style={({ pressed }) => [
-        styles.sortBtn,
-        active ? styles.sortBtnActive : styles.sortBtnInactive,
-        pressed && styles.pressed,
-      ]}
-    >
-      <Text
-        style={[
-          styles.sortBtnText,
-          active ? styles.sortBtnTextActive : styles.sortBtnTextInactive,
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -367,6 +351,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888888",
     fontFamily: "Inter_400Regular",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   addBtn: {
     width: 44,
@@ -454,35 +443,6 @@ const styles = StyleSheet.create({
   },
   chipTextInactive: {
     color: "#888888",
-  },
-  // Sort row
-  sortRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  sortBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 100,
-    borderWidth: 1,
-  },
-  sortBtnActive: {
-    backgroundColor: "#F4B400",
-    borderColor: "#F4B400",
-  },
-  sortBtnInactive: {
-    backgroundColor: "transparent",
-    borderColor: "#262626",
-  },
-  sortBtnText: {
-    fontFamily: "Inter_600SemiBold",
-    fontSize: 12,
-  },
-  sortBtnTextActive: {
-    color: "#0a0a0a",
-  },
-  sortBtnTextInactive: {
-    color: "#f5f5f5",
   },
   // Count
   countText: {

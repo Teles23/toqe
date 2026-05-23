@@ -28,7 +28,8 @@ errada **deslogava** o usuário. Causa raiz dupla:
 | Bug 1 (mobile)  | `useMudarSenha` anexa o `refreshToken` da sessão atual e passa `skipRefresh: true`; `senha.tsx` trata `400` como erro de campo e mostra toast de sucesso (sem Alert, sem logout). + specs                 | `0892ae3` |
 | Bug 3           | Toggle de visibilidade (olho) nos 3 campos de `senha.tsx` via `CampoSenha` (sub-componente local, mantém o padrão card da tela). testID `<campo>-toggle`.                                                 | `1fbdd1b` |
 | UX 1            | `+` da tela Clientes abre **cadastro de cliente** (nome+telefone obrig., e-mail opcional) em vez do encaixe. Endpoint passa a aceitar e-mail opcional + role `barbeiro`. Invalida `['clientes']` + toast. | `a310eb1` |
-| UX 2            | E-mails sintéticos (`@toqe.internal`, `@walk-in.local`, vazio/nulo) não aparecem na UI. Helper `emailVisivel` no `ClienteCard` (telefone > e-mail real > nada) e na busca. + specs.                       | —         |
+| UX 2            | E-mails sintéticos (`@toqe.internal`, `@walk-in.local`, vazio/nulo) não aparecem na UI. Helper `emailVisivel` no `ClienteCard` (telefone > e-mail real > nada) e na busca. + specs.                       | `2dd3e07` |
+| UX 3            | Chips de ordenação soltos saem; ícone `sliders` no header abre `OrdenarClientesSheet` com 5 opções (Nome A→Z/Z→A, Última recente/antiga, Total gasto), selecionada com âmbar + check. + specs.            | —         |
 
 ## Detalhes técnicos
 
@@ -104,6 +105,20 @@ e-mails vazavam no `ClienteCard` (fallback quando não há telefone).
 - **`clientes.tsx`:** a busca textual por e-mail também usa `emailVisivel` —
   não casa em e-mail sintético.
 - **`ClienteDetalhe`** não exibe e-mail (só telefone) → nada a fazer lá.
+
+### UX 3 — ordenação por ícone + sheet
+
+Os botões soltos "Nome"/"Última visita" no layout saíram. Agora há um ícone
+`sliders` no header (ao lado do `+`) que abre o `OrdenarClientesSheet` (reusa o
+`BottomSheet` global, `height="content"`) com 5 opções:
+
+- Nome (A → Z) / Nome (Z → A)
+- Última visita (mais recente) / (mais antiga) — sem visita vai sempre ao fim
+- Total gasto (desc)
+
+A opção ativa é destacada (âmbar + check) com `accessibilityState.checked`.
+`testID`: `btn-ordenar`, `sort-option-<id>`. + specs (sheet isolado + fluxo
+abrir/selecionar na tela).
 
 ## Decisões
 

@@ -172,7 +172,7 @@ describe("BarbeiroClientesScreen", () => {
     expect(screen.queryByText("Bruno Lima")).toBeNull();
   });
 
-  it("toggle sort por última visita reordena", async () => {
+  it("ordena por última visita via sheet de ordenação", async () => {
     respondWith([
       makeC({
         codigo: 1,
@@ -187,7 +187,9 @@ describe("BarbeiroClientesScreen", () => {
     ]);
     renderScreen();
     await screen.findByText("A Recente");
-    fireEvent.press(screen.getByTestId("sort-ultimaVisita"));
+    // Abre o sheet de ordenação e escolhe "Última visita (mais recente)"
+    fireEvent.press(screen.getByTestId("btn-ordenar"));
+    fireEvent.press(screen.getByTestId("sort-option-ultimaRecente"));
     expect(screen.getByText("A Recente")).toBeTruthy();
     expect(screen.getByText("B Antigo")).toBeTruthy();
   });
