@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,10 +13,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CriarServicoModal } from "@/src/features/barbeiro/CriarServicoModal";
-import { useServicos } from "@/src/shared/hooks/barbeiro/use-servicos";
-import { useToggleServico } from "@/src/shared/hooks/barbeiro/use-toggle-servico";
+import { useAtualizarServicoBarbeiro } from "@/src/shared/hooks/barbeiro/use-atualizar-servico-barbeiro";
+import { useBarbeariaConfig } from "@/src/shared/hooks/barbeiro/use-barbearia-config";
+import { useServicosBarbeiro } from "@/src/shared/hooks/barbeiro/use-servicos-barbeiro";
+import { useToggleServicoBarbeiro } from "@/src/shared/hooks/barbeiro/use-toggle-servico-barbeiro";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, ScreenHeader } from "@/src/shared/ui";
+import {
+  AmberButton,
+  BottomSheet,
+  FormInput,
+  ScreenHeader,
+} from "@/src/shared/ui";
+import type { ServicoBarbeiroResponse } from "@toqe/shared";
 
 const ACCENT = "#F4B400";
 
@@ -27,118 +35,105 @@ function formatBRL(v: number): string {
   })}`;
 }
 
-function PriceChip({
-  label,
-  value,
-  sub,
-  accent,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  accent?: boolean;
-}) {
-  return (
-    <View
-      style={[
-        priceChipStyles.chip,
-        accent ? priceChipStyles.chipAccent : priceChipStyles.chipMuted,
-      ]}
-    >
-      <Text style={priceChipStyles.label}>{label}</Text>
-      <Text
-        style={[priceChipStyles.value, { color: accent ? ACCENT : "#888888" }]}
-      >
-        {value}
-      </Text>
-      <Text style={priceChipStyles.sub}>{sub}</Text>
-    </View>
-  );
+/** Estado efetivo de "ativo" (sem registro = ativo por padrão). */
+function isAtivoDefault(item: ServicoBarbeiroResponse): boolean {
+  return item.barbeiro?.ativo ?? true;
 }
 
-const priceChipStyles = StyleSheet.create({
-  chip: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    backgroundColor: "#1c1c1c",
-  },
-  chipMuted: { borderColor: "#262626" },
-  chipAccent: { borderColor: ACCENT + "40" },
-  label: {
-    fontSize: 9,
-    color: "#666666",
-    letterSpacing: 1.2,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    fontFamily: "Inter_600SemiBold",
-  },
-  value: {
-    fontFamily: "JetBrainsMono_500Medium",
-    fontSize: 14,
-    fontWeight: "700",
-    marginTop: 3,
-  },
-  sub: {
-    fontSize: 10,
-    color: "#444444",
-    marginTop: 2,
-    fontFamily: "Inter_400Regular",
-  },
-});
-
 /**
- * Sub-tela de serviços e preços.
- * Toggle persiste via PUT /servicos/:codigo com { ativo }.
+ * Sub-tela de serviços e preços do barbeiro.
+ * Consome a lista consolidada (GET /servicos/barbeiro/:id): cada serviço da
+ * barbearia + os exclusivos do barbeiro, com preço/duração efetivos. O barbeiro
+ * liga/desliga (PATCH) e — se o dono permitir — edita preço/duração (PUT) e
+ * cadastra serviços exclusivos.
  */
 export default function ServicosScreen() {
   const { palette, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
-  const { data: servicos, isLoading } = useServicos();
-  const {
-    mutate: toggleMutate,
-    isPending: isTogglePending,
-    variables: toggleVariables,
-  } = useToggleServico();
+  const { data: servicos, isLoading } = useServicosBarbeiro();
+  const { data: config } = useBarbeariaConfig();
+  const toggle = useToggleServicoBarbeiro();
+  const atualizar = useAtualizarServicoBarbeiro();
 
-  // Optimistic local state: sobrescreve valor do servidor enquanto a mutation não invalida
+  const podeAlterarPreco = config?.barbeiroAlteraPreco ?? false;
+  const podeCriar = config?.barbeiroCriaServico ?? false;
+
+  // Override otimista do toggle (srvCodigo → ativo) até a query invalidar.
   const [ativos, setAtivos] = useState<Record<number, boolean>>({});
   const [erro, setErro] = useState<string | null>(null);
   const [criarOpen, setCriarOpen] = useState(false);
 
+  // Sheet de edição de preço/duração.
+  const [editando, setEditando] = useState<ServicoBarbeiroResponse | null>(
+    null,
+  );
+  const [precoStr, setPrecoStr] = useState("");
+  const [duracaoStr, setDuracaoStr] = useState("");
+  const [editErro, setEditErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editando) {
+      setPrecoStr(String(editando.precoEfetivo));
+      setDuracaoStr(String(editando.duracaoEfetiva));
+      setEditErro(null);
+    }
+  }, [editando]);
+
   const isAtivo = useCallback(
-    (codigo: number, defaultAtivo: boolean) => {
-      return ativos[codigo] !== undefined ? ativos[codigo] : defaultAtivo;
-    },
+    (item: ServicoBarbeiroResponse) =>
+      ativos[item.servico.codigo] ?? isAtivoDefault(item),
     [ativos],
   );
 
   const handleToggle = useCallback(
-    (codigo: number, value: boolean) => {
-      // Atualização otimista — reverte se a API falhar
-      setAtivos((prev) => ({ ...prev, [codigo]: value }));
+    (srvCodigo: number, value: boolean) => {
+      setAtivos((prev) => ({ ...prev, [srvCodigo]: value }));
       setErro(null);
-      toggleMutate(
-        { codigo, ativo: value },
+      toggle.mutate(
+        { srvCodigo, ativo: value },
         {
           onError: (e) => {
-            // Reverte estado otimista
-            setAtivos((prev) => ({ ...prev, [codigo]: !value }));
+            setAtivos((prev) => ({ ...prev, [srvCodigo]: !value }));
             setErro(e.message ?? "Erro ao atualizar serviço.");
           },
         },
       );
     },
-    [toggleMutate],
+    [toggle],
   );
+
+  const handleSalvarPreco = useCallback(() => {
+    if (!editando) return;
+    setEditErro(null);
+    const preco =
+      precoStr.trim() === "" ? null : Number(precoStr.replace(",", "."));
+    const duracao = Number.parseInt(duracaoStr, 10);
+    if (preco !== null && (Number.isNaN(preco) || preco < 0)) {
+      setEditErro("Preço inválido.");
+      return;
+    }
+    if (Number.isNaN(duracao) || duracao < 5) {
+      setEditErro("Duração mínima: 5 minutos.");
+      return;
+    }
+    atualizar.mutate(
+      {
+        srvCodigo: editando.servico.codigo,
+        precoProprio: preco,
+        duracaoMin: duracao,
+      },
+      {
+        onSuccess: () => setEditando(null),
+        onError: (e) =>
+          setEditErro(e.message ?? "Não foi possível salvar. Tente novamente."),
+      },
+    );
+  }, [editando, precoStr, duracaoStr, atualizar]);
 
   const count = servicos?.length ?? 0;
 
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
-      {/* ── Top bar ── */}
       <ScreenHeader
         title="Serviços e preços"
         subtitle={
@@ -148,21 +143,23 @@ export default function ServicosScreen() {
         }
         onBack={() => router.back()}
         right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Adicionar serviço"
-            onPress={() => setCriarOpen(true)}
-            style={({ pressed }) => [
-              styles.addBtn,
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <Feather name="plus" size={18} color={ACCENT} />
-          </Pressable>
+          podeCriar ? (
+            <Pressable
+              testID="btn-add-servico"
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar serviço exclusivo"
+              onPress={() => setCriarOpen(true)}
+              style={({ pressed }) => [
+                styles.addBtn,
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Feather name="plus" size={18} color={ACCENT} />
+            </Pressable>
+          ) : undefined
         }
       />
 
-      {/* ── List ── */}
       {isLoading ? (
         <View style={styles.center}>
           <ActivityIndicator
@@ -177,12 +174,16 @@ export default function ServicosScreen() {
             paddingBottom: spacing.xxxl + 64,
           }}
         >
-          {(servicos ?? []).map((s) => {
-            const ativo = isAtivo(s.codigo, s.ativo);
+          {(servicos ?? []).map((item) => {
+            const ativo = isAtivo(item);
+            const { codigo, nome } = item.servico;
+            const precoDiferente = item.precoEfetivo !== item.servico.precoBase;
             return (
-              <View
-                key={s.codigo}
-                testID={`servico-row-${s.codigo}`}
+              <Pressable
+                key={codigo}
+                testID={`servico-row-${codigo}`}
+                disabled={!podeAlterarPreco}
+                onPress={() => podeAlterarPreco && setEditando(item)}
                 style={[
                   styles.card,
                   {
@@ -197,7 +198,6 @@ export default function ServicosScreen() {
                 ]}
               >
                 <View style={styles.cardRow}>
-                  {/* Icon area */}
                   <View
                     style={[
                       styles.iconBox,
@@ -206,11 +206,6 @@ export default function ServicosScreen() {
                           ? palette.primaryDim
                           : palette.surfaceHigh,
                         borderRadius: radius.sm,
-                        width: 40,
-                        height: 40,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: spacing.sm,
                       },
                     ]}
                   >
@@ -221,11 +216,25 @@ export default function ServicosScreen() {
                     />
                   </View>
 
-                  {/* Info */}
-                  <View style={{ flex: 1 }}>
-                    <Text style={[typography.label, { color: palette.text }]}>
-                      {s.nome}
-                    </Text>
+                  <View style={{ flex: 1, marginLeft: spacing.sm }}>
+                    <View style={styles.nomeRow}>
+                      <Text
+                        style={[typography.label, { color: palette.text }]}
+                        numberOfLines={1}
+                      >
+                        {nome}
+                      </Text>
+                      {item.exclusivo ? (
+                        <View style={styles.badgeExcl}>
+                          <Text style={styles.badgeExclText}>EXCLUSIVO</Text>
+                        </View>
+                      ) : null}
+                      {!ativo ? (
+                        <View style={styles.badgeOff}>
+                          <Text style={styles.badgeOffText}>NÃO REALIZO</Text>
+                        </View>
+                      ) : null}
+                    </View>
                     <View style={styles.metaRow}>
                       <Feather name="clock" size={10} color="#666666" />
                       <Text
@@ -234,30 +243,44 @@ export default function ServicosScreen() {
                           { color: palette.textMuted },
                         ]}
                       >
-                        {s.duracaoBase}min
+                        {item.duracaoEfetiva}min
                       </Text>
                       <Text style={{ color: "#444444" }}>·</Text>
                       <Text
+                        testID={`servico-preco-${codigo}`}
                         style={[
                           typography.caption,
                           {
-                            color: ativo ? "#aaaaaa" : palette.textMuted,
+                            color: ativo ? ACCENT : palette.textMuted,
                             fontFamily: "JetBrainsMono_400Regular",
                           },
                         ]}
                       >
-                        {formatBRL(s.precoBase)}
+                        {formatBRL(item.precoEfetivo)}
                       </Text>
+                      {precoDiferente ? (
+                        <Text
+                          style={[
+                            typography.caption,
+                            {
+                              color: palette.textMuted,
+                              textDecorationLine: "line-through",
+                              fontFamily: "JetBrainsMono_400Regular",
+                            },
+                          ]}
+                        >
+                          {formatBRL(item.servico.precoBase)}
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
 
-                  {/* Toggle */}
                   <Switch
-                    testID={`servico-toggle-${s.codigo}`}
+                    testID={`servico-toggle-${codigo}`}
                     value={ativo}
-                    onValueChange={(val) => handleToggle(s.codigo, val)}
+                    onValueChange={(val) => handleToggle(codigo, val)}
                     disabled={
-                      isTogglePending && toggleVariables?.codigo === s.codigo
+                      toggle.isPending && toggle.variables?.srvCodigo === codigo
                     }
                     trackColor={{
                       false: palette.border,
@@ -266,33 +289,11 @@ export default function ServicosScreen() {
                     thumbColor={palette.bg}
                   />
                 </View>
-
-                {/* Price chips — só quando ativo */}
-                {ativo ? (
-                  <View
-                    style={[
-                      styles.priceRow,
-                      { borderTopColor: palette.border },
-                    ]}
-                  >
-                    <PriceChip
-                      label="Preço base"
-                      value={formatBRL(s.precoBase)}
-                      sub="da barbearia"
-                    />
-                    <PriceChip
-                      label="Seu preço"
-                      value={formatBRL(s.precoBase)}
-                      sub="cobrado dos clientes"
-                      accent
-                    />
-                  </View>
-                ) : null}
-              </View>
+              </Pressable>
             );
           })}
 
-          {(servicos ?? []).length === 0 && !isLoading ? (
+          {count === 0 ? (
             <Text
               style={[
                 typography.body,
@@ -303,13 +304,12 @@ export default function ServicosScreen() {
                 },
               ]}
             >
-              Nenhum serviço cadastrado.
+              Nenhum serviço disponível.
             </Text>
           ) : null}
         </ScrollView>
       )}
 
-      {/* ── Sticky bottom ── */}
       <View
         style={[
           styles.stickyBottom,
@@ -346,8 +346,75 @@ export default function ServicosScreen() {
 
       <CriarServicoModal
         visible={criarOpen}
+        exclusivo
         onClose={() => setCriarOpen(false)}
       />
+
+      {/* Sheet de edição de preço/duração */}
+      <BottomSheet
+        visible={editando !== null}
+        onClose={() => setEditando(null)}
+        height="content"
+        testID="servico-edit-sheet"
+      >
+        <Text style={[typography.heading, { color: palette.text }]}>
+          {editando?.servico.nome}
+        </Text>
+        <Text
+          style={[
+            typography.caption,
+            { color: palette.textMuted, marginBottom: spacing.md },
+          ]}
+        >
+          Seu preço e duração (deixe o preço vazio para usar o da barbearia)
+        </Text>
+
+        {editErro ? (
+          <Text
+            testID="servico-edit-error"
+            style={[
+              typography.caption,
+              { color: palette.danger, marginBottom: spacing.sm },
+            ]}
+          >
+            {editErro}
+          </Text>
+        ) : null}
+
+        <View style={styles.editRow}>
+          <View style={styles.editCol}>
+            <FormInput
+              label="Seu preço (R$)"
+              placeholder={
+                editando ? formatBRL(editando.servico.precoBase) : "0,00"
+              }
+              keyboardType="decimal-pad"
+              value={precoStr}
+              onChangeText={(t) => setPrecoStr(t.replace(/[^0-9.,]/g, ""))}
+              testID="input-preco-proprio"
+            />
+          </View>
+          <View style={styles.editCol}>
+            <FormInput
+              label="Duração (min)"
+              placeholder="30"
+              keyboardType="number-pad"
+              maxLength={3}
+              value={duracaoStr}
+              onChangeText={(t) => setDuracaoStr(t.replace(/[^0-9]/g, ""))}
+              testID="input-duracao-min"
+            />
+          </View>
+        </View>
+
+        <AmberButton
+          testID="btn-salvar-preco"
+          label="Salvar"
+          icon="check"
+          onPress={handleSalvarPreco}
+          loading={atualizar.isPending}
+        />
+      </BottomSheet>
     </View>
   );
 }
@@ -367,19 +434,44 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   card: {},
   cardRow: { flexDirection: "row", alignItems: "center" },
-  iconBox: {},
-  metaRow: {
+  iconBox: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nomeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 2,
+    flexWrap: "wrap",
   },
-  priceRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
+  badgeExcl: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: ACCENT + "1a",
   },
+  badgeExclText: {
+    fontSize: 8,
+    letterSpacing: 0.8,
+    fontFamily: "Inter_600SemiBold",
+    color: ACCENT,
+  },
+  badgeOff: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: "#ef44441a",
+  },
+  badgeOffText: {
+    fontSize: 8,
+    letterSpacing: 0.8,
+    fontFamily: "Inter_600SemiBold",
+    color: "#ef4444",
+  },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
+  editRow: { flexDirection: "row", gap: 12, marginBottom: 8 },
+  editCol: { flex: 1 },
   stickyBottom: {},
 });

@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ApiError } from "@/src/shared/api/api-client";
 import { useCriarServico } from "@/src/shared/hooks/barbeiro/use-criar-servico";
+import { useCriarServicoExclusivo } from "@/src/shared/hooks/barbeiro/use-criar-servico-exclusivo";
 import { useTheme } from "@/src/shared/theme";
 import { AmberButton, FormErrorBox, FormInput } from "@/src/shared/ui";
 import { createServicoSchema } from "@toqe/contracts";
@@ -32,12 +33,21 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** true = cria um serviço EXCLUSIVO do barbeiro (POST /servicos/barbeiro/:id). */
+  exclusivo?: boolean;
 }
 
-export function CriarServicoModal({ visible, onClose, onSuccess }: Props) {
+export function CriarServicoModal({
+  visible,
+  onClose,
+  onSuccess,
+  exclusivo = false,
+}: Props) {
   const { palette, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  const criar = useCriarServico();
+  const criarBarbearia = useCriarServico();
+  const criarExclusivo = useCriarServicoExclusivo();
+  const criar = exclusivo ? criarExclusivo : criarBarbearia;
 
   const [nome, setNome] = useState("");
   const [precoStr, setPrecoStr] = useState("");
@@ -78,8 +88,14 @@ export function CriarServicoModal({ visible, onClose, onSuccess }: Props) {
       onSuccess?.();
       onClose();
     } catch (e) {
-      if (e instanceof ApiError && e.status === 403) {
-        setErro("Apenas o dono ou gerente pode cadastrar serviços.");
+      if (e instanceof ApiError && e.status === 409) {
+        setErro("Já existe um serviço com esse nome nessa barbearia.");
+      } else if (e instanceof ApiError && e.status === 403) {
+        setErro(
+          exclusivo
+            ? "Você não tem permissão para cadastrar serviços."
+            : "Apenas o dono ou gerente pode cadastrar serviços.",
+        );
       } else {
         setErro("Não foi possível criar o serviço. Tente novamente.");
       }
@@ -113,7 +129,7 @@ export function CriarServicoModal({ visible, onClose, onSuccess }: Props) {
             <View style={styles.headerTitles}>
               <Text style={styles.headerTitle}>Novo serviço</Text>
               <Text style={styles.headerSubtitle}>
-                Disponível para agendamento
+                {exclusivo ? "Exclusivo seu" : "Disponível para agendamento"}
               </Text>
             </View>
             <Pressable
