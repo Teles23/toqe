@@ -9,6 +9,7 @@ import { ServicoService } from '../servico/servico.service';
 import { AgendaService } from '../agenda/agenda.service';
 import { AgendamentoService } from '../agendamento/agendamento.service';
 import { CreatePublicAgendamentoDto } from './dto/create-public-agendamento.dto';
+import { serializeAgendamento } from '../agendamento/serialize-agendamento';
 import { SELECT_USUARIO_PERFIL } from '../common/constants/prisma-selects';
 
 /**
@@ -170,7 +171,7 @@ export class PublicoService {
             dto.inicio,
           );
 
-    return this.agendamentoService.create(
+    const agendamento = await this.agendamentoService.create(
       {
         barbeiroId,
         clienteId: membroCliente.usrCodigo,
@@ -181,6 +182,9 @@ export class PublicoService {
       },
       barbearia.codigo,
     );
+    // Mesmo contrato público dos demais endpoints (cliente.usrCodigo,
+    // itens.preco numérico) — o controller não passa pelo serializer.
+    return serializeAgendamento(agendamento);
   }
 
   private async resolverBarbeiroAuto(

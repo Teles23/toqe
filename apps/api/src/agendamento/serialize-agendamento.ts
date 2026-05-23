@@ -35,24 +35,45 @@ function mapBarbeiro(b: BarbeiroRel) {
   return { usrCodigo: b.codigo, nome: b.nome, avatarUrl: b.avatarUrl ?? null };
 }
 
+type ItemRel = { preco?: unknown; duracao?: unknown }[] | null | undefined;
+
+/**
+ * Normaliza `preco`/`duracao` dos itens para number. O Prisma serializa
+ * `Decimal` como string no JSON (o contrato `AgendamentoItemResponse.preco` é
+ * `number`) — sem isso o front faz `0 + "35"` = `"035"`.
+ */
+function mapItens(itens: ItemRel) {
+  if (!itens) return itens;
+  return itens.map((i) => ({
+    ...i,
+    ...(i.preco != null ? { preco: Number(i.preco) } : {}),
+    ...(i.duracao != null ? { duracao: Number(i.duracao) } : {}),
+  }));
+}
+
 /**
  * Mapeia um agendamento (ou `null`) para o shape público. `email` do cliente é
  * descartado (não faz parte do contrato). Robusto a `cliente`/`barbeiro`
  * ausentes para não quebrar em payloads parciais.
  */
 export function serializeAgendamento<
-  T extends { cliente?: ClienteRel; barbeiro?: BarbeiroRel } | null,
+  T extends {
+    cliente?: ClienteRel;
+    barbeiro?: BarbeiroRel;
+    itens?: ItemRel;
+  } | null,
 >(ag: T) {
   if (!ag) return ag;
   return {
     ...ag,
     cliente: mapCliente(ag.cliente),
     barbeiro: mapBarbeiro(ag.barbeiro),
+    itens: mapItens(ag.itens),
   };
 }
 
 export function serializeAgendamentos<
-  T extends { cliente?: ClienteRel; barbeiro?: BarbeiroRel },
+  T extends { cliente?: ClienteRel; barbeiro?: BarbeiroRel; itens?: ItemRel },
 >(list: T[]) {
   return list.map((a) => serializeAgendamento(a));
 }
