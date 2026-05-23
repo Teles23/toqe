@@ -14,11 +14,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   LayoutAnimation,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
-  UIManager,
   View,
 } from "react-native";
 
@@ -29,13 +27,9 @@ import { useFilaDia } from "@/src/shared/hooks/barbeiro/use-fila-dia";
 import { useToast } from "@/src/shared/hooks/use-toast";
 import { useUpdateStatus } from "@/src/shared/hooks/barbeiro/use-update-status";
 
-// Habilita LayoutAnimation no Android (no-op em iOS/Fabric, onde já é nativo).
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+// LayoutAnimation já vem habilitado na New Architecture (Fabric) — não é mais
+// preciso chamar UIManager.setLayoutAnimationEnabledExperimental (era no-op e
+// gerava warning). `LayoutAnimation.configureNext` segue usado no toggle.
 
 // Resumo curto do serviço de um agendamento (para o preview colapsado).
 function resumoServico(
