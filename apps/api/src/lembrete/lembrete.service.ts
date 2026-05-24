@@ -13,6 +13,13 @@ const LEMBRETE_INCLUDE = {
   itens: { include: { servico: { select: { nome: true } } } },
 } as const;
 
+const NO_SHOW_INCLUDE = {
+  barbeiro: { select: { codigo: true, nome: true } },
+  barbearia: { select: { nome: true } },
+  cliente: { select: { nome: true } },
+  contato: { select: { nome: true } },
+} as const;
+
 @Injectable()
 export class LembreteService {
   private readonly logger = new Logger(LembreteService.name);
@@ -63,6 +70,50 @@ export class LembreteService {
       ...para24h.map((ag) => this.enviar(ag, '24h')),
       ...para2h.map((ag) => this.enviar(ag, '2h')),
     ]);
+  }
+
+  @Cron('0 */30 * * * *')
+  async detectarNoShows(): Promise<void> {
+    this.logger.log('No-shows: iniciando varredura');
+    const agora = new Date();
+
+    const candidatos = await this.prisma.agendamento.findMany({
+      where: {
+        fim: { lt: agora },
+        status: { in: ['PENDENTE', 'CONFIRMADO'] },
+      },
+      include: NO_SHOW_INCLUDE,
+    });
+
+    for (const ag of candidatos) {
+      try {
+        await this.prisma.agendamento.update({
+          where: { codigo: ag.codigo },
+          data: { status: 'NO_SHOW' },
+        });
+
+        const clienteNome = ag.cliente?.nome ?? ag.contato?.nome ?? 'Cliente';
+        const horario = ag.fim.toLocaleString('pt-BR', {
+          timeZone: 'America/Sao_Paulo',
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        await this.pushService.send(
+          ag.barbeiro.codigo,
+          'No-show detectado',
+          `${clienteNome} não compareceu às ${horario} — ${ag.barbearia.nome}`,
+        );
+
+        this.logger.log(`No-show detectado: agendamento #${ag.codigo}`);
+      } catch (err) {
+        this.logger.error(
+          `Falha ao processar no-show para agendamento #${ag.codigo}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
   }
 
   private async enviar(

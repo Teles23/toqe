@@ -197,4 +197,88 @@ describe('LembreteService', () => {
       expect(mockPushService.send).toHaveBeenCalled();
     });
   });
+
+  describe('detectarNoShows', () => {
+    function makeNoShowAgendamento(overrides: Record<string, unknown> = {}) {
+      return {
+        codigo: 42,
+        fim: new Date('2026-05-24T09:00:00Z'),
+        status: 'CONFIRMADO',
+        barbeiro: { codigo: 5, nome: 'Pedro' },
+        barbearia: { nome: 'BarberShop' },
+        cliente: { nome: 'João' },
+        contato: null,
+        ...overrides,
+      };
+    }
+
+    it('não processa quando não há candidatos', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      await expect(service.detectarNoShows()).resolves.toBeUndefined();
+
+      expect(mockPrisma.agendamento.update).not.toHaveBeenCalled();
+      expect(mockPushService.send).not.toHaveBeenCalled();
+    });
+
+    it('marca agendamento como NO_SHOW e envia push ao barbeiro', async () => {
+      const ag = makeNoShowAgendamento();
+      mockPrisma.agendamento.findMany.mockResolvedValue([ag]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...ag,
+        status: 'NO_SHOW',
+      });
+
+      await service.detectarNoShows();
+
+      expect(mockPrisma.agendamento.update).toHaveBeenCalledWith({
+        where: { codigo: 42 },
+        data: { status: 'NO_SHOW' },
+      });
+      expect(mockPushService.send).toHaveBeenCalledWith(
+        5,
+        'No-show detectado',
+        expect.stringContaining('João'),
+      );
+      expect(mockPushService.send).toHaveBeenCalledWith(
+        5,
+        'No-show detectado',
+        expect.stringContaining('BarberShop'),
+      );
+    });
+
+    it('usa nome do contato como fallback quando cliente é null', async () => {
+      const ag = makeNoShowAgendamento({
+        cliente: null,
+        contato: { nome: 'Walk-in' },
+      });
+      mockPrisma.agendamento.findMany.mockResolvedValue([ag]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...ag,
+        status: 'NO_SHOW',
+      });
+
+      await service.detectarNoShows();
+
+      expect(mockPushService.send).toHaveBeenCalledWith(
+        5,
+        'No-show detectado',
+        expect.stringContaining('Walk-in'),
+      );
+    });
+
+    it('erro em um não impede processamento dos demais', async () => {
+      const ag1 = makeNoShowAgendamento({ codigo: 100 });
+      const ag2 = makeNoShowAgendamento({ codigo: 200 });
+      mockPrisma.agendamento.findMany.mockResolvedValue([ag1, ag2]);
+      mockPrisma.agendamento.update
+        .mockRejectedValueOnce(new Error('DB error'))
+        .mockResolvedValueOnce({ ...ag2, status: 'NO_SHOW' });
+
+      await expect(service.detectarNoShows()).resolves.toBeUndefined();
+
+      expect(mockPrisma.agendamento.update).toHaveBeenCalledTimes(2);
+      expect(mockPushService.send).toHaveBeenCalledTimes(1);
+    });
+  });
 });
