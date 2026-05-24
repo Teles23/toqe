@@ -73,6 +73,37 @@ export class AgendamentoService {
     const isWalkIn = tipo === 'WALK_IN';
 
     const agendamento = await this.prisma.$transaction(async (tx) => {
+      // Enforcement: checar limite de agendamentos do mês
+      const bar = await tx.barbearia.findUniqueOrThrow({
+        where: { codigo: barCodigo },
+        select: { plano: true },
+      });
+      const limite = await tx.planoLimite.findUnique({
+        where: { plano: bar.plano },
+        select: { maxAgdMes: true },
+      });
+      if (limite?.maxAgdMes != null) {
+        const agora = new Date();
+        const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+        const fimMes = new Date(
+          agora.getFullYear(),
+          agora.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+        const qtd = await tx.agendamento.count({
+          where: { barCodigo, inicio: { gte: inicioMes, lte: fimMes } },
+        });
+        if (qtd >= limite.maxAgdMes) {
+          throw new ForbiddenException(
+            `Limite de ${limite.maxAgdMes} agendamento(s) por mês atingido`,
+          );
+        }
+      }
+
       // Walk-ins coexistem com agendamentos do mesmo horário por design —
       // são fila paralela ao calendário; o barbeiro decide ordem manualmente.
       // Conflict check só vale para agendamentos com horário marcado (AGENDADO/ENCAIXE).
@@ -210,6 +241,8 @@ export class AgendamentoService {
       agendamentoCodigo: agendamento.codigo,
       clienteNome,
       clienteEmail,
+      clienteUsrCodigo: agendamento.cliente?.codigo,
+      barbeiroUsrCodigo: agendamento.barbeiro.codigo,
       barbeiroNome: agendamento.barbeiro.nome,
       barbeariaNome: agendamento.barbearia.nome,
       inicio: agendamento.inicio.toISOString(),
