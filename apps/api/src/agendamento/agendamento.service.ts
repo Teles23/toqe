@@ -243,6 +243,7 @@ export class AgendamentoService {
       clienteEmail,
       clienteUsrCodigo: agendamento.cliente?.codigo,
       barbeiroUsrCodigo: agendamento.barbeiro.codigo,
+      barCodigo: agendamento.barCodigo,
       barbeiroNome: agendamento.barbeiro.nome,
       barbeariaNome: agendamento.barbearia.nome,
       inicio: agendamento.inicio.toISOString(),
