@@ -25,7 +25,12 @@ function makeAgendamento(
     inicio: "2024-06-01T09:00:00.000Z",
     fim: "2024-06-01T09:30:00.000Z",
     status: "confirmado",
-    cliente: { codigo: 5, nome: "João Silva", email: "j@test.com" },
+    cliente: {
+      codigo: 5,
+      nome: "João Silva",
+      tipo: "usuario",
+      email: "j@test.com",
+    },
     barbeiro: { codigo: 1, nome: "Carlos" },
     itens: [
       { servico: { nome: "Corte" }, duracaoMin: 30 },
