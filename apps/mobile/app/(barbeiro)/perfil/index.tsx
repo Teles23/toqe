@@ -322,14 +322,15 @@ export default function PerfilIndexScreen() {
   const roleLabel = perfil ? (ROLE_LABEL[perfil] ?? perfil) : "barbeiro";
   const temMultiBarbearia = barbearias.length > 1;
 
-  // Formatar valores de stats
+  // Formatar valores de stats.
+  // API retorna faturamento/ticketMedio em centavos e presença como decimal 0-1.
   const faturamentoStr =
     barbeiroStats?.faturamento != null
-      ? `R$ ${Math.round(barbeiroStats.faturamento).toLocaleString("pt-BR")}`
+      ? `R$ ${Math.round(barbeiroStats.faturamento / 100).toLocaleString("pt-BR")}`
       : "—";
   const ticketStr =
     barbeiroStats?.ticketMedio != null
-      ? `R$ ${Math.round(barbeiroStats.ticketMedio).toLocaleString("pt-BR")}`
+      ? `R$ ${Math.round(barbeiroStats.ticketMedio / 100).toLocaleString("pt-BR")}`
       : "—";
   const cortesStr =
     barbeiroStats?.atendimentos != null
@@ -337,11 +338,11 @@ export default function PerfilIndexScreen() {
       : "—";
   const presencaStr =
     barbeiroStats?.presenca != null
-      ? `${Math.round(barbeiroStats.presenca)}%`
+      ? `${Math.round(barbeiroStats.presenca * 100)}%`
       : "—";
   const noShowStr =
     barbeiroStats?.presenca != null
-      ? String(Math.round(100 - barbeiroStats.presenca))
+      ? String(Math.round(100 - barbeiroStats.presenca * 100))
       : "0";
 
   return (
