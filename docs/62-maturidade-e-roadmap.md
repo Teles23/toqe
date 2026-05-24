@@ -1,8 +1,8 @@
 # 62 — Maturidade do produto e roadmap de sprints
 
 **Documento:** Referência viva — atualizar a cada sprint concluída  
-**Data base:** 22/05/2026  
-**Branch de referência:** develop
+**Data base:** 24/05/2026  
+**Branch de referência:** claude/header-refresh-standardize-opHyl
 
 ---
 
@@ -17,143 +17,126 @@
 
 ## 1. Backend — API NestJS
 
-| Módulo                                    | Status           | Observação                                                                                                                                   |
-| ----------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Auth (login, register, Google OAuth)      | **Maduro**       | JWT, refresh rotativo, bcrypt                                                                                                                |
-| Auth — 2FA TOTP                           | **Maduro**       | Setup, enable, disable, verify                                                                                                               |
-| Auth — sessões múltiplas e revogação      | **Maduro**       | GET/DELETE /auth/sessions                                                                                                                    |
-| Auth — reset de senha por email           | **Maduro**       | Resend + token com expiração                                                                                                                 |
-| Barbearia — CRUD + horários + logo        | **Maduro**       | Upload via multipart                                                                                                                         |
-| Barbearia — membros + convite             | **Maduro**       | Convite com auto-login (doc 57)                                                                                                              |
-| Tema/White-label                          | **Maduro**       | Cores, logo, subdomínio por tenant                                                                                                           |
-| Agendamento — CRUD + ciclo de status      | **Maduro**       | PENDENTE→CONFIRMADO→EM_ANDAMENTO→CONCLUIDO                                                                                                   |
-| Agendamento — Walk-in transacional        | **Maduro**       | Endpoint dedicado, atomic                                                                                                                    |
-| Agendamento — avaliação pós-atendimento   | **Maduro**       | AvaliacaoAgendamento 1–5                                                                                                                     |
-| Agenda — jornada semanal transacional     | **Maduro**       | PUT 7 dias, atomic (doc 61)                                                                                                                  |
-| Agenda — bloqueios de agenda              | **Maduro**       | BloqueioAgenda com recorrência flag                                                                                                          |
-| Agenda — disponibilidade + slots          | **Maduro**       | GET /disponibilidade/:barbeiroId                                                                                                             |
-| Agenda — WebSocket gateway                | **Parcial**      | Gateway emite `agendamento:criado` e `agendamento:status`, mas **nenhum cliente (web/mobile) consome os eventos**                            |
-| Serviços — CRUD + preços por barbeiro     | **Maduro**       | BarbeiroServico com preço/duração próprios                                                                                                   |
-| Dashboard — KPIs + live metrics           | **Maduro**       | Faturamento, agendamentos, barbeiros ativos, serviços populares                                                                              |
-| Relatórios — 5 tipos                      | **Maduro**       | Faturamento, agendamentos, serviços, barbeiros, horários pico                                                                                |
-| Notificações — email via Resend/BullMQ    | **Maduro**       | Confirmação de agendamento + reset de senha                                                                                                  |
-| Notificações — push (envio pelo servidor) | **Parcial**      | Token é salvo em `TQE_PUSH_TOKEN`, mas **a API não tem expo-server-sdk** — o consumer BullMQ só envia email, nunca dispara push              |
-| Notificações — WhatsApp / SMS             | **Falta no MVP** | Tabela de preferências existe (canal = 'whatsapp'/'sms'), mas zero lógica de envio implementada                                              |
-| Lembretes automáticos (cron)              | **Falta no MVP** | Nenhum job periódico existe — cliente nunca recebe lembrete antes do horário                                                                 |
-| Push Token — registro/delete              | **Maduro**       | Upsert por (usrCodigo, token)                                                                                                                |
-| Cliente Nota — notas privadas             | **Maduro**       | TQE_CLIENTE_NOTA (doc 59)                                                                                                                    |
-| Booking público (/b/:slug)                | **Maduro**       | Servicos, barbeiros, slots, criar agendamento                                                                                                |
-| Link público do barbeiro                  | **Maduro**       | Pré-seleciona barbeiro no booking público                                                                                                    |
-| Super Admin                               | **Maduro**       | MRR, barbearias, plano, status                                                                                                               |
-| Feature flag por plano                    | **Maduro**       | FeatureFlagGuard — bloqueia `relatoriosAdv`, `whiteLabel`, `apiPublica`                                                                      |
-| Enforcement de limites numéricos          | **Parcial**      | `maxBarbeiros` e `maxAgdMes` estão na tabela `TQE_PLANO_LIMITE` mas **nenhum service verifica esses limites** ao criar membro ou agendamento |
-| Gateway de pagamento                      | **Falta no MVP** | Plano é alterado manualmente via admin. Sem Stripe/Asaas/Pix                                                                                 |
-| Health checks                             | **Maduro**       | /health/live, /health/ready, /health/stats                                                                                                   |
-| Observabilidade (logs pino + Sentry)      | **Maduro**       | Structured logs + error tracking                                                                                                             |
+| Módulo                                    | Status           | Observação                                                                                                                             |
+| ----------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth (login, register, Google OAuth)      | **Maduro**       | JWT, refresh rotativo, bcrypt                                                                                                          |
+| Auth — 2FA TOTP                           | **Maduro**       | Setup, enable, disable, verify                                                                                                         |
+| Auth — sessões múltiplas e revogação      | **Maduro**       | GET/DELETE /auth/sessions                                                                                                              |
+| Auth — reset de senha por email           | **Maduro**       | Resend + token com expiração                                                                                                           |
+| Barbearia — CRUD + horários + logo        | **Maduro**       | Upload via multipart                                                                                                                   |
+| Barbearia — membros + convite             | **Maduro**       | Convite com auto-login (doc 57)                                                                                                        |
+| Tema/White-label                          | **Maduro**       | Cores, logo, subdomínio por tenant                                                                                                     |
+| Agendamento — CRUD + ciclo de status      | **Maduro**       | PENDENTE→CONFIRMADO→EM_ANDAMENTO→CONCLUIDO                                                                                             |
+| Agendamento — Walk-in transacional        | **Maduro**       | Endpoint dedicado, atomic                                                                                                              |
+| Agendamento — avaliação pós-atendimento   | **Maduro**       | AvaliacaoAgendamento 1–5                                                                                                               |
+| Agenda — jornada semanal transacional     | **Maduro**       | PUT 7 dias, atomic (doc 61)                                                                                                            |
+| Agenda — bloqueios de agenda              | **Maduro**       | BloqueioAgenda com recorrência flag                                                                                                    |
+| Agenda — disponibilidade + slots          | **Maduro**       | GET /disponibilidade/:barbeiroId                                                                                                       |
+| Agenda — WebSocket gateway                | **Maduro**       | Gateway emite `agendamento:criado` e `agendamento:status`; web e mobile consomem eventos (Sprint A2/A3)                                |
+| Serviços — CRUD + preços por barbeiro     | **Maduro**       | BarbeiroServico com preço/duração próprios                                                                                             |
+| Dashboard — KPIs + live metrics           | **Maduro**       | Faturamento, agendamentos, barbeiros ativos, serviços populares                                                                        |
+| Relatórios — 5 tipos                      | **Maduro**       | Faturamento, agendamentos, serviços, barbeiros, horários pico                                                                          |
+| Notificações — email via Resend/BullMQ    | **Maduro**       | Confirmação de agendamento + reset de senha                                                                                            |
+| Notificações — push (envio pelo servidor) | **Maduro**       | `PushNotificationService` com expo-server-sdk; consumer BullMQ envia push ao cliente e barbeiro após confirmação (Sprint A1)           |
+| Notificações — WhatsApp / SMS             | **Falta no MVP** | Tabela de preferências existe (canal = 'whatsapp'/'sms'), mas zero lógica de envio implementada                                        |
+| Lembretes automáticos (cron)              | **Maduro**       | `LembreteService` com `@Cron` a cada 30min; janelas 24h e 2h; push + email; flags `lembrete24hEnviado`/`lembrete2hEnviado` (Sprint A6) |
+| Push Token — registro/delete              | **Maduro**       | Upsert por (usrCodigo, token)                                                                                                          |
+| Cliente Nota — notas privadas             | **Maduro**       | TQE_CLIENTE_NOTA (doc 59)                                                                                                              |
+| Booking público (/b/:slug)                | **Maduro**       | Servicos, barbeiros, slots, criar agendamento                                                                                          |
+| Link público do barbeiro                  | **Maduro**       | Pré-seleciona barbeiro no booking público                                                                                              |
+| Super Admin                               | **Maduro**       | MRR, barbearias, plano, status                                                                                                         |
+| Feature flag por plano                    | **Maduro**       | FeatureFlagGuard — bloqueia `relatoriosAdv`, `whiteLabel`, `apiPublica`                                                                |
+| Enforcement de limites numéricos          | **Maduro**       | `MembroBarbeariaService` verifica `maxBarbeiros`; `AgendamentoService` verifica `maxAgdMes` dentro da transação (Sprint A5)            |
+| Gateway de pagamento                      | **Falta no MVP** | Plano é alterado manualmente via admin. Sem Stripe/Asaas/Pix                                                                           |
+| Health checks                             | **Maduro**       | /health/live, /health/ready, /health/stats                                                                                             |
+| Observabilidade (logs pino + Sentry)      | **Maduro**       | Structured logs + error tracking                                                                                                       |
 
 ---
 
 ## 2. Frontend Web — Next.js
 
-| Feature / Página                          | Status           | Observação                                                                                          |
-| ----------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------- |
-| Login + Google OAuth                      | **Maduro**       |                                                                                                     |
-| Onboarding (criar barbearia)              | **Maduro**       |                                                                                                     |
-| Reset de senha                            | **Maduro**       |                                                                                                     |
-| Dashboard                                 | **Maduro**       | KPIs, gráficos, live metrics                                                                        |
-| Agenda — visualização + AgendamentoModal  | **Maduro**       |                                                                                                     |
-| Agenda — tempo real (WebSocket)           | **Parcial**      | Gateway existe na API mas **web não tem socket.io-client** — nenhuma conexão é feita                |
-| Barbeiros — cadastro + jornada + serviços | **Maduro**       |                                                                                                     |
-| Clientes — listagem + histórico           | **Maduro**       |                                                                                                     |
-| Clientes — notas privadas (web)           | **Falta no MVP** | A tela de detalhe do cliente existe, mas **não há campo de nota** no web — só no mobile             |
-| Serviços — CRUD                           | **Maduro**       |                                                                                                     |
-| Relatórios — 5 charts                     | **Maduro**       |                                                                                                     |
-| Configurações — dados da barbearia        | **Maduro**       |                                                                                                     |
-| Configurações — horários de funcionamento | **Maduro**       |                                                                                                     |
-| Configurações — notificações              | **Parcial**      | UI funcional e salva preferências, mas os canais WhatsApp/SMS não têm efeito no backend             |
-| Configurações — Plano & Faturamento       | **Parcial**      | UI exibe os planos disponíveis mas **não há botão de upgrade funcional** — sem gateway de pagamento |
-| Booking público (/b/[slug])               | **Maduro**       |                                                                                                     |
-| Super Admin                               | **Maduro**       | Overview, revenue, tenants, health                                                                  |
+| Feature / Página                          | Status      | Observação                                                                                          |
+| ----------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| Login + Google OAuth                      | **Maduro**  |                                                                                                     |
+| Onboarding (criar barbearia)              | **Maduro**  |                                                                                                     |
+| Reset de senha                            | **Maduro**  |                                                                                                     |
+| Dashboard                                 | **Maduro**  | KPIs, gráficos, live metrics                                                                        |
+| Agenda — visualização + AgendamentoModal  | **Maduro**  |                                                                                                     |
+| Agenda — tempo real (WebSocket)           | **Maduro**  | `useAgendaSocket` invalida query de agendamentos nos eventos `criado`/`status` (Sprint A2)          |
+| Barbeiros — cadastro + jornada + serviços | **Maduro**  |                                                                                                     |
+| Clientes — listagem + histórico           | **Maduro**  |                                                                                                     |
+| Clientes — notas privadas (web)           | **Maduro**  | `ClienteDetalhe.tsx` com editor de nota via `useClienteNota` hook + MSW handlers (Sprint A4)        |
+| Serviços — CRUD                           | **Maduro**  |                                                                                                     |
+| Relatórios — 5 charts                     | **Maduro**  |                                                                                                     |
+| Configurações — dados da barbearia        | **Maduro**  |                                                                                                     |
+| Configurações — horários de funcionamento | **Maduro**  |                                                                                                     |
+| Configurações — notificações              | **Parcial** | UI funcional e salva preferências, mas os canais WhatsApp/SMS não têm efeito no backend             |
+| Configurações — Plano & Faturamento       | **Parcial** | UI exibe os planos disponíveis mas **não há botão de upgrade funcional** — sem gateway de pagamento |
+| Booking público (/b/[slug])               | **Maduro**  |                                                                                                     |
+| Super Admin                               | **Maduro**  | Overview, revenue, tenants, health                                                                  |
 
 ---
 
 ## 3. App Mobile — React Native / Expo
 
-| Feature / Tela                                                    | Status      | Observação                                                                 |
-| ----------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------- |
-| Login email/senha + Google OAuth                                  | **Maduro**  |                                                                            |
-| Cadastro                                                          | **Maduro**  |                                                                            |
-| Onboarding (escolha de perfil)                                    | **Maduro**  |                                                                            |
-| Convite com auto-login                                            | **Maduro**  |                                                                            |
-| **BARBEIRO — Agenda diária**                                      | **Maduro**  | Walk-in, iniciar/concluir, EM_ANDAMENTO                                    |
-| **BARBEIRO — Clientes + notas privadas**                          | **Maduro**  | Nota persistida via API (doc 59)                                           |
-| **BARBEIRO — Jornada semanal**                                    | **Maduro**  | PUT transacional 7 dias (doc 61)                                           |
-| **BARBEIRO — Serviços e preços**                                  | **Maduro**  |                                                                            |
-| **BARBEIRO — Perfil (editar, senha, 2FA, sessões, notificações)** | **Maduro**  |                                                                            |
-| **CLIENTE — Home**                                                | **Maduro**  |                                                                            |
-| **CLIENTE — Buscar barbearia**                                    | **Maduro**  |                                                                            |
-| **CLIENTE — QR Code**                                             | **Maduro**  |                                                                            |
-| **CLIENTE — Booking completo**                                    | **Maduro**  | Serviço → Barbeiro → Slot → Confirmar                                      |
-| **CLIENTE — Histórico de agendamentos**                           | **Maduro**  |                                                                            |
-| **CLIENTE — Detalhe + avaliação**                                 | **Maduro**  |                                                                            |
-| **CLIENTE — Cancelar agendamento**                                | **Maduro**  | PATCH /agendamentos/:codigo/status → cancelado                             |
-| **CLIENTE — Perfil (editar, senha, 2FA, sessões, notificações)**  | **Maduro**  |                                                                            |
-| Push notifications — receber                                      | **Maduro**  | expo-notifications + token registration funcionando                        |
-| Push notifications — servidor dispara                             | **Parcial** | Token registrado, servidor **não envia** push (sem expo-server-sdk na API) |
-| Tempo real (WebSocket)                                            | **Parcial** | Não há socket.io-client no mobile                                          |
+| Feature / Tela                                                    | Status     | Observação                                                                             |
+| ----------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------- |
+| Login email/senha + Google OAuth                                  | **Maduro** |                                                                                        |
+| Cadastro                                                          | **Maduro** |                                                                                        |
+| Onboarding (escolha de perfil)                                    | **Maduro** |                                                                                        |
+| Convite com auto-login                                            | **Maduro** |                                                                                        |
+| **BARBEIRO — Agenda diária**                                      | **Maduro** | Walk-in, iniciar/concluir, EM_ANDAMENTO                                                |
+| **BARBEIRO — Clientes + notas privadas**                          | **Maduro** | Nota persistida via API (doc 59)                                                       |
+| **BARBEIRO — Jornada semanal**                                    | **Maduro** | PUT transacional 7 dias (doc 61)                                                       |
+| **BARBEIRO — Serviços e preços**                                  | **Maduro** |                                                                                        |
+| **BARBEIRO — Perfil (editar, senha, 2FA, sessões, notificações)** | **Maduro** |                                                                                        |
+| **CLIENTE — Home**                                                | **Maduro** |                                                                                        |
+| **CLIENTE — Buscar barbearia**                                    | **Maduro** |                                                                                        |
+| **CLIENTE — QR Code**                                             | **Maduro** |                                                                                        |
+| **CLIENTE — Booking completo**                                    | **Maduro** | Serviço → Barbeiro → Slot → Confirmar                                                  |
+| **CLIENTE — Histórico de agendamentos**                           | **Maduro** |                                                                                        |
+| **CLIENTE — Detalhe + avaliação**                                 | **Maduro** |                                                                                        |
+| **CLIENTE — Cancelar agendamento**                                | **Maduro** | PATCH /agendamentos/:codigo/status → cancelado                                         |
+| **CLIENTE — Perfil (editar, senha, 2FA, sessões, notificações)**  | **Maduro** |                                                                                        |
+| Push notifications — receber                                      | **Maduro** | expo-notifications + token registration funcionando                                    |
+| Push notifications — servidor dispara                             | **Maduro** | API com expo-server-sdk; push ao cliente e barbeiro após confirmação (Sprint A1)       |
+| Tempo real (WebSocket)                                            | **Maduro** | `useAgendaSocket` conecta ao namespace `/agenda`, invalida cache na agenda (Sprint A3) |
 
 ---
 
 ## 4. O que falta para o MVP estar completo
 
-Estes são os 5 itens que impedem considerar o produto "completo" para o primeiro cliente pagante:
+~~Estes são os 5 itens que impedem considerar o produto "completo" para o primeiro cliente pagante.~~
 
-### 4.1 Push notifications end-to-end `[ALTA]`
+**✅ Sprint A concluída em 24/05/2026 — todos os gaps do MVP foram fechados.**
 
-Token é salvo, mas o servidor nunca dispara. O cliente não recebe nada no celular quando o agendamento é confirmado, alterado ou cancelado.
+| #   | Item                            | Status                                         |
+| --- | ------------------------------- | ---------------------------------------------- |
+| A1  | Push notifications end-to-end   | ✅ `PushNotificationService` + expo-server-sdk |
+| A2  | WebSocket no web                | ✅ `useAgendaSocket` em `AgendaView`           |
+| A3  | WebSocket no mobile             | ✅ `useAgendaSocket` na agenda do barbeiro     |
+| A4  | Notas privadas no portal web    | ✅ `ClienteDetalhe` + `useClienteNota`         |
+| A5  | Enforcement de limites de plano | ✅ `maxBarbeiros` + `maxAgdMes` verificados    |
+| A6  | Lembretes automáticos (cron)    | ✅ `LembreteService` @Cron 30min               |
 
-**O que falta:** instalar `expo-server-sdk` na API, criar `PushNotificationService`, e no consumer BullMQ enviar push para os tokens do cliente e do barbeiro após cada evento relevante.
-
-### 4.2 WebSocket consumido no web e mobile `[ALTA]`
-
-O gateway emite `agendamento:criado` e `agendamento:status` corretamente, mas ninguém escuta. O dono que está na tela de agenda só vê mudanças ao recarregar a página.
-
-**O que falta:** no web, criar hook `useAgendaSocket` com `socket.io-client` que invalida a query de agendamentos ao receber evento. No mobile (barbeiro), conectar na tela de agenda.
-
-### 4.3 Notas privadas no portal web `[MÉDIA]`
-
-O barbeiro no celular vê e edita notas de clientes, mas no portal web a tela de detalhe do cliente não tem esse campo. Inconsistência que vai confundir na demo.
-
-**O que falta:** adicionar campo de nota na `ClienteDetalhe.tsx` web usando os mesmos endpoints `GET/PUT /clientes/:clienteId/nota`.
-
-### 4.4 Enforcement de limites de plano `[MÉDIA]`
-
-`maxBarbeiros` e `maxAgdMes` estão definidos na tabela mas nenhum service os verifica. Um plano Starter (limite de 2 barbeiros) pode ter 50 cadastrados hoje sem nenhum bloqueio.
-
-**O que falta:** no `MembroBarbeariaService.addMembro()`, verificar `maxBarbeiros`. No `AgendamentoService.create()`, verificar `maxAgdMes` contra agendamentos do mês corrente.
-
-### 4.5 Lembretes automáticos (cron) `[MÉDIA]`
-
-Não há nenhum job periódico. O cliente que agendou às 9h recebe o email de confirmação, mas nunca um lembrete "amanhã às 14h é seu horário". Isso aumenta no-shows — o maior problema de barbearia.
-
-**O que falta:** criar `LembreteModule` com um `@Cron` que roda a cada 30min, busca agendamentos nas próximas 24h com status CONFIRMADO ou PENDENTE, e envia push + email para os clientes.
+O produto agora tem ciclo de vida completo: cliente agenda → recebe push → aparece → é atendido → avalia → dono vê em tempo real. O próximo foco é Sprint B (retenção) ou Sprint C (monetização).
 
 ---
 
 ## 5. Roadmap por sprints — pós-MVP
 
-### Sprint A — Completar o núcleo (1–2 semanas)
+### ~~Sprint A — Completar o núcleo~~ ✅ Concluída em 24/05/2026
 
 **Objetivo:** fechar os gaps do MVP listados acima.
 
-| #   | Feature                                                           | Esforço | Impacto |
-| --- | ----------------------------------------------------------------- | ------- | ------- |
-| A1  | Push notifications end-to-end (expo-server-sdk na API + consumer) | M       | Alto    |
-| A2  | WebSocket no web — hook `useAgendaSocket` na tela de agenda       | P       | Alto    |
-| A3  | WebSocket no mobile — barbeiro vê agenda atualizar em tempo real  | P       | Alto    |
-| A4  | Notas privadas do cliente no portal web                           | P       | Médio   |
-| A5  | Enforcement `maxBarbeiros` e `maxAgdMes` no service               | P       | Médio   |
-| A6  | Cron de lembretes automáticos (24h antes + 2h antes)              | M       | Alto    |
+| #   | Feature                                                           | Esforço | Impacto | Status |
+| --- | ----------------------------------------------------------------- | ------- | ------- | ------ |
+| A1  | Push notifications end-to-end (expo-server-sdk na API + consumer) | M       | Alto    | ✅     |
+| A2  | WebSocket no web — hook `useAgendaSocket` na tela de agenda       | P       | Alto    | ✅     |
+| A3  | WebSocket no mobile — barbeiro vê agenda atualizar em tempo real  | P       | Alto    | ✅     |
+| A4  | Notas privadas do cliente no portal web                           | P       | Médio   | ✅     |
+| A5  | Enforcement `maxBarbeiros` e `maxAgdMes` no service               | P       | Médio   | ✅     |
+| A6  | Cron de lembretes automáticos (24h antes + 2h antes)              | M       | Alto    | ✅     |
 
 ---
 
