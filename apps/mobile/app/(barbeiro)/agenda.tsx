@@ -335,18 +335,10 @@ export default function BarbeiroAgendaScreen() {
     ? "Hoje"
     : format(selectedDate, "EEEE", { locale: ptBR });
 
-  // Header + stats + fila vivem no ListHeaderComponent do FlatList: assim o
-  // pull-to-refresh responde ao puxar do topo da tela (não só sobre a lista),
-  // e o conteúdo todo rola junto. Bug UX: gesto não respondia no header.
-  const listHeader = (
-    <>
-      {/* Header */}
-      <View
-        style={[
-          styles.headerWrap,
-          { paddingHorizontal: spacing.md, paddingTop: insets.top + 10 },
-        ]}
-      >
+  return (
+    <View style={[styles.container, { backgroundColor: palette.bg }]}>
+      {/* Header fixo — não rola com a lista */}
+      <View style={[styles.headerWrap, { paddingTop: insets.top + 10, paddingHorizontal: spacing.md }]}>
         {/* Linha 1: título da tela + sino de notificações */}
         <View style={styles.titleRow}>
           <Text style={styles.screenTitle}>Sua agenda</Text>
@@ -361,7 +353,7 @@ export default function BarbeiroAgendaScreen() {
           </Pressable>
         </View>
 
-        {/* Pill da barbearia ativa — sempre visível; troca só com 2+ vínculos */}
+        {/* Pill da barbearia ativa */}
         {barbearia && (
           <Pressable
             testID="btn-tenant-switcher"
@@ -394,7 +386,7 @@ export default function BarbeiroAgendaScreen() {
           </Pressable>
         )}
 
-        {/* Navegação de dias — ‹ dia · data › (tap no centro volta para hoje) */}
+        {/* Navegação de dias */}
         <View style={styles.dayNav}>
           <Pressable
             onPress={goPrev}
@@ -419,7 +411,6 @@ export default function BarbeiroAgendaScreen() {
             </Text>
             <View style={styles.dateRow}>
               <Feather name="calendar" size={12} color="#888888" />
-              {/* hojeShort inclui dia abreviado + data: "qui, 21 de mai" */}
               <Text style={styles.dateText} numberOfLines={1}>
                 {hojeShort}
               </Text>
@@ -437,21 +428,7 @@ export default function BarbeiroAgendaScreen() {
         </View>
       </View>
 
-      {/* Stats strip — só quando há dados */}
-      {data && data.length > 0 && <StatsStrip apts={data} />}
-
-      {/* Fila de walk-ins — banner colapsável no topo (só hoje) */}
-      {isSameDay(selectedDate, new Date()) && (
-        <View style={{ paddingHorizontal: spacing.md }}>
-          <FilaSection />
-        </View>
-      )}
-    </>
-  );
-
-  return (
-    <View style={[styles.container, { backgroundColor: palette.bg }]}>
-      {/* Lista principal (header/stats/fila no ListHeaderComponent) */}
+      {/* Lista principal (stats/fila no ListHeaderComponent; rola com o conteúdo) */}
       <DataListWrapper
         testID="lista-agendamentos"
         data={data}
@@ -459,8 +436,16 @@ export default function BarbeiroAgendaScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
-        refreshProgressViewOffset={insets.top}
-        ListHeaderComponent={listHeader}
+        ListHeaderComponent={
+          <>
+            {data && data.length > 0 && <StatsStrip apts={data} />}
+            {isSameDay(selectedDate, new Date()) && (
+              <View style={{ paddingHorizontal: spacing.md }}>
+                <FilaSection />
+              </View>
+            )}
+          </>
+        }
         loadingComponent={<ListSkeleton testID="agenda-skeleton" />}
         contentContainerStyle={{
           paddingHorizontal: 0,
@@ -575,7 +560,6 @@ export default function BarbeiroAgendaScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   headerWrap: {
-    paddingTop: 10,
     paddingBottom: 8,
     flexShrink: 0,
   },

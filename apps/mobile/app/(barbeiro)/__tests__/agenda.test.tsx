@@ -541,4 +541,13 @@ describe("BarbeiroAgendaScreen", () => {
       );
     });
   });
+
+  it("header fixo: 'Sua agenda' está sempre visível (não está no ListHeaderComponent)", async () => {
+    setupFetch({ dia: [] });
+    renderScreen();
+    await screen.findByText("Dia livre");
+    expect(screen.getByText("Sua agenda")).toBeTruthy();
+    expect(screen.getByTestId("btn-notificacoes")).toBeTruthy();
+    expect(screen.getByTestId("btn-tenant-switcher")).toBeTruthy();
+  });
 });

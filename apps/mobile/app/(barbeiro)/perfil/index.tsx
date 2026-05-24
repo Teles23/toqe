@@ -289,7 +289,7 @@ export default function PerfilIndexScreen() {
     isRefetching: statsRefetching,
     refetch: refetchStats,
   } = useBarbeiroStats();
-  const refreshProps = usePullToRefresh(refetchStats, statsRefetching);
+  const refreshProps = usePullToRefresh(refetchStats, statsRefetching, 0);
   const {
     data: jornadaData,
     isLoading: jornadaLoading,
