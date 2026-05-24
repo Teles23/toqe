@@ -7,6 +7,7 @@ import {
 import { MembroBarbeariaService } from './membro-barbearia.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { Prisma } from '../generated/prisma';
 import { PerfilMembro } from './dto/convidar-membro.dto';
 
 const mockPrisma = createPrismaMock();
@@ -150,8 +151,6 @@ describe('MembroBarbeariaService', () => {
 
     it('cria cliente SEM e-mail: gera sintético @toqe.internal (e-mail opcional)', async () => {
       let createdEmail: string | undefined;
-      // telefone não existe ainda → dedup por telefone retorna null → cria novo
-      mockPrisma.usuario.findUnique.mockResolvedValue(null);
       mockPrisma.usuario.create.mockImplementation(
         (args: { data: { email: string } }) => {
           createdEmail = args.data.email;
@@ -171,32 +170,20 @@ describe('MembroBarbeariaService', () => {
         telefone: '(11) 98888-7777',
       });
 
-      // sem e-mail → tenta dedup por telefone (não achou) → cria com email sintético
-      expect(mockPrisma.usuario.findUnique).toHaveBeenCalledWith({
-        where: { telefone: '(11) 98888-7777' },
-      });
       expect(createdEmail).toMatch(/@toqe\.internal$/);
     });
 
-    it('dedup por telefone: reutiliza usuário existente — evita P2002 na UNIQUE telefone', async () => {
-      const usuarioExistente = { codigo: 500, email: 'enc@toqe.internal' };
-      mockPrisma.usuario.findUnique.mockResolvedValue(usuarioExistente);
-      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
-      mockPrisma.membroBarbearia.create.mockResolvedValue({
-        usrCodigo: 500,
-        barCodigo: 1,
-        perfil: 'cliente',
-        usuario: { codigo: 500, nome: 'Bsns', email: 'enc@toqe.internal' },
-      });
+    it('lança ConflictException quando o telefone já pertence a outro usuário', async () => {
+      const p2002 = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        { code: 'P2002', clientVersion: '0' },
+      );
+      mockPrisma.usuario.create.mockRejectedValue(p2002);
 
-      await service.criarCliente(1, {
-        nome: 'Bsns',
-        telefone: '(71) 98854-5259',
-      });
-
-      // reutilizou o usuário existente — não criou novo
-      expect(mockPrisma.usuario.create).not.toHaveBeenCalled();
-      expect(mockPrisma.membroBarbearia.create).toHaveBeenCalled();
+      await expect(
+        service.criarCliente(1, { nome: 'Bsns', telefone: '(71) 98854-5259' }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrisma.membroBarbearia.create).not.toHaveBeenCalled();
     });
 
     it('lança ConflictException quando o usuário já é cliente da barbearia', async () => {
