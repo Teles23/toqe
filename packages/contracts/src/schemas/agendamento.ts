@@ -138,6 +138,15 @@ export type PatchStatusAgendamentoInput = z.infer<
 >;
 export type ListAgendamentoInput = z.infer<typeof listAgendamentoSchema>;
 
+export const reagendarAgendamentoSchema = z.object({
+  inicio: z.string().datetime({ message: "Data/hora de início inválida" }),
+  fim: z.string().datetime({ message: "Data/hora de fim inválida" }).optional(),
+});
+
+export type ReagendarAgendamentoInput = z.infer<
+  typeof reagendarAgendamentoSchema
+>;
+
 export const createAvaliacaoSchema = z.object({
   nota: z
     .number({ invalid_type_error: "Nota deve ser um número" })
