@@ -36,7 +36,10 @@ async function bootstrap() {
 
   // CORS — credentials obrigatório para cookies httpOnly do frontend
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') ?? ['http://localhost:3002'],
+    origin: process.env.CORS_ORIGINS?.split(',') ?? [
+      'http://localhost:3002',
+      'http://localhost:8082',
+    ],
     credentials: true,
   });
 
