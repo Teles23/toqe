@@ -256,6 +256,14 @@ export class MembroBarbeariaService {
       ? await tx.usuario.findUnique({ where: { email: dto.email } })
       : null;
 
+    // Dedup por telefone: cliente recorrente cadastrado sem e-mail mas com
+    // o mesmo número evita violação de UNIQUE na coluna telefone (P2002).
+    if (!usuario && dto.telefone) {
+      usuario = await tx.usuario.findUnique({
+        where: { telefone: dto.telefone },
+      });
+    }
+
     if (!usuario) {
       const tempSenha = Math.random().toString(36).slice(-10);
       const senhaHash = await bcrypt.hash(tempSenha, await bcrypt.genSalt());
