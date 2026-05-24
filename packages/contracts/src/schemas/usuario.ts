@@ -14,6 +14,12 @@ export const updateUsuarioSchema = z.object({
     .or(z.literal("")),
 
   avatarUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+
+  dataNascimento: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use o formato AAAA-MM-DD")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type UpdateUsuarioInput = z.infer<typeof updateUsuarioSchema>;
