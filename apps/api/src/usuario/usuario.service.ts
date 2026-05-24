@@ -16,6 +16,7 @@ const SELECT_PERFIL = {
   telefone: true,
   avatarUrl: true,
   ativo: true,
+  dataNascimento: true,
   criadoEm: true,
   twoFaEnabled: true,
   superAdmin: true,
@@ -78,9 +79,17 @@ export class UsuarioService {
 
   async update(usrCodigo: number, dto: UpdateUsuarioDto) {
     await this.me(usrCodigo);
+    const { dataNascimento, ...rest } = dto;
     return this.prisma.usuario.update({
       where: { codigo: usrCodigo },
-      data: dto,
+      data: {
+        ...rest,
+        dataNascimento: dataNascimento
+          ? new Date(dataNascimento)
+          : dataNascimento === ''
+            ? null
+            : undefined,
+      },
       select: SELECT_PERFIL,
     });
   }

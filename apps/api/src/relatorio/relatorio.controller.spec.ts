@@ -21,7 +21,9 @@ const mockRelatorioService = {
   horariosPicoCsv: jest.fn(),
 };
 
-const mockRes = { setHeader: jest.fn() } as unknown as import('express').Response;
+const mockRes = {
+  setHeader: jest.fn(),
+} as unknown as import('express').Response;
 
 describe('RelatorioController', () => {
   let controller: RelatorioController;
@@ -50,7 +52,13 @@ describe('RelatorioController', () => {
       const data = [{ data: '2025-01-01', total: 200 }];
       mockRelatorioService.faturamento.mockResolvedValue(data);
 
-      const result = await controller.faturamento(1, '7d', undefined, 'tenant-1', mockRes);
+      const result = await controller.faturamento(
+        1,
+        '7d',
+        undefined,
+        'tenant-1',
+        mockRes,
+      );
 
       expect(mockRelatorioService.faturamento).toHaveBeenCalledWith(1, '7d');
       expect(result).toEqual(data);
@@ -59,16 +67,29 @@ describe('RelatorioController', () => {
     it('usa periodo padrão 30d quando não informado', () => {
       mockRelatorioService.faturamento.mockResolvedValue([]);
 
-      void controller.faturamento(1, undefined as never, undefined, 'tenant-1', mockRes);
+      void controller.faturamento(
+        1,
+        undefined as never,
+        undefined,
+        'tenant-1',
+        mockRes,
+      );
 
       expect(mockRelatorioService.faturamento).toHaveBeenCalledWith(1, '30d');
     });
 
     it('retorna CSV e seta headers quando formato=csv', async () => {
-      mockRelatorioService.faturamentoCsv =
-        jest.fn().mockResolvedValue('data,total\n2026-01-01,100');
+      mockRelatorioService.faturamentoCsv = jest
+        .fn()
+        .mockResolvedValue('data,total\n2026-01-01,100');
 
-      const result = await controller.faturamento(1, '30d', 'csv', 'tenant-1', mockRes);
+      const result = await controller.faturamento(
+        1,
+        '30d',
+        'csv',
+        'tenant-1',
+        mockRes,
+      );
 
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Content-Type',
@@ -85,7 +106,13 @@ describe('RelatorioController', () => {
       ];
       mockRelatorioService.agendamentos.mockResolvedValue(data);
 
-      const result = await controller.agendamentos(1, '30d', undefined, 'tenant-1', mockRes);
+      const result = await controller.agendamentos(
+        1,
+        '30d',
+        undefined,
+        'tenant-1',
+        mockRes,
+      );
 
       expect(mockRelatorioService.agendamentos).toHaveBeenCalledWith(1, '30d');
       expect(result).toEqual(data);
@@ -97,7 +124,13 @@ describe('RelatorioController', () => {
       const data = [{ nome: 'Corte', quantidade: 10, total: 500 }];
       mockRelatorioService.servicos.mockResolvedValue(data);
 
-      const result = await controller.servicos(1, '30d', undefined, 'tenant-1', mockRes);
+      const result = await controller.servicos(
+        1,
+        '30d',
+        undefined,
+        'tenant-1',
+        mockRes,
+      );
 
       expect(mockRelatorioService.servicos).toHaveBeenCalledWith(1, '30d');
       expect(result).toEqual(data);
@@ -117,7 +150,13 @@ describe('RelatorioController', () => {
       ];
       mockRelatorioService.barbeiros.mockResolvedValue(data);
 
-      const result = await controller.barbeiros(1, '30d', undefined, 'tenant-1', mockRes);
+      const result = await controller.barbeiros(
+        1,
+        '30d',
+        undefined,
+        'tenant-1',
+        mockRes,
+      );
 
       expect(mockRelatorioService.barbeiros).toHaveBeenCalledWith(1, '30d');
       expect(result).toEqual(data);
@@ -132,7 +171,13 @@ describe('RelatorioController', () => {
       }));
       mockRelatorioService.horariosPico.mockResolvedValue(data);
 
-      const result = await controller.horariosPico(1, '30d', undefined, 'tenant-1', mockRes);
+      const result = await controller.horariosPico(
+        1,
+        '30d',
+        undefined,
+        'tenant-1',
+        mockRes,
+      );
 
       expect(mockRelatorioService.horariosPico).toHaveBeenCalledWith(1, '30d');
       expect(result).toHaveLength(24);
