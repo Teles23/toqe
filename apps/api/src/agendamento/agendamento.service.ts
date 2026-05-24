@@ -12,6 +12,7 @@ import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
+import type { ReagendarAgendamentoInput } from '@toqe/contracts';
 import { addMinutes, startOfDay, endOfDay, subDays } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendamentoConfirmadoJob } from '../notificacao/notificacao.types';
@@ -500,5 +501,82 @@ export class AgendamentoService {
     });
 
     return { sucesso: true };
+  }
+
+  meusAtendimentos(barbeiroId: number, barCodigo: number, limit = 20) {
+    return this.prisma.agendamento.findMany({
+      where: { barbeiroId, barCodigo, status: StatusAgendamento.CONCLUIDO },
+      include: INCLUDE_COMPLETO,
+      orderBy: { inicio: 'desc' },
+      take: limit,
+    });
+  }
+
+  async reagendar(
+    codigo: number,
+    dto: ReagendarAgendamentoInput,
+    requesterUsrCodigo: number,
+    barCodigo: number,
+  ) {
+    const ag = await this.prisma.agendamento.findFirst({
+      where: { codigo, barCodigo },
+      include: INCLUDE_COMPLETO,
+    });
+
+    if (!ag) throw new NotFoundException('Agendamento não encontrado');
+
+    const ehCliente = ag.clienteId === requesterUsrCodigo;
+    const ehBarbeiro = ag.barbeiroId === requesterUsrCodigo;
+    if (!ehCliente && !ehBarbeiro) {
+      throw new ForbiddenException(
+        'Sem permissão para reagendar este agendamento',
+      );
+    }
+
+    if (
+      ![StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO].includes(
+        ag.status as StatusAgendamento,
+      )
+    ) {
+      throw new BadRequestException(
+        'Só é possível reagendar agendamentos PENDENTE ou CONFIRMADO',
+      );
+    }
+
+    const novoInicio = new Date(dto.inicio);
+    if (novoInicio <= new Date()) {
+      throw new BadRequestException('O novo horário deve ser no futuro');
+    }
+
+    const duracaoMs = ag.fim.getTime() - ag.inicio.getTime();
+    const novoFim = dto.fim
+      ? new Date(dto.fim)
+      : new Date(novoInicio.getTime() + duracaoMs);
+
+    const conflitos = await this.prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(1) as count
+      FROM "TQE_AGENDAMENTO"
+      WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
+        AND "TQE_AGD_CODIGO" != ${codigo}
+        AND "TQE_AGD_STATUS" NOT IN ('CANCELADO', 'NO_SHOW')
+        AND "TQE_AGD_INICIO" < ${novoFim}
+        AND "TQE_AGD_FIM" > ${novoInicio}
+    `;
+
+    if (Number(conflitos[0].count) > 0) {
+      throw new ConflictException(
+        'O barbeiro já tem um agendamento neste horário',
+      );
+    }
+
+    const atualizado = await this.prisma.agendamento.update({
+      where: { codigo },
+      data: { inicio: novoInicio, fim: novoFim },
+      include: INCLUDE_COMPLETO,
+    });
+
+    this.agendaGateway.emitAgendamentoCriado(barCodigo, atualizado);
+
+    return atualizado;
   }
 }

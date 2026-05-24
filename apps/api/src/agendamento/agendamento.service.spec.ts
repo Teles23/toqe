@@ -751,4 +751,138 @@ describe('AgendamentoService', () => {
   it('módulo importa ForbiddenException sem erros', () => {
     expect(ForbiddenException).toBeDefined();
   });
+
+  describe('meusAtendimentos', () => {
+    it('retorna agendamentos concluídos do barbeiro', async () => {
+      const concluido = { ...mockAgendamento, status: 'CONCLUIDO' };
+      mockPrisma.agendamento.findMany.mockResolvedValue([concluido]);
+
+      const result = await service.meusAtendimentos(10, barCodigo);
+
+      expect(result).toEqual([concluido]);
+      const [callArg] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: { barbeiroId: number; barCodigo: number; status: string } },
+      ];
+      expect(callArg.where.barbeiroId).toBe(10);
+      expect(callArg.where.barCodigo).toBe(barCodigo);
+    });
+
+    it('respeita o parâmetro limit', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      await service.meusAtendimentos(10, barCodigo, 5);
+
+      const [callArg] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { take: number },
+      ];
+      expect(callArg.take).toBe(5);
+    });
+
+    it('usa limit padrão 20 quando não fornecido', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      await service.meusAtendimentos(10, barCodigo);
+
+      const [callArg] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { take: number },
+      ];
+      expect(callArg.take).toBe(20);
+    });
+  });
+
+  describe('reagendar', () => {
+    const futuro = new Date(Date.now() + 86_400_000).toISOString();
+    const futuroPlusMeia = new Date(
+      Date.now() + 86_400_000 + 30 * 60_000,
+    ).toISOString();
+
+    it('reagenda com sucesso para o cliente owner', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...mockAgendamento,
+        inicio: new Date(futuro),
+        fim: new Date(futuroPlusMeia),
+      });
+
+      const result = await service.reagendar(
+        1,
+        { inicio: futuro },
+        20, // clienteId
+        barCodigo,
+      );
+
+      expect(mockPrisma.agendamento.update).toHaveBeenCalled();
+      expect(mockAgendaGateway.emitAgendamentoCriado).toHaveBeenCalled();
+      expect(result.inicio).toEqual(new Date(futuro));
+    });
+
+    it('lança ForbiddenException se requester não é cliente nem barbeiro', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+
+      await expect(
+        service.reagendar(1, { inicio: futuro }, 999, barCodigo),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('lança BadRequestException se status é CONCLUIDO', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...mockAgendamento,
+        status: 'CONCLUIDO',
+      });
+
+      await expect(
+        service.reagendar(1, { inicio: futuro }, 20, barCodigo),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lança BadRequestException se novo início é no passado', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      const passado = new Date(Date.now() - 60_000).toISOString();
+
+      await expect(
+        service.reagendar(1, { inicio: passado }, 20, barCodigo),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('lança ConflictException se há conflito de horário', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(1) }]);
+
+      await expect(
+        service.reagendar(1, { inicio: futuro }, 20, barCodigo),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('calcula fim automaticamente quando não fornecido', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...mockAgendamento,
+        inicio: new Date('2024-06-01T09:00:00Z'),
+        fim: new Date('2024-06-01T09:30:00Z'), // 30 min duração
+      });
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...mockAgendamento,
+        inicio: new Date(futuro),
+        fim: new Date(new Date(futuro).getTime() + 30 * 60_000),
+      });
+
+      await service.reagendar(1, { inicio: futuro }, 20, barCodigo);
+
+      const [callArg] = mockPrisma.agendamento.update.mock.calls[0] as [
+        { data: { inicio: Date; fim: Date } },
+      ];
+      const duracao =
+        callArg.data.fim.getTime() - callArg.data.inicio.getTime();
+      expect(duracao).toBe(30 * 60_000);
+    });
+
+    it('lança NotFoundException se agendamento não encontrado', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.reagendar(999, { inicio: futuro }, 20, barCodigo),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });
