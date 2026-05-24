@@ -1,7 +1,9 @@
 export function createPrismaMock() {
   const makeMethods = () => ({
     findUnique: jest.fn(),
+    findUniqueOrThrow: jest.fn(),
     findFirst: jest.fn(),
+    findFirstOrThrow: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),

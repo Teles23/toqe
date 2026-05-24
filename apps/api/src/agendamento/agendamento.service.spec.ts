@@ -94,10 +94,15 @@ describe('AgendamentoService', () => {
       mockPrisma.$transaction.mockImplementation(
         (fn: (tx: unknown) => unknown) => {
           const tx = {
-            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
+            barbearia: {
+              findUniqueOrThrow: jest.fn().mockResolvedValue({ plano: 'free' }),
+            },
+            planoLimite: { findUnique: jest.fn().mockResolvedValue(null) },
             agendamento: {
+              count: jest.fn().mockResolvedValue(0),
               create: jest.fn().mockResolvedValue(mockAgendamento),
             },
+            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
           };
           return fn(tx);
         },
@@ -131,8 +136,12 @@ describe('AgendamentoService', () => {
       mockPrisma.$transaction.mockImplementation(
         (fn: (tx: unknown) => unknown) => {
           const tx = {
-            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
+            barbearia: {
+              findUniqueOrThrow: jest.fn().mockResolvedValue({ plano: 'free' }),
+            },
+            planoLimite: { findUnique: jest.fn().mockResolvedValue(null) },
             agendamento: {
+              count: jest.fn().mockResolvedValue(0),
               create: jest.fn().mockImplementation(
                 (args: {
                   data: {
@@ -146,6 +155,7 @@ describe('AgendamentoService', () => {
                 },
               ),
             },
+            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
           };
           return fn(tx);
         },
@@ -189,8 +199,15 @@ describe('AgendamentoService', () => {
       mockPrisma.$transaction.mockImplementation(
         (fn: (tx: unknown) => unknown) => {
           const tx = {
+            barbearia: {
+              findUniqueOrThrow: jest.fn().mockResolvedValue({ plano: 'free' }),
+            },
+            planoLimite: { findUnique: jest.fn().mockResolvedValue(null) },
+            agendamento: {
+              count: jest.fn().mockResolvedValue(0),
+              create: jest.fn(),
+            },
             $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(1) }]),
-            agendamento: { create: jest.fn() },
           };
           return fn(tx);
         },

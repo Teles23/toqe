@@ -209,6 +209,28 @@ export class MembroBarbeariaService {
     if (jaEMembro)
       throw new ConflictException('Usuário já é membro desta barbearia');
 
+    // Enforcement: se perfil=barbeiro, checar limite do plano
+    if (dto.perfil === 'barbeiro') {
+      const barbearia = await this.prisma.barbearia.findUniqueOrThrow({
+        where: { codigo: barCodigo },
+        select: { plano: true },
+      });
+      const limite = await this.prisma.planoLimite.findUnique({
+        where: { plano: barbearia.plano },
+        select: { maxBarbeiros: true },
+      });
+      if (limite?.maxBarbeiros != null) {
+        const qtd = await this.prisma.membroBarbearia.count({
+          where: { barCodigo, perfil: 'barbeiro' },
+        });
+        if (qtd >= limite.maxBarbeiros) {
+          throw new ForbiddenException(
+            `Limite de ${limite.maxBarbeiros} barbeiro(s) atingido para o plano ${barbearia.plano}`,
+          );
+        }
+      }
+    }
+
     return this.prisma.membroBarbearia.create({
       data: { barCodigo, usrCodigo: usuario.codigo, perfil: dto.perfil },
       include: {

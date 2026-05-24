@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import {
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -210,6 +211,10 @@ describe('MembroBarbeariaService', () => {
         email: 'x@x.com',
       });
       mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.barbearia.findUniqueOrThrow.mockResolvedValue({
+        plano: 'basic',
+      });
+      mockPrisma.planoLimite.findUnique.mockResolvedValue(null); // sem limite definido
       mockPrisma.membroBarbearia.create.mockResolvedValue({
         barCodigo: 1,
         usrCodigo: 5,
@@ -249,6 +254,105 @@ describe('MembroBarbeariaService', () => {
           'dono',
         ),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('plano sem limite (maxBarbeiros null) → não lança ForbiddenException', async () => {
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 5,
+        email: 'x@x.com',
+      });
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.barbearia.findUniqueOrThrow.mockResolvedValue({
+        plano: 'free',
+      });
+      mockPrisma.planoLimite.findUnique.mockResolvedValue({
+        maxBarbeiros: null,
+      });
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        barCodigo: 1,
+        usrCodigo: 5,
+        perfil: PerfilMembro.BARBEIRO,
+        usuario: { codigo: 5, nome: 'X', email: 'x@x.com' },
+      });
+
+      const result = await service.convidarMembro(
+        1,
+        { email: 'x@x.com', perfil: PerfilMembro.BARBEIRO },
+        'dono',
+      );
+      expect(result).toHaveProperty('perfil', 'barbeiro');
+      expect(mockPrisma.membroBarbearia.count).not.toHaveBeenCalled();
+    });
+
+    it('dentro do limite de barbeiros → cria normalmente', async () => {
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 5,
+        email: 'x@x.com',
+      });
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.barbearia.findUniqueOrThrow.mockResolvedValue({
+        plano: 'basic',
+      });
+      mockPrisma.planoLimite.findUnique.mockResolvedValue({ maxBarbeiros: 3 });
+      mockPrisma.membroBarbearia.count.mockResolvedValue(2); // 2 < 3
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        barCodigo: 1,
+        usrCodigo: 5,
+        perfil: PerfilMembro.BARBEIRO,
+        usuario: { codigo: 5, nome: 'X', email: 'x@x.com' },
+      });
+
+      const result = await service.convidarMembro(
+        1,
+        { email: 'x@x.com', perfil: PerfilMembro.BARBEIRO },
+        'dono',
+      );
+      expect(result).toHaveProperty('perfil', 'barbeiro');
+    });
+
+    it('no limite de barbeiros → lança ForbiddenException', async () => {
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 5,
+        email: 'x@x.com',
+      });
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.barbearia.findUniqueOrThrow.mockResolvedValue({
+        plano: 'free',
+      });
+      mockPrisma.planoLimite.findUnique.mockResolvedValue({ maxBarbeiros: 1 });
+      mockPrisma.membroBarbearia.count.mockResolvedValue(1); // 1 >= 1
+
+      await expect(
+        service.convidarMembro(
+          1,
+          { email: 'x@x.com', perfil: PerfilMembro.BARBEIRO },
+          'dono',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.membroBarbearia.create).not.toHaveBeenCalled();
+    });
+
+    it('convidar gerente não verifica limite de barbeiros', async () => {
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 6,
+        email: 'g@x.com',
+      });
+      mockPrisma.membroBarbearia.findUnique.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.create.mockResolvedValue({
+        barCodigo: 1,
+        usrCodigo: 6,
+        perfil: PerfilMembro.GERENTE,
+        usuario: { codigo: 6, nome: 'G', email: 'g@x.com' },
+      });
+
+      const result = await service.convidarMembro(
+        1,
+        { email: 'g@x.com', perfil: PerfilMembro.GERENTE },
+        'dono',
+      );
+      expect(result).toHaveProperty('perfil', 'gerente');
+      expect(mockPrisma.barbearia.findUniqueOrThrow).not.toHaveBeenCalled();
+      expect(mockPrisma.planoLimite.findUnique).not.toHaveBeenCalled();
     });
   });
 
