@@ -36,10 +36,16 @@
 | Serviços — CRUD + preços por barbeiro     | **Maduro**       | BarbeiroServico com preço/duração próprios                                                                                             |
 | Dashboard — KPIs + live metrics           | **Maduro**       | Faturamento, agendamentos, barbeiros ativos, serviços populares                                                                        |
 | Relatórios — 5 tipos                      | **Maduro**       | Faturamento, agendamentos, serviços, barbeiros, horários pico                                                                          |
+| Relatórios — exportação CSV               | **Maduro**       | `?formato=csv` em todos os 5 endpoints; Content-Disposition header (Sprint B4)                                                         |
 | Notificações — email via Resend/BullMQ    | **Maduro**       | Confirmação de agendamento + reset de senha                                                                                            |
 | Notificações — push (envio pelo servidor) | **Maduro**       | `PushNotificationService` com expo-server-sdk; consumer BullMQ envia push ao cliente e barbeiro após confirmação (Sprint A1)           |
+| Notificações — push deep-link (barbeiro)  | **Maduro**       | Payload `{ barCodigo, dataAgendamento }` no push do barbeiro; mobile navega para agenda na data certa ao tocar (Sprint B5)             |
 | Notificações — WhatsApp / SMS             | **Falta no MVP** | Tabela de preferências existe (canal = 'whatsapp'/'sms'), mas zero lógica de envio implementada                                        |
 | Lembretes automáticos (cron)              | **Maduro**       | `LembreteService` com `@Cron` a cada 30min; janelas 24h e 2h; push + email; flags `lembrete24hEnviado`/`lembrete2hEnviado` (Sprint A6) |
+| Push de aniversário (cron)                | **Maduro**       | `@Cron('0 9 * * *')` filtra `dataNascimento` de hoje e envia push (Sprint B1)                                                          |
+| Detecção de no-show (cron)                | **Maduro**       | `@Cron('0 */30 * * * *')` marca PENDENTE/CONFIRMADO expirados como NO_SHOW e notifica barbeiro (Sprint B6)                             |
+| Histórico de atendimentos do barbeiro     | **Maduro**       | `GET /agendamentos/meus-atendimentos?limit=N` filtra por barbearia e barbeiro (Sprint B2)                                              |
+| Reagendamento pelo cliente                | **Maduro**       | `PATCH /agendamentos/:codigo/reagendar` com verificação de ownership, status, conflito de horário (Sprint B3)                          |
 | Push Token — registro/delete              | **Maduro**       | Upsert por (usrCodigo, token)                                                                                                          |
 | Cliente Nota — notas privadas             | **Maduro**       | TQE_CLIENTE_NOTA (doc 59)                                                                                                              |
 | Booking público (/b/:slug)                | **Maduro**       | Servicos, barbeiros, slots, criar agendamento                                                                                          |
@@ -68,6 +74,7 @@
 | Clientes — notas privadas (web)           | **Maduro**  | `ClienteDetalhe.tsx` com editor de nota via `useClienteNota` hook + MSW handlers (Sprint A4)        |
 | Serviços — CRUD                           | **Maduro**  |                                                                                                     |
 | Relatórios — 5 charts                     | **Maduro**  |                                                                                                     |
+| Relatórios — botão Exportar CSV           | **Maduro**  | `handleExportar()` faz fetch autenticado + download via Blob/URL.createObjectURL (Sprint B4)        |
 | Configurações — dados da barbearia        | **Maduro**  |                                                                                                     |
 | Configurações — horários de funcionamento | **Maduro**  |                                                                                                     |
 | Configurações — notificações              | **Parcial** | UI funcional e salva preferências, mas os canais WhatsApp/SMS não têm efeito no backend             |
@@ -90,6 +97,8 @@
 | **BARBEIRO — Jornada semanal**                                    | **Maduro** | PUT transacional 7 dias (doc 61)                                                       |
 | **BARBEIRO — Serviços e preços**                                  | **Maduro** |                                                                                        |
 | **BARBEIRO — Perfil (editar, senha, 2FA, sessões, notificações)** | **Maduro** |                                                                                        |
+| **BARBEIRO — Perfil — campo dataNascimento**                       | **Maduro** | Campo "DATA DE NASCIMENTO" na tela de edição; cron de push de aniversário (Sprint B1)  |
+| **BARBEIRO — Histórico de atendimentos no perfil**                 | **Maduro** | Seção "Últimos atendimentos" via `useMeusAtendimentos` no perfil do barbeiro (Sprint B2)|
 | **CLIENTE — Home**                                                | **Maduro** |                                                                                        |
 | **CLIENTE — Buscar barbearia**                                    | **Maduro** |                                                                                        |
 | **CLIENTE — QR Code**                                             | **Maduro** |                                                                                        |
@@ -97,9 +106,11 @@
 | **CLIENTE — Histórico de agendamentos**                           | **Maduro** |                                                                                        |
 | **CLIENTE — Detalhe + avaliação**                                 | **Maduro** |                                                                                        |
 | **CLIENTE — Cancelar agendamento**                                | **Maduro** | PATCH /agendamentos/:codigo/status → cancelado                                         |
+| **CLIENTE — Reagendar agendamento**                               | **Maduro** | Tela de seleção de dia/hora; PATCH `/reagendar`; wired no detalhe (Sprint B3)          |
 | **CLIENTE — Perfil (editar, senha, 2FA, sessões, notificações)**  | **Maduro** |                                                                                        |
 | Push notifications — receber                                      | **Maduro** | expo-notifications + token registration funcionando                                    |
 | Push notifications — servidor dispara                             | **Maduro** | API com expo-server-sdk; push ao cliente e barbeiro após confirmação (Sprint A1)       |
+| Push notifications — deep-link barbeiro                           | **Maduro** | Tap na notificação navega para agenda na data do agendamento (Sprint B5)               |
 | Tempo real (WebSocket)                                            | **Maduro** | `useAgendaSocket` conecta ao namespace `/agenda`, invalida cache na agenda (Sprint A3) |
 
 ---
@@ -140,18 +151,18 @@ O produto agora tem ciclo de vida completo: cliente agenda → recebe push → a
 
 ---
 
-### Sprint B — Retenção e confiança (2–3 semanas)
+### ~~Sprint B — Retenção e confiança~~ ✅ Concluída em 24/05/2026
 
 **Objetivo:** features que fazem o cliente voltar e o dono confiar no sistema.
 
-| #   | Feature                                                                           | Esforço | Impacto |
-| --- | --------------------------------------------------------------------------------- | ------- | ------- |
-| B1  | Lembrete de aniversário do cliente (data de nascimento + push/email)              | P       | Médio   |
-| B2  | Histórico de atendimentos no perfil do barbeiro (quantos cortes, faturamento)     | P       | Médio   |
-| B3  | Reagendamento pelo cliente (cancelar + novo slot sem sair do app)                 | M       | Alto    |
-| B4  | Relatório exportável (CSV) — faturamento e agendamentos                           | P       | Médio   |
-| B5  | Confirmação manual pelo barbeiro (PENDENTE → CONFIRMADO via push action)          | M       | Alto    |
-| B6  | Aviso de no-show automático (agendamento passou sem ser atendido → notifica dono) | P       | Médio   |
+| #   | Feature                                                                           | Esforço | Impacto | Status |
+| --- | --------------------------------------------------------------------------------- | ------- | ------- | ------ |
+| B1  | Lembrete de aniversário do cliente (data de nascimento + push/email)              | P       | Médio   | ✅     |
+| B2  | Histórico de atendimentos no perfil do barbeiro                                   | P       | Médio   | ✅     |
+| B3  | Reagendamento pelo cliente (novo slot sem sair do app)                            | M       | Alto    | ✅     |
+| B4  | Relatório exportável (CSV) — todos os 5 endpoints + botão no web                 | P       | Médio   | ✅     |
+| B5  | Push deep-link ao barbeiro com barCodigo + dataAgendamento                        | M       | Alto    | ✅     |
+| B6  | Aviso de no-show automático (cron a cada 30min)                                   | P       | Médio   | ✅     |
 
 ---
 

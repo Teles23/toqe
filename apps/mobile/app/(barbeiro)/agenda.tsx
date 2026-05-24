@@ -453,6 +453,7 @@ export default function BarbeiroAgendaScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
+        refreshProgressViewOffset={0}
         ListHeaderComponent={
           <>
             {data && data.length > 0 && <StatsStrip apts={data} />}
