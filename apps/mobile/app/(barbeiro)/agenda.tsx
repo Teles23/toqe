@@ -48,7 +48,7 @@ import {
 } from "@/src/shared/ui";
 import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 
 import type { DetailAction } from "@/src/features/barbeiro/AppointmentDetailSheet";
 
@@ -212,7 +212,7 @@ export default function BarbeiroAgendaScreen() {
   const [bloqueioOpen, setBloqueioOpen] = useState(false);
   const [tenantSwitcherOpen, setTenantSwitcherOpen] = useState(false);
   // "Ver histórico" reusa o ClienteDetalhe — montado a partir do agendamento.
-  const [clienteDetalhe, setClienteDetalhe] = useState<ClienteAPI | null>(null);
+  const [clienteDetalhe, setClienteDetalhe] = useState<PessoaAPI | null>(null);
 
   const goPrev = useCallback(() => setSelectedDate((d) => subDays(d, 1)), []);
   const goNext = useCallback(() => setSelectedDate((d) => addDays(d, 1)), []);
@@ -248,10 +248,10 @@ export default function BarbeiroAgendaScreen() {
         setClienteDetalhe({
           codigo: selectedApt.cliente?.usrCodigo ?? 0,
           nome: selectedApt.cliente?.nome ?? "",
-          email: "",
+          tipo: selectedApt.cliente?.tipo ?? "usuario",
+          email: selectedApt.cliente?.email ?? null,
           telefone: selectedApt.cliente?.telefone ?? null,
           avatarUrl: null,
-          perfil: "cliente",
           totalVisitas: 0,
           totalGasto: 0,
           ticketMedio: 0,
