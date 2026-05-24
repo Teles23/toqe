@@ -212,7 +212,13 @@ function makeAgendamento(
     fim: "2026-05-15T13:45:00.000Z",
     status: "confirmado",
     barbeiro: { usrCodigo: 99, nome: "Bob", avatarUrl: null },
-    cliente: { usrCodigo: 42, nome: "Carlos", telefone: null },
+    cliente: {
+      usrCodigo: 42,
+      nome: "Carlos",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: "carlos@x.com",
+    },
     itens: [
       {
         codigo: 1,
@@ -268,7 +274,13 @@ describe("BarbeiroAgendaScreen", () => {
         makeAgendamento({ codigo: 1 }),
         makeAgendamento({
           codigo: 2,
-          cliente: { usrCodigo: 7, nome: "Ana", telefone: null },
+          cliente: {
+            usrCodigo: 7,
+            nome: "Ana",
+            telefone: null,
+            tipo: "usuario" as const,
+            email: null,
+          },
         }),
       ],
     });
@@ -386,7 +398,13 @@ describe("BarbeiroAgendaScreen", () => {
       dia: [
         makeAgendamento({
           codigo: 5,
-          cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+          cliente: {
+            usrCodigo: 42,
+            nome: "Pedro",
+            telefone: null,
+            tipo: "usuario" as const,
+            email: null,
+          },
         }),
       ],
     });
@@ -402,7 +420,13 @@ describe("BarbeiroAgendaScreen", () => {
         makeAgendamento({
           codigo: 5,
           status: "concluido",
-          cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+          cliente: {
+            usrCodigo: 42,
+            nome: "Pedro",
+            telefone: null,
+            tipo: "usuario" as const,
+            email: null,
+          },
         }),
       ],
     });
@@ -418,7 +442,13 @@ describe("BarbeiroAgendaScreen", () => {
         makeAgendamento({
           codigo: 5,
           status: "concluido",
-          cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+          cliente: {
+            usrCodigo: 42,
+            nome: "Pedro",
+            telefone: null,
+            tipo: "usuario" as const,
+            email: null,
+          },
         }),
       ],
     });
@@ -434,7 +464,13 @@ describe("BarbeiroAgendaScreen", () => {
         makeAgendamento({
           codigo: 5,
           status: "concluido",
-          cliente: { usrCodigo: 42, nome: "Pedro", telefone: null },
+          cliente: {
+            usrCodigo: 42,
+            nome: "Pedro",
+            telefone: null,
+            tipo: "usuario" as const,
+            email: null,
+          },
         }),
       ],
       clientes: [
@@ -486,7 +522,13 @@ describe("BarbeiroAgendaScreen", () => {
         makeAgendamento({
           codigo: 8,
           status: "pendente",
-          cliente: { usrCodigo: 42, nome: "Lucas", telefone: null },
+          cliente: {
+            usrCodigo: 42,
+            nome: "Lucas",
+            telefone: null,
+            tipo: "usuario" as const,
+            email: null,
+          },
         }),
       ],
     });
@@ -517,7 +559,13 @@ describe("BarbeiroAgendaScreen", () => {
         makeAgendamento({
           codigo: 9,
           status: "confirmado",
-          cliente: { usrCodigo: 42, nome: "Bia", telefone: null },
+          cliente: {
+            usrCodigo: 42,
+            nome: "Bia",
+            telefone: null,
+            tipo: "usuario" as const,
+            email: null,
+          },
         }),
       ],
     });

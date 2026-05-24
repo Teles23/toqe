@@ -114,7 +114,13 @@ function makeHistoricoItem(
     fim: "2026-05-10T14:30:00.000Z",
     status: "concluido",
     barbeiro: { usrCodigo: 10, nome: "Bob", avatarUrl: null },
-    cliente: { usrCodigo: 1, nome: "João Barbosa", telefone: null },
+    cliente: {
+      usrCodigo: 1,
+      nome: "João Barbosa",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: null,
+    },
     itens: [
       {
         codigo: 1,

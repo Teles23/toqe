@@ -3,30 +3,24 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { tenantApi } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import type { AgendamentoResponse } from "@toqe/shared";
-import type { CriarClienteRapidoInput } from "@toqe/contracts";
+import type { CriarContatoInput } from "@toqe/contracts";
 
 export interface CriarWalkInInput {
-  /**
-   * Dados do cliente novo. Se omitido, usar `clienteId` existente.
-   * `email` é opcional no encaixe — o servidor gera um único quando ausente.
-   */
-  cliente?: Omit<CriarClienteRapidoInput, "email"> & { email?: string };
-  /** Cliente já existente — passado em vez de criar um novo. */
+  /** Novo contato anônimo (TQE_CONTATO). Exatamente um de: contato, contatoId, clienteId. */
+  contato?: CriarContatoInput;
+  /** Contato já existente (TQE_CONTATO). */
+  contatoId?: number;
+  /** Usuário autenticável já existente (TQE_USR). */
   clienteId?: number;
   barbeiroId: number;
   servicosIds: number[];
 }
 
 /**
- * Cria um walk-in numa ÚNICA chamada atômica ao backend
- * (`POST /agendamentos/walk-in`): o servidor cria/reaproveita o cliente e o
- * agendamento na mesma transação. Se o agendamento falha, o cliente não é
- * persistido — sem cliente órfão (o bug do fluxo anterior de duas chamadas).
+ * Cria um walk-in via `POST /agendamentos/walk-in`.
+ * O servidor persiste o contato como TQE_CONTATO (sem criar conta de usuário).
  *
- * Reusa `criarClienteRapidoSchema` de `@toqe/contracts`. `inicio` é definido
- * pelo servidor (agora).
- *
- * onSuccess: invalida ['fila'] e ['agendamentos'] para refletir o novo walk-in.
+ * onSuccess: invalida ['fila'] e ['agendamentos'].
  */
 export function useCriarWalkIn() {
   const { barbearia } = useAuth();
@@ -34,8 +28,13 @@ export function useCriarWalkIn() {
 
   return useMutation<AgendamentoResponse, Error, CriarWalkInInput>({
     mutationFn: (input) => {
-      if (!input.cliente && !input.clienteId) {
-        throw new Error("Forneça `cliente` (criar novo) ou `clienteId`");
+      const options = [input.contato, input.contatoId, input.clienteId].filter(
+        (v) => v != null,
+      );
+      if (options.length !== 1) {
+        throw new Error(
+          "Forneça exatamente um de: contato (novo), contatoId (existente) ou clienteId (usuário)",
+        );
       }
 
       return tenantApi(barbearia!.codigo).post<AgendamentoResponse>(
@@ -43,9 +42,9 @@ export function useCriarWalkIn() {
         {
           barbeiroId: input.barbeiroId,
           servicosIds: input.servicosIds,
-          ...(input.clienteId
-            ? { clienteId: input.clienteId }
-            : { cliente: input.cliente }),
+          ...(input.contato && { contato: input.contato }),
+          ...(input.contatoId && { contatoId: input.contatoId }),
+          ...(input.clienteId && { clienteId: input.clienteId }),
         },
       );
     },

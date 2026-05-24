@@ -17,6 +17,8 @@ function makeAgendamento(
       usrCodigo: 42,
       nome: "Carlos Cliente",
       telefone: "+5511999999999",
+      tipo: "usuario" as const,
+      email: null,
     },
     itens: [
       {

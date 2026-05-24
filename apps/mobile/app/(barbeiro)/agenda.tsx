@@ -246,10 +246,10 @@ export default function BarbeiroAgendaScreen() {
         // ClienteDetalhe pela mesma query da aba Clientes — assim os dois
         // caminhos mostram exatamente os mesmos dados, sem corrida de cache.
         setClienteDetalhe({
-          codigo: selectedApt.cliente.usrCodigo,
-          nome: selectedApt.cliente.nome,
+          codigo: selectedApt.cliente?.usrCodigo ?? 0,
+          nome: selectedApt.cliente?.nome ?? "",
           email: "",
-          telefone: selectedApt.cliente.telefone,
+          telefone: selectedApt.cliente?.telefone ?? null,
           avatarUrl: null,
           perfil: "cliente",
           totalVisitas: 0,
@@ -263,7 +263,7 @@ export default function BarbeiroAgendaScreen() {
       if (action === "reagendar") {
         setDetailOpen(false);
         setWalkinPrefill({
-          nome: selectedApt.cliente.nome,
+          nome: selectedApt.cliente?.nome ?? "",
           servicoId: selectedApt.itens[0]?.servico.codigo,
         });
         setWalkinOpen(true);
@@ -338,7 +338,12 @@ export default function BarbeiroAgendaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* Header fixo — não rola com a lista */}
-      <View style={[styles.headerWrap, { paddingTop: insets.top + 10, paddingHorizontal: spacing.md }]}>
+      <View
+        style={[
+          styles.headerWrap,
+          { paddingTop: insets.top + 10, paddingHorizontal: spacing.md },
+        ]}
+      >
         {/* Linha 1: título da tela + sino de notificações */}
         <View style={styles.titleRow}>
           <Text style={styles.screenTitle}>Sua agenda</Text>
