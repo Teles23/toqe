@@ -274,6 +274,7 @@ export default function BarbeiroClientesScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
+        refreshProgressViewOffset={0}
         loadingComponent={<ListSkeleton testID="clientes-skeleton" />}
         emptyComponent={
           busca || filter !== "todos" ? (
