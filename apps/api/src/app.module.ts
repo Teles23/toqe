@@ -26,6 +26,7 @@ import { AdminModule } from './admin/admin.module';
 import { MeModule } from './me/me.module';
 import { ConviteModule } from './convite/convite.module';
 import { ClienteNotaModule } from './cliente-nota/cliente-nota.module';
+import { ContatoModule } from './contato/contato.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { ClienteNotaModule } from './cliente-nota/cliente-nota.module';
     MeModule,
     ConviteModule,
     ClienteNotaModule,
+    ContatoModule,
   ],
   controllers: [AppController],
   providers: [

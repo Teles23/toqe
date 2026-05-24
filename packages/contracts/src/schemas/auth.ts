@@ -148,5 +148,25 @@ export const twoFaVerifySchema = z
 export type TwoFaSetupInput = z.infer<typeof twoFaSetupSchema>;
 export type TwoFaVerifyInput = z.infer<typeof twoFaVerifySchema>;
 
+/**
+ * Contato operacional — walk-in ou cliente sem conta no app.
+ * Diferente do `criarClienteRapidoSchema`, e-mail não existe aqui: contatos
+ * nunca fazem login, por isso não há coluna de e-mail em TQE_CONTATO.
+ */
+export const criarContatoSchema = z.object({
+  nome: z
+    .string()
+    .min(2, "Nome deve ter ao menos 2 caracteres")
+    .max(100, "Nome muito longo"),
+  telefone: z
+    .string()
+    .regex(/^\+?[\d\s\-()]{8,20}$/, "Telefone inválido")
+    .max(20, "Telefone muito longo")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type CriarContatoInput = z.infer<typeof criarContatoSchema>;
+
 // Tipos inferidos vivem em `src/types/index.ts` (single source) para evitar
 // duplicação de exports através do barrel raiz.

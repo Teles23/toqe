@@ -16,6 +16,7 @@ import { addMinutes, startOfDay, endOfDay, subDays } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendamentoConfirmadoJob } from '../notificacao/notificacao.types';
 import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
+import { ContatoService } from '../contato/contato.service';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { Prisma } from '../generated/prisma';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
@@ -46,6 +47,7 @@ export class AgendamentoService {
     private notificacaoProducer: NotificacaoProducer,
     private agendaGateway: AgendaGateway,
     private membroService: MembroBarbeariaService,
+    private contatoService: ContatoService,
   ) {}
 
   async create(dto: CreateAgendamentoDto, barCodigo: number) {
@@ -149,21 +151,23 @@ export class AgendamentoService {
     const fimDate = addMinutes(inicioDate, totalDuration);
 
     const agendamento = await this.prisma.$transaction(async (tx) => {
-      let clienteId = dto.clienteId;
-      if (clienteId == null && dto.cliente) {
-        const membro = await this.membroService.findOrCreateCliente(
+      const clienteId: number | null = dto.clienteId ?? null;
+      let contatoId: number | null = dto.contatoId ?? null;
+
+      if (dto.contato) {
+        const contato = await this.contatoService.findOrCreate(
           barCodigo,
-          dto.cliente,
+          dto.contato,
           tx,
         );
-        // `clienteId` do agendamento referencia Usuario.codigo (não o PK do membro).
-        clienteId = membro.usuario.codigo;
+        contatoId = contato.codigo;
       }
 
       return tx.agendamento.create({
         data: {
           barbeiroId: dto.barbeiroId,
-          clienteId: clienteId!,
+          clienteId,
+          contatoId,
           barCodigo,
           inicio: inicioDate,
           fim: fimDate,
