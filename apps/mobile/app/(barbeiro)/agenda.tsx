@@ -20,7 +20,8 @@ import {
   subDays,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useCallback, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -193,7 +194,15 @@ export default function BarbeiroAgendaScreen() {
   const { showToast } = useToast();
   const compartilharLink = useCompartilharLink();
 
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { data: dataParam } = useLocalSearchParams<{ data?: string }>();
+  const initialDate = useMemo(() => {
+    if (dataParam) {
+      const d = new Date(dataParam);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  }, [dataParam]);
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const { data, isLoading, isRefetching, refetch, isError } =
     useAgendaDia(selectedDate);
 

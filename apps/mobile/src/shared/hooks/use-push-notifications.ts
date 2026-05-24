@@ -1,4 +1,5 @@
 import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import Constants from "expo-constants";
 
@@ -78,8 +79,17 @@ export function usePushNotifications() {
       });
 
     responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((_response) => {
-        // User tapped notification — handle navigation if needed
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data as Record<
+          string,
+          unknown
+        >;
+        if (data?.barCodigo) {
+          const dateParam = data.dataAgendamento
+            ? `?data=${String(data.dataAgendamento).slice(0, 10)}`
+            : "";
+          router.push(`/(barbeiro)/agenda${dateParam}` as never);
+        }
       });
 
     return () => {

@@ -18,6 +18,7 @@ jest.mock("expo-constants", () => ({
 
 jest.mock("expo-router", () => ({
   router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() },
+  useLocalSearchParams: jest.fn(() => ({})),
 }));
 
 jest.mock("@/src/shared/hooks/use-auth", () => ({
