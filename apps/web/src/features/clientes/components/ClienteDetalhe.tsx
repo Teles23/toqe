@@ -1,18 +1,96 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Calendar, MessageCircle, Phone, Scissors } from "lucide-react";
 import { DetailPanel } from "@/shared/components/detail-panel";
 import { DetailMetricGrid } from "@/shared/components/detail-metric-grid";
 import type { Cliente } from "../types/cliente.types";
 import { STATUS_CONFIG } from "../constants/cliente.constants";
 import { formatBRL } from "@/shared/lib/utils";
+import { useClienteNota } from "../hooks/use-cliente-nota";
 
 interface ClienteDetalheProps {
   cliente: Cliente;
+  barCodigo: number;
   onClose: () => void;
 }
 
-export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
+function ClienteNotaEditor({
+  barCodigo,
+  clienteCodigo,
+}: {
+  barCodigo: number;
+  clienteCodigo: number;
+}) {
+  const { nota, salvar, isSalvando } = useClienteNota(barCodigo, clienteCodigo);
+  const [editando, setEditando] = useState(false);
+  const [texto, setTexto] = useState(nota);
+
+  useEffect(() => {
+    if (!editando) setTexto(nota);
+  }, [nota, editando]);
+
+  if (editando) {
+    return (
+      <div className="flex flex-col gap-2">
+        <textarea
+          className="w-full text-[12px] text-[var(--text-primary)] bg-[var(--surface-raised)] border border-[var(--border-strong)] rounded-md px-2 py-1.5 resize-none"
+          rows={4}
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          maxLength={2000}
+          data-testid="input-nota"
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              salvar(texto);
+              setEditando(false);
+            }}
+            disabled={isSalvando}
+            className="text-[11px] font-semibold px-3 py-1 rounded bg-[var(--primary)] text-[#0D0D0D]"
+            data-testid="btn-salvar-nota"
+          >
+            {isSalvando ? "Salvando..." : "Salvar"}
+          </button>
+          <button
+            onClick={() => {
+              setTexto(nota);
+              setEditando(false);
+            }}
+            className="text-[11px] px-3 py-1 rounded border border-[var(--border-strong)] text-[var(--text-secondary)]"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <p
+        className="text-[12px] text-[var(--text-secondary)] flex-1 whitespace-pre-wrap"
+        data-testid="nota-conteudo"
+      >
+        {nota || "Nenhuma nota registrada."}
+      </p>
+      <button
+        onClick={() => setEditando(true)}
+        className="shrink-0 text-[11px] font-semibold text-[var(--primary)] hover:underline"
+        data-testid="btn-editar-nota"
+      >
+        Editar
+      </button>
+    </div>
+  );
+}
+
+export function ClienteDetalhe({
+  cliente,
+  barCodigo,
+  onClose,
+}: ClienteDetalheProps) {
   const statusCfg = STATUS_CONFIG[cliente.status];
 
   const metrics = [
@@ -95,7 +173,7 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
 
       {/* Última visita */}
       {cliente.ultimaVisita && (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
           <span className="block text-[10px] uppercase tracking-wider mb-2 text-[var(--text-muted)]">
             Última visita
           </span>
@@ -104,6 +182,17 @@ export function ClienteDetalhe({ cliente, onClose }: ClienteDetalheProps) {
           </span>
         </div>
       )}
+
+      {/* Nota privada */}
+      <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
+        <span className="block text-[10px] uppercase tracking-wider mb-2 text-[var(--text-muted)]">
+          Nota privada
+        </span>
+        <ClienteNotaEditor
+          barCodigo={barCodigo}
+          clienteCodigo={cliente.codigo}
+        />
+      </div>
     </DetailPanel>
   );
 }
