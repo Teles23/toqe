@@ -178,4 +178,82 @@ export class RelatorioService {
       quantidade: porHora[h] ?? 0,
     }));
   }
+
+  // ─── CSV helpers ──────────────────────────────────────────────────────────
+
+  private toCsv(headers: string[], rows: Record<string, unknown>[]): string {
+    const csvHeaders = headers.join(',');
+    const csvRows = rows.map((row) =>
+      headers
+        .map((h) => {
+          const value = row[h];
+          if (value === null || value === undefined) return '';
+          const str =
+            typeof value === 'number' || typeof value === 'boolean'
+              ? String(value)
+              : typeof value === 'string'
+                ? value
+                : JSON.stringify(value);
+          // Wrap in quotes if contains comma, quote or newline
+          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`;
+          }
+          return str;
+        })
+        .join(','),
+    );
+    return [csvHeaders, ...csvRows].join('\n');
+  }
+
+  async faturamentoCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.faturamento(barCodigo, periodo);
+    return this.toCsv(['data', 'total'], rows as Record<string, unknown>[]);
+  }
+
+  async agendamentosCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.agendamentos(barCodigo, periodo);
+    return this.toCsv(
+      ['data', 'concluido', 'cancelado', 'no_show'],
+      rows as Record<string, unknown>[],
+    );
+  }
+
+  async servicosCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.servicos(barCodigo, periodo);
+    return this.toCsv(
+      ['nome', 'quantidade', 'total'],
+      rows as Record<string, unknown>[],
+    );
+  }
+
+  async barbeirosCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.barbeiros(barCodigo, periodo);
+    return this.toCsv(
+      ['nome', 'atendimentos', 'faturamento', 'ticketMedio'],
+      rows as Record<string, unknown>[],
+    );
+  }
+
+  async horariosPicoCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.horariosPico(barCodigo, periodo);
+    return this.toCsv(
+      ['hora', 'quantidade'],
+      rows as Record<string, unknown>[],
+    );
+  }
 }
