@@ -25,8 +25,13 @@ const INCLUDE_COMPLETO = {
   // `email` é usado internamente (job de notificação); `codigo` é o Usuario.codigo
   // usado nos checks de ownership. A serialização da resposta (serialize-agendamento)
   // expõe `usrCodigo`/`telefone` ao cliente e descarta `email`.
+  // `cliente` é null para walk-ins que usam TQE_CONTATO em vez de TQE_USUARIO.
   cliente: {
     select: { codigo: true, nome: true, email: true, telefone: true },
+  },
+  // Contato operacional (walk-in sem conta): presente quando clienteId é null.
+  contato: {
+    select: { codigo: true, nome: true, telefone: true },
   },
   barbeiro: { select: { codigo: true, nome: true, avatarUrl: true } },
   barbearia: { select: { codigo: true, nome: true } },
@@ -193,10 +198,14 @@ export class AgendamentoService {
     }>,
     servicos: { nome: string }[],
   ): AgendamentoConfirmadoJob {
+    // Walk-ins com TQE_CONTATO têm `cliente` null — sem e-mail para notificação.
+    const clienteNome =
+      agendamento.cliente?.nome ?? agendamento.contato?.nome ?? '';
+    const clienteEmail = agendamento.cliente?.email ?? '';
     return {
       agendamentoCodigo: agendamento.codigo,
-      clienteNome: agendamento.cliente.nome,
-      clienteEmail: agendamento.cliente.email,
+      clienteNome,
+      clienteEmail,
       barbeiroNome: agendamento.barbeiro.nome,
       barbeariaNome: agendamento.barbearia.nome,
       inicio: agendamento.inicio.toISOString(),
