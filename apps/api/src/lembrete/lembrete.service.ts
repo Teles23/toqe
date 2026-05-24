@@ -169,4 +169,42 @@ export class LembreteService {
       );
     }
   }
+
+  @Cron('0 9 * * *')
+  async enviarPushAniversario(): Promise<void> {
+    const hoje = new Date();
+    const dia = hoje.getDate();
+    const mes = hoje.getMonth() + 1;
+
+    this.logger.log(`Aniversários: verificando dia ${dia}/${mes}`);
+
+    const aniversariantes = await this.prisma.usuario.findMany({
+      where: {
+        dataNascimento: { not: null },
+        ativo: true,
+      },
+      select: { codigo: true, nome: true, dataNascimento: true },
+    });
+
+    const deHoje = aniversariantes.filter((u) => {
+      if (!u.dataNascimento) return false;
+      const d = u.dataNascimento;
+      return d.getDate() === dia && d.getMonth() + 1 === mes;
+    });
+
+    for (const u of deHoje) {
+      try {
+        await this.pushService.send(
+          u.codigo,
+          'Feliz aniversário! 🎉',
+          `Parabéns, ${u.nome}! Que tal celebrar com um corte novo?`,
+        );
+        this.logger.log(`Push de aniversário enviado para #${u.codigo}`);
+      } catch (err) {
+        this.logger.error(
+          `Falha ao enviar push de aniversário para #${u.codigo}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+  }
 }

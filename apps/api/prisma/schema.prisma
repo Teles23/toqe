@@ -25,7 +25,8 @@ model Usuario {
   twoFaSecret  String?  @map("TQE_USR_TWO_FA_SECRET") @db.VarChar(64)
   twoFaEnabled Boolean  @default(false) @map("TQE_USR_TWO_FA_ENABLED")
   // Acesso irrestrito ao painel Super Admin (fundador). Setado via SUPER_ADMIN_EMAIL env.
-  superAdmin   Boolean  @default(false) @map("TQE_USR_SUPER_ADMIN")
+  superAdmin      Boolean   @default(false) @map("TQE_USR_SUPER_ADMIN")
+  dataNascimento  DateTime? @map("TQE_USR_DATA_NASCIMENTO") @db.Date
   criadoEm  DateTime @default(now()) @map("TQE_USR_CRIADO_EM") @db.Timestamptz
 
   refreshTokens       RefreshToken[]

@@ -23,6 +23,7 @@ const mockUsuario = {
   twoFaSecret: null,
   twoFaEnabled: false,
   superAdmin: false,
+  dataNascimento: null,
   criadoEm: new Date('2024-01-01'),
 };
 

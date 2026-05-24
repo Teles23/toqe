@@ -281,4 +281,62 @@ describe('LembreteService', () => {
       expect(mockPushService.send).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('enviarPushAniversario', () => {
+    const hoje = new Date();
+
+    function makeAniversariante(overrides: Record<string, unknown> = {}) {
+      return {
+        codigo: 10,
+        nome: 'João',
+        dataNascimento: new Date(1990, hoje.getMonth(), hoje.getDate()),
+        ...overrides,
+      };
+    }
+
+    it('não envia push quando não há aniversariantes hoje', async () => {
+      mockPrisma.usuario.findMany.mockResolvedValue([]);
+
+      await expect(service.enviarPushAniversario()).resolves.toBeUndefined();
+
+      expect(mockPushService.send).not.toHaveBeenCalled();
+    });
+
+    it('envia push para aniversariante do dia', async () => {
+      const u = makeAniversariante();
+      mockPrisma.usuario.findMany.mockResolvedValue([u]);
+
+      await service.enviarPushAniversario();
+
+      expect(mockPushService.send).toHaveBeenCalledWith(
+        10,
+        'Feliz aniversário! 🎉',
+        expect.stringContaining('João'),
+      );
+    });
+
+    it('não envia push para usuário com aniversário em outro dia', async () => {
+      const outro = makeAniversariante({
+        dataNascimento: new Date(1990, hoje.getMonth(), hoje.getDate() + 1),
+      });
+      mockPrisma.usuario.findMany.mockResolvedValue([outro]);
+
+      await service.enviarPushAniversario();
+
+      expect(mockPushService.send).not.toHaveBeenCalled();
+    });
+
+    it('erro em um não impede os demais', async () => {
+      const u1 = makeAniversariante({ codigo: 1, nome: 'Maria' });
+      const u2 = makeAniversariante({ codigo: 2, nome: 'Pedro' });
+      mockPrisma.usuario.findMany.mockResolvedValue([u1, u2]);
+      mockPushService.send
+        .mockRejectedValueOnce(new Error('push fail'))
+        .mockResolvedValueOnce(undefined);
+
+      await expect(service.enviarPushAniversario()).resolves.toBeUndefined();
+
+      expect(mockPushService.send).toHaveBeenCalledTimes(2);
+    });
+  });
 });
