@@ -47,6 +47,7 @@ import {
   TenantSwitcherSheet,
 } from "@/src/shared/ui";
 import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
+import { useAgendaSocket } from "@/src/shared/hooks/use-agenda-socket";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 import type { PessoaAPI } from "@toqe/contracts";
 
@@ -195,6 +196,8 @@ export default function BarbeiroAgendaScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { data, isLoading, isRefetching, refetch, isError } =
     useAgendaDia(selectedDate);
+
+  useAgendaSocket();
 
   const updateStatus = useUpdateStatus();
   const criarBloqueio = useCriarBloqueio();
