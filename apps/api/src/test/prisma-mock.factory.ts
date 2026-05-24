@@ -32,6 +32,7 @@ export function createPrismaMock() {
     avaliacaoAgendamento: makeMethods(),
     conviteBarbearia: makeMethods(),
     clienteNota: makeMethods(),
+    contato: makeMethods(),
     $transaction: jest.fn(),
     $queryRaw: jest.fn(),
     $executeRawUnsafe: jest.fn(),

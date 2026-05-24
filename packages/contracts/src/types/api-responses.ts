@@ -36,6 +36,23 @@ export interface ClienteAPI {
   servicoFav: string | null;
 }
 
+// ---- Pessoa (visão unificada: TQE_USR + TQE_CONTATO) ----
+
+export interface PessoaAPI {
+  codigo: number;
+  nome: string;
+  /** "usuario" = TQE_USR (tem conta/login); "contato" = TQE_CONTATO (walk-in). */
+  tipo: "usuario" | "contato";
+  email: string | null;
+  telefone: string | null;
+  avatarUrl: string | null;
+  totalVisitas: number;
+  totalGasto: number;
+  ticketMedio: number;
+  ultimaVisita: string | null;
+  servicoFav: string | null;
+}
+
 // ---- Serviço ----
 
 export interface ServicoAPI {

@@ -130,6 +130,51 @@ export class MembroBarbeariaService {
     );
   }
 
+  async findPessoas(barCodigo: number) {
+    const [clientes, contatos] = await Promise.all([
+      this.findClientes(barCodigo),
+      this.prisma.contato.findMany({
+        where: { barCodigo },
+        orderBy: { nome: 'asc' },
+      }),
+    ]);
+
+    const usuarios = clientes.map((c) => ({
+      codigo: c.codigo,
+      nome: c.nome,
+      tipo: 'usuario' as const,
+      email: (c.email ?? null) as string | null,
+      telefone: c.telefone ?? null,
+      avatarUrl: c.avatarUrl ?? null,
+      totalVisitas: c.totalVisitas,
+      totalGasto: c.totalGasto,
+      ticketMedio: c.ticketMedio,
+      ultimaVisita:
+        c.ultimaVisita instanceof Date
+          ? c.ultimaVisita.toISOString()
+          : ((c.ultimaVisita as string | null) ?? null),
+      servicoFav: (c.servicoFav ?? null) as string | null,
+    }));
+
+    const contatosPessoas = contatos.map((c) => ({
+      codigo: c.codigo,
+      nome: c.nome,
+      tipo: 'contato' as const,
+      email: null,
+      telefone: c.telefone ?? null,
+      avatarUrl: null,
+      totalVisitas: 0,
+      totalGasto: 0,
+      ticketMedio: 0,
+      ultimaVisita: null,
+      servicoFav: null,
+    }));
+
+    return [...usuarios, ...contatosPessoas].sort((a, b) =>
+      a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }),
+    );
+  }
+
   findMembros(barCodigo: number) {
     return this.prisma.membroBarbearia.findMany({
       where: { barCodigo },

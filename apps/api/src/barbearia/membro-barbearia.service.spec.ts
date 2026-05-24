@@ -301,4 +301,70 @@ describe('MembroBarbeariaService', () => {
       );
     });
   });
+
+  describe('findPessoas', () => {
+    it('combina clientes (tipo=usuario) e contatos (tipo=contato) ordenados por nome', async () => {
+      // findClientes internamente: findMany membros → agendamentos por cliente
+      mockPrisma.membroBarbearia.findMany.mockResolvedValue([
+        {
+          usrCodigo: 1,
+          perfil: 'cliente',
+          usuario: {
+            codigo: 1,
+            nome: 'Maria',
+            email: 'maria@x.com',
+            telefone: null,
+            avatarUrl: null,
+          },
+        },
+      ]);
+      // agendamentos do cliente Maria
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      // contatos da barbearia
+      mockPrisma.contato.findMany.mockResolvedValue([
+        { codigo: 10, barCodigo: 1, nome: 'Ana', telefone: '+5511999' },
+      ]);
+
+      const result = await service.findPessoas(1);
+
+      expect(result).toHaveLength(2);
+      // Ordenados por nome: Ana < Maria
+      expect(result[0]).toMatchObject({
+        nome: 'Ana',
+        tipo: 'contato',
+        email: null,
+      });
+      expect(result[1]).toMatchObject({
+        nome: 'Maria',
+        tipo: 'usuario',
+        email: 'maria@x.com',
+      });
+    });
+
+    it('retorna lista vazia quando não há clientes nem contatos', async () => {
+      mockPrisma.membroBarbearia.findMany.mockResolvedValue([]);
+      mockPrisma.contato.findMany.mockResolvedValue([]);
+
+      const result = await service.findPessoas(1);
+      expect(result).toEqual([]);
+    });
+
+    it('contato tem stats zerados (totalVisitas=0, totalGasto=0, etc.)', async () => {
+      mockPrisma.membroBarbearia.findMany.mockResolvedValue([]);
+      mockPrisma.contato.findMany.mockResolvedValue([
+        { codigo: 5, barCodigo: 1, nome: 'Carlos', telefone: null },
+      ]);
+
+      const result = await service.findPessoas(1);
+      expect(result[0]).toMatchObject({
+        codigo: 5,
+        tipo: 'contato',
+        totalVisitas: 0,
+        totalGasto: 0,
+        ticketMedio: 0,
+        ultimaVisita: null,
+        servicoFav: null,
+      });
+    });
+  });
 });
