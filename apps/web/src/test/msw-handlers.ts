@@ -547,6 +547,43 @@ export const handlers = [
   http.post(`${BASE}/fidelidade/resgatar`, () =>
     HttpResponse.json({ desconto: 25 }),
   ),
+
+  // ── ApiKeys ──────────────────────────────────────────────────────────────
+  http.get(`${BASE}/api-keys`, () =>
+    HttpResponse.json([
+      {
+        codigo: 1,
+        barCodigo: 1,
+        nome: "Integração Site",
+        keyPrefix: "toqe_ab12_cd",
+        ativo: true,
+        criadoEm: new Date("2026-05-01T00:00:00Z").toISOString(),
+        ultimoUsoEm: new Date("2026-05-24T12:00:00Z").toISOString(),
+      },
+    ]),
+  ),
+  http.post(`${BASE}/api-keys`, async ({ request }) => {
+    const body = (await request.json()) as { nome: string };
+    return HttpResponse.json(
+      {
+        key: "toqe_aabb1234_ccddeeffffffff00112233445566",
+        apiKey: {
+          codigo: 99,
+          barCodigo: 1,
+          nome: body.nome,
+          keyPrefix: "toqe_aabb1234",
+          ativo: true,
+          criadoEm: new Date().toISOString(),
+          ultimoUsoEm: null,
+        },
+      },
+      { status: 201 },
+    );
+  }),
+  http.delete(
+    `${BASE}/api-keys/:codigo`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
 ];
 
 export const server = setupServer(...handlers);

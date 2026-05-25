@@ -4,41 +4,15 @@ export type SecaoId =
   | "notificacoes"
   | "plano"
   | "seguranca"
-  | "qrcode";
+  | "qrcode"
+  | "api-keys";
 
-export interface HorarioDia {
-  dia: string;
-  aberto: boolean;
-  abertura: string;
-  fechamento: string;
-}
-
-export interface NotificacaoConfig {
-  novoAgendamento: boolean;
-  cancelamento: boolean;
-  lembreteCliente: boolean;
-  lembreteInternos: boolean;
-  relatorioDiario: boolean;
-  clienteNovo: boolean;
-  avaliacaoRecebida: boolean;
-  pagamentoRecebido: boolean;
-}
-
-export interface BarbeariaConfig {
+export interface ApiKey {
+  codigo: number;
+  barCodigo: number;
   nome: string;
-  telefone: string;
-  email: string;
-  endereco: string;
-  logoUrl?: string | null;
-  /** Permissões concedidas aos barbeiros (definidas pelo dono). */
-  barbeiroCriaServico?: boolean;
-  barbeiroAlteraPreco?: boolean;
-}
-
-export interface Plano {
-  id: string;
-  nome: string;
-  preco: number;
-  atual: boolean;
-  features: string[];
+  keyPrefix: string;
+  ativo: boolean;
+  criadoEm: string;
+  ultimoUsoEm: string | null;
 }

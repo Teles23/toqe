@@ -321,3 +321,112 @@ pnpm --filter api test -- src/fidelidade/fidelidade.service.spec.ts
 # registrarGanho: sucesso, cálculo de pontos, mínimo 1 ponto, idempotência, agendamento não encontrado
 # resgatar: sucesso, pontos < 10, saldo insuficiente, cliente não encontrado, decremento correto
 ```
+# Sprint E4 — API Pública com ApiKey
+
+**Status:** Implementado
+**Branch:** `worktree-agent-a0daff280e3fff223`
+**Base:** Sprint E (maturidade e integrações externas)
+
+---
+
+## Arquivos criados
+
+| Arquivo | Descrição |
+|---|---|
+| `apps/api/prisma/migrations/20260525020000_api_key/migration.sql` | Tabela `TQE_API_KEY` |
+| `apps/api/src/auth/guards/api-key.guard.ts` | Guard de autenticação via `x-api-key` |
+| `apps/api/src/api-key/api-key.service.ts` | Serviço: criar, listar, revogar ApiKeys |
+| `apps/api/src/api-key/api-key.service.spec.ts` | Testes unitários do serviço |
+| `apps/api/src/api-key/api-key.controller.ts` | Controller JWT: `POST/GET/DELETE /api-keys` |
+| `apps/api/src/api-key/api-key.module.ts` | Módulo ApiKey |
+| `apps/api/src/api-key/dto/criar-api-key.dto.ts` | DTO para criação de ApiKey |
+| `apps/api/src/api-publica/api-publica.service.ts` | Serviço da API pública |
+| `apps/api/src/api-publica/api-publica.controller.ts` | Controller: `GET/POST /v1/agendamentos`, `GET /v1/servicos`, `GET /v1/barbeiros` |
+| `apps/api/src/api-publica/api-publica.module.ts` | Módulo API Pública |
+| `apps/api/src/api-publica/dto/criar-agendamento-publico.dto.ts` | DTO para criação de agendamento público |
+| `apps/web/src/features/configuracoes/components/SecaoApiKeys.tsx` | Componente de gerenciamento de ApiKeys |
+| `apps/web/src/features/configuracoes/components/ConfiguracoesView.tsx` | View de configurações com SecaoApiKeys |
+| `apps/web/src/features/configuracoes/hooks/use-api-keys.ts` | Hooks para CRUD de ApiKeys |
+| `apps/web/src/features/configuracoes/types/configuracao.types.ts` | Tipos compartilhados |
+| `apps/web/src/test/msw-handlers.ts` | Handlers MSW para testes |
+
+## Arquivos modificados
+
+| Arquivo | Mudança |
+|---|---|
+| `apps/api/src/app.module.ts` | Registra `ApiKeyModule` e `ApiPublicaModule` |
+| `apps/api/src/generated/prisma/` | Regenerado com modelo `ApiKey` |
+| `apps/web/package.json` | Adiciona `@tanstack/react-query`, `lucide-react`, `sonner`, `msw`, `vitest` |
+
+---
+
+## Arquitetura
+
+### Schema `TQE_API_KEY`
+
+```sql
+CREATE TABLE "TQE_API_KEY" (
+  "TQE_AK_CODIGO"       SERIAL PRIMARY KEY,
+  "TQE_AK_BAR_CODIGO"   INTEGER NOT NULL REFERENCES "TQE_BARBEARIA",
+  "TQE_AK_NOME"         VARCHAR(100) NOT NULL,
+  "TQE_AK_KEY_HASH"     VARCHAR(255) NOT NULL UNIQUE,  -- SHA-256 da key completa
+  "TQE_AK_KEY_PREFIX"   VARCHAR(10) NOT NULL,          -- primeiros 15 chars (exibição)
+  "TQE_AK_ATIVO"        BOOLEAN NOT NULL DEFAULT TRUE,
+  "TQE_AK_CRIADO_EM"    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "TQE_AK_ULTIMO_USO_EM" TIMESTAMPTZ
+);
+```
+
+### Formato da ApiKey
+
+```
+toqe_<8hex>_<32hex>
+```
+
+Exemplo: `toqe_a1b2c3d4_e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0`
+
+### Fluxo de autenticação
+
+1. Cliente envia `x-api-key: toqe_...` no header
+2. `ApiKeyGuard` extrai a key, calcula SHA-256
+3. Busca no DB pelo hash — se encontrada e ativa, injeta `req.apiKeyBarCodigo`
+4. Atualiza `ultimoUsoEm` de forma assíncrona (não bloqueia request)
+5. Endpoints da API pública acessam `req.apiKeyBarCodigo` para tenant isolation
+
+### Endpoints da API Pública
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/v1/agendamentos?data=YYYY-MM-DD` | Lista agendamentos do dia |
+| `POST` | `/v1/agendamentos` | Cria agendamento |
+| `GET` | `/v1/servicos` | Lista serviços ativos |
+| `GET` | `/v1/barbeiros` | Lista barbeiros |
+
+### Endpoints de Gerenciamento (JWT)
+
+| Método | Rota | Permissão | Descrição |
+|---|---|---|---|
+| `POST` | `/api-keys` | dono, gerente | Criar ApiKey |
+| `GET` | `/api-keys` | dono, gerente | Listar ApiKeys (sem keyHash) |
+| `DELETE` | `/api-keys/:codigo` | dono, gerente | Revogar ApiKey |
+
+---
+
+## Segurança
+
+- **Armazenamento**: apenas SHA-256 da key completa é armazenado — irreversível
+- **Exibição**: apenas `keyPrefix` (primeiros 15 chars) é exibido na UI
+- **Revogação**: soft delete (`ativo=false`) com tenant isolation
+- **One-time display**: key completa retornada UMA VEZ na criação, nunca mais recuperável
+
+---
+
+## Testes
+
+```bash
+# API (Jest)
+pnpm --filter api test -- --testPathPattern=api-key
+
+# 11 testes: criar (5), listar (3), revogar (3)
+# Cobertura: formato de key, keyHash SHA-256, tenant isolation, keyHash nunca exposto
+```
