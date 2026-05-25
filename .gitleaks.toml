@@ -1,0 +1,6 @@
+title = "Gitleaks config — toqe"
+
+[allowlist]
+  description = "Falsos positivos conhecidos"
+  # URLs de sessão do Claude Code nos corpos de commit (claude.ai/code/session_...)
+  regexes = ['''https://claude\.ai/code/session_[A-Za-z0-9]+''']

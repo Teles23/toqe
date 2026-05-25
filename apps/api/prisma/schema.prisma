@@ -42,6 +42,8 @@ model Usuario {
   pushTokens     PushToken[]
   notasFeitas    ClienteNota[]      @relation("NotaBarbeiro")
   notasRecebidas ClienteNota[]      @relation("NotaCliente")
+  pontosFidelidade PontoFidelidade[]
+  pontosAcumulados Int              @default(0) @map("TQE_USR_PONTOS_ACUMULADOS")
 
   @@map("TQE_USUARIO")
 }
@@ -108,6 +110,8 @@ model Barbearia {
   convites       ConviteBarbearia[]
   clienteNotas   ClienteNota[]
   contatos       Contato[]
+  pontosFidelidade PontoFidelidade[]
+  apiKeys        ApiKey[]
 
   @@map("TQE_BARBEARIA")
 }
@@ -254,6 +258,7 @@ model Agendamento {
   contato    Contato?               @relation("AgendamentosContato", fields: [contatoId], references: [codigo])
   itens      AgendamentoItem[]
   avaliacao  AvaliacaoAgendamento?
+  pontosFidelidade PontoFidelidade[]
 
   // partial unique index gerenciado via migration SQL (exclui WALK_IN)
   // ver migration 20260516_walkin_partial_unique
@@ -322,6 +327,21 @@ model JornadaTrabalho {
   @@map("TQE_JORNADA_TRABALHO")
 }
 
+model ApiKey {
+  codigo      Int       @id @default(autoincrement()) @map("TQE_AK_CODIGO")
+  barCodigo   Int       @map("TQE_AK_BAR_CODIGO")
+  nome        String    @map("TQE_AK_NOME") @db.VarChar(100)
+  keyHash     String    @unique @map("TQE_AK_KEY_HASH") @db.VarChar(255)
+  keyPrefix   String    @map("TQE_AK_KEY_PREFIX") @db.VarChar(10)
+  ativo       Boolean   @default(true) @map("TQE_AK_ATIVO")
+  criadoEm   DateTime  @default(now()) @map("TQE_AK_CRIADO_EM") @db.Timestamptz
+  ultimoUsoEm DateTime? @map("TQE_AK_ULTIMO_USO_EM") @db.Timestamptz
+
+  barbearia   Barbearia @relation(fields: [barCodigo], references: [codigo])
+
+  @@map("TQE_API_KEY")
+}
+
 model NotificacaoPreferencia {
   codigo      Int      @id @default(autoincrement()) @map("TQE_NPR_CODIGO")
   barCodigo   Int      @map("TQE_NPR_BAR_CODIGO")
@@ -375,4 +395,24 @@ model ConviteBarbearia {
   barbearia    Barbearia @relation(fields: [barCodigo], references: [codigo])
 
   @@map("TQE_CONVITE_BARBEARIA")
+}
+
+// ==========================================
+// 5. FIDELIDADE
+// ==========================================
+
+model PontoFidelidade {
+  codigo            Int       @id @default(autoincrement()) @map("TQE_PF_CODIGO")
+  barCodigo         Int       @map("TQE_PF_BAR_CODIGO")
+  clienteCodigo     Int       @map("TQE_PF_CLI_CODIGO")
+  pontos            Int       @map("TQE_PF_PONTOS")
+  tipo              String    @map("TQE_PF_TIPO") @db.VarChar(20) // 'ganho' | 'resgate'
+  agendamentoCodigo Int?      @map("TQE_PF_AGD_CODIGO")
+  criadoEm          DateTime  @default(now()) @map("TQE_PF_CRIADO_EM") @db.Timestamptz
+
+  barbearia   Barbearia    @relation(fields: [barCodigo], references: [codigo])
+  cliente     Usuario      @relation(fields: [clienteCodigo], references: [codigo])
+  agendamento Agendamento? @relation(fields: [agendamentoCodigo], references: [codigo])
+
+  @@map("TQE_PONTO_FIDELIDADE")
 }

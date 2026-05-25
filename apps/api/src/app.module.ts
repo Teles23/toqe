@@ -31,6 +31,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { LembreteModule } from './lembrete/lembrete.module';
 import { AsaasModule } from './asaas/asaas.module';
 import { PlanoAtivoGuard } from './auth/guards/plano-ativo.guard';
+import { FidelidadeModule } from './fidelidade/fidelidade.module';
+import { ApiKeyModule } from './api-key/api-key.module';
+import { ApiPublicaModule } from './api-publica/api-publica.module';
 
 @Module({
   imports: [
@@ -76,6 +79,9 @@ import { PlanoAtivoGuard } from './auth/guards/plano-ativo.guard';
     ScheduleModule.forRoot(),
     LembreteModule,
     AsaasModule,
+    FidelidadeModule,
+    ApiKeyModule,
+    ApiPublicaModule,
   ],
   controllers: [AppController],
   providers: [

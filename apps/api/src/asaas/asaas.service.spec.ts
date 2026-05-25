@@ -74,9 +74,8 @@ describe('AsaasService', () => {
         cycle: 'MONTHLY',
       });
       await service.createSubscription('cus_1', 'basic', '2026-06-01');
-      const body = JSON.parse(
-        (mockFetch.mock.calls[0][1] as RequestInit).body as string,
-      ) as { value: number };
+      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string) as { value: number };
       expect(body.value).toBe(49);
     });
   });

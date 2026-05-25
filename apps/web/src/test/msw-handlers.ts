@@ -494,9 +494,99 @@ export const handlers = [
     });
   }),
 
+  // ── Dashboard da rede (multi-unidade) ────────────────────────────────────
+  http.get(`${BASE}/barbearias/rede`, () =>
+    HttpResponse.json({
+      unidades: [
+        {
+          barCodigo: 1,
+          nome: "Barber Alpha",
+          faturamentoHoje: 350,
+          faturamentoMes: 4200,
+          agendamentosHoje: 5,
+          concluidos: 3,
+        },
+      ],
+      totais: {
+        faturamentoHoje: 350,
+        faturamentoMes: 4200,
+        agendamentosHoje: 5,
+        concluidos: 3,
+      },
+    }),
+  ),
+
   // ── Legacy handlers (usados em setup.spec.ts com fetch relativo) ─────────
   http.get("/barbearia", () =>
     HttpResponse.json({ codigo: 1, nome: "BarberShop", slug: "barbershop" }),
+  ),
+
+  // ── Fidelidade ────────────────────────────────────────────────────────────
+  http.get(`${BASE}/fidelidade/saldo/:clienteCodigo`, ({ params }) =>
+    HttpResponse.json({
+      pontos: 50,
+      historico: [
+        {
+          codigo: 1,
+          barCodigo: 1,
+          clienteCodigo: Number(params.clienteCodigo),
+          pontos: 50,
+          tipo: "ganho",
+          agendamentoCodigo: 5,
+          criadoEm: new Date().toISOString(),
+        },
+      ],
+    }),
+  ),
+  http.get(`${BASE}/fidelidade/ranking`, () =>
+    HttpResponse.json([
+      {
+        codigo: 1,
+        nome: "Cliente Top",
+        email: "top@test.com",
+        pontosAcumulados: 100,
+      },
+    ]),
+  ),
+  http.post(`${BASE}/fidelidade/resgatar`, () =>
+    HttpResponse.json({ desconto: 25 }),
+  ),
+
+  // ── ApiKeys ──────────────────────────────────────────────────────────────
+  http.get(`${BASE}/api-keys`, () =>
+    HttpResponse.json([
+      {
+        codigo: 1,
+        barCodigo: 1,
+        nome: "Integração Site",
+        keyPrefix: "toqe_ab12_cd",
+        ativo: true,
+        criadoEm: new Date("2026-05-01T00:00:00Z").toISOString(),
+        ultimoUsoEm: new Date("2026-05-24T12:00:00Z").toISOString(),
+      },
+    ]),
+  ),
+  http.post(`${BASE}/api-keys`, async ({ request }) => {
+    const body = (await request.json()) as { nome: string };
+    return HttpResponse.json(
+      {
+        key: "toqe_aabb1234_ccddeeffffffff00112233445566",
+        apiKey: {
+          codigo: 99,
+          barCodigo: 1,
+          nome: body.nome,
+          keyPrefix: "toqe_aabb1234",
+          ativo: true,
+          criadoEm: new Date().toISOString(),
+          ultimoUsoEm: null,
+        },
+      },
+      { status: 201 },
+    );
+  }),
+  http.delete(
+    `${BASE}/api-keys/:codigo`,
+    () => new HttpResponse(null, { status: 204 }),
   ),
 ];
 

@@ -4,7 +4,8 @@ export type SecaoId =
   | "notificacoes"
   | "plano"
   | "seguranca"
-  | "qrcode";
+  | "qrcode"
+  | "api-keys";
 
 export interface HorarioDia {
   dia: string;
@@ -41,4 +42,14 @@ export interface Plano {
   preco: number;
   atual: boolean;
   features: string[];
+}
+
+export interface ApiKey {
+  codigo: number;
+  barCodigo: number;
+  nome: string;
+  keyPrefix: string;
+  ativo: boolean;
+  criadoEm: string;
+  ultimoUsoEm: string | null;
 }

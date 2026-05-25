@@ -12,6 +12,7 @@ import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
+import { TransferirAgendamentoDto } from './dto/transferir-agendamento.dto';
 import type { ReagendarAgendamentoInput } from '@toqe/contracts';
 import { addMinutes, startOfDay, endOfDay, subDays } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
@@ -21,6 +22,7 @@ import { ContatoService } from '../contato/contato.service';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { Prisma } from '../generated/prisma';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
+import { FidelidadeService } from '../fidelidade/fidelidade.service';
 
 const INCLUDE_COMPLETO = {
   itens: { include: { servico: true } },
@@ -49,6 +51,7 @@ export class AgendamentoService {
     private agendaGateway: AgendaGateway,
     private membroService: MembroBarbeariaService,
     private contatoService: ContatoService,
+    private fidelidadeService: FidelidadeService,
   ) {}
 
   async create(dto: CreateAgendamentoDto, barCodigo: number) {
@@ -417,6 +420,11 @@ export class AgendamentoService {
       codigo,
       status: dto.status,
     });
+
+    if ((dto.status as StatusAgendamento) === StatusAgendamento.CONCLUIDO) {
+      await this.fidelidadeService.registrarGanho(codigo, barCodigo);
+    }
+
     return atualizado;
   }
 
@@ -578,5 +586,56 @@ export class AgendamentoService {
     this.agendaGateway.emitAgendamentoCriado(barCodigo, atualizado);
 
     return atualizado;
+  }
+
+  async transferir(
+    codigo: number,
+    dto: TransferirAgendamentoDto,
+    barCodigo: number,
+  ) {
+    const agendamento = await this.findOne(codigo, barCodigo);
+
+    const statusFinais = ['concluido', 'cancelado', 'no_show'];
+    if (statusFinais.includes(agendamento.status)) {
+      throw new BadRequestException(
+        `Não é possível transferir um agendamento com status '${agendamento.status}'`,
+      );
+    }
+
+    const novoBarbeiro = await this.prisma.membroBarbearia.findFirst({
+      where: {
+        usrCodigo: dto.novoBarbeiroId,
+        barCodigo,
+        perfil: { in: ['barbeiro', 'dono'] },
+      },
+    });
+
+    if (!novoBarbeiro) {
+      throw new NotFoundException(
+        'Barbeiro não encontrado ou não pertence a esta barbearia',
+      );
+    }
+
+    const conflitos = await this.prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(1) as count
+      FROM "TQE_AGENDAMENTO"
+      WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.novoBarbeiroId}
+        AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
+        AND "TQE_AGD_CODIGO" <> ${codigo}
+        AND "TQE_AGD_INICIO" < ${agendamento.fim}
+        AND "TQE_AGD_FIM"   > ${agendamento.inicio}
+    `;
+
+    if (Number(conflitos[0].count) > 0) {
+      throw new BadRequestException(
+        'Conflito de horário: o barbeiro selecionado já possui um agendamento neste período',
+      );
+    }
+
+    return this.prisma.agendamento.update({
+      where: { codigo },
+      data: { barbeiroId: dto.novoBarbeiroId },
+      include: INCLUDE_COMPLETO,
+    });
   }
 }

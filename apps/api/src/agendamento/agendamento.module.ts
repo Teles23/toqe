@@ -6,6 +6,7 @@ import { NotificacaoModule } from '../notificacao/notificacao.module';
 import { AgendaModule } from '../agenda/agenda.module';
 import { BarbeariaModule } from '../barbearia/barbearia.module';
 import { ContatoModule } from '../contato/contato.module';
+import { FidelidadeModule } from '../fidelidade/fidelidade.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ContatoModule } from '../contato/contato.module';
     AgendaModule,
     BarbeariaModule,
     ContatoModule,
+    FidelidadeModule,
   ],
   controllers: [AgendamentoController],
   providers: [AgendamentoService],

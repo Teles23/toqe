@@ -82,7 +82,7 @@ describe("BarbeiroLayout — guards de acesso", () => {
 
   it("mostra ActivityIndicator enquanto loading=true", () => {
     mockUseAuth.mockReturnValue(makeAuth({ loading: true }));
-    const { getByTestId, UNSAFE_queryByType } = render(<BarbeiroLayout />);
+    const { UNSAFE_queryByType } = render(<BarbeiroLayout />);
     // ActivityIndicator deve estar presente; Redirect não deve ser chamado
     expect(mockRedirectHref).not.toHaveBeenCalled();
     // ActivityIndicator presente na árvore

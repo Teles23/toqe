@@ -24,6 +24,7 @@ const mockUsuario = {
   twoFaEnabled: false,
   superAdmin: false,
   dataNascimento: null,
+  pontosAcumulados: 0,
   criadoEm: new Date('2024-01-01'),
 };
 
@@ -114,6 +115,7 @@ describe('AuthService', () => {
         twoFaEnabled: false,
         superAdmin: false,
         dataNascimento: null,
+        pontosAcumulados: 0,
         criadoEm: new Date('2024-01-01'),
       };
       usuarioService.create.mockResolvedValue(expected);

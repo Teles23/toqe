@@ -159,4 +159,57 @@ describe('DashboardService', () => {
       expect(carlos?.pct).toBeLessThanOrEqual(100);
     });
   });
+
+  describe('getRedeOverview', () => {
+    it('retorna unidades e totais vazios quando usuário não é dono de nenhuma barbearia', async () => {
+      prisma.membroBarbearia.findMany.mockResolvedValue([]);
+
+      const result = await service.getRedeOverview(1);
+
+      expect(result.unidades).toHaveLength(0);
+      expect(result.totais.faturamentoHoje).toBe(0);
+      expect(result.totais.faturamentoMes).toBe(0);
+      expect(result.totais.agendamentosHoje).toBe(0);
+      expect(result.totais.concluidos).toBe(0);
+    });
+
+    it('agrega KPIs de múltiplas barbearias', async () => {
+      prisma.membroBarbearia.findMany.mockResolvedValueOnce([
+        { barCodigo: 1, barbearia: { nome: 'Barber A' } },
+        { barCodigo: 2, barbearia: { nome: 'Barber B' } },
+      ]);
+
+      const d = (v: number) => new Prisma.Decimal(v);
+      prisma.agendamentoItem.findMany
+        .mockResolvedValueOnce([{ preco: d(100) }]) // bar 1 hoje
+        .mockResolvedValueOnce([{ preco: d(500) }]) // bar 1 mês
+        .mockResolvedValueOnce([{ preco: d(200) }]) // bar 2 hoje
+        .mockResolvedValueOnce([{ preco: d(800) }]); // bar 2 mês
+
+      prisma.agendamento.findMany
+        .mockResolvedValueOnce([
+          { status: 'concluido' },
+          { status: 'pendente' },
+        ])
+        .mockResolvedValueOnce([{ status: 'concluido' }]);
+
+      const result = await service.getRedeOverview(99);
+
+      expect(result.unidades).toHaveLength(2);
+      expect(result.unidades[0]).toMatchObject({
+        barCodigo: 1,
+        nome: 'Barber A',
+        faturamentoHoje: 100,
+        faturamentoMes: 500,
+        agendamentosHoje: 2,
+        concluidos: 1,
+      });
+      expect(result.totais).toMatchObject({
+        faturamentoHoje: 300,
+        faturamentoMes: 1300,
+        agendamentosHoje: 3,
+        concluidos: 2,
+      });
+    });
+  });
 });

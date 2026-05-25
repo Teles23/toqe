@@ -23,6 +23,7 @@ import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
+import { TransferirAgendamentoDto } from './dto/transferir-agendamento.dto';
 import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
 import { ReagendarAgendamentoDto } from './dto/reagendar-agendamento.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -275,6 +276,28 @@ export class AgendamentoController {
         Number(barCodigo),
       ),
     );
+  }
+
+  @Patch(':codigo/transferir')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
+  @ApiOperation({
+    summary: 'Transfere o agendamento para outro barbeiro da mesma barbearia',
+  })
+  @ApiResponse({ status: 200, description: 'Agendamento transferido.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Status inválido ou conflito de horário.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Agendamento ou barbeiro não encontrado.',
+  })
+  transferir(
+    @Param('codigo', ParseIntPipe) codigo: number,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Body() dto: TransferirAgendamentoDto,
+  ) {
+    return this.agendamentoService.transferir(codigo, dto, Number(barCodigo));
   }
 
   @Post(':codigo/avaliacao')
