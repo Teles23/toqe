@@ -14,6 +14,7 @@ import {
   Settings,
   ChevronLeft,
   Zap,
+  Network,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
@@ -37,6 +38,12 @@ const navItems = [
     href: "/relatorios",
     label: "Relatórios",
     icon: BarChart3,
+    group: "insights",
+  },
+  {
+    href: "/rede",
+    label: "Minha Rede",
+    icon: Network,
     group: "insights",
   },
   {

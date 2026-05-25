@@ -494,6 +494,28 @@ export const handlers = [
     });
   }),
 
+  // ── Dashboard da rede (multi-unidade) ────────────────────────────────────
+  http.get(`${BASE}/barbearias/rede`, () =>
+    HttpResponse.json({
+      unidades: [
+        {
+          barCodigo: 1,
+          nome: "Barber Alpha",
+          faturamentoHoje: 350,
+          faturamentoMes: 4200,
+          agendamentosHoje: 5,
+          concluidos: 3,
+        },
+      ],
+      totais: {
+        faturamentoHoje: 350,
+        faturamentoMes: 4200,
+        agendamentosHoje: 5,
+        concluidos: 3,
+      },
+    }),
+  ),
+
   // ── Legacy handlers (usados em setup.spec.ts com fetch relativo) ─────────
   http.get("/barbearia", () =>
     HttpResponse.json({ codigo: 1, nome: "BarberShop", slug: "barbershop" }),

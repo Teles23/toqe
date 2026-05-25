@@ -33,6 +33,76 @@ export class DashboardService {
     return { kpis, liveMetrics, barbeiros, faturamento, servicos, atividade };
   }
 
+  // ─── Dashboard consolidado da rede ────────────────────────────────────────
+
+  async getRedeOverview(usuarioCodigo: number) {
+    const agora = new Date();
+    const hoje = startOfDay(agora);
+    const fimHoje = endOfDay(hoje);
+    const { inicio: inicioMes } = currentMonthRange();
+
+    const barbearias = await this.prisma.membroBarbearia.findMany({
+      where: { usrCodigo: usuarioCodigo, perfil: 'dono' },
+      select: { barCodigo: true, barbearia: { select: { nome: true } } },
+    });
+
+    const unidades = await Promise.all(
+      barbearias.map(async ({ barCodigo, barbearia }) => {
+        const [itensHoje, itensMes, agendamentosHoje] = await Promise.all([
+          this.prisma.agendamentoItem.findMany({
+            where: {
+              barCodigo,
+              agendamento: {
+                status: StatusAgendamento.CONCLUIDO,
+                inicio: { gte: hoje, lte: fimHoje },
+              },
+            },
+            select: { preco: true },
+          }),
+          this.prisma.agendamentoItem.findMany({
+            where: {
+              barCodigo,
+              agendamento: {
+                status: StatusAgendamento.CONCLUIDO,
+                inicio: { gte: inicioMes, lte: fimHoje },
+              },
+            },
+            select: { preco: true },
+          }),
+          this.prisma.agendamento.findMany({
+            where: { barCodigo, inicio: { gte: hoje, lte: fimHoje } },
+            select: { status: true },
+          }),
+        ]);
+
+        const faturamentoHoje = somarItens(itensHoje);
+        const faturamentoMes = somarItens(itensMes);
+        const concluido = StatusAgendamento.CONCLUIDO as string;
+        const qtdConcluidos = agendamentosHoje.filter(
+          (a) => a.status === concluido,
+        ).length;
+
+        return {
+          barCodigo,
+          nome: barbearia.nome,
+          faturamentoHoje,
+          faturamentoMes,
+          agendamentosHoje: agendamentosHoje.length,
+          concluidos: qtdConcluidos,
+        };
+      }),
+    );
+
+    const totais = {
+      faturamentoHoje: unidades.reduce((s, u) => s + u.faturamentoHoje, 0),
+      faturamentoMes: unidades.reduce((s, u) => s + u.faturamentoMes, 0),
+      agendamentosHoje: unidades.reduce((s, u) => s + u.agendamentosHoje, 0),
+      concluidos: unidades.reduce((s, u) => s + u.concluidos, 0),
+    };
+
+    return { unidades, totais };
+  }
+
   // ─── KPIs ─────────────────────────────────────────────────────────────────
 
   private async getKpis(barCodigo: number, hoje: Date, fimHoje: Date) {
