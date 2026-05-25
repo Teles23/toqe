@@ -51,7 +51,7 @@
     "class-validator": "^0.15.1",
     "date-fns": "^4.1.0",
     "dotenv": "^17.4.2",
-    "expo-server-sdk": "^6.1.0",
+    "expo-server-sdk": "5.0.0",
     "google-auth-library": "^10.6.2",
     "helmet": "^8.1.0",
     "multer": "^2.1.1",

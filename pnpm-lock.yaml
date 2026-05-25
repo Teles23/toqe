@@ -126,8 +126,8 @@ importers:
         specifier: ^17.4.2
         version: 17.4.2
       expo-server-sdk:
-        specifier: ^6.1.0
-        version: 6.1.0
+        specifier: 5.0.0
+        version: 5.0.0
       google-auth-library:
         specifier: ^10.6.2
         version: 10.6.2
@@ -6583,8 +6583,8 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-server-sdk@6.1.0:
-    resolution: {integrity: sha512-ISuax1AQ7cpM5RAqcu8gVcoLL0ZKskJ5OLoMWmdITBe9nYjTucjdGyBq817YkIvTcj1pAUwx+9toUT7l/V7thA==}
+  expo-server-sdk@5.0.0:
+    resolution: {integrity: sha512-GEp1XYLU80iS/hdRo3c2n092E8TgTXcHSuw6Lw68dSoWaAgiLPI2R+e5hp5+hGF1TtJZOi2nxtJX63+XA3iz9g==}
     engines: {node: '>=20'}
 
   expo-server@1.0.6:
@@ -17864,7 +17864,7 @@ snapshots:
     dependencies:
       expo: 54.0.34(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(expo-router@6.0.23)(graphql@16.14.0)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.2.2)(react@19.1.0))(react@19.1.0)(typescript@5.9.2)
 
-  expo-server-sdk@6.1.0:
+  expo-server-sdk@5.0.0:
     dependencies:
       promise-limit: 2.7.0
       promise-retry: 2.0.1
