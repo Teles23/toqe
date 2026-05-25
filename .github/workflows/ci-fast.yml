@@ -4,17 +4,14 @@ on:
   pull_request:
     branches:
       - develop
-      - main
 
 concurrency:
-  group: ci-fast-${{ github.event.pull_request.number || github.ref }}
+  group: ci-fast-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   quality:
     name: Lint · Types · Unit tests · Build
-    # develop→main é promoção de código já validado; evita repetir 20 min de CI
-    if: github.base_ref != 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -66,8 +63,6 @@ jobs:
 
   commitlint:
     name: Commitlint (PR)
-    # develop→main: commits já validados individualmente quando entraram em develop
-    if: github.event_name == 'pull_request' && github.base_ref != 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

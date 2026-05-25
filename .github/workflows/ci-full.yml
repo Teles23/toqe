@@ -1,5 +1,9 @@
 name: CI Full
 
+# develop → integration + security + Docker (tag: develop)
+# main    → Docker (tag: main, latest) + deploy produção
+# tags v* → Docker (tag: semver) + deploy produção
+
 on:
   push:
     branches:
@@ -16,12 +20,11 @@ concurrency:
 permissions:
   contents: read
 
-# Lint, type-check, unit tests e build são validados pelo ci-fast durante a PR.
-# ci-full executa após o merge: integration + security (Testcontainers + DB real)
-# e deploy Docker — evita rodar os testes caros duas vezes (PR + push).
 jobs:
+  # Roda apenas em develop — valida antes de promover para main
   integration-security:
     name: Integration & Security tests
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -94,10 +97,15 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
+  # develop: roda após integration (tag: develop + sha)
+  # main/tags: roda direto, sem re-testar (tag: main/semver + latest + sha)
   docker:
     name: Docker build & push — ${{ matrix.app }}
     needs: [integration-security]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: |
+      always() &&
+      (needs.integration-security.result == 'success' || needs.integration-security.result == 'skipped') &&
+      (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -145,17 +153,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=min,scope=${{ matrix.app }}
-          # NEXT_PUBLIC_* são build-time no Next.js — embutidos no bundle pelo next build
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
 
-  deploy-develop:
-    name: Deploy → VPS (develop)
+  # Deploy para produção somente após merge em main
+  deploy-production:
+    name: Deploy → VPS (production)
     needs: [docker]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    environment: develop
+    environment: production
     permissions:
       contents: read
       packages: read
@@ -165,14 +173,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Sincronizar GOOGLE_CLIENT_ID na .env da VPS
-        # Backend lê GOOGLE_CLIENT_ID em process.env durante a inicialização do
-        # GoogleAuthLibraryVerifier (POST /auth/google). Sem essa var, o container
-        # API não sobe. Atualização idempotente — não duplica se já existe.
-        #
-        # Implementação: filtra a linha antiga (se houver) e re-adiciona com o valor
-        # do secret via variável de ambiente do runner (passada pelo campo `envs`).
-        # Usar env var + printf evita problemas com caracteres especiais no valor
-        # do secret (aspas simples, $, \n) que quebrariam um `echo 'KEY=VALUE'`.
         uses: appleboy/ssh-action@v1.2.0
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -187,12 +187,9 @@ jobs:
             set -ex
             cd /opt/projetos/toqe
             touch .env
-            # Filtra linhas antigas de GOOGLE_CLIENT_ID; `|| true` evita exit !=0
-            # quando .env está vazio ou não tem a linha (grep -v retorna 1 nesse caso).
             grep -v '^GOOGLE_CLIENT_ID=' .env > .env.tmp || true
             printf 'GOOGLE_CLIENT_ID=%s\n' "$GOOGLE_CLIENT_ID" >> .env.tmp
             mv .env.tmp .env
-            echo "GOOGLE_CLIENT_ID atualizado em /opt/projetos/toqe/.env"
 
       - name: Sincronizar docker-compose.prod.yml para a VPS
         uses: appleboy/scp-action@v0.1.7
@@ -222,7 +219,6 @@ jobs:
 
             docker compose -f docker-compose.prod.yml pull
 
-            # Sobe só a API primeiro para capturar logs em caso de falha
             docker compose -f docker-compose.prod.yml up -d postgres redis
             echo "Aguardando Postgres ficar healthy..."
             sleep 15
@@ -253,7 +249,6 @@ jobs:
 
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
-            # Atualiza nginx do host e recarrega sem downtime
             sudo cp nginx/conf.d/toqe.conf /etc/nginx/sites-available/toqe
             sudo nginx -t && sudo systemctl reload nginx
 
