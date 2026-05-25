@@ -20,7 +20,12 @@ export class BarbeariaService {
 
     return this.prisma.$transaction(async (tx) => {
       const barbearia = await tx.barbearia.create({
-        data: { nome: dto.nome, slug: dto.slug },
+        data: {
+          nome: dto.nome,
+          slug: dto.slug,
+          planoStatus: 'trial',
+          trialFim: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        },
       });
       await tx.membroBarbearia.create({
         data: { barCodigo: barbearia.codigo, usrCodigo, perfil: 'dono' },
