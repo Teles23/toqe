@@ -233,3 +233,91 @@ Sprint A (fechar MVP) → Sprint B (retenção) → Sprint C (monetização)
 **Não investir em Sprint D ou E antes do Sprint C estar done.** Crescimento orgânico não adianta se o churn acontece por falta de lembrete automático ou se a cobrança ainda é manual.
 
 O produto já tem tudo para ser vendido e demonstrado. O que falta é o ciclo de vida completo: cliente agenda → recebe push → aparece → é atendido → avalia → dono é cobrado automaticamente.
+
+---
+
+# Sprint E3 — Programa de Fidelidade
+
+**Status:** Implementado
+**Branch:** `claude/header-refresh-standardize-opHyl`
+**Base:** `main`
+
+## Objetivo
+
+Implementar programa de pontos de fidelidade: clientes acumulam pontos por atendimento concluído e podem resgatá-los como desconto.
+
+## Regra de Negócio
+
+- **Ganho:** 1 ponto por R$ 10,00 de valor dos serviços; mínimo de 1 ponto por atendimento
+- **Resgate:** mínimo de 10 pontos; cada ponto vale R$ 0,50 de desconto
+- **Idempotência:** o ganho de pontos é verificado por `agendamentoCodigo` — re-processar não duplica
+
+## Arquivos Criados
+
+| Arquivo | Descrição |
+|---|---|
+| `apps/api/prisma/schema.prisma` | Modelo `PontoFidelidade` + campo `pontosAcumulados` em `Usuario` |
+| `apps/api/prisma/migrations/20260525010000_fidelidade/migration.sql` | DDL: `TQE_PONTO_FIDELIDADE` + ALTER em `TQE_USUARIO` |
+| `apps/api/src/fidelidade/fidelidade.module.ts` | Módulo NestJS de fidelidade |
+| `apps/api/src/fidelidade/fidelidade.service.ts` | Service: `getSaldo`, `registrarGanho`, `getRanking`, `resgatar` |
+| `apps/api/src/fidelidade/fidelidade.controller.ts` | Controller: rotas REST |
+| `apps/api/src/fidelidade/dto/resgatar-pontos.dto.ts` | DTO de resgate |
+| `apps/api/src/fidelidade/fidelidade.service.spec.ts` | Testes unitários (12 cenários) |
+| `apps/mobile/src/features/cliente/FidelidadeCard.tsx` | Card React Native com saldo e botão de resgate |
+| `apps/web/src/features/configuracoes/components/SecaoFidelidade.tsx` | Tabela Next.js com top clientes por pontos |
+| `apps/web/app/fidelidade/page.tsx` | Página web de fidelidade |
+| `apps/web/src/test/msw-handlers.ts` | Handlers MSW para testes frontend |
+
+## Arquivos Modificados
+
+| Arquivo | Mudança |
+|---|---|
+| `apps/api/src/agendamento/agendamento.service.ts` | Integração: chama `fidelidadeService.registrarGanho` quando status → `CONCLUIDO` |
+| `apps/api/src/agendamento/agendamento.module.ts` | Importa `FidelidadeModule` |
+| `apps/api/src/app.module.ts` | Registra `FidelidadeModule` |
+| `apps/api/src/generated/prisma/` | Prisma client regenerado com `PontoFidelidade` |
+
+## Endpoints
+
+| Método | Rota | Roles | Descrição |
+|---|---|---|---|
+| `GET` | `/fidelidade/ranking?limit=10` | dono, gerente, barbeiro, recepcionista | Top clientes por pontos |
+| `GET` | `/fidelidade/saldo/:clienteCodigo` | todos | Saldo + histórico do cliente |
+| `POST` | `/fidelidade/resgatar` | todos | Resgata pontos por desconto |
+
+## Schema Prisma
+
+```prisma
+model PontoFidelidade {
+  codigo            Int       @id @default(autoincrement()) @map("TQE_PF_CODIGO")
+  barCodigo         Int       @map("TQE_PF_BAR_CODIGO")
+  clienteCodigo     Int       @map("TQE_PF_CLI_CODIGO")
+  pontos            Int       @map("TQE_PF_PONTOS")
+  tipo              String    @map("TQE_PF_TIPO") @db.VarChar(20) // 'ganho' | 'resgate'
+  agendamentoCodigo Int?      @map("TQE_PF_AGD_CODIGO")
+  criadoEm          DateTime  @default(now()) @map("TQE_PF_CRIADO_EM") @db.Timestamptz
+
+  barbearia   Barbearia    @relation(fields: [barCodigo], references: [codigo])
+  cliente     Usuario      @relation(fields: [clienteCodigo], references: [codigo])
+  agendamento Agendamento? @relation(fields: [agendamentoCodigo], references: [codigo])
+
+  @@map("TQE_PONTO_FIDELIDADE")
+}
+```
+
+Campo adicionado em `Usuario`:
+```prisma
+pontosAcumulados Int @default(0) @map("TQE_USR_PONTOS_ACUMULADOS")
+```
+
+## Testes
+
+```bash
+# API unit tests
+pnpm --filter api test -- src/fidelidade/fidelidade.service.spec.ts
+
+# Cenários cobertos:
+# getSaldo: sucesso, cliente não encontrado
+# registrarGanho: sucesso, cálculo de pontos, mínimo 1 ponto, idempotência, agendamento não encontrado
+# resgatar: sucesso, pontos < 10, saldo insuficiente, cliente não encontrado, decremento correto
+```

@@ -22,6 +22,7 @@ import { ContatoService } from '../contato/contato.service';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { Prisma } from '../generated/prisma';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
+import { FidelidadeService } from '../fidelidade/fidelidade.service';
 
 const INCLUDE_COMPLETO = {
   itens: { include: { servico: true } },
@@ -50,6 +51,7 @@ export class AgendamentoService {
     private agendaGateway: AgendaGateway,
     private membroService: MembroBarbeariaService,
     private contatoService: ContatoService,
+    private fidelidadeService: FidelidadeService,
   ) {}
 
   async create(dto: CreateAgendamentoDto, barCodigo: number) {
@@ -418,6 +420,11 @@ export class AgendamentoService {
       codigo,
       status: dto.status,
     });
+
+    if ((dto.status as StatusAgendamento) === StatusAgendamento.CONCLUIDO) {
+      await this.fidelidadeService.registrarGanho(codigo, barCodigo);
+    }
+
     return atualizado;
   }
 

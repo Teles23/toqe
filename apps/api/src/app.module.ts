@@ -31,6 +31,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { LembreteModule } from './lembrete/lembrete.module';
 import { AsaasModule } from './asaas/asaas.module';
 import { PlanoAtivoGuard } from './auth/guards/plano-ativo.guard';
+import { FidelidadeModule } from './fidelidade/fidelidade.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { PlanoAtivoGuard } from './auth/guards/plano-ativo.guard';
     ScheduleModule.forRoot(),
     LembreteModule,
     AsaasModule,
+    FidelidadeModule,
   ],
   controllers: [AppController],
   providers: [

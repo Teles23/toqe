@@ -522,4 +522,31 @@ export const handlers = [
   ),
 ];
 
+  // ── Fidelidade ────────────────────────────────────────────────────────────
+  http.get(`${BASE}/fidelidade/saldo/:clienteCodigo`, ({ params }) =>
+    HttpResponse.json({
+      pontos: 50,
+      historico: [
+        {
+          codigo: 1,
+          barCodigo: 1,
+          clienteCodigo: Number(params.clienteCodigo),
+          pontos: 50,
+          tipo: "ganho",
+          agendamentoCodigo: 5,
+          criadoEm: new Date().toISOString(),
+        },
+      ],
+    }),
+  ),
+  http.get(`${BASE}/fidelidade/ranking`, () =>
+    HttpResponse.json([
+      { codigo: 1, nome: "Cliente Top", email: "top@test.com", pontosAcumulados: 100 },
+    ]),
+  ),
+  http.post(`${BASE}/fidelidade/resgatar`, () =>
+    HttpResponse.json({ desconto: 25 }),
+  ),
+];
+
 export const server = setupServer(...handlers);
