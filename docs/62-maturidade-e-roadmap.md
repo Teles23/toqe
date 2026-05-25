@@ -46,6 +46,11 @@
 | Detecção de no-show (cron)                | **Maduro**       | `@Cron('0 */30 * * * *')` marca PENDENTE/CONFIRMADO expirados como NO_SHOW e notifica barbeiro (Sprint B6)                             |
 | Histórico de atendimentos do barbeiro     | **Maduro**       | `GET /agendamentos/meus-atendimentos?limit=N` filtra por barbearia e barbeiro (Sprint B2)                                              |
 | Reagendamento pelo cliente                | **Maduro**       | `PATCH /agendamentos/:codigo/reagendar` com verificação de ownership, status, conflito de horário (Sprint B3)                          |
+| Gateway de pagamento Asaas                | **Maduro**       | `AsaasService` + `POST /asaas/checkout/:barCodigo` + `POST /asaas/webhook` (Sprint C1)                                                |
+| Trial de 14 dias                          | **Maduro**       | `planoStatus='trial'` e `trialFim=now+14d` em barbearia.create(); cron `expirarTrials()` às 00:05 (Sprint C3)                         |
+| Bloqueio de acesso por plano              | **Maduro**       | `PlanoAtivoGuard` global bloqueia requests quando `planoStatus ∉ {ativo, trial}` (Sprint C5)                                          |
+| Emails de cobrança (cron)                 | **Maduro**       | `enviarEmailsCobranca()` diário às 09h: 5 dias antes, no vencimento, 3 dias após bloqueio (Sprint C4)                                 |
+| Avaliações públicas no booking            | **Maduro**       | `GET /b/:slug/avaliacoes` — média, total e últimas 20 sem dado pessoal (Sprint D4)                                                    |
 | Push Token — registro/delete              | **Maduro**       | Upsert por (usrCodigo, token)                                                                                                          |
 | Cliente Nota — notas privadas             | **Maduro**       | TQE_CLIENTE_NOTA (doc 59)                                                                                                              |
 | Booking público (/b/:slug)                | **Maduro**       | Servicos, barbeiros, slots, criar agendamento                                                                                          |
@@ -78,7 +83,7 @@
 | Configurações — dados da barbearia        | **Maduro**  |                                                                                                     |
 | Configurações — horários de funcionamento | **Maduro**  |                                                                                                     |
 | Configurações — notificações              | **Parcial** | UI funcional e salva preferências, mas os canais WhatsApp/SMS não têm efeito no backend             |
-| Configurações — Plano & Faturamento       | **Parcial** | UI exibe os planos disponíveis mas **não há botão de upgrade funcional** — sem gateway de pagamento |
+| Configurações — Plano & Faturamento       | **Maduro**  | SecaoPlano mostra plano atual, trial countdown, botão de upgrade funcional via Asaas checkout (Sprint C2) |
 | Booking público (/b/[slug])               | **Maduro**  |                                                                                                     |
 | Super Admin                               | **Maduro**  | Overview, revenue, tenants, health                                                                  |
 
@@ -166,17 +171,17 @@ O produto agora tem ciclo de vida completo: cliente agenda → recebe push → a
 
 ---
 
-### Sprint C — Monetização (2–3 semanas)
+### ~~Sprint C — Monetização~~ ✅ Concluída em 25/05/2026
 
 **Objetivo:** cobrar os clientes de forma autônoma.
 
-| #   | Feature                                                                     | Esforço | Impacto |
-| --- | --------------------------------------------------------------------------- | ------- | ------- |
-| C1  | Integração Asaas ou Stripe (checkout de plano, webhook de pagamento)        | G       | Crítico |
-| C2  | Upgrade/downgrade de plano no portal web (SecaoPlano funcional)             | M       | Alto    |
-| C3  | Trial de 14 dias com bloqueio automático ao expirar                         | M       | Alto    |
-| C4  | Email de cobrança (5 dias antes, no vencimento, 3 dias após)                | P       | Alto    |
-| C5  | Bloqueio de acesso para plano inadimplente (já tem `planoStatus` no schema) | P       | Alto    |
+| #   | Feature                                                                     | Esforço | Impacto | Status |
+| --- | --------------------------------------------------------------------------- | ------- | ------- | ------ |
+| C1  | Integração Asaas (checkout de plano, webhook de pagamento)                  | G       | Crítico | ✅     |
+| C2  | Upgrade/downgrade de plano no portal web (SecaoPlano funcional)             | M       | Alto    | ✅     |
+| C3  | Trial de 14 dias com bloqueio automático ao expirar                         | M       | Alto    | ✅     |
+| C4  | Email de cobrança (5 dias antes, no vencimento, 3 dias após)                | P       | Alto    | ✅     |
+| C5  | Bloqueio de acesso para plano inadimplente (`PlanoAtivoGuard` global)       | P       | Alto    | ✅     |
 
 ---
 
@@ -184,13 +189,13 @@ O produto agora tem ciclo de vida completo: cliente agenda → recebe push → a
 
 **Objetivo:** viralidade e aquisição orgânica.
 
-| #   | Feature                                                           | Esforço | Impacto |
-| --- | ----------------------------------------------------------------- | ------- | ------- |
-| D1  | WhatsApp Business API — notificações de confirmação e lembrete    | G       | Alto    |
-| D2  | QR Code no portal web (para o dono imprimir e colar na barbearia) | P       | Médio   |
-| D3  | Widget de booking embeddable (iframe para site do cliente)        | G       | Médio   |
-| D4  | Avaliações públicas na página de booking (/b/:slug)               | M       | Médio   |
-| D5  | Indicação: "Indique um amigo e ganhe 1 mês grátis"                | M       | Alto    |
+| #   | Feature                                                           | Esforço | Impacto | Status           |
+| --- | ----------------------------------------------------------------- | ------- | ------- | ---------------- |
+| D1  | WhatsApp Business API — notificações de confirmação e lembrete    | G       | Alto    | Pós-MVP / futuro |
+| D2  | QR Code no portal web (para o dono imprimir e colar na barbearia) | P       | Médio   | ✅               |
+| D3  | Widget de booking embeddable (iframe para site do cliente)        | G       | Médio   | Pós-MVP / futuro |
+| D4  | Avaliações públicas na página de booking (/b/:slug)               | M       | Médio   | ✅               |
+| D5  | Indicação: "Indique um amigo e ganhe 1 mês grátis"                | M       | Alto    | Pós-MVP / futuro |
 
 ---
 
