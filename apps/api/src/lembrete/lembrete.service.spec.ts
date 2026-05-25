@@ -306,13 +306,17 @@ describe('LembreteService', () => {
       expect(mockPrisma.barbearia.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { codigo: 1 },
-          data: expect.objectContaining({ planoStatus: 'inadimplente' }),
+          data: expect.objectContaining({
+            planoStatus: 'inadimplente',
+          }) as unknown as { planoStatus: string },
         }),
       );
       expect(mockPrisma.barbearia.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { codigo: 2 },
-          data: expect.objectContaining({ planoStatus: 'inadimplente' }),
+          data: expect.objectContaining({
+            planoStatus: 'inadimplente',
+          }) as unknown as { planoStatus: string },
         }),
       );
     });
@@ -357,7 +361,7 @@ describe('LembreteService', () => {
       expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'dono@example.com',
-          subject: expect.stringContaining('5 dias'),
+          subject: expect.stringContaining('5 dias') as unknown as string,
         }),
       );
     });
@@ -374,7 +378,7 @@ describe('LembreteService', () => {
       expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'dono@example.com',
-          subject: expect.stringContaining('hoje'),
+          subject: expect.stringContaining('hoje') as unknown as string,
         }),
       );
     });
@@ -391,7 +395,7 @@ describe('LembreteService', () => {
       expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'dono@example.com',
-          subject: expect.stringContaining('suspenso'),
+          subject: expect.stringContaining('suspenso') as unknown as string,
         }),
       );
     });
