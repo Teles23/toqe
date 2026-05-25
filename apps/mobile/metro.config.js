@@ -5,6 +5,11 @@ const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
+const disableKeepAwake = process.env.TOQE_DISABLE_KEEP_AWAKE === "1";
+const keepAwakeShim = path.resolve(
+  projectRoot,
+  "shims/expo-keep-awake/index.js",
+);
 
 // Escapa barras do Windows em regex
 const escape = (p) => p.replace(/[/\\]/g, "[\\\\/]").replace(/\./g, "\\.");
@@ -45,6 +50,27 @@ config.resolver.extraNodeModules = {
   "@toqe/shared": path.resolve(monorepoRoot, "packages/shared/src"),
   "@toqe/contracts": path.resolve(monorepoRoot, "packages/contracts/src"),
   "@toqe/config": path.resolve(monorepoRoot, "packages/config/src"),
+  ...(disableKeepAwake
+    ? {
+        "expo-keep-awake": path.dirname(keepAwakeShim),
+      }
+    : {}),
 };
+
+if (disableKeepAwake) {
+  const defaultResolveRequest = config.resolver.resolveRequest;
+
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    if (moduleName === "expo-keep-awake") {
+      return { type: "sourceFile", filePath: keepAwakeShim };
+    }
+
+    if (defaultResolveRequest) {
+      return defaultResolveRequest(context, moduleName, platform);
+    }
+
+    return context.resolveRequest(context, moduleName, platform);
+  };
+}
 
 module.exports = config;

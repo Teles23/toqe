@@ -65,6 +65,7 @@ function detectLanIPv4() {
 
 const detected = detectLanIPv4();
 const env = { ...process.env };
+env.TOQE_DISABLE_KEEP_AWAKE = "1";
 
 if (detected) {
   env.REACT_NATIVE_PACKAGER_HOSTNAME = detected.ip;
