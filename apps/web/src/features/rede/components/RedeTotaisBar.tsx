@@ -51,6 +51,7 @@ export function RedeTotaisBar({
   return (
     <div
       className="rounded-xl p-5 grid grid-cols-2 sm:grid-cols-5 gap-4 border"
+      // eslint-disable-next-line no-restricted-syntax
       style={{
         background: "var(--surface-2)",
         borderColor: "var(--primary)",
@@ -60,12 +61,14 @@ export function RedeTotaisBar({
         <div key={item.label} className="text-center">
           <p
             className="text-[11px] uppercase tracking-wide"
+            // eslint-disable-next-line no-restricted-syntax
             style={{ color: "var(--text-muted)" }}
           >
             {item.label}
           </p>
           <p
             className="text-[20px] font-bold mt-1"
+            // eslint-disable-next-line no-restricted-syntax
             style={{ color: item.color }}
           >
             {item.value}

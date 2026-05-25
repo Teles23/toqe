@@ -520,7 +520,6 @@ export const handlers = [
   http.get("/barbearia", () =>
     HttpResponse.json({ codigo: 1, nome: "BarberShop", slug: "barbershop" }),
   ),
-];
 
   // ── Fidelidade ────────────────────────────────────────────────────────────
   http.get(`${BASE}/fidelidade/saldo/:clienteCodigo`, ({ params }) =>
@@ -541,7 +540,12 @@ export const handlers = [
   ),
   http.get(`${BASE}/fidelidade/ranking`, () =>
     HttpResponse.json([
-      { codigo: 1, nome: "Cliente Top", email: "top@test.com", pontosAcumulados: 100 },
+      {
+        codigo: 1,
+        nome: "Cliente Top",
+        email: "top@test.com",
+        pontosAcumulados: 100,
+      },
     ]),
   ),
   http.post(`${BASE}/fidelidade/resgatar`, () =>

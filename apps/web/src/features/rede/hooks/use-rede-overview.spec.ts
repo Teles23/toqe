@@ -52,7 +52,7 @@ describe("useRedeOverview", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data?.unidades).toHaveLength(1);
-    expect(result.current.data?.unidades[0].nome).toBe("Barber Alpha");
+    expect(result.current.data?.unidades[0]?.nome).toBe("Barber Alpha");
     expect(result.current.data?.totais.faturamentoHoje).toBe(200);
   });
 
