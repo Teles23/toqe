@@ -53,6 +53,10 @@ export class FidelidadeService {
       throw new NotFoundException('Agendamento não encontrado');
     }
 
+    if (agendamento.clienteId == null) {
+      return; // Walk-in sem conta — não acumula pontos
+    }
+
     const totalValor = agendamento.itens.reduce(
       (acc, item) => acc + Number(item.preco),
       0,

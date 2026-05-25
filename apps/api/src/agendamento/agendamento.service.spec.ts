@@ -11,6 +11,7 @@ import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
 import { ContatoService } from '../contato/contato.service';
+import { FidelidadeService } from '../fidelidade/fidelidade.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
@@ -39,6 +40,10 @@ const mockContatoService = {
   findById: jest.fn(),
 };
 
+const mockFidelidadeService = {
+  registrarGanho: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('AgendamentoService', () => {
   let service: AgendamentoService;
 
@@ -51,6 +56,7 @@ describe('AgendamentoService', () => {
         { provide: AgendaGateway, useValue: mockAgendaGateway },
         { provide: MembroBarbeariaService, useValue: mockMembroService },
         { provide: ContatoService, useValue: mockContatoService },
+        { provide: FidelidadeService, useValue: mockFidelidadeService },
       ],
     }).compile();
     service = module.get(AgendamentoService);

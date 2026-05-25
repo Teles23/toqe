@@ -416,22 +416,3 @@ model PontoFidelidade {
 
   @@map("TQE_PONTO_FIDELIDADE")
 }
-
-// ==========================================
-// 6. API PÚBLICA
-// ==========================================
-
-model ApiKey {
-  codigo      Int       @id @default(autoincrement()) @map("TQE_AK_CODIGO")
-  barCodigo   Int       @map("TQE_AK_BAR_CODIGO")
-  nome        String    @map("TQE_AK_NOME") @db.VarChar(100)
-  keyHash     String    @unique @map("TQE_AK_KEY_HASH") @db.VarChar(255)
-  keyPrefix   String    @map("TQE_AK_KEY_PREFIX") @db.VarChar(10)
-  ativo       Boolean   @default(true) @map("TQE_AK_ATIVO")
-  criadoEm   DateTime  @default(now()) @map("TQE_AK_CRIADO_EM") @db.Timestamptz
-  ultimoUsoEm DateTime? @map("TQE_AK_ULTIMO_USO_EM") @db.Timestamptz
-
-  barbearia   Barbearia @relation(fields: [barCodigo], references: [codigo])
-
-  @@map("TQE_API_KEY")
-}
