@@ -66,7 +66,8 @@ jobs:
 
   commitlint:
     name: Commitlint (PR)
-    if: github.event_name == 'pull_request'
+    # develop→main: commits já validados individualmente quando entraram em develop
+    if: github.event_name == 'pull_request' && github.base_ref != 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
