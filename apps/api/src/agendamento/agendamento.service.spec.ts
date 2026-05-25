@@ -885,4 +885,149 @@ describe('AgendamentoService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('transferir', () => {
+    const barCodigo = 1;
+    const codigo = 10;
+    const novoBarbeiroId = 5;
+
+    const agendamentoBase = {
+      codigo,
+      barCodigo,
+      barbeiroId: 2,
+      clienteId: 3,
+      inicio: new Date('2026-05-25T10:00:00Z'),
+      fim: new Date('2026-05-25T11:00:00Z'),
+      status: 'pendente',
+      itens: [],
+      cliente: { codigo: 3, nome: 'Cliente Teste', email: 'cliente@teste.com' },
+      barbeiro: { codigo: 2, nome: 'Barbeiro Antigo' },
+      barbearia: { codigo: 1, nome: 'Barbearia Teste' },
+    };
+
+    const membroBarbeiro = {
+      codigo: 7,
+      barCodigo,
+      usrCodigo: novoBarbeiroId,
+      perfil: 'barbeiro',
+    };
+
+    it('sucesso: transfere o agendamento para o novo barbeiro sem conflito', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(membroBarbeiro);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...agendamentoBase,
+        barbeiroId: novoBarbeiroId,
+      });
+
+      const resultado = await service.transferir(
+        codigo,
+        { novoBarbeiroId },
+        barCodigo,
+      );
+
+      expect(resultado.barbeiroId).toBe(novoBarbeiroId);
+      expect(mockPrisma.agendamento.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { codigo },
+          data: { barbeiroId: novoBarbeiroId },
+        }),
+      );
+    });
+
+    it('sucesso: transfere agendamento com status confirmado', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...agendamentoBase,
+        status: 'confirmado',
+      });
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(membroBarbeiro);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...agendamentoBase,
+        status: 'confirmado',
+        barbeiroId: novoBarbeiroId,
+      });
+
+      const resultado = await service.transferir(
+        codigo,
+        { novoBarbeiroId },
+        barCodigo,
+      );
+      expect(resultado.barbeiroId).toBe(novoBarbeiroId);
+    });
+
+    it('erro: lança BadRequestException quando status é concluido', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...agendamentoBase,
+        status: 'concluido',
+      });
+
+      await expect(
+        service.transferir(codigo, { novoBarbeiroId }, barCodigo),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('erro: lança BadRequestException quando status é cancelado', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...agendamentoBase,
+        status: 'cancelado',
+      });
+
+      await expect(
+        service.transferir(codigo, { novoBarbeiroId }, barCodigo),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('erro: lança NotFoundException quando barbeiro não pertence à barbearia', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.transferir(codigo, { novoBarbeiroId }, barCodigo),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('erro: lança BadRequestException quando há conflito de horário', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(membroBarbeiro);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(1) }]);
+
+      await expect(
+        service.transferir(codigo, { novoBarbeiroId }, barCodigo),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('isolamento: lança NotFoundException quando agendamento pertence a outra barbearia', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.transferir(codigo, { novoBarbeiroId }, 999),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('não chama update quando validação falha por status inválido', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue({
+        ...agendamentoBase,
+        status: 'concluido',
+      });
+
+      await expect(
+        service.transferir(codigo, { novoBarbeiroId }, barCodigo),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockPrisma.agendamento.update).not.toHaveBeenCalled();
+    });
+
+    it('não chama update quando validação falha por barbeiro inválido', async () => {
+      mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.transferir(codigo, { novoBarbeiroId }, barCodigo),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrisma.agendamento.update).not.toHaveBeenCalled();
+    });
+  });
 });
