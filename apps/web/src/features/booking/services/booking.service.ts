@@ -58,3 +58,22 @@ export function criarAgendamentoPublico(
     PUBLIC,
   );
 }
+
+export interface AvaliacaoPublicaItem {
+  nota: number;
+  comentario: string | null;
+  criadoEm: string;
+}
+
+export interface AvaliacoesPublicasResponse {
+  media: number;
+  total: number;
+  items: AvaliacaoPublicaItem[];
+}
+
+export function getAvaliacoesPublicas(slug: string) {
+  return api.get<AvaliacoesPublicasResponse>(
+    `/publico/${slug}/avaliacoes`,
+    PUBLIC,
+  );
+}

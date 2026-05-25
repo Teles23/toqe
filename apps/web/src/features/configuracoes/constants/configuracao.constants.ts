@@ -1,4 +1,4 @@
-import { Store, Clock, Bell, CreditCard, Shield } from "lucide-react";
+import { Store, Clock, Bell, CreditCard, Shield, QrCode } from "lucide-react";
 import { DIAS_SEMANA_LONGO } from "@/shared/lib/constants";
 import type {
   SecaoId,
@@ -10,6 +10,7 @@ export const SECOES: { id: SecaoId; label: string; icon: typeof Store }[] = [
   { id: "barbearia", label: "Barbearia", icon: Store },
   { id: "horarios", label: "Horários", icon: Clock },
   { id: "notificacoes", label: "Notificações", icon: Bell },
+  { id: "qrcode", label: "QR Code", icon: QrCode },
   { id: "plano", label: "Plano & Fatura", icon: CreditCard },
   { id: "seguranca", label: "Segurança", icon: Shield },
 ];

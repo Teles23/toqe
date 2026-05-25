@@ -337,6 +337,29 @@ export const handlers = [
       { horario: "14:00", barbeiroId: 10 },
     ]),
   ),
+  http.get(`${BASE}/publico/:slug/avaliacoes`, () =>
+    HttpResponse.json({
+      media: 4.8,
+      total: 3,
+      items: [
+        {
+          nota: 5,
+          comentario: "Excelente atendimento!",
+          criadoEm: "2026-04-01T10:00:00.000Z",
+        },
+        {
+          nota: 5,
+          comentario: null,
+          criadoEm: "2026-03-20T09:00:00.000Z",
+        },
+        {
+          nota: 4,
+          comentario: "Muito bom!",
+          criadoEm: "2026-03-10T08:00:00.000Z",
+        },
+      ],
+    }),
+  ),
   http.post(`${BASE}/publico/:slug/agendamentos`, () =>
     HttpResponse.json(
       {

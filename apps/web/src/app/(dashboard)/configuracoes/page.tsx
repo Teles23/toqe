@@ -10,7 +10,10 @@ export default function Configuracoes(): React.JSX.Element {
   const { barbearia } = useAuth();
   return (
     <RequireRole roles={[Perfil.DONO]}>
-      <ConfiguracoesView barCodigo={barbearia?.codigo ?? null} />
+      <ConfiguracoesView
+        barCodigo={barbearia?.codigo ?? null}
+        slug={barbearia?.slug ?? null}
+      />
     </RequireRole>
   );
 }

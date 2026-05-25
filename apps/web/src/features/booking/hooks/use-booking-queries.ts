@@ -3,11 +3,13 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   getBarbeariaPublica,
+  getAvaliacoesPublicas,
   listarBarbeirosPublicos,
   listarServicosPublicos,
   listarSlotsPublicos,
   criarAgendamentoPublico,
   type AgendamentoPublicoResponse,
+  type AvaliacoesPublicasResponse,
 } from "../services/booking.service";
 import type { CreatePublicAgendamentoInput } from "@toqe/contracts";
 
@@ -66,6 +68,15 @@ export function useSlotsPublicos({
     queryFn: () => listarSlotsPublicos({ slug, barbeiroId, data, duracao }),
     enabled: enabled && Boolean(slug) && Boolean(data) && duracao > 0,
     staleTime: 30 * 1000,
+  });
+}
+
+export function useAvaliacoesPublicas(slug: string) {
+  return useQuery<AvaliacoesPublicasResponse>({
+    queryKey: ["publico", slug, "avaliacoes"],
+    queryFn: () => getAvaliacoesPublicas(slug),
+    enabled: Boolean(slug),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

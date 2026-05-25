@@ -3,7 +3,8 @@ export type SecaoId =
   | "horarios"
   | "notificacoes"
   | "plano"
-  | "seguranca";
+  | "seguranca"
+  | "qrcode";
 
 export interface HorarioDia {
   dia: string;

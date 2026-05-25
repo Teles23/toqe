@@ -8,6 +8,7 @@ const mockService = {
   listarServicos: jest.fn(),
   listarBarbeiros: jest.fn(),
   listarSlots: jest.fn(),
+  listarAvaliacoes: jest.fn(),
   criarAgendamento: jest.fn(),
 };
 
@@ -87,6 +88,21 @@ describe('PublicoController', () => {
         controller.listarSlots('urban', 0, '2026-05-20', 481),
       ).toThrow(BadRequestException);
     });
+  });
+
+  it('GET /:slug/avaliacoes delega para service', async () => {
+    const payload = {
+      media: 4.5,
+      total: 2,
+      items: [
+        { nota: 5, comentario: 'Ótimo!', criadoEm: '2026-05-01T10:00:00.000Z' },
+        { nota: 4, comentario: null, criadoEm: '2026-04-20T09:00:00.000Z' },
+      ],
+    };
+    mockService.listarAvaliacoes.mockResolvedValue(payload);
+    const result = await controller.listarAvaliacoes('urban');
+    expect(result).toEqual(payload);
+    expect(mockService.listarAvaliacoes).toHaveBeenCalledWith('urban');
   });
 
   it('POST /:slug/agendamentos delega para service', async () => {

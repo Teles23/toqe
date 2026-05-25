@@ -33,12 +33,14 @@ const clienteFormSchema = z.object({
 type ClienteFormInput = z.infer<typeof clienteFormSchema>;
 import { ApiError } from "@/shared/api/api-client";
 import {
+  useAvaliacoesPublicas,
   useBarbeariaPublica,
   useBarbeirosPublicos,
   useCriarAgendamentoPublico,
   useServicosPublicos,
   useSlotsPublicos,
 } from "../hooks/use-booking-queries";
+import type { AvaliacaoPublicaItem } from "../services/booking.service";
 import type {
   BarbeariaPublica,
   BarbeiroPublico,
@@ -95,6 +97,99 @@ const QUALQUER_BARBEIRO: BarbeiroPublico = {
   avatarUrl: null,
 };
 
+// ─── Avaliações públicas ─────────────────────────────────────────────────────
+
+function StarRow({ nota }: { nota: number }) {
+  return (
+    <span className="inline-flex gap-0.5" aria-label={`${nota} estrelas`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <Star
+          key={i}
+          size={12}
+          fill={i < nota ? "var(--primary)" : "transparent"}
+          style={{
+            color: i < nota ? "var(--primary)" : "var(--border-default)",
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function AvaliacoesPublicas({
+  media,
+  total,
+  items,
+}: {
+  media: number;
+  total: number;
+  items: AvaliacaoPublicaItem[];
+}) {
+  return (
+    <div
+      className="w-full max-w-[440px] mt-4 rounded-3xl border overflow-hidden"
+      style={{
+        background: "var(--bg-secondary)",
+        borderColor: "var(--border-default)",
+      }}
+      data-testid="avaliacoes-section"
+    >
+      {/* Header */}
+      <div
+        className="px-5 py-4 border-b flex items-center gap-2"
+        style={{ borderColor: "var(--border-subtle)" }}
+      >
+        <Star
+          size={16}
+          fill="var(--primary)"
+          style={{ color: "var(--primary)" }}
+        />
+        <span
+          className="font-heading font-bold text-[17px]"
+          style={{ color: "var(--text-primary)" }}
+          data-testid="media-label"
+        >
+          {media.toFixed(1)}
+        </span>
+        <span className="text-[13px]" style={{ color: "var(--text-muted)" }}>
+          · {total} avaliação{total !== 1 ? "ões" : ""}
+        </span>
+      </div>
+
+      {/* Reviews list */}
+      <div className="divide-y" style={{ borderColor: "var(--border-subtle)" }}>
+        {items.map((item, idx) => (
+          <div key={idx} className="px-5 py-3.5">
+            <div className="flex items-center gap-2 mb-1">
+              <StarRow nota={item.nota} />
+              <span
+                className="text-[10px]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {new Date(item.criadoEm).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+            {item.comentario && (
+              <p
+                className="text-[12px] leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {item.comentario}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function PublicBookingFlow({
   slug,
 }: PublicBookingFlowProps): React.JSX.Element {
@@ -127,6 +222,7 @@ function PublicBookingFlowInner({
 
   const servicosQ = useServicosPublicos(slug);
   const barbeirosQ = useBarbeirosPublicos(slug);
+  const avaliacoesQ = useAvaliacoesPublicas(slug);
 
   const servicos: ServicoPublico[] = servicosQ.data ?? [];
   const barbeiros: BarbeiroPublico[] = useMemo(
@@ -168,7 +264,7 @@ function PublicBookingFlowInner({
 
   return (
     <div
-      className="min-h-screen flex items-start justify-center px-4 py-6 sm:py-10"
+      className="min-h-screen flex flex-col items-center px-4 py-6 sm:py-10 gap-4"
       style={{ background: "var(--bg-base)" }}
     >
       <div
@@ -284,6 +380,15 @@ function PublicBookingFlowInner({
           </span>
         </div>
       </div>
+
+      {/* Seção de avaliações — exibida abaixo do card de booking */}
+      {avaliacoesQ.data && avaliacoesQ.data.total > 0 && (
+        <AvaliacoesPublicas
+          media={avaliacoesQ.data.media}
+          total={avaliacoesQ.data.total}
+          items={avaliacoesQ.data.items}
+        />
+      )}
     </div>
   );
 }
