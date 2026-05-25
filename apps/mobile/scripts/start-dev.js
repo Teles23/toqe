@@ -19,8 +19,21 @@
  *
  * Aceita argumentos extras (`--tunnel`, `--ios`, etc.) repassados para o expo.
  */
+const fs = require("node:fs");
+const path = require("node:path");
 const os = require("node:os");
 const { spawn } = require("node:child_process");
+
+// Carrega .env antes de detectar o IP para que MOBILE_HOST_IP seja respeitado
+const envFile = path.resolve(__dirname, "../.env");
+if (fs.existsSync(envFile)) {
+  for (const line of fs.readFileSync(envFile, "utf8").split("\n")) {
+    const match = line.match(/^\s*([^#][^=]*?)\s*=\s*(.*?)\s*$/);
+    if (match && !(match[1] in process.env)) {
+      process.env[match[1]] = match[2];
+    }
+  }
+}
 
 const VIRTUAL_PATTERNS =
   /vEthernet|WSL|Hyper-?V|Docker|VirtualBox|VMware|Bluetooth|Loopback|TAP/i;
