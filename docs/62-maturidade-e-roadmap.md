@@ -199,17 +199,17 @@ O produto agora tem ciclo de vida completo: cliente agenda → recebe push → a
 
 ---
 
-### Sprint E — Escala (4–6 semanas)
+### ~~Sprint E — Escala~~ ✅ E1–E4 Concluídos em 25/05/2026
 
 **Objetivo:** expandir de barbearia unitária para redes.
 
-| #   | Feature                                                               | Esforço | Impacto |
-| --- | --------------------------------------------------------------------- | ------- | ------- |
-| E1  | Multi-unidade — mesma conta, várias barbearias, dashboard consolidado | GG      | Alto    |
-| E2  | Transferência de agendamento entre barbeiros                          | M       | Médio   |
-| E3  | Programa de fidelidade (pontos por atendimento, resgate de desconto)  | G       | Alto    |
-| E4  | API pública + webhooks documentados (para integrações externas)       | G       | Médio   |
-| E5  | App para o gestor (hoje o dono só tem o portal web)                   | GG      | Médio   |
+| #   | Feature                                                               | Esforço | Impacto | Status           |
+| --- | --------------------------------------------------------------------- | ------- | ------- | ---------------- |
+| E1  | Multi-unidade — mesma conta, várias barbearias, dashboard consolidado | GG      | Alto    | ✅               |
+| E2  | Transferência de agendamento entre barbeiros                          | M       | Médio   | ✅               |
+| E3  | Programa de fidelidade (pontos por atendimento, resgate de desconto)  | G       | Alto    | ✅               |
+| E4  | API pública + webhooks documentados (para integrações externas)       | G       | Médio   | ✅               |
+| E5  | App para o gestor (hoje o dono só tem o portal web)                   | GG      | Médio   | Pós-MVP / futuro |
 
 ---
 
@@ -233,6 +233,79 @@ Sprint A (fechar MVP) → Sprint B (retenção) → Sprint C (monetização)
 **Não investir em Sprint D ou E antes do Sprint C estar done.** Crescimento orgânico não adianta se o churn acontece por falta de lembrete automático ou se a cobrança ainda é manual.
 
 O produto já tem tudo para ser vendido e demonstrado. O que falta é o ciclo de vida completo: cliente agenda → recebe push → aparece → é atendido → avalia → dono é cobrado automaticamente.
+
+---
+
+# Sprint E1 — Multi-unidade (Dashboard de Rede)
+
+**Status:** Implementado  
+**Branch:** `claude/header-refresh-standardize-opHyl`  
+**Base:** `develop`
+
+## Objetivo
+
+Permitir que uma mesma conta gerencie várias barbearias e visualize KPIs consolidados de toda a rede em um único dashboard.
+
+## Arquivos Criados
+
+| Arquivo | Descrição |
+|---|---|
+| `apps/api/src/rede/rede.module.ts` | Módulo NestJS de rede |
+| `apps/api/src/rede/rede.service.ts` | Service: KPIs consolidados (faturamento, agendamentos, barbeiros, ticket médio) por período |
+| `apps/api/src/rede/rede.controller.ts` | `GET /rede/dashboard?periodo=` — retorna métricas agregadas de todas as barbearias do dono |
+| `apps/api/src/rede/rede.service.spec.ts` | Testes unitários (múltiplos cenários) |
+| `apps/web/src/features/rede/RedeDashboard.tsx` | Componente web com cards de KPIs por unidade |
+| `apps/web/src/features/rede/hooks/use-rede-dashboard.ts` | Hook React Query para buscar dados consolidados |
+
+## Arquivos Modificados
+
+| Arquivo | Mudança |
+|---|---|
+| `apps/api/src/app.module.ts` | Registra `RedeModule` |
+
+## Endpoint
+
+| Método | Rota | Roles | Descrição |
+|---|---|---|---|
+| `GET` | `/rede/dashboard?periodo=mes` | dono | KPIs consolidados de todas as unidades |
+
+---
+
+# Sprint E2 — Transferência de Agendamento
+
+**Status:** Implementado  
+**Branch:** `claude/header-refresh-standardize-opHyl`  
+**Base:** `develop`
+
+## Objetivo
+
+Permitir que o dono ou gerente transfira um agendamento de um barbeiro para outro da mesma barbearia (ex: cobertura de falta).
+
+## Regras de Negócio
+
+- Somente agendamentos com status `pendente` ou `confirmado` podem ser transferidos
+- O novo barbeiro deve ser membro da mesma barbearia (`barCodigo` idêntico)
+- A transferência atualiza `barbeiroId` e emite evento WebSocket `agendamento:status` para notificar os clientes em tempo real
+
+## Arquivos Criados
+
+| Arquivo | Descrição |
+|---|---|
+| `apps/api/src/agendamento/dto/transferir-agendamento.dto.ts` | DTO com `novoBarbeiroId: number` |
+
+## Arquivos Modificados
+
+| Arquivo | Mudança |
+|---|---|
+| `apps/api/src/agendamento/agendamento.service.ts` | Método `transferir(codigo, novoBarbeiroId, barCodigo)` com validações de status e tenant |
+| `apps/api/src/agendamento/agendamento.controller.ts` | `PATCH /agendamentos/:codigo/transferir` — roles: dono, gerente |
+| `apps/api/src/agendamento/agendamento.service.spec.ts` | Cenários: sucesso, barbeiro não encontrado, barbeiro de outra barbearia, status inválido |
+
+## Endpoint
+
+| Método | Rota | Roles | Descrição |
+|---|---|---|---|
+| `PATCH` | `/agendamentos/:codigo/transferir` | dono, gerente | Transfere o agendamento para outro barbeiro da mesma barbearia |
 
 ---
 
@@ -429,4 +502,41 @@ pnpm --filter api test -- --testPathPattern=api-key
 
 # 11 testes: criar (5), listar (3), revogar (3)
 # Cobertura: formato de key, keyHash SHA-256, tenant isolation, keyHash nunca exposto
+```
+
+---
+
+# Header Fixo + Pull-to-Refresh Padronizado (Mobile Barbeiro)
+
+**Status:** Implementado  
+**Branch:** `claude/header-refresh-standardize-opHyl`  
+**Base:** `develop`
+
+## Problema
+
+As 3 abas do barbeiro (Agenda, Clientes, Perfil) tinham comportamentos inconsistentes:
+- **Agenda**: header estava dentro do `ListHeaderComponent` do FlatList — rolava com a lista e sumia ao arrastar
+- **Clientes**: `DataListWrapper` sem `refreshProgressViewOffset`, spinner de refresh em posição errada no Android
+- **Perfil**: `usePullToRefresh` sem `progressViewOffset`, spinner podia invadir a status bar
+
+## Solução
+
+| Arquivo | Mudança |
+|---|---|
+| `apps/mobile/app/(barbeiro)/agenda.tsx` | Header (`"Sua agenda"` + sino + pill barbearia + dayNav) movido para `View` fixo acima do `DataListWrapper`; `refreshProgressViewOffset={0}` no DataListWrapper |
+| `apps/mobile/app/(barbeiro)/clientes.tsx` | `refreshProgressViewOffset={0}` adicionado ao `DataListWrapper` |
+| `apps/mobile/app/(barbeiro)/perfil/index.tsx` | `usePullToRefresh(refetchStats, statsRefetching, 0)` — terceiro argumento `0` explícito |
+| `apps/mobile/app/(barbeiro)/__tests__/agenda.test.tsx` | Teste de regressão: `"Sua agenda"` deve estar sempre na árvore (header não pode voltar para o scroll) |
+
+## Contrato garantido pelo teste
+
+```tsx
+it("header fixo: 'Sua agenda' está sempre visível (não está no ListHeaderComponent)", async () => {
+  setupFetch({ dia: [] });
+  renderScreen();
+  await screen.findByText("Dia livre");
+  expect(screen.getByText("Sua agenda")).toBeTruthy();
+  expect(screen.getByTestId("btn-notificacoes")).toBeTruthy();
+  expect(screen.getByTestId("btn-tenant-switcher")).toBeTruthy();
+});
 ```
