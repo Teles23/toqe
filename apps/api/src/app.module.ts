@@ -29,6 +29,8 @@ import { ClienteNotaModule } from './cliente-nota/cliente-nota.module';
 import { ContatoModule } from './contato/contato.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { LembreteModule } from './lembrete/lembrete.module';
+import { AsaasModule } from './asaas/asaas.module';
+import { PlanoAtivoGuard } from './auth/guards/plano-ativo.guard';
 
 @Module({
   imports: [
@@ -73,11 +75,13 @@ import { LembreteModule } from './lembrete/lembrete.module';
     ContatoModule,
     ScheduleModule.forRoot(),
     LembreteModule,
+    AsaasModule,
   ],
   controllers: [AppController],
   providers: [
     AppService, // usa PrismaService (global) para bootstrap do super_admin
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: PlanoAtivoGuard },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
   ],
 })

@@ -9,13 +9,15 @@ import { SecaoBarbearia } from "./SecaoBarbearia";
 import { SecaoHorarios } from "./SecaoHorarios";
 import { SecaoNotificacoes } from "./SecaoNotificacoes";
 import { SecaoPlano } from "./SecaoPlano";
+import { SecaoQrCode } from "./SecaoQrCode";
 import { SecaoSeguranca } from "./SecaoSeguranca";
 
 interface Props {
   barCodigo: number | null;
+  slug: string | null;
 }
 
-export function ConfiguracoesView({ barCodigo }: Props) {
+export function ConfiguracoesView({ barCodigo, slug }: Props) {
   const [secaoAtiva, setSecaoAtiva] = useState<SecaoId>("barbearia");
   const [mobileShowContent, setMobileShowContent] = useState(false);
 
@@ -23,7 +25,14 @@ export function ConfiguracoesView({ barCodigo }: Props) {
     barbearia: <SecaoBarbearia barCodigo={barCodigo} />,
     horarios: <SecaoHorarios barCodigo={barCodigo} />,
     notificacoes: <SecaoNotificacoes barCodigo={barCodigo} />,
-    plano: <SecaoPlano />,
+    qrcode: slug ? (
+      <SecaoQrCode slug={slug} />
+    ) : (
+      <div className="text-[13px] text-[var(--text-muted)]">
+        Configuração indisponível.
+      </div>
+    ),
+    plano: <SecaoPlano barCodigo={barCodigo} />,
     seguranca: <SecaoSeguranca />,
   };
 

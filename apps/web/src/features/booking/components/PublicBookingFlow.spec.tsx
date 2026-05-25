@@ -120,6 +120,30 @@ describe("PublicBookingFlow", () => {
     expect(screen.getByText(/Fazer novo agendamento/i)).toBeInTheDocument();
   });
 
+  it("exibe seção de avaliações quando há avaliações disponíveis", async () => {
+    renderFlow();
+    // O hero carrega a barbearia
+    expect(await screen.findByText("Barbearia Mock")).toBeInTheDocument();
+    // A seção de avaliações deve aparecer
+    expect(
+      await screen.findByTestId("avaliacoes-section"),
+    ).toBeInTheDocument();
+    // Média e comentários devem estar visíveis
+    expect(screen.getByTestId("media-label")).toHaveTextContent("4.8");
+    expect(screen.getByText("Excelente atendimento!")).toBeInTheDocument();
+  });
+
+  it("não exibe seção de avaliações quando não há avaliações", async () => {
+    server.use(
+      http.get(`${BASE}/publico/:slug/avaliacoes`, () =>
+        HttpResponse.json({ media: 0, total: 0, items: [] }),
+      ),
+    );
+    renderFlow();
+    await screen.findByText("Barbearia Mock");
+    expect(screen.queryByTestId("avaliacoes-section")).not.toBeInTheDocument();
+  });
+
   it("validação Zod: nome curto bloqueia avanço do step 4", async () => {
     renderFlow();
 

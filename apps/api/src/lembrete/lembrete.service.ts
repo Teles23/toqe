@@ -170,6 +170,166 @@ export class LembreteService {
     }
   }
 
+  @Cron('0 5 0 * * *')
+  async expirarTrials(): Promise<void> {
+    const agora = new Date();
+    const candidatos = await this.prisma.barbearia.findMany({
+      where: { planoStatus: 'trial', trialFim: { lt: agora } },
+      select: { codigo: true, nome: true },
+    });
+
+    for (const bar of candidatos) {
+      try {
+        await this.prisma.barbearia.update({
+          where: { codigo: bar.codigo },
+          data: { planoStatus: 'inadimplente', bloqueadaEm: agora },
+        });
+        // TODO: enviar push para o dono quando tivermos o sistema de push por barbearia
+      } catch (err) {
+        this.logger.error(
+          `Falha ao expirar trial da barbearia #${bar.codigo}: ${String(err)}`,
+        );
+      }
+    }
+  }
+
+  @Cron('0 0 9 * * *')
+  async enviarEmailsCobranca(): Promise<void> {
+    const agora = new Date();
+
+    // 5 dias antes do vencimento
+    const em5Dias = new Date(agora);
+    em5Dias.setDate(em5Dias.getDate() + 5);
+
+    const vencendoEm5 = await this.prisma.barbearia.findMany({
+      where: {
+        planoStatus: 'ativo',
+        planoValidoAte: {
+          gte: new Date(
+            em5Dias.getFullYear(),
+            em5Dias.getMonth(),
+            em5Dias.getDate(),
+          ),
+          lt: new Date(
+            em5Dias.getFullYear(),
+            em5Dias.getMonth(),
+            em5Dias.getDate() + 1,
+          ),
+        },
+      },
+      select: {
+        codigo: true,
+        nome: true,
+        membros: {
+          where: { perfil: 'dono' },
+          select: { usuario: { select: { email: true, nome: true } } },
+        },
+      },
+    });
+
+    for (const bar of vencendoEm5) {
+      const dono = bar.membros[0]?.usuario;
+      if (!dono) continue;
+      try {
+        await this.notificacaoService.enviarEmail({
+          to: dono.email,
+          subject: `Sua assinatura Toqe vence em 5 dias`,
+          html: `<p>Olá ${dono.nome}, sua assinatura da barbearia <strong>${bar.nome}</strong> vence em 5 dias. Renove para não perder o acesso.</p>`,
+        });
+      } catch (err) {
+        this.logger.error(
+          `Falha ao enviar email de cobrança para barbearia #${bar.codigo}: ${String(err)}`,
+        );
+      }
+    }
+
+    // No dia do vencimento
+    const hoje = new Date(
+      agora.getFullYear(),
+      agora.getMonth(),
+      agora.getDate(),
+    );
+    const amanha = new Date(hoje);
+    amanha.setDate(amanha.getDate() + 1);
+
+    const vencendoHoje = await this.prisma.barbearia.findMany({
+      where: {
+        planoStatus: 'ativo',
+        planoValidoAte: { gte: hoje, lt: amanha },
+      },
+      select: {
+        codigo: true,
+        nome: true,
+        membros: {
+          where: { perfil: 'dono' },
+          select: { usuario: { select: { email: true, nome: true } } },
+        },
+      },
+    });
+
+    for (const bar of vencendoHoje) {
+      const dono = bar.membros[0]?.usuario;
+      if (!dono) continue;
+      try {
+        await this.notificacaoService.enviarEmail({
+          to: dono.email,
+          subject: `Sua assinatura Toqe vence hoje`,
+          html: `<p>Olá ${dono.nome}, sua assinatura da barbearia <strong>${bar.nome}</strong> vence hoje. Acesse o portal para renovar.</p>`,
+        });
+      } catch (err) {
+        this.logger.error(
+          `Falha ao enviar email de vencimento para barbearia #${bar.codigo}: ${String(err)}`,
+        );
+      }
+    }
+
+    // 3 dias após o vencimento (inadimplentes)
+    const ha3Dias = new Date(agora);
+    ha3Dias.setDate(ha3Dias.getDate() - 3);
+
+    const inadimplentesHa3Dias = await this.prisma.barbearia.findMany({
+      where: {
+        planoStatus: 'inadimplente',
+        bloqueadaEm: {
+          gte: new Date(
+            ha3Dias.getFullYear(),
+            ha3Dias.getMonth(),
+            ha3Dias.getDate(),
+          ),
+          lt: new Date(
+            ha3Dias.getFullYear(),
+            ha3Dias.getMonth(),
+            ha3Dias.getDate() + 1,
+          ),
+        },
+      },
+      select: {
+        codigo: true,
+        nome: true,
+        membros: {
+          where: { perfil: 'dono' },
+          select: { usuario: { select: { email: true, nome: true } } },
+        },
+      },
+    });
+
+    for (const bar of inadimplentesHa3Dias) {
+      const dono = bar.membros[0]?.usuario;
+      if (!dono) continue;
+      try {
+        await this.notificacaoService.enviarEmail({
+          to: dono.email,
+          subject: `Acesso suspenso — regularize sua assinatura Toqe`,
+          html: `<p>Olá ${dono.nome}, o acesso à barbearia <strong>${bar.nome}</strong> está suspenso há 3 dias. Regularize sua assinatura para reativar.</p>`,
+        });
+      } catch (err) {
+        this.logger.error(
+          `Falha ao enviar email de inadimplência para barbearia #${bar.codigo}: ${String(err)}`,
+        );
+      }
+    }
+  }
+
   @Cron('0 9 * * *')
   async enviarPushAniversario(): Promise<void> {
     const hoje = new Date();

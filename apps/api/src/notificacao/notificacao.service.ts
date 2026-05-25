@@ -103,6 +103,34 @@ export class NotificacaoService {
     }
   }
 
+  async enviarEmail(data: {
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn(
+        `E-mail para ${data.to} ignorado: RESEND_API_KEY não configurada`,
+      );
+      return;
+    }
+    try {
+      const result = await this.resend.emails.send({
+        from: 'Toqe <noreply@toqe.com.br>',
+        to: data.to,
+        subject: data.subject,
+        html: data.html,
+      });
+      this.logger.log(
+        `E-mail enviado para ${data.to} (id: ${result.data?.id})`,
+      );
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Falha ao enviar e-mail para ${data.to}: ${msg}`);
+      throw error;
+    }
+  }
+
   async enviarRecuperacaoSenha(
     email: string,
     nome: string,

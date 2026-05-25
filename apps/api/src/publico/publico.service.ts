@@ -187,6 +187,54 @@ export class PublicoService {
     return serializeAgendamento(agendamento);
   }
 
+  /**
+   * Lista pública de avaliações da barbearia.
+   *
+   * Retorna apenas avaliações de agendamentos CONCLUIDOS, sem dados pessoais
+   * do cliente. Limita a 20 registros mais recentes.
+   */
+  async listarAvaliacoes(slug: string): Promise<{
+    media: number;
+    total: number;
+    items: { nota: number; comentario: string | null; criadoEm: string }[];
+  }> {
+    const { codigo } = await this.getBarbeariaPorSlug(slug);
+
+    const avaliacoes = await this.prisma.avaliacaoAgendamento.findMany({
+      where: {
+        agendamento: {
+          barCodigo: codigo,
+          status: 'CONCLUIDO',
+        },
+      },
+      select: {
+        nota: true,
+        comentario: true,
+        criadoEm: true,
+      },
+      orderBy: { criadoEm: 'desc' },
+      take: 20,
+    });
+
+    const total = avaliacoes.length;
+    const media =
+      total > 0
+        ? Math.round(
+            (avaliacoes.reduce((sum, a) => sum + a.nota, 0) / total) * 10,
+          ) / 10
+        : 0;
+
+    return {
+      media,
+      total,
+      items: avaliacoes.map((a) => ({
+        nota: a.nota,
+        comentario: a.comentario,
+        criadoEm: a.criadoEm.toISOString(),
+      })),
+    };
+  }
+
   private async resolverBarbeiroAuto(
     barCodigo: number,
     servicosIds: number[],

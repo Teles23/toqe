@@ -209,6 +209,77 @@ describe('PublicoService', () => {
     });
   });
 
+  describe('listarAvaliacoes', () => {
+    beforeEach(() => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        codigo: 1,
+        ativo: true,
+      });
+    });
+
+    it('retorna media, total e items sem dados pessoais', async () => {
+      mockPrisma.avaliacaoAgendamento.findMany.mockResolvedValue([
+        {
+          nota: 5,
+          comentario: 'Excelente!',
+          criadoEm: new Date('2026-05-01T10:00:00.000Z'),
+        },
+        {
+          nota: 4,
+          comentario: null,
+          criadoEm: new Date('2026-04-20T09:00:00.000Z'),
+        },
+      ]);
+
+      const result = await service.listarAvaliacoes('urban');
+
+      expect(result.total).toBe(2);
+      expect(result.media).toBe(4.5);
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0]).toEqual({
+        nota: 5,
+        comentario: 'Excelente!',
+        criadoEm: '2026-05-01T10:00:00.000Z',
+      });
+      expect(result.items[1]).toEqual({
+        nota: 4,
+        comentario: null,
+        criadoEm: '2026-04-20T09:00:00.000Z',
+      });
+    });
+
+    it('retorna media=0 e total=0 quando não há avaliações', async () => {
+      mockPrisma.avaliacaoAgendamento.findMany.mockResolvedValue([]);
+
+      const result = await service.listarAvaliacoes('urban');
+
+      expect(result).toEqual({ media: 0, total: 0, items: [] });
+    });
+
+    it('filtra apenas agendamentos CONCLUIDOS da barbearia correta', async () => {
+      mockPrisma.avaliacaoAgendamento.findMany.mockResolvedValue([]);
+
+      await service.listarAvaliacoes('urban');
+
+      expect(mockPrisma.avaliacaoAgendamento.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            agendamento: { barCodigo: 1, status: 'CONCLUIDO' },
+          },
+          take: 20,
+        }),
+      );
+    });
+
+    it('lança 404 quando barbearia não existe', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue(null);
+
+      await expect(service.listarAvaliacoes('nao-existe')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
   describe('criarAgendamento', () => {
     const dto = {
       barbeiroId: 10,

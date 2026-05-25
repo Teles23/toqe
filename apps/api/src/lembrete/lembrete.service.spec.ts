@@ -22,6 +22,7 @@ const mockPushService = {
 
 const mockNotificacaoService = {
   enviarLembrete: jest.fn().mockResolvedValue(undefined),
+  enviarEmail: jest.fn().mockResolvedValue(undefined),
 };
 
 function makeAgendamento(overrides: Record<string, unknown> = {}) {
@@ -279,6 +280,131 @@ describe('LembreteService', () => {
 
       expect(mockPrisma.agendamento.update).toHaveBeenCalledTimes(2);
       expect(mockPushService.send).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('expirarTrials', () => {
+    it('não faz nada quando não há trials expirados', async () => {
+      mockPrisma.barbearia.findMany.mockResolvedValue([]);
+
+      await expect(service.expirarTrials()).resolves.toBeUndefined();
+
+      expect(mockPrisma.barbearia.update).not.toHaveBeenCalled();
+    });
+
+    it('marca como inadimplente barbearias com trial expirado', async () => {
+      const barbearias = [
+        { codigo: 1, nome: 'Barber A' },
+        { codigo: 2, nome: 'Barber B' },
+      ];
+      mockPrisma.barbearia.findMany.mockResolvedValue(barbearias);
+      mockPrisma.barbearia.update.mockResolvedValue({});
+
+      await service.expirarTrials();
+
+      expect(mockPrisma.barbearia.update).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.barbearia.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { codigo: 1 },
+          data: expect.objectContaining({ planoStatus: 'inadimplente' }),
+        }),
+      );
+      expect(mockPrisma.barbearia.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { codigo: 2 },
+          data: expect.objectContaining({ planoStatus: 'inadimplente' }),
+        }),
+      );
+    });
+
+    it('isola erros — um falha, outros continuam', async () => {
+      const barbearias = [
+        { codigo: 10, nome: 'Barber A' },
+        { codigo: 20, nome: 'Barber B' },
+      ];
+      mockPrisma.barbearia.findMany.mockResolvedValue(barbearias);
+      mockPrisma.barbearia.update
+        .mockRejectedValueOnce(new Error('DB error'))
+        .mockResolvedValueOnce({});
+
+      await expect(service.expirarTrials()).resolves.toBeUndefined();
+
+      expect(mockPrisma.barbearia.update).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('enviarEmailsCobranca', () => {
+    function makeBarbearia(overrides: Record<string, unknown> = {}) {
+      return {
+        codigo: 1,
+        nome: 'BarberShop',
+        membros: [
+          { usuario: { email: 'dono@example.com', nome: 'Dono Test' } },
+        ],
+        ...overrides,
+      };
+    }
+
+    it('envia email 5 dias antes do vencimento', async () => {
+      mockPrisma.barbearia.findMany
+        .mockResolvedValueOnce([makeBarbearia()]) // vencendoEm5
+        .mockResolvedValueOnce([]) // vencendoHoje
+        .mockResolvedValueOnce([]); // inadimplentesHa3Dias
+
+      await service.enviarEmailsCobranca();
+
+      expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledTimes(1);
+      expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'dono@example.com',
+          subject: expect.stringContaining('5 dias'),
+        }),
+      );
+    });
+
+    it('envia email no dia do vencimento', async () => {
+      mockPrisma.barbearia.findMany
+        .mockResolvedValueOnce([]) // vencendoEm5
+        .mockResolvedValueOnce([makeBarbearia()]) // vencendoHoje
+        .mockResolvedValueOnce([]); // inadimplentesHa3Dias
+
+      await service.enviarEmailsCobranca();
+
+      expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledTimes(1);
+      expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'dono@example.com',
+          subject: expect.stringContaining('hoje'),
+        }),
+      );
+    });
+
+    it('envia email de inadimplência 3 dias após bloqueio', async () => {
+      mockPrisma.barbearia.findMany
+        .mockResolvedValueOnce([]) // vencendoEm5
+        .mockResolvedValueOnce([]) // vencendoHoje
+        .mockResolvedValueOnce([makeBarbearia()]); // inadimplentesHa3Dias
+
+      await service.enviarEmailsCobranca();
+
+      expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledTimes(1);
+      expect(mockNotificacaoService.enviarEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'dono@example.com',
+          subject: expect.stringContaining('suspenso'),
+        }),
+      );
+    });
+
+    it('não envia quando não há barbearias nas janelas', async () => {
+      mockPrisma.barbearia.findMany
+        .mockResolvedValueOnce([]) // vencendoEm5
+        .mockResolvedValueOnce([]) // vencendoHoje
+        .mockResolvedValueOnce([]); // inadimplentesHa3Dias
+
+      await service.enviarEmailsCobranca();
+
+      expect(mockNotificacaoService.enviarEmail).not.toHaveBeenCalled();
     });
   });
 

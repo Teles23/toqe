@@ -88,6 +88,18 @@ export class PublicoController {
     });
   }
 
+  @Get(':slug/avaliacoes')
+  @ApiOperation({
+    summary: 'Avaliações públicas da barbearia (sem dados pessoais)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Média, total e lista de avaliações.',
+  })
+  listarAvaliacoes(@Param('slug') slug: string) {
+    return this.publicoService.listarAvaliacoes(slug);
+  }
+
   @Post(':slug/agendamentos')
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
