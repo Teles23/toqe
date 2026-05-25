@@ -45,6 +45,7 @@ export default function PerfilEditarScreen() {
     defaultValues: {
       nome: user?.nome ?? "",
       telefone: user?.telefone ?? "",
+      dataNascimento: user?.dataNascimento ?? "",
     },
   });
 
@@ -57,6 +58,7 @@ export default function PerfilEditarScreen() {
         nome: data.nome,
         telefone:
           data.telefone && data.telefone.trim() ? data.telefone : undefined,
+        dataNascimento: data.dataNascimento?.trim() || undefined,
       };
       await editar.mutateAsync(payload);
       showToast("Dados atualizados com sucesso.", "success");
@@ -160,6 +162,32 @@ export default function PerfilEditarScreen() {
           />
           {errors.telefone?.message ? (
             <Text style={styles.fieldError}>{errors.telefone.message}</Text>
+          ) : null}
+        </View>
+
+        {/* Campo Data de Nascimento */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.fieldLabel}>DATA DE NASCIMENTO</Text>
+          <Controller
+            control={control}
+            name="dataNascimento"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                testID="input-data-nascimento"
+                style={styles.fieldInput}
+                placeholder="AAAA-MM-DD (ex: 1990-05-24)"
+                placeholderTextColor={FG4}
+                keyboardType="numeric"
+                autoComplete="birthdate-full"
+                maxLength={10}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value ?? ""}
+              />
+            )}
+          />
+          {errors.dataNascimento?.message ? (
+            <Text style={styles.fieldError}>{errors.dataNascimento.message}</Text>
           ) : null}
         </View>
 

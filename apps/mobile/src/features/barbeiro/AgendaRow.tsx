@@ -96,7 +96,7 @@ function AgendaRowImpl({
       testID={testID ?? `agenda-row-${agendamento.codigo}`}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Agendamento de ${agendamento.cliente.nome} às ${timeStr}`}
+      accessibilityLabel={`Agendamento de ${agendamento.cliente?.nome ?? "Encaixe"} às ${timeStr}`}
       style={({ pressed }) => [
         styles.row,
         {
@@ -152,7 +152,7 @@ function AgendaRowImpl({
           ]}
           numberOfLines={1}
         >
-          {agendamento.cliente.nome}
+          {agendamento.cliente?.nome ?? "Encaixe"}
         </Text>
 
         <View style={styles.serviceRow}>

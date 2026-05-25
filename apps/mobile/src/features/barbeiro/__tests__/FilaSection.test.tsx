@@ -98,7 +98,13 @@ function makeAg(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
     fim: "2026-05-15T13:30:00.000Z",
     status: "pendente",
     barbeiro: { usrCodigo: 99, nome: "Carlos", avatarUrl: null },
-    cliente: { usrCodigo: 42, nome: "João", telefone: null },
+    cliente: {
+      usrCodigo: 42,
+      nome: "João",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: null,
+    },
     itens: [
       {
         codigo: 1,
@@ -131,11 +137,23 @@ describe("FilaSection", () => {
     setupFetch([
       makeAg({
         codigo: 1,
-        cliente: { usrCodigo: 1, nome: "João", telefone: null },
+        cliente: {
+          usrCodigo: 1,
+          nome: "João",
+          telefone: null,
+          tipo: "usuario" as const,
+          email: null,
+        },
       }),
       makeAg({
         codigo: 2,
-        cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
+        cliente: {
+          usrCodigo: 2,
+          nome: "Maria",
+          telefone: null,
+          tipo: "usuario" as const,
+          email: null,
+        },
       }),
     ]);
     renderFila();
@@ -149,11 +167,23 @@ describe("FilaSection", () => {
     setupFetch([
       makeAg({
         codigo: 1,
-        cliente: { usrCodigo: 1, nome: "João", telefone: null },
+        cliente: {
+          usrCodigo: 1,
+          nome: "João",
+          telefone: null,
+          tipo: "usuario" as const,
+          email: null,
+        },
       }),
       makeAg({
         codigo: 2,
-        cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
+        cliente: {
+          usrCodigo: 2,
+          nome: "Maria",
+          telefone: null,
+          tipo: "usuario" as const,
+          email: null,
+        },
       }),
     ]);
     renderFila();
@@ -178,12 +208,24 @@ describe("FilaSection", () => {
       makeAg({
         codigo: 1,
         status: "pendente",
-        cliente: { usrCodigo: 1, nome: "João", telefone: null },
+        cliente: {
+          usrCodigo: 1,
+          nome: "João",
+          telefone: null,
+          tipo: "usuario" as const,
+          email: null,
+        },
       }),
       makeAg({
         codigo: 2,
         status: "em_andamento",
-        cliente: { usrCodigo: 2, nome: "Maria", telefone: null },
+        cliente: {
+          usrCodigo: 2,
+          nome: "Maria",
+          telefone: null,
+          tipo: "usuario" as const,
+          email: null,
+        },
       }),
     ]);
     renderFila();

@@ -29,11 +29,11 @@ import {
   OrdenarClientesSheet,
   type SortClientes,
 } from "@/src/features/barbeiro/OrdenarClientesSheet";
-import { useClientesDaBarbearia } from "@/src/shared/hooks/barbeiro/use-clientes-da-barbearia";
+import { usePessoasDaBarbearia } from "@/src/shared/hooks/barbeiro/use-pessoas-da-barbearia";
 import { useTheme } from "@/src/shared/theme";
 import { emailVisivel } from "@/src/shared/utils/cliente";
 import { DataListWrapper, EmptyScreen, ListSkeleton } from "@/src/shared/ui";
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 
 // ─── Filtros ──────────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ interface FilterChip {
   id: FilterId | "vip" | "novos";
   label: string;
   disabled?: boolean;
-  test?: (c: ClienteAPI) => boolean;
+  test?: (c: PessoaAPI) => boolean;
 }
 
 const FILTERS: FilterChip[] = [
@@ -81,16 +81,16 @@ export default function BarbeiroClientesScreen() {
   const insets = useSafeAreaInsets();
 
   const { data, isLoading, isError, isRefetching, refetch } =
-    useClientesDaBarbearia();
+    usePessoasDaBarbearia();
 
   const [busca, setBusca] = useState("");
   const [filter, setFilter] = useState<string>("todos");
   const [sort, setSort] = useState<SortClientes>("nomeAsc");
   const [sortOpen, setSortOpen] = useState(false);
-  const [selected, setSelected] = useState<ClienteAPI | null>(null);
+  const [selected, setSelected] = useState<PessoaAPI | null>(null);
   const [addClienteOpen, setAddClienteOpen] = useState(false);
 
-  const handleSelect = useCallback((cliente: ClienteAPI) => {
+  const handleSelect = useCallback((cliente: PessoaAPI) => {
     setSelected(cliente);
   }, []);
 

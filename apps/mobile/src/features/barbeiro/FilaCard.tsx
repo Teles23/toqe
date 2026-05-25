@@ -131,7 +131,7 @@ function FilaCardImpl({
         testID={testID ?? `fila-${agendamento.codigo}`}
         onLongPress={handleLongPress}
         delayLongPress={350}
-        accessibilityLabel={`${posicao}º na fila: ${agendamento.cliente.nome}, chegou às ${chegadaStr}, aguardando há ${minutesWaiting} minutos`}
+        accessibilityLabel={`${posicao}º na fila: ${agendamento.cliente?.nome ?? "Encaixe"}, chegou às ${chegadaStr}, aguardando há ${minutesWaiting} minutos`}
         accessibilityHint={
           onChangeStatus ? "Pressione e segure para mudar o status" : undefined
         }
@@ -161,13 +161,13 @@ function FilaCardImpl({
                 style={[typography.bodyBold, { color: palette.text, flex: 1 }]}
                 numberOfLines={1}
               >
-                {agendamento.cliente.nome}
+                {agendamento.cliente?.nome ?? "Encaixe"}
               </Text>
               {onAtender ? (
                 <Pressable
                   testID={`btn-atender-${agendamento.codigo}`}
                   accessibilityRole="button"
-                  accessibilityLabel={`Atender ${agendamento.cliente.nome}`}
+                  accessibilityLabel={`Atender ${agendamento.cliente?.nome ?? "Encaixe"}`}
                   onPress={() => onAtender(agendamento.codigo)}
                   style={({ pressed }) => [
                     styles.atenderBtn,
@@ -273,7 +273,7 @@ function FilaCardImpl({
             { color: palette.text, marginBottom: spacing.xs },
           ]}
         >
-          {agendamento.cliente.nome}
+          {agendamento.cliente?.nome ?? "Encaixe"}
         </Text>
         <Text
           style={[

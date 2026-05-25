@@ -36,6 +36,23 @@ export interface ClienteAPI {
   servicoFav: string | null;
 }
 
+// ---- Pessoa (visão unificada: TQE_USR + TQE_CONTATO) ----
+
+export interface PessoaAPI {
+  codigo: number;
+  nome: string;
+  /** "usuario" = TQE_USR (tem conta/login); "contato" = TQE_CONTATO (walk-in). */
+  tipo: "usuario" | "contato";
+  email: string | null;
+  telefone: string | null;
+  avatarUrl: string | null;
+  totalVisitas: number;
+  totalGasto: number;
+  ticketMedio: number;
+  ultimaVisita: string | null;
+  servicoFav: string | null;
+}
+
 // ---- Serviço ----
 
 export interface ServicoAPI {
@@ -62,7 +79,14 @@ export interface AgendamentoAPI {
   inicio: string;
   fim: string;
   status: StatusAgendamento;
-  cliente: { codigo: number; nome: string; email: string } | null;
+  cliente: {
+    codigo: number;
+    nome: string;
+    /** "usuario" = tem conta/login; "contato" = walk-in sem conta. */
+    tipo: "usuario" | "contato";
+    /** null para contatos operacionais sem e-mail. */
+    email: string | null;
+  } | null;
   barbeiro: { codigo: number; nome: string } | null;
   itens: { servico: { nome: string }; duracaoMin: number }[];
 }

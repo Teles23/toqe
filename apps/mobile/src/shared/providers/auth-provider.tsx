@@ -14,6 +14,7 @@ interface AuthUser {
   email: string;
   telefone: string | null;
   avatarUrl: string | null;
+  dataNascimento: string | null;
   /** Link público compartilhável (derivado no backend a partir do nome). */
   linkPublico: string | null;
 }
@@ -76,6 +77,7 @@ function buildUser(me: UsuarioMe): AuthUser {
     telefone: me.telefone,
     avatarUrl: me.avatarUrl,
     linkPublico: me.linkPublico ?? null,
+    dataNascimento: me.dataNascimento ?? null,
   };
 }
 

@@ -45,14 +45,14 @@ describe("useCriarWalkIn", () => {
     });
   });
 
-  it("faz UMA chamada atômica a /agendamentos/walk-in com cliente novo", async () => {
+  it("faz UMA chamada atômica a /agendamentos/walk-in com contato novo (TQE_CONTATO)", async () => {
     mockPost.mockResolvedValueOnce({ codigo: 999, tipo: "WALK_IN" });
 
     const { result } = renderHook(() => useCriarWalkIn(), { wrapper });
 
     await act(async () => {
       await result.current.mutateAsync({
-        cliente: { nome: "João", email: "j@x.com", telefone: "1199" },
+        contato: { nome: "João", telefone: "1199" },
         barbeiroId: 42,
         servicosIds: [1],
       });
@@ -64,17 +64,33 @@ describe("useCriarWalkIn", () => {
     const payload = mockPost.mock.calls[0][1] as Record<string, unknown>;
     expect(payload.barbeiroId).toBe(42);
     expect(payload.servicosIds).toEqual([1]);
-    expect(payload.cliente).toEqual({
-      nome: "João",
-      email: "j@x.com",
-      telefone: "1199",
-    });
-    // sem clienteId quando é cliente novo; inicio é definido pelo servidor
+    expect(payload.contato).toEqual({ nome: "João", telefone: "1199" });
     expect(payload.clienteId).toBeUndefined();
+    expect(payload.contatoId).toBeUndefined();
     expect(payload.inicio).toBeUndefined();
   });
 
-  it("envia clienteId (sem objeto cliente) quando cliente já existe", async () => {
+  it("envia contatoId (sem objeto contato) quando contato já existe", async () => {
+    mockPost.mockResolvedValueOnce({ codigo: 999 });
+
+    const { result } = renderHook(() => useCriarWalkIn(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        contatoId: 88,
+        barbeiroId: 42,
+        servicosIds: [1],
+      });
+    });
+
+    expect(mockPost).toHaveBeenCalledTimes(1);
+    const payload = mockPost.mock.calls[0][1] as Record<string, unknown>;
+    expect(payload.contatoId).toBe(88);
+    expect(payload.contato).toBeUndefined();
+    expect(payload.clienteId).toBeUndefined();
+  });
+
+  it("envia clienteId (TQE_USR) quando o agendamento é para um cliente autenticável", async () => {
     mockPost.mockResolvedValueOnce({ codigo: 999 });
 
     const { result } = renderHook(() => useCriarWalkIn(), { wrapper });
@@ -88,25 +104,37 @@ describe("useCriarWalkIn", () => {
     });
 
     expect(mockPost).toHaveBeenCalledTimes(1);
-    expect(mockPost.mock.calls[0][0]).toBe("/agendamentos/walk-in");
     const payload = mockPost.mock.calls[0][1] as Record<string, unknown>;
     expect(payload.clienteId).toBe(555);
-    expect(payload.cliente).toBeUndefined();
+    expect(payload.contato).toBeUndefined();
+    expect(payload.contatoId).toBeUndefined();
   });
 
-  it("rejeita se nem cliente nem clienteId forem fornecidos", async () => {
+  it("rejeita se nenhum dos três campos for fornecido", async () => {
     const { result } = renderHook(() => useCriarWalkIn(), { wrapper });
 
     await expect(
       result.current.mutateAsync({ barbeiroId: 42, servicosIds: [1] }),
-    ).rejects.toThrow(/cliente/);
+    ).rejects.toThrow(/contato.*contatoId.*clienteId/i);
     expect(mockPost).not.toHaveBeenCalled();
   });
 
-  it("inválida cache de ['fila'] e ['agendamentos'] no sucesso", async () => {
-    mockPost
-      .mockResolvedValueOnce({ codigo: 1 })
-      .mockResolvedValueOnce({ codigo: 999 });
+  it("rejeita se mais de um campo for fornecido (XOR)", async () => {
+    const { result } = renderHook(() => useCriarWalkIn(), { wrapper });
+
+    await expect(
+      result.current.mutateAsync({
+        contato: { nome: "João" },
+        clienteId: 1,
+        barbeiroId: 42,
+        servicosIds: [1],
+      }),
+    ).rejects.toThrow(/exatamente um/i);
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it("invalida cache de ['fila'] e ['agendamentos'] no sucesso", async () => {
+    mockPost.mockResolvedValueOnce({ codigo: 999 });
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -130,7 +158,7 @@ describe("useCriarWalkIn", () => {
 
     await act(async () => {
       await result.current.mutateAsync({
-        cliente: { nome: "A", email: "a@x.com" },
+        contato: { nome: "A" },
         barbeiroId: 1,
         servicosIds: [1],
       });

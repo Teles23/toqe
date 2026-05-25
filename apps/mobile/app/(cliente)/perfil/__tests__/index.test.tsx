@@ -100,7 +100,13 @@ function makeAg(
     fim: new Date(Date.now() - 82_800_000).toISOString(),
     status,
     barbeiro: { usrCodigo: 10, nome: "Carlos Barbeiro", avatarUrl: null },
-    cliente: { usrCodigo: 1, nome: "Maria Cliente", telefone: null },
+    cliente: {
+      usrCodigo: 1,
+      nome: "Maria Cliente",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: "maria@x.com",
+    },
     itens: [
       {
         codigo: 1,

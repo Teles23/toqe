@@ -27,6 +27,7 @@ export interface UsuarioMe {
   email: string;
   telefone: string | null;
   avatarUrl: string | null;
+  dataNascimento?: string | null;
   twoFaEnabled?: boolean;
   superAdmin?: boolean;
   /** Link público compartilhável do barbeiro (ex.: "toqe.app/u/carlos-mendes"). */
@@ -150,7 +151,15 @@ export interface AgendamentoResponse {
   fim: string;
   status: StatusAgendamento;
   barbeiro: Pick<MembroResponse, "usrCodigo" | "nome" | "avatarUrl">;
-  cliente: Pick<MembroResponse, "usrCodigo" | "nome" | "telefone">;
+  cliente: {
+    usrCodigo: number;
+    nome: string;
+    telefone: string | null;
+    /** "usuario" = TQE_USUARIO (tem conta/login); "contato" = TQE_CONTATO (walk-in sem conta). */
+    tipo: "usuario" | "contato";
+    /** null para contatos operacionais que não têm e-mail. */
+    email: string | null;
+  } | null;
   itens: AgendamentoItemResponse[];
   criadoEm: string;
 }

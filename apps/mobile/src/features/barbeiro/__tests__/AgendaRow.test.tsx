@@ -14,7 +14,13 @@ function makeAgendamento(
     fim: "2026-05-15T14:30:00.000Z",
     status: "confirmado",
     barbeiro: { usrCodigo: 10, nome: "Bob", avatarUrl: null },
-    cliente: { usrCodigo: 42, nome: "Ana Lima", telefone: null },
+    cliente: {
+      usrCodigo: 42,
+      nome: "Ana Lima",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: null,
+    },
     itens: [
       {
         codigo: 1,

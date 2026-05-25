@@ -196,7 +196,15 @@ export default function AgendamentoDetalheScreen() {
                   📅 Calendário
                 </Text>
               </Pressable>
-              <Pressable accessibilityRole="button" style={styles.btnGhost}>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.btnGhost}
+                onPress={() =>
+                  router.push(
+                    `/(cliente)/agendamentos/${codigo}/reagendar` as never,
+                  )
+                }
+              >
                 <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
                   ✏️ Reagendar
                 </Text>
@@ -279,6 +287,11 @@ export default function AgendamentoDetalheScreen() {
             <Pressable
               accessibilityRole="button"
               style={[styles.btnAmber, { backgroundColor: palette.primary }]}
+              onPress={() =>
+                router.push(
+                  `/(cliente)/agendamentos/${codigo}/reagendar` as never,
+                )
+              }
             >
               <Text style={styles.btnAmberText}>Reagendar</Text>
             </Pressable>

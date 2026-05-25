@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingUp,
@@ -31,6 +31,38 @@ export function RelatoriosView() {
   const barCodigo = barbearia?.codigo ?? null;
 
   const [periodo, setPeriodo] = useState<Periodo>("30d");
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportar = useCallback(async () => {
+    if (!barCodigo || exporting) return;
+    setExporting(true);
+    try {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1";
+      const token = document.cookie.match(
+        /(?:^|;\s*)access_token=([^;]+)/,
+      )?.[1];
+      const res = await fetch(
+        `${apiBase}/barbearias/${barCodigo}/relatorios/faturamento?periodo=${periodo}&formato=csv`,
+        {
+          headers: {
+            Authorization: token ? `Bearer ${decodeURIComponent(token)}` : "",
+            "x-tenant-id": String(barCodigo),
+          },
+        },
+      );
+      const text = await res.text();
+      const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `relatorio-faturamento-${periodo}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }, [barCodigo, periodo, exporting]);
 
   const { data: faturamento = [] } = useFaturamento(barCodigo, periodo);
   const { data: agendamentos = [] } = useAgendamentosRelatorio(
@@ -98,14 +130,16 @@ export function RelatoriosView() {
           </div>
 
           <button
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
+            onClick={() => void handleExportar()}
+            disabled={!barCodigo || exporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium disabled:opacity-50"
             style={{
               background: "var(--bg-card)",
               border: "1px solid var(--border-default)",
               color: "var(--text-secondary)",
             }}
           >
-            <Download size={13} /> Exportar
+            <Download size={13} /> {exporting ? "Exportando…" : "Exportar CSV"}
           </button>
         </div>
       </div>

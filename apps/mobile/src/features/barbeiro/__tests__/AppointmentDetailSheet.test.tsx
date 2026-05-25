@@ -28,7 +28,13 @@ function makeApt(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
     fim: "2026-05-15T14:30:00.000Z",
     status: "confirmado",
     barbeiro: { usrCodigo: 10, nome: "Bob", avatarUrl: null },
-    cliente: { usrCodigo: 42, nome: "Maria Souza", telefone: null },
+    cliente: {
+      usrCodigo: 42,
+      nome: "Maria Souza",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: null,
+    },
     itens: [
       {
         codigo: 1,

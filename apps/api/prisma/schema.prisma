@@ -25,7 +25,8 @@ model Usuario {
   twoFaSecret  String?  @map("TQE_USR_TWO_FA_SECRET") @db.VarChar(64)
   twoFaEnabled Boolean  @default(false) @map("TQE_USR_TWO_FA_ENABLED")
   // Acesso irrestrito ao painel Super Admin (fundador). Setado via SUPER_ADMIN_EMAIL env.
-  superAdmin   Boolean  @default(false) @map("TQE_USR_SUPER_ADMIN")
+  superAdmin      Boolean   @default(false) @map("TQE_USR_SUPER_ADMIN")
+  dataNascimento  DateTime? @map("TQE_USR_DATA_NASCIMENTO") @db.Date
   criadoEm  DateTime @default(now()) @map("TQE_USR_CRIADO_EM") @db.Timestamptz
 
   refreshTokens       RefreshToken[]
@@ -102,8 +103,25 @@ model Barbearia {
   horarios       HorarioFuncionamento[]
   convites       ConviteBarbearia[]
   clienteNotas   ClienteNota[]
+  contatos       Contato[]
 
   @@map("TQE_BARBEARIA")
+}
+
+/// Contato operacional: walk-in ou cliente cadastrado pelo barbeiro sem conta no app.
+/// Não tem e-mail nem senha — nunca faz login. Separado de TQE_USUARIO para não
+/// poluir a tabela de autenticação com registros sintéticos.
+model Contato {
+  codigo    Int      @id @default(autoincrement()) @map("TQE_CNT_CODIGO")
+  barCodigo Int      @map("TQE_CNT_BAR_CODIGO")
+  nome      String   @map("TQE_CNT_NOME")      @db.VarChar(100)
+  telefone  String?  @map("TQE_CNT_TELEFONE")  @db.VarChar(20)
+  criadoEm  DateTime @default(now()) @map("TQE_CNT_CRIADO_EM") @db.Timestamptz
+
+  barbearia    Barbearia     @relation(fields: [barCodigo], references: [codigo])
+  agendamentos Agendamento[] @relation("AgendamentosContato")
+
+  @@map("TQE_CONTATO")
 }
 
 model MembroBarbearia {
@@ -212,17 +230,24 @@ model Agendamento {
   codigo      Int      @id @default(autoincrement()) @map("TQE_AGD_CODIGO")
   barCodigo   Int      @map("TQE_AGD_BAR_CODIGO")
   barbeiroId  Int      @map("TQE_AGD_BARBEIRO_ID")
-  clienteId   Int      @map("TQE_AGD_CLIENTE_ID")
+  // Exatamente um de clienteId / contatoId deve estar preenchido.
+  // A constraint XOR é SQL pura (ver migration add_tqe_contato) — o Prisma
+  // não valida isso; a camada de serviço garante a invariante.
+  clienteId   Int?     @map("TQE_AGD_CLIENTE_ID") // usuário autenticável (TQE_USUARIO)
+  contatoId   Int?     @map("TQE_AGD_CONTATO_ID") // contato operacional (TQE_CONTATO)
   inicio      DateTime @map("TQE_AGD_INICIO") @db.Timestamptz
   fim         DateTime @map("TQE_AGD_FIM") @db.Timestamptz
   status      String   @default("PENDENTE") @map("TQE_AGD_STATUS") @db.VarChar(20) // PENDENTE | CONFIRMADO | CANCELADO | NO_SHOW | CONCLUIDO
   tipo        String   @default("AGENDADO") @map("TQE_AGD_TIPO") @db.VarChar(20) // AGENDADO | WALK_IN | ENCAIXE
-  observacao  String?  @map("TQE_AGD_OBSERVACAO") @db.Text
-  criadoEm    DateTime @default(now()) @map("TQE_AGD_CRIADO_EM") @db.Timestamptz
+  observacao         String?  @map("TQE_AGD_OBSERVACAO") @db.Text
+  criadoEm           DateTime @default(now()) @map("TQE_AGD_CRIADO_EM") @db.Timestamptz
+  lembrete24hEnviado Boolean  @default(false) @map("TQE_AGD_LEMBRETE_24H")
+  lembrete2hEnviado  Boolean  @default(false) @map("TQE_AGD_LEMBRETE_2H")
 
   barbearia  Barbearia              @relation(fields: [barCodigo], references: [codigo])
   barbeiro   Usuario                @relation("AgendamentosBarbeiro", fields: [barbeiroId], references: [codigo])
-  cliente    Usuario                @relation("AgendamentosCliente", fields: [clienteId], references: [codigo])
+  cliente    Usuario?               @relation("AgendamentosCliente", fields: [clienteId], references: [codigo])
+  contato    Contato?               @relation("AgendamentosContato", fields: [contatoId], references: [codigo])
   itens      AgendamentoItem[]
   avaliacao  AvaliacaoAgendamento?
 

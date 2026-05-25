@@ -32,6 +32,7 @@ import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
 import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useToast } from "@/src/shared/hooks/use-toast";
 import { useBarbeiroStats } from "@/src/shared/hooks/barbeiro/use-barbeiro-stats";
+import { useMeusAtendimentos } from "@/src/shared/hooks/barbeiro/use-meus-atendimentos";
 import {
   type DiaJornadaView,
   mergeJornadaComSemana,
@@ -290,6 +291,7 @@ export default function PerfilIndexScreen() {
     refetch: refetchStats,
   } = useBarbeiroStats();
   const refreshProps = usePullToRefresh(refetchStats, statsRefetching, 0);
+  const { data: meusAtendimentos = [] } = useMeusAtendimentos(10);
   const {
     data: jornadaData,
     isLoading: jornadaLoading,
@@ -466,6 +468,59 @@ export default function PerfilIndexScreen() {
             </Text>
           </View>
         )}
+
+        {/* ── ÚLTIMOS ATENDIMENTOS ── */}
+        <View style={styles.historicoSection}>
+          <Text style={styles.historicoTitle}>Últimos atendimentos</Text>
+          {meusAtendimentos.length === 0 ? (
+            <Text style={styles.historicoVazio}>Nenhum atendimento ainda</Text>
+          ) : (
+            meusAtendimentos.map(
+              (ag: {
+                codigo: number;
+                inicio: string;
+                itens: { servico?: { nome?: string }; preco?: number }[];
+                cliente?: { nome?: string } | null;
+                contato?: { nome?: string } | null;
+              }) => {
+                const clienteNome =
+                  ag.cliente?.nome ?? ag.contato?.nome ?? "Encaixe";
+                const servicos = ag.itens
+                  .map((i) => i.servico?.nome)
+                  .filter(Boolean)
+                  .join(", ");
+                const total = ag.itens.reduce(
+                  (s, i) => s + (typeof i.preco === "number" ? i.preco : 0),
+                  0,
+                );
+                const dataFmt = new Date(ag.inicio).toLocaleDateString(
+                  "pt-BR",
+                  { day: "2-digit", month: "short" },
+                );
+                const horaFmt = new Date(ag.inicio).toLocaleTimeString(
+                  "pt-BR",
+                  { hour: "2-digit", minute: "2-digit" },
+                );
+                return (
+                  <View key={ag.codigo} style={styles.historicoItem}>
+                    <View style={styles.historicoRow}>
+                      <Text style={styles.historicoData}>
+                        {dataFmt} · {horaFmt}
+                      </Text>
+                      <Text style={styles.historicoTotal}>
+                        R$ {total.toFixed(2)}
+                      </Text>
+                    </View>
+                    <Text style={styles.historicoCliente}>{clienteNome}</Text>
+                    {servicos ? (
+                      <Text style={styles.historicoServicos}>{servicos}</Text>
+                    ) : null}
+                  </View>
+                );
+              },
+            )
+          )}
+        </View>
 
         {/* ── SUA AGENDA ── */}
         <SettingsGroup label="Sua agenda">
@@ -680,6 +735,59 @@ const styles = StyleSheet.create({
     color: "#444444",
     marginTop: 10,
     paddingHorizontal: 4,
+  },
+  historicoSection: {
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  historicoTitle: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    color: "#666666",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  historicoVazio: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: "#444444",
+    textAlign: "center",
+    paddingVertical: 12,
+  },
+  historicoItem: {
+    backgroundColor: "#171717",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#262626",
+  },
+  historicoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+  historicoData: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "#888888",
+  },
+  historicoTotal: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 12,
+    color: "#22c55e",
+  },
+  historicoCliente: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    color: "#ffffff",
+    marginBottom: 2,
+  },
+  historicoServicos: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 11,
+    color: "#888888",
   },
   // Radio (multi-barbearia)
   radio: {

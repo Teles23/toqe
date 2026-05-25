@@ -242,9 +242,10 @@ export function ClientesView() {
 
         {/* Painel de detalhe */}
         <AnimatePresence>
-          {selected && (
+          {selected && barbearia && (
             <ClienteDetalhe
               cliente={selected}
+              barCodigo={barbearia.codigo}
               onClose={() => setSelected(null)}
             />
           )}

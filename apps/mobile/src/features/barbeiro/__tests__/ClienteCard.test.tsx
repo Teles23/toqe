@@ -2,16 +2,16 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
 import { ClienteCard } from "../ClienteCard";
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 
-function make(over: Partial<ClienteAPI> = {}): ClienteAPI {
+function make(over: Partial<PessoaAPI> = {}): PessoaAPI {
   return {
     codigo: 1,
     nome: "Carlos Silva",
+    tipo: "usuario",
     email: "carlos@toqe.com",
     telefone: "+5511999999999",
     avatarUrl: null,
-    perfil: "cliente",
     totalVisitas: 5,
     totalGasto: 250.5,
     ticketMedio: 50.1,
@@ -98,5 +98,22 @@ describe("ClienteCard", () => {
     render(<ClienteCard cliente={make()} testID="cli-static" />);
     const node = screen.getByTestId("cli-static");
     expect(node.props.accessibilityRole).toBeUndefined();
+  });
+
+  it("exibe badge WALK-IN para contato (tipo='contato')", () => {
+    render(
+      <ClienteCard
+        cliente={make({ tipo: "contato", email: null, totalVisitas: 0 })}
+      />,
+    );
+    expect(screen.getByTestId("badge-walk-in")).toBeTruthy();
+    expect(screen.getByText("WALK-IN")).toBeTruthy();
+    // badge NOVO nunca aparece para contatos
+    expect(screen.queryByText("NOVO")).toBeNull();
+  });
+
+  it("não exibe badge WALK-IN para usuário (tipo='usuario')", () => {
+    render(<ClienteCard cliente={make({ tipo: "usuario" })} />);
+    expect(screen.queryByTestId("badge-walk-in")).toBeNull();
   });
 });

@@ -1,15 +1,8 @@
 /**
- * AdicionarWalkInModal — "Encaixe agora" (walk-in) no estilo do protótipo
- * `barbeiro-sheets.jsx::WalkinSheet`.
+ * AdicionarWalkInModal — "Encaixe agora" (walk-in).
  *
- * Sheet leve: nome (opcional) + chips de serviço (reais via `useServicos`)
- * + chips de duração + info verde + "Atender agora". Sem selects de barbeiro
- * nem e-mail (o protótipo não os coleta):
- *  - `barbeiroId` = barbeiro logado (`useAuth().user.codigo`)
- *  - `email` sintético determinístico para satisfazer o contrato atual
- *    (`criarClienteRapidoSchema` exige email). TODO: tornar e-mail opcional
- *    no backend numa fase futura.
- *  - duração é exibida (reflete a do serviço); o backend deriva a real do serviço.
+ * Coleta nome + serviço e chama `criarWalkIn` com `contato: { nome }`.
+ * O backend persiste como TQE_CONTATO — sem criar conta de usuário.
  */
 
 import { Feather } from "@expo/vector-icons";
@@ -175,9 +168,7 @@ export function AdicionarWalkInModal({
     setErro(null);
     try {
       await criarWalkIn.mutateAsync({
-        // Encaixe é anônimo: enviamos só o nome — o servidor gera um e-mail
-        // único quando ausente (o contrato walk-in tornou email opcional).
-        cliente: { nome: nome.trim() },
+        contato: { nome: nome.trim() },
         barbeiroId: user!.codigo,
         servicosIds: [servicoId],
       });

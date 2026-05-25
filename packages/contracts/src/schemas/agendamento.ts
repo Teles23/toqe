@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { criarClienteRapidoSchema } from "./auth";
+import { criarClienteRapidoSchema, criarContatoSchema } from "./auth";
 
 export const tipoAgendamentoSchema = z.enum(["AGENDADO", "WALK_IN", "ENCAIXE"]);
 
@@ -34,10 +34,10 @@ export const createAgendamentoSchema = z.object({
     .or(z.literal("")),
 });
 
-// Walk-in autenticado (barbeiro/recepção) — cria cliente + agendamento de forma
-// ATÔMICA no backend. Resolve o orphan-client: ou `cliente` (cria/reaproveita o
-// usuário) ou `clienteId` (existente), nunca os dois. `inicio` é definido pelo
-// servidor (agora), pois walk-in = cliente chegou agora.
+// Walk-in autenticado (barbeiro/recepção) — cria contato + agendamento de forma
+// ATÔMICA no backend. Sem TQE_USR sintético: walk-ins vão para TQE_CONTATO.
+// Exatamente um de: contato (novo) | contatoId (existente) | clienteId (usuário).
+// `inicio` é definido pelo servidor (agora), pois walk-in = cliente chegou agora.
 export const createWalkInSchema = z
   .object({
     barbeiroId: z
@@ -49,16 +49,22 @@ export const createWalkInSchema = z
       .array(z.number().int().positive())
       .min(1, "Selecione ao menos um serviço"),
 
-    // Encaixe (walk-in) pode ser anônimo: e-mail é opcional aqui (o servidor
-    // gera um único quando ausente). NÃO afeta o `criarClienteRapidoSchema`
-    // base, usado por outros fluxos onde o e-mail continua obrigatório.
-    cliente: criarClienteRapidoSchema.partial({ email: true }).optional(),
-
+    // Novo contato operacional (sem conta): nome obrigatório, telefone opcional.
+    contato: criarContatoSchema.optional(),
+    // Contato operacional já existente nesta barbearia.
+    contatoId: z.number().int().positive("Contato inválido").optional(),
+    // Usuário autenticável existente (ex.: reagendar cliente com conta).
     clienteId: z.number().int().positive("Cliente inválido").optional(),
   })
-  .refine((d) => (d.cliente == null) !== (d.clienteId == null), {
-    message: "Forneça `cliente` (novo) ou `clienteId` (existente), nunca ambos",
-  });
+  .refine(
+    (d) =>
+      [d.contato, d.contatoId, d.clienteId].filter((v) => v != null).length ===
+      1,
+    {
+      message:
+        "Forneça exatamente um de: contato (novo), contatoId (existente) ou clienteId (usuário)",
+    },
+  );
 
 // Booking público (sem autenticação) — cliente é criado/reaproveitado pelo
 // próprio fluxo. `barbeiroId` aceita 0 para "qualquer barbeiro disponível"
@@ -131,6 +137,15 @@ export type PatchStatusAgendamentoInput = z.infer<
   typeof patchStatusAgendamentoSchema
 >;
 export type ListAgendamentoInput = z.infer<typeof listAgendamentoSchema>;
+
+export const reagendarAgendamentoSchema = z.object({
+  inicio: z.string().datetime({ message: "Data/hora de início inválida" }),
+  fim: z.string().datetime({ message: "Data/hora de fim inválida" }).optional(),
+});
+
+export type ReagendarAgendamentoInput = z.infer<
+  typeof reagendarAgendamentoSchema
+>;
 
 export const createAvaliacaoSchema = z.object({
   nota: z

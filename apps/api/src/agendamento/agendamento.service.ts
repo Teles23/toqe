@@ -12,10 +12,12 @@ import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
 import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
+import type { ReagendarAgendamentoInput } from '@toqe/contracts';
 import { addMinutes, startOfDay, endOfDay, subDays } from 'date-fns';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendamentoConfirmadoJob } from '../notificacao/notificacao.types';
 import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
+import { ContatoService } from '../contato/contato.service';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { Prisma } from '../generated/prisma';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
@@ -25,8 +27,13 @@ const INCLUDE_COMPLETO = {
   // `email` é usado internamente (job de notificação); `codigo` é o Usuario.codigo
   // usado nos checks de ownership. A serialização da resposta (serialize-agendamento)
   // expõe `usrCodigo`/`telefone` ao cliente e descarta `email`.
+  // `cliente` é null para walk-ins que usam TQE_CONTATO em vez de TQE_USUARIO.
   cliente: {
     select: { codigo: true, nome: true, email: true, telefone: true },
+  },
+  // Contato operacional (walk-in sem conta): presente quando clienteId é null.
+  contato: {
+    select: { codigo: true, nome: true, telefone: true },
   },
   barbeiro: { select: { codigo: true, nome: true, avatarUrl: true } },
   barbearia: { select: { codigo: true, nome: true } },
@@ -41,6 +48,7 @@ export class AgendamentoService {
     private notificacaoProducer: NotificacaoProducer,
     private agendaGateway: AgendaGateway,
     private membroService: MembroBarbeariaService,
+    private contatoService: ContatoService,
   ) {}
 
   async create(dto: CreateAgendamentoDto, barCodigo: number) {
@@ -66,6 +74,37 @@ export class AgendamentoService {
     const isWalkIn = tipo === 'WALK_IN';
 
     const agendamento = await this.prisma.$transaction(async (tx) => {
+      // Enforcement: checar limite de agendamentos do mês
+      const bar = await tx.barbearia.findUniqueOrThrow({
+        where: { codigo: barCodigo },
+        select: { plano: true },
+      });
+      const limite = await tx.planoLimite.findUnique({
+        where: { plano: bar.plano },
+        select: { maxAgdMes: true },
+      });
+      if (limite?.maxAgdMes != null) {
+        const agora = new Date();
+        const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+        const fimMes = new Date(
+          agora.getFullYear(),
+          agora.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+        const qtd = await tx.agendamento.count({
+          where: { barCodigo, inicio: { gte: inicioMes, lte: fimMes } },
+        });
+        if (qtd >= limite.maxAgdMes) {
+          throw new ForbiddenException(
+            `Limite de ${limite.maxAgdMes} agendamento(s) por mês atingido`,
+          );
+        }
+      }
+
       // Walk-ins coexistem com agendamentos do mesmo horário por design —
       // são fila paralela ao calendário; o barbeiro decide ordem manualmente.
       // Conflict check só vale para agendamentos com horário marcado (AGENDADO/ENCAIXE).
@@ -144,21 +183,23 @@ export class AgendamentoService {
     const fimDate = addMinutes(inicioDate, totalDuration);
 
     const agendamento = await this.prisma.$transaction(async (tx) => {
-      let clienteId = dto.clienteId;
-      if (clienteId == null && dto.cliente) {
-        const membro = await this.membroService.findOrCreateCliente(
+      const clienteId: number | null = dto.clienteId ?? null;
+      let contatoId: number | null = dto.contatoId ?? null;
+
+      if (dto.contato) {
+        const contato = await this.contatoService.findOrCreate(
           barCodigo,
-          dto.cliente,
+          dto.contato,
           tx,
         );
-        // `clienteId` do agendamento referencia Usuario.codigo (não o PK do membro).
-        clienteId = membro.usuario.codigo;
+        contatoId = contato.codigo;
       }
 
       return tx.agendamento.create({
         data: {
           barbeiroId: dto.barbeiroId,
-          clienteId: clienteId!,
+          clienteId,
+          contatoId,
           barCodigo,
           inicio: inicioDate,
           fim: fimDate,
@@ -193,10 +234,17 @@ export class AgendamentoService {
     }>,
     servicos: { nome: string }[],
   ): AgendamentoConfirmadoJob {
+    // Walk-ins com TQE_CONTATO têm `cliente` null — sem e-mail para notificação.
+    const clienteNome =
+      agendamento.cliente?.nome ?? agendamento.contato?.nome ?? '';
+    const clienteEmail = agendamento.cliente?.email ?? '';
     return {
       agendamentoCodigo: agendamento.codigo,
-      clienteNome: agendamento.cliente.nome,
-      clienteEmail: agendamento.cliente.email,
+      clienteNome,
+      clienteEmail,
+      clienteUsrCodigo: agendamento.cliente?.codigo,
+      barbeiroUsrCodigo: agendamento.barbeiro.codigo,
+      barCodigo: agendamento.barCodigo,
       barbeiroNome: agendamento.barbeiro.nome,
       barbeariaNome: agendamento.barbearia.nome,
       inicio: agendamento.inicio.toISOString(),
@@ -453,5 +501,82 @@ export class AgendamentoService {
     });
 
     return { sucesso: true };
+  }
+
+  meusAtendimentos(barbeiroId: number, barCodigo: number, limit = 20) {
+    return this.prisma.agendamento.findMany({
+      where: { barbeiroId, barCodigo, status: StatusAgendamento.CONCLUIDO },
+      include: INCLUDE_COMPLETO,
+      orderBy: { inicio: 'desc' },
+      take: limit,
+    });
+  }
+
+  async reagendar(
+    codigo: number,
+    dto: ReagendarAgendamentoInput,
+    requesterUsrCodigo: number,
+    barCodigo: number,
+  ) {
+    const ag = await this.prisma.agendamento.findFirst({
+      where: { codigo, barCodigo },
+      include: INCLUDE_COMPLETO,
+    });
+
+    if (!ag) throw new NotFoundException('Agendamento não encontrado');
+
+    const ehCliente = ag.clienteId === requesterUsrCodigo;
+    const ehBarbeiro = ag.barbeiroId === requesterUsrCodigo;
+    if (!ehCliente && !ehBarbeiro) {
+      throw new ForbiddenException(
+        'Sem permissão para reagendar este agendamento',
+      );
+    }
+
+    if (
+      ![StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO].includes(
+        ag.status as StatusAgendamento,
+      )
+    ) {
+      throw new BadRequestException(
+        'Só é possível reagendar agendamentos PENDENTE ou CONFIRMADO',
+      );
+    }
+
+    const novoInicio = new Date(dto.inicio);
+    if (novoInicio <= new Date()) {
+      throw new BadRequestException('O novo horário deve ser no futuro');
+    }
+
+    const duracaoMs = ag.fim.getTime() - ag.inicio.getTime();
+    const novoFim = dto.fim
+      ? new Date(dto.fim)
+      : new Date(novoInicio.getTime() + duracaoMs);
+
+    const conflitos = await this.prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(1) as count
+      FROM "TQE_AGENDAMENTO"
+      WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
+        AND "TQE_AGD_CODIGO" != ${codigo}
+        AND "TQE_AGD_STATUS" NOT IN ('CANCELADO', 'NO_SHOW')
+        AND "TQE_AGD_INICIO" < ${novoFim}
+        AND "TQE_AGD_FIM" > ${novoInicio}
+    `;
+
+    if (Number(conflitos[0].count) > 0) {
+      throw new ConflictException(
+        'O barbeiro já tem um agendamento neste horário',
+      );
+    }
+
+    const atualizado = await this.prisma.agendamento.update({
+      where: { codigo },
+      data: { inicio: novoInicio, fim: novoFim },
+      include: INCLUDE_COMPLETO,
+    });
+
+    this.agendaGateway.emitAgendamentoCriado(barCodigo, atualizado);
+
+    return atualizado;
   }
 }

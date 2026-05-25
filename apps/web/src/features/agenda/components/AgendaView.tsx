@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/shared/hooks/use-auth";
@@ -12,6 +13,7 @@ import { AgendaSlot, AgendaSlotEmpty } from "./AgendaSlot";
 import { BarbeiroPanel } from "./BarbeiroPanel";
 import { AgendamentoModal } from "./AgendamentoModal";
 import { useAgenda } from "../hooks/use-agenda";
+import { useAgendaSocket } from "../hooks/use-agenda-socket";
 
 export function AgendaView() {
   const { barbearia } = useAuth();
@@ -24,10 +26,14 @@ export function AgendaView() {
   const targetDate = new Date();
   targetDate.setDate(targetDate.getDate() + selectedOffset);
 
+  const dateStr = format(targetDate, "yyyy-MM-dd");
+
   const { slots, barbeiros, isLoading } = useAgenda(
     barbearia?.codigo ?? null,
     targetDate,
   );
+
+  useAgendaSocket(barbearia?.codigo ?? null, dateStr);
 
   const filtered = slots.filter((s) => {
     if (filterBarbeiro !== "Todos" && s.barbeiro !== filterBarbeiro)

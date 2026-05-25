@@ -29,6 +29,7 @@ export type {
   Periodo,
   BarbeiroAPI,
   ClienteAPI,
+  PessoaAPI,
   ServicoAPI,
   AgendamentoAPI,
   FaturamentoItem,

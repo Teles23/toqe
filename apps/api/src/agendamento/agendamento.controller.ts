@@ -24,6 +24,7 @@ import { CreateWalkInDto } from './dto/create-walk-in.dto';
 import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
+import { ReagendarAgendamentoDto } from './dto/reagendar-agendamento.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -147,6 +148,27 @@ export class AgendamentoController {
     );
   }
 
+  @Get('meus-atendimentos')
+  @Roles('barbeiro', 'dono', 'gerente')
+  @ApiOperation({ summary: 'Últimos atendimentos do barbeiro logado' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de agendamentos concluídos.',
+  })
+  async meusAtendimentos(
+    @Request() req: TenantRequest,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Query('limit') limit?: string,
+  ) {
+    return serializeAgendamentos(
+      await this.agendamentoService.meusAtendimentos(
+        req.user.sub,
+        Number(barCodigo),
+        limit ? Number(limit) : 20,
+      ),
+    );
+  }
+
   @Get(':codigo')
   @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
   @ApiOperation({ summary: 'Detalha um agendamento pelo código' })
@@ -224,6 +246,33 @@ export class AgendamentoController {
         codigo,
         Number(barCodigo),
         callerUserId,
+      ),
+    );
+  }
+
+  @Patch(':codigo/reagendar')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
+  @ApiOperation({ summary: 'Reagenda um agendamento (novo início/fim)' })
+  @ApiResponse({ status: 200, description: 'Agendamento reagendado.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Horário inválido ou status incompatível.',
+  })
+  @ApiResponse({ status: 403, description: 'Sem permissão.' })
+  @ApiResponse({ status: 404, description: 'Agendamento não encontrado.' })
+  @ApiResponse({ status: 409, description: 'Conflito de horário.' })
+  async reagendar(
+    @Param('codigo', ParseIntPipe) codigo: number,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Body() dto: ReagendarAgendamentoDto,
+    @Request() req: TenantRequest,
+  ) {
+    return serializeAgendamento(
+      await this.agendamentoService.reagendar(
+        codigo,
+        dto,
+        req.user.sub,
+        Number(barCodigo),
       ),
     );
   }

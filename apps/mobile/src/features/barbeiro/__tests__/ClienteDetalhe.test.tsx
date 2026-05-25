@@ -32,7 +32,7 @@ import {
 } from "@testing-library/react-native";
 import React from "react";
 
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 import type { AgendamentoResponse } from "@toqe/shared";
 
 import { ClienteDetalhe } from "../ClienteDetalhe";
@@ -52,7 +52,7 @@ function setupFetch(
   opts: {
     historico?: AgendamentoResponse[];
     nota?: string;
-    clientes?: ClienteAPI[];
+    clientes?: PessoaAPI[];
   } = {},
 ) {
   const { historico = [], nota = "", clientes = [] } = opts;
@@ -88,14 +88,14 @@ function renderDetalhe(
   return render(<ClienteDetalhe {...defaults} {...props} />, { wrapper });
 }
 
-function makeCliente(over: Partial<ClienteAPI> = {}): ClienteAPI {
+function makeCliente(over: Partial<PessoaAPI> = {}): PessoaAPI {
   return {
     codigo: 1,
     nome: "João Barbosa",
+    tipo: "usuario",
     email: "joao@x.com",
     telefone: "+5511999999999",
     avatarUrl: null,
-    perfil: "cliente",
     totalVisitas: 5,
     totalGasto: 250,
     ticketMedio: 50,
@@ -114,7 +114,13 @@ function makeHistoricoItem(
     fim: "2026-05-10T14:30:00.000Z",
     status: "concluido",
     barbeiro: { usrCodigo: 10, nome: "Bob", avatarUrl: null },
-    cliente: { usrCodigo: 1, nome: "João Barbosa", telefone: null },
+    cliente: {
+      usrCodigo: 1,
+      nome: "João Barbosa",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: null,
+    },
     itens: [
       {
         codigo: 1,

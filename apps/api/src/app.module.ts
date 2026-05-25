@@ -26,6 +26,9 @@ import { AdminModule } from './admin/admin.module';
 import { MeModule } from './me/me.module';
 import { ConviteModule } from './convite/convite.module';
 import { ClienteNotaModule } from './cliente-nota/cliente-nota.module';
+import { ContatoModule } from './contato/contato.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { LembreteModule } from './lembrete/lembrete.module';
 
 @Module({
   imports: [
@@ -67,6 +70,9 @@ import { ClienteNotaModule } from './cliente-nota/cliente-nota.module';
     MeModule,
     ConviteModule,
     ClienteNotaModule,
+    ContatoModule,
+    ScheduleModule.forRoot(),
+    LembreteModule,
   ],
   controllers: [AppController],
   providers: [

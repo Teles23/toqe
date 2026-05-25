@@ -146,6 +146,24 @@ export class BarbeariaController {
     return this.membroService.criarCliente(barCodigo, dto);
   }
 
+  @Get(':barCodigo/pessoas')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente', 'recepcionista', 'barbeiro')
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({
+    summary: 'Lista unificada de clientes (TQE_USR) e contatos (TQE_CONTATO)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de pessoas (usuários + contatos de walk-in).',
+  })
+  findPessoas(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.membroService.findPessoas(barCodigo);
+  }
+
   @Get(':barCodigo/membros')
   @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
   @Roles('dono', 'gerente')

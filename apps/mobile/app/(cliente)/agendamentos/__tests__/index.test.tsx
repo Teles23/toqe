@@ -92,7 +92,13 @@ function makeProximo(
     fim: new Date(Date.now() + 1000 * 60 * 60 * 25).toISOString(),
     status: "confirmado",
     barbeiro: { usrCodigo: 10, nome: "Carlos Barbeiro", avatarUrl: null },
-    cliente: { usrCodigo: 1, nome: "Cliente X", telefone: null },
+    cliente: {
+      usrCodigo: 1,
+      nome: "Cliente X",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: "cliente@x.com",
+    },
     itens: [
       {
         codigo: 1,
@@ -116,7 +122,13 @@ function makeHistorico(
     fim: new Date(Date.now() - 1000 * 60 * 60 * 23).toISOString(),
     status: "concluido",
     barbeiro: { usrCodigo: 10, nome: "Carlos Barbeiro", avatarUrl: null },
-    cliente: { usrCodigo: 1, nome: "Cliente X", telefone: null },
+    cliente: {
+      usrCodigo: 1,
+      nome: "Cliente X",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: "cliente@x.com",
+    },
     itens: [
       {
         codigo: 2,

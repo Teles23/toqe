@@ -131,10 +131,9 @@ describe("AdicionarWalkInModal", () => {
       expect(body).toMatchObject({
         barbeiroId: 50,
         servicosIds: [2],
-        cliente: { nome: "João" },
+        contato: { nome: "João" },
       });
-      // Encaixe anônimo: o app NÃO envia email (servidor gera um único).
-      expect(body.cliente.email).toBeUndefined();
+      expect(body.cliente).toBeUndefined();
     });
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
@@ -165,7 +164,7 @@ describe("AdicionarWalkInModal", () => {
       );
       expect(post).toBeTruthy();
       const body = JSON.parse(String((post?.[1] as { body?: string }).body));
-      expect(body.cliente.nome).toBe("Ana");
+      expect(body.contato.nome).toBe("Ana");
     });
   });
 

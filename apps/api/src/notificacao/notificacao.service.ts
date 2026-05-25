@@ -59,6 +59,50 @@ export class NotificacaoService {
     }
   }
 
+  async enviarLembrete(data: {
+    clienteNome: string;
+    clienteEmail: string;
+    barbeariaNome: string;
+    barbeiroNome: string;
+    inicio: string;
+    servicos: string[];
+    tipo: '24h' | '2h';
+  }): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn(
+        `Lembrete para ${data.clienteEmail} ignorado: RESEND_API_KEY não configurada`,
+      );
+      return;
+    }
+    const inicioFormatado = format(
+      new Date(data.inicio),
+      "dd 'de' MMMM 'às' HH:mm",
+      { locale: ptBR },
+    );
+    const assunto =
+      data.tipo === '24h'
+        ? `Lembrete: amanhã, ${inicioFormatado}`
+        : `Lembrete: em breve, ${inicioFormatado}`;
+    try {
+      await this.resend.emails.send({
+        from: 'Toqe <noreply@toqe.com.br>',
+        to: data.clienteEmail,
+        subject: `✂️ ${assunto} — ${data.barbeariaNome}`,
+        html: `<p>Olá, <strong>${data.clienteNome}</strong>!</p>
+<p>Você tem um agendamento em <strong>${data.barbeariaNome}</strong> com <strong>${data.barbeiroNome}</strong>.</p>
+<p>Data: <strong>${inicioFormatado}</strong></p>
+<p>Serviços: ${data.servicos.join(', ')}</p>`,
+      });
+      this.logger.log(`Lembrete enviado para ${data.clienteEmail}`);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Falha ao enviar e-mail para ${data.clienteEmail}: ${msg}`,
+      );
+      throw error;
+    }
+  }
+
   async enviarRecuperacaoSenha(
     email: string,
     nome: string,

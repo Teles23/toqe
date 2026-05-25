@@ -161,8 +161,8 @@ export function FilaSection() {
           </Text>
           {!expanded && (
             <Text style={styles.preview} numberOfLines={1}>
-              {primeiro.cliente.nome} · {resumoServico(primeiro)} ·{" "}
-              {minutosAguardando(primeiro.criadoEm)}min
+              {primeiro.cliente?.nome ?? "Encaixe"} · {resumoServico(primeiro)}{" "}
+              · {minutosAguardando(primeiro.criadoEm)}min
             </Text>
           )}
           <Feather
@@ -177,7 +177,7 @@ export function FilaSection() {
           <Pressable
             testID={`btn-atender-${primeiro.codigo}`}
             accessibilityRole="button"
-            accessibilityLabel={`Atender ${primeiro.cliente.nome}`}
+            accessibilityLabel={`Atender ${primeiro.cliente?.nome ?? "Encaixe"}`}
             onPress={() => handleAtender(primeiro.codigo)}
             style={styles.atenderBtn}
           >

@@ -98,10 +98,10 @@ export function AppointmentDetailSheet({
       <View style={styles.root}>
         {/* ── Top bar: Avatar + nome + status badge ── */}
         <View style={styles.topBar}>
-          <Avatar name={agendamento.cliente.nome} size="md" />
+          <Avatar name={agendamento.cliente?.nome ?? "Encaixe"} size="md" />
           <View style={styles.topBarText}>
             <Text style={styles.clienteName} numberOfLines={1}>
-              {agendamento.cliente.nome}
+              {agendamento.cliente?.nome ?? "Encaixe"}
             </Text>
             <View
               style={[
@@ -182,7 +182,7 @@ export function AppointmentDetailSheet({
         <View style={[styles.actionsWrap, { borderTopColor: "#262626" }]}>
           <Actions
             status={agendamento.status}
-            telefone={agendamento.cliente.telefone}
+            telefone={agendamento.cliente?.telefone ?? null}
             onAction={onAction}
           />
         </View>

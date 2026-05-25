@@ -38,13 +38,13 @@ import {
   useClienteNota,
   useSalvarNotaCliente,
 } from "@/src/shared/hooks/barbeiro/use-cliente-nota";
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 import type { AgendamentoResponse } from "@toqe/shared";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export interface ClienteDetalheProps {
-  cliente: ClienteAPI | null;
+  cliente: PessoaAPI | null;
   visible: boolean;
   onClose: () => void;
   proximoAgendamento?: {
@@ -99,6 +99,7 @@ export function ClienteDetalhe({
   }, [editingNote, note, salvarNota]);
 
   const telefone = enriched?.telefone ?? cliente?.telefone ?? null;
+  const isContato = cliente?.tipo === "contato";
 
   const handleLigar = useCallback(() => {
     if (telefone) {
@@ -246,6 +247,7 @@ export function ClienteDetalhe({
                 /* Phase 2: navegar para booking */
               }}
               testID="qa-agendar"
+              disabled={isContato}
             />
             <QuickAction
               icon="phone"

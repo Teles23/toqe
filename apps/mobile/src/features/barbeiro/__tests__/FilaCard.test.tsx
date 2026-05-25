@@ -11,7 +11,13 @@ function make(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
     fim: "2026-05-15T13:30:00.000Z",
     status: "pendente",
     barbeiro: { usrCodigo: 99, nome: "Carlos", avatarUrl: null },
-    cliente: { usrCodigo: 42, nome: "João", telefone: null },
+    cliente: {
+      usrCodigo: 42,
+      nome: "João",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: null,
+    },
     itens: [
       {
         codigo: 1,

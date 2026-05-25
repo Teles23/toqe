@@ -56,7 +56,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
 
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 
 import BarbeiroClientesScreen from "../clientes";
 
@@ -66,7 +66,7 @@ function makeRes(body: unknown, status = 200) {
   return {
     ok: status < 400,
     status,
-    url: "http://localhost:3000/api/v1/barbearias/1/clientes",
+    url: "http://localhost:3000/api/v1/barbearias/1/pessoas",
     json: async () => body,
   };
 }
@@ -85,14 +85,14 @@ function renderScreen() {
   return render(<BarbeiroClientesScreen />, { wrapper });
 }
 
-function makeC(over: Partial<ClienteAPI> = {}): ClienteAPI {
+function makeC(over: Partial<PessoaAPI> = {}): PessoaAPI {
   return {
     codigo: 1,
     nome: "Carlos",
+    tipo: "usuario",
     email: "c@x.com",
     telefone: null,
     avatarUrl: null,
-    perfil: "cliente",
     totalVisitas: 0,
     totalGasto: 0,
     ticketMedio: 0,

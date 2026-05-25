@@ -67,7 +67,7 @@ function AgendamentoCardImpl({ agendamento, onChangeStatus, testID }: Props) {
         testID={testID ?? `agendamento-${agendamento.codigo}`}
         onLongPress={handleLongPress}
         delayLongPress={350}
-        accessibilityLabel={`Agendamento de ${agendamento.cliente.nome} às ${horarioStr}`}
+        accessibilityLabel={`Agendamento de ${agendamento.cliente?.nome ?? "Encaixe"} às ${horarioStr}`}
         accessibilityHint={
           onChangeStatus
             ? "Pressione e segure para abrir menu completo de status"
@@ -94,7 +94,7 @@ function AgendamentoCardImpl({ agendamento, onChangeStatus, testID }: Props) {
           ]}
           numberOfLines={1}
         >
-          {agendamento.cliente.nome}
+          {agendamento.cliente?.nome ?? "Encaixe"}
         </Text>
 
         <Text
@@ -130,7 +130,7 @@ function AgendamentoCardImpl({ agendamento, onChangeStatus, testID }: Props) {
             { color: palette.text, marginBottom: spacing.xs },
           ]}
         >
-          {agendamento.cliente.nome}
+          {agendamento.cliente?.nome ?? "Encaixe"}
         </Text>
         <Text
           style={[

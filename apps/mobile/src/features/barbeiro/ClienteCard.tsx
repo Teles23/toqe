@@ -18,13 +18,13 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/src/shared/theme";
 import { emailVisivel } from "@/src/shared/utils/cliente";
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 
 import { ClienteAvatar } from "./clientes/components/ClienteAvatar";
 
 interface Props {
-  cliente: ClienteAPI;
-  onPress?: (cliente: ClienteAPI) => void;
+  cliente: PessoaAPI;
+  onPress?: (cliente: PessoaAPI) => void;
   testID?: string;
 }
 
@@ -47,9 +47,8 @@ function formatUltimaVisita(iso: string | null): string {
 function ClienteCardImpl({ cliente, onPress, testID }: Props) {
   const { palette, spacing, typography } = useTheme();
 
-  const isNovo = cliente.totalVisitas <= 1;
-  // E-mail só aparece se for real; sintéticos (@toqe.internal/@walk-in.local)
-  // são detalhe de implementação — caímos no telefone ou em nada.
+  const isWalkIn = cliente.tipo === "contato";
+  const isNovo = !isWalkIn && cliente.totalVisitas <= 1;
   const emailReal = emailVisivel(cliente.email);
 
   const content = (
@@ -57,7 +56,7 @@ function ClienteCardImpl({ cliente, onPress, testID }: Props) {
       <View style={styles.topRow}>
         <ClienteAvatar nome={cliente.nome} size={44} />
         <View style={[styles.info, { marginLeft: spacing.md - 4 }]}>
-          {/* Nome + badge NOVO */}
+          {/* Nome + badge */}
           <View style={styles.nameRow}>
             <Text
               style={[typography.bodyBold, { color: palette.text }]}
@@ -65,6 +64,11 @@ function ClienteCardImpl({ cliente, onPress, testID }: Props) {
             >
               {cliente.nome}
             </Text>
+            {isWalkIn && (
+              <View style={styles.walkInBadge} testID="badge-walk-in">
+                <Text style={styles.walkInBadgeText}>WALK-IN</Text>
+              </View>
+            )}
             {isNovo && (
               <View style={styles.novoBadge}>
                 <Text style={styles.novoBadgeText}>NOVO</Text>
@@ -205,6 +209,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     flexWrap: "nowrap",
+  },
+  walkInBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    backgroundColor: "#F4B4001a",
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  walkInBadgeText: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 8,
+    color: "#F4B400",
+    fontWeight: "800",
+    letterSpacing: 8 * 0.08,
+    textTransform: "uppercase",
   },
   novoBadge: {
     paddingVertical: 2,

@@ -13,6 +13,7 @@ const mockAuthValue = {
     telefone: null,
     avatarUrl: null,
     linkPublico: "toqe.app/u/joao",
+    dataNascimento: null,
   },
   barbearia: {
     codigo: 10,

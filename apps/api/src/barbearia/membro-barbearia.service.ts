@@ -130,6 +130,51 @@ export class MembroBarbeariaService {
     );
   }
 
+  async findPessoas(barCodigo: number) {
+    const [clientes, contatos] = await Promise.all([
+      this.findClientes(barCodigo),
+      this.prisma.contato.findMany({
+        where: { barCodigo },
+        orderBy: { nome: 'asc' },
+      }),
+    ]);
+
+    const usuarios = clientes.map((c) => ({
+      codigo: c.codigo,
+      nome: c.nome,
+      tipo: 'usuario' as const,
+      email: (c.email ?? null) as string | null,
+      telefone: c.telefone ?? null,
+      avatarUrl: c.avatarUrl ?? null,
+      totalVisitas: c.totalVisitas,
+      totalGasto: c.totalGasto,
+      ticketMedio: c.ticketMedio,
+      ultimaVisita:
+        c.ultimaVisita instanceof Date
+          ? c.ultimaVisita.toISOString()
+          : ((c.ultimaVisita as string | null) ?? null),
+      servicoFav: (c.servicoFav ?? null) as string | null,
+    }));
+
+    const contatosPessoas = contatos.map((c) => ({
+      codigo: c.codigo,
+      nome: c.nome,
+      tipo: 'contato' as const,
+      email: null,
+      telefone: c.telefone ?? null,
+      avatarUrl: null,
+      totalVisitas: 0,
+      totalGasto: 0,
+      ticketMedio: 0,
+      ultimaVisita: null,
+      servicoFav: null,
+    }));
+
+    return [...usuarios, ...contatosPessoas].sort((a, b) =>
+      a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }),
+    );
+  }
+
   findMembros(barCodigo: number) {
     return this.prisma.membroBarbearia.findMany({
       where: { barCodigo },
@@ -163,6 +208,28 @@ export class MembroBarbeariaService {
     });
     if (jaEMembro)
       throw new ConflictException('Usuário já é membro desta barbearia');
+
+    // Enforcement: se perfil=barbeiro, checar limite do plano
+    if (dto.perfil === 'barbeiro') {
+      const barbearia = await this.prisma.barbearia.findUniqueOrThrow({
+        where: { codigo: barCodigo },
+        select: { plano: true },
+      });
+      const limite = await this.prisma.planoLimite.findUnique({
+        where: { plano: barbearia.plano },
+        select: { maxBarbeiros: true },
+      });
+      if (limite?.maxBarbeiros != null) {
+        const qtd = await this.prisma.membroBarbearia.count({
+          where: { barCodigo, perfil: 'barbeiro' },
+        });
+        if (qtd >= limite.maxBarbeiros) {
+          throw new ForbiddenException(
+            `Limite de ${limite.maxBarbeiros} barbeiro(s) atingido para o plano ${barbearia.plano}`,
+          );
+        }
+      }
+    }
 
     return this.prisma.membroBarbearia.create({
       data: { barCodigo, usrCodigo: usuario.codigo, perfil: dto.perfil },

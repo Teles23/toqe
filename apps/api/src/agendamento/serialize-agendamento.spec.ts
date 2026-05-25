@@ -15,24 +15,51 @@ const rawAgendamento = () => ({
     email: 'joao@x.com',
     telefone: '+5511999999999',
   },
+  contato: null,
   barbeiro: { codigo: 99, nome: 'Carlos', avatarUrl: 'http://a/x.png' },
   barbearia: { codigo: 1, nome: 'Urban Barber' },
   itens: [{ codigo: 1, preco: 40 }],
 });
 
+const rawWalkIn = () => ({
+  codigo: 2,
+  status: 'pendente',
+  inicio: new Date('2026-05-10T15:00:00.000Z'),
+  fim: new Date('2026-05-10T15:30:00.000Z'),
+  tipo: 'WALK_IN',
+  cliente: null,
+  contato: { codigo: 99, nome: 'Encaixe', telefone: '+5511888881111' },
+  barbeiro: { codigo: 99, nome: 'Carlos', avatarUrl: null },
+  barbearia: { codigo: 1, nome: 'Urban Barber' },
+  itens: [],
+});
+
 describe('serializeAgendamento', () => {
-  it('mapeia cliente.codigo → usrCodigo e mantém telefone (contrato público)', () => {
+  it('mapeia cliente.codigo → usrCodigo, tipo="usuario", expõe email (TQE_USR)', () => {
     const r = serializeAgendamento(rawAgendamento());
     expect(r.cliente).toEqual({
       usrCodigo: 42,
       nome: 'João',
       telefone: '+5511999999999',
+      tipo: 'usuario',
+      email: 'joao@x.com',
     });
   });
 
-  it('descarta cliente.email da resposta', () => {
-    const r = serializeAgendamento(rawAgendamento());
-    expect(r.cliente as Record<string, unknown>).not.toHaveProperty('email');
+  it('walk-in: contato.codigo → usrCodigo, tipo="contato", email=null (TQE_CONTATO)', () => {
+    const r = serializeAgendamento(rawWalkIn());
+    expect(r.cliente).toEqual({
+      usrCodigo: 99,
+      nome: 'Encaixe',
+      telefone: '+5511888881111',
+      tipo: 'contato',
+      email: null,
+    });
+  });
+
+  it('campo contato não aparece na resposta pública (absorvido em cliente)', () => {
+    const r = serializeAgendamento(rawWalkIn()) as Record<string, unknown>;
+    expect(r).not.toHaveProperty('contato');
   });
 
   it('mapeia barbeiro.codigo → usrCodigo e mantém avatarUrl', () => {
@@ -61,7 +88,6 @@ describe('serializeAgendamento', () => {
       ],
     };
     const r = serializeAgendamento(raw as never);
-    // toMatchObject distingue 35 (number) de "35" (string) → prova a coerção
     expect(r).toMatchObject({
       itens: [
         { codigo: 1, preco: 35, duracao: 30 },
@@ -70,20 +96,30 @@ describe('serializeAgendamento', () => {
     });
   });
 
-  it('normaliza telefone ausente para null', () => {
+  it('normaliza telefone ausente para null (usuario)', () => {
     const raw = rawAgendamento();
     (raw.cliente as { telefone: string | null }).telefone = null;
     const r = serializeAgendamento(raw);
-    expect(r.cliente.telefone).toBeNull();
+    expect(r.cliente?.telefone).toBeNull();
+  });
+
+  it('normaliza telefone ausente para null (contato)', () => {
+    const raw = rawWalkIn();
+    (raw.contato as { telefone: string | null }).telefone = null;
+    const r = serializeAgendamento(raw as never) as {
+      cliente: { telefone: string | null } | null;
+    };
+    expect(r.cliente?.telefone).toBeNull();
   });
 
   it('retorna null quando o agendamento é null (proximo/atual)', () => {
     expect(serializeAgendamento(null)).toBeNull();
   });
 
-  it('é robusto a cliente/barbeiro ausentes', () => {
+  it('é robusto a cliente/barbeiro ausentes (sem crash)', () => {
     const r = serializeAgendamento({ codigo: 7 } as never);
-    expect(r).toEqual({ codigo: 7, cliente: undefined, barbeiro: undefined });
+    expect(r.codigo).toBe(7);
+    expect(r.cliente).toBeNull();
   });
 });
 
@@ -91,10 +127,10 @@ describe('serializeAgendamentos', () => {
   it('mapeia cada item da lista', () => {
     const list = serializeAgendamentos([rawAgendamento(), rawAgendamento()]);
     expect(list).toHaveLength(2);
-    expect(list[0].cliente).toEqual({
+    expect(list[0].cliente).toMatchObject({
       usrCodigo: 42,
       nome: 'João',
-      telefone: '+5511999999999',
+      tipo: 'usuario',
     });
   });
 

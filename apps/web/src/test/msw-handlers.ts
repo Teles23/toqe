@@ -460,6 +460,17 @@ export const handlers = [
     HttpResponse.json({ ok: true }),
   ),
 
+  // ── Notas privadas de clientes ────────────────────────────────────────────
+  http.get(`${BASE}/barbearias/:barCodigo/clientes/:clienteCodigo/nota`, () => {
+    return HttpResponse.json({ conteudo: "", atualizadoEm: null });
+  }),
+  http.put(`${BASE}/barbearias/:barCodigo/clientes/:clienteCodigo/nota`, () => {
+    return HttpResponse.json({
+      conteudo: "",
+      atualizadoEm: new Date().toISOString(),
+    });
+  }),
+
   // ── Legacy handlers (usados em setup.spec.ts com fetch relativo) ─────────
   http.get("/barbearia", () =>
     HttpResponse.json({ codigo: 1, nome: "BarberShop", slug: "barbershop" }),

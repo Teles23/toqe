@@ -20,7 +20,8 @@ import {
   subDays,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useCallback, useState } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -47,8 +48,9 @@ import {
   TenantSwitcherSheet,
 } from "@/src/shared/ui";
 import { useCompartilharLink } from "@/src/shared/hooks/use-compartilhar-link";
+import { useAgendaSocket } from "@/src/shared/hooks/use-agenda-socket";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
-import type { ClienteAPI } from "@toqe/contracts";
+import type { PessoaAPI } from "@toqe/contracts";
 
 import type { DetailAction } from "@/src/features/barbeiro/AppointmentDetailSheet";
 
@@ -192,9 +194,19 @@ export default function BarbeiroAgendaScreen() {
   const { showToast } = useToast();
   const compartilharLink = useCompartilharLink();
 
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { data: dataParam } = useLocalSearchParams<{ data?: string }>();
+  const initialDate = useMemo(() => {
+    if (dataParam) {
+      const d = new Date(dataParam);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  }, [dataParam]);
+  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const { data, isLoading, isRefetching, refetch, isError } =
     useAgendaDia(selectedDate);
+
+  useAgendaSocket();
 
   const updateStatus = useUpdateStatus();
   const criarBloqueio = useCriarBloqueio();
@@ -212,7 +224,7 @@ export default function BarbeiroAgendaScreen() {
   const [bloqueioOpen, setBloqueioOpen] = useState(false);
   const [tenantSwitcherOpen, setTenantSwitcherOpen] = useState(false);
   // "Ver histórico" reusa o ClienteDetalhe — montado a partir do agendamento.
-  const [clienteDetalhe, setClienteDetalhe] = useState<ClienteAPI | null>(null);
+  const [clienteDetalhe, setClienteDetalhe] = useState<PessoaAPI | null>(null);
 
   const goPrev = useCallback(() => setSelectedDate((d) => subDays(d, 1)), []);
   const goNext = useCallback(() => setSelectedDate((d) => addDays(d, 1)), []);
@@ -246,12 +258,12 @@ export default function BarbeiroAgendaScreen() {
         // ClienteDetalhe pela mesma query da aba Clientes — assim os dois
         // caminhos mostram exatamente os mesmos dados, sem corrida de cache.
         setClienteDetalhe({
-          codigo: selectedApt.cliente.usrCodigo,
-          nome: selectedApt.cliente.nome,
-          email: "",
-          telefone: selectedApt.cliente.telefone,
+          codigo: selectedApt.cliente?.usrCodigo ?? 0,
+          nome: selectedApt.cliente?.nome ?? "",
+          tipo: selectedApt.cliente?.tipo ?? "usuario",
+          email: selectedApt.cliente?.email ?? null,
+          telefone: selectedApt.cliente?.telefone ?? null,
           avatarUrl: null,
-          perfil: "cliente",
           totalVisitas: 0,
           totalGasto: 0,
           ticketMedio: 0,
@@ -263,7 +275,7 @@ export default function BarbeiroAgendaScreen() {
       if (action === "reagendar") {
         setDetailOpen(false);
         setWalkinPrefill({
-          nome: selectedApt.cliente.nome,
+          nome: selectedApt.cliente?.nome ?? "",
           servicoId: selectedApt.itens[0]?.servico.codigo,
         });
         setWalkinOpen(true);
@@ -338,7 +350,12 @@ export default function BarbeiroAgendaScreen() {
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* Header fixo — não rola com a lista */}
-      <View style={[styles.headerWrap, { paddingTop: insets.top + 10, paddingHorizontal: spacing.md }]}>
+      <View
+        style={[
+          styles.headerWrap,
+          { paddingTop: insets.top + 10, paddingHorizontal: spacing.md },
+        ]}
+      >
         {/* Linha 1: título da tela + sino de notificações */}
         <View style={styles.titleRow}>
           <Text style={styles.screenTitle}>Sua agenda</Text>
@@ -436,6 +453,7 @@ export default function BarbeiroAgendaScreen() {
         isError={isError}
         isRefetching={isRefetching}
         refetch={refetch}
+        refreshProgressViewOffset={0}
         ListHeaderComponent={
           <>
             {data && data.length > 0 && <StatsStrip apts={data} />}

@@ -82,7 +82,13 @@ function makeAg(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
     fim: "2026-06-15T14:30:00.000Z",
     status: "confirmado",
     barbeiro: { usrCodigo: 99, nome: "Carlos Barbeiro", avatarUrl: null },
-    cliente: { usrCodigo: 1, nome: "Cliente X", telefone: null },
+    cliente: {
+      usrCodigo: 1,
+      nome: "Cliente X",
+      telefone: null,
+      tipo: "usuario" as const,
+      email: "cliente@x.com",
+    },
     itens: [
       {
         codigo: 1,
