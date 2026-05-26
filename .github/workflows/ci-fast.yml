@@ -12,8 +12,6 @@ concurrency:
 jobs:
   quality:
     name: Lint · Types · Unit tests · Build
-    # develop→main é promoção de código já validado; evita repetir 20 min de CI
-    if: github.base_ref != 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
