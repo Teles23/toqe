@@ -9,9 +9,9 @@ type TransactionClient = Omit<
 
 @Injectable()
 export class TenantContextService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-  async run<T>(
+  run<T>(
     barCodigo: number,
     fn: (tx: TransactionClient) => Promise<T>,
   ): Promise<T> {

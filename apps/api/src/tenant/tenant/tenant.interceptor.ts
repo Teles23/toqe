@@ -7,6 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { TenantContextService } from '../tenant-context/tenant-context.service';
 import { PrismaClient } from '../../generated/prisma';
+import type { TenantRequest } from '../../common/types/jwt-request';
 
 type TransactionClient = Omit<
   PrismaClient,
@@ -15,12 +16,14 @@ type TransactionClient = Omit<
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
-  constructor(private readonly tenantCtx: TenantContextService) { }
+  constructor(private readonly tenantCtx: TenantContextService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const req = context.switchToHttp().getRequest<TenantRequest>();
     const barCodigo =
-      req.params.barCodigo ?? req.body.barCodigo ?? req.headers['x-tenant-id'];
+      req.params['barCodigo'] ??
+      (req.body['barCodigo'] as string | undefined) ??
+      (req.headers['x-tenant-id'] as string | undefined);
 
     if (barCodigo) {
       req.runInTenant = <T>(fn: (tx: TransactionClient) => Promise<T>) =>

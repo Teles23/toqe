@@ -1,20 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { convidarMembroSchema } from '@toqe/contracts';
 
-export enum PerfilMembro {
-  GERENTE = 'gerente',
-  BARBEIRO = 'barbeiro',
-  RECEPCIONISTA = 'recepcionista',
-  CLIENTE = 'cliente',
-}
+export class ConvidarMembroDto extends createZodDto(convidarMembroSchema) {}
 
-export class ConvidarMembroDto {
-  @ApiProperty({ example: 'joao@email.com', description: 'E-mail do usuário a ser convidado' })
-  @IsEmail({}, { message: 'E-mail inválido' })
-  @IsNotEmpty()
-  email: string;
+export const PerfilMembro = {
+  DONO: 'dono',
+  GERENTE: 'gerente',
+  BARBEIRO: 'barbeiro',
+  RECEPCIONISTA: 'recepcionista',
+  CLIENTE: 'cliente',
+} as const;
 
-  @ApiProperty({ enum: PerfilMembro, example: 'barbeiro', description: 'Perfil do membro na barbearia' })
-  @IsEnum(PerfilMembro, { message: 'Perfil inválido. Use: gerente | barbeiro | recepcionista | cliente' })
-  perfil: PerfilMembro;
-}
+export type PerfilMembro = (typeof PerfilMembro)[keyof typeof PerfilMembro];

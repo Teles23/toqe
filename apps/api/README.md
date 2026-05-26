@@ -1,98 +1,106 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# @toqe/api
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend NestJS 11 do `toqe`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> Para visão geral do monorepo, ver [`/README.md`](../../README.md). Para arquitetura, ver [`/ARCHITECTURE.md`](../../ARCHITECTURE.md). Para a reorganização em curso, ver [`/docs/10-arquitetura-reorganizacao.md`](../../docs/10-arquitetura-reorganizacao.md).
 
-## Description
+## Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **NestJS 11** (módulos por feature)
+- **Prisma 7** + **PostgreSQL 16**
+- **Redis 7** + **Bull** (filas assíncronas)
+- **JWT** (Passport) com refresh-token rotativo
+- **`nestjs-pino`** (logs JSON em prod, pretty em dev)
+- **`@nestjs/swagger`** (OpenAPI em `/docs`)
+- **`nestjs-zod`** (DTOs e validação — schemas Zod em `@toqe/contracts`)
+- **Sentry** (filtro de exceções 5xx)
+- **Resend** (email)
 
-## Project setup
+## Como rodar
 
 ```bash
-$ pnpm install
+# Da raiz do monorepo
+docker compose -f docker-compose.dev.yml up -d postgres redis
+pnpm dev:api          # http://localhost:3000 — Swagger em /docs
 ```
 
-## Compile and run the project
+Ou diretamente:
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm --filter api start:dev
 ```
 
-## Run tests
+## Estrutura
+
+```
+src/
+  auth/                 # login, refresh, guards, strategies
+  usuario/              # gestão de usuários — endpoint /usuarios/me
+  barbearia/            # tenants
+  membro/               # vínculo usuário ↔ barbearia
+  agendamento/          # criação e gestão de agendamentos
+  agenda/               # disponibilidade por barbeiro
+  servico/              # catálogo de serviços
+  tenant/               # isolamento multi-tenant (header x-tenant-id)
+  notificacao/          # push/email queue
+  dashboard/            # agregados (em construção)
+  relatorio/            # relatórios
+  observabilidade/      # Sentry filter, log helpers
+  prisma/               # PrismaService
+  generated/prisma/     # client gerado (não commitado)
+prisma/
+  schema.prisma         # tabelas TQE_*
+  migrations/           # 4 migrações atuais
+  seed.ts
+```
+
+Cada módulo segue o padrão NestJS: `Controller → Service → Prisma`. Multi-tenant via header `x-tenant-id`.
+
+## Endpoints principais
+
+- `POST /api/v1/auth/login` — autentica e retorna `access_token` + `refresh_token`.
+- `POST /api/v1/auth/refresh` — rotaciona o refresh token.
+- `GET /api/v1/usuarios/me` — perfil do usuário autenticado (protegido).
+- Swagger completo em `http://localhost:3000/docs`.
+
+## Scripts
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm --filter api start:dev      # nest start --watch
+pnpm --filter api build          # nest build
+pnpm --filter api start:prod     # node dist/main.js
+pnpm --filter api lint
+pnpm --filter api test           # Jest unit
+pnpm --filter api test:cov       # com coverage
+pnpm --filter api test:e2e
+pnpm --filter api seed           # popular DB local
+pnpm --filter api prisma:generate
+pnpm --filter api prisma:migrate
 ```
 
-## Deployment
+## Variáveis de ambiente
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Ver `/.env.example`. Principais:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- `DATABASE_URL` — Postgres.
+- `JWT_SECRET`, `JWT_REFRESH_SECRET` — chaves de assinatura.
+- `REDIS_URL`, `REDIS_PASSWORD`.
+- `RESEND_API_KEY` — envio de email.
+- `SENTRY_DSN` — opcional.
+
+## Docker
+
+`Dockerfile` multi-stage (Alpine 20) na raiz deste app. Build:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+docker compose -f docker-compose.dev.yml up --build api
+# ou
+docker build -f apps/api/Dockerfile -t toqe-api .
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Convenções
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- DTOs com `nestjs-zod` (schemas Zod em `@toqe/contracts` — source of truth compartilhado front/back).
+- Multi-tenant: toda rota protegida exige `x-tenant-id`.
+- Logs estruturados via `nestjs-pino`; erros 5xx capturados pelo filtro Sentry em `src/observabilidade/sentry.filter.ts`.
+- Conventional Commits e fluxo descrito em [`/CONTRIBUTING.md`](../../CONTRIBUTING.md).

@@ -1,0 +1,117 @@
+# Compose de desenvolvimento — WSL / Linux nativo
+# Uso: docker compose -f docker-compose.dev.yml up -d
+#
+# O source vem de bind mount (.:/app). node_modules ficam em volumes isolados
+# porque o container roda Alpine (musl) e o host WSL roda glibc — binários
+# nativos (ex: bcrypt) são incompatíveis. Apenas o pnpm store raiz e o
+# node_modules do app precisam de isolamento; packages/* são TypeScript puro.
+
+services:
+  api:
+    container_name: toqe-api-dev
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
+    command: >
+      sh -c "
+        cd /app/apps/api &&
+        pnpm prisma migrate deploy --config ./prisma.config.ts &&
+        pnpm prisma generate --schema=./prisma/schema.prisma &&
+        node prisma/seed-runner.js &&
+        pnpm run start:dev
+      "
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://toqe_app:senha_forte@postgres:5432/toqe}
+      - JWT_SECRET=${JWT_SECRET:-dev_secret}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev_refresh_secret}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-senha_forte}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - CORS_ORIGINS=http://localhost:3002,http://localhost:8081,http://127.0.0.1:8081
+    volumes:
+      - .:/app
+      - api_dev_node_modules:/app/node_modules
+      - api_dev_app_node_modules:/app/apps/api/node_modules
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost:3000/health/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  web:
+    container_name: toqe-web-dev
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.dev
+    command: >
+      sh -c "cd /app/apps/web && pnpm run dev:turbopack"
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - NODE_OPTIONS=--max-old-space-size=2048
+      # Acessível pelo browser (via porta mapeada no host)
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+      # Interno Docker — usado pelos route handlers server-side
+      - INTERNAL_API_URL=http://toqe-api-dev:3000/api/v1
+    volumes:
+      - .:/app
+      - web_dev_node_modules:/app/node_modules
+      - web_dev_app_node_modules:/app/apps/web/node_modules
+      - web_dev_next:/app/apps/web/.next
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    container_name: toqe-postgres-dev
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: toqe
+      POSTGRES_USER: ${POSTGRES_USER:-toqe_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-senha_forte}
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-toqe_app} -d toqe"]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    container_name: toqe-redis-dev
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-senha_forte}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  api_dev_node_modules:
+  api_dev_app_node_modules:
+  web_dev_node_modules:
+  web_dev_app_node_modules:
+  web_dev_next:

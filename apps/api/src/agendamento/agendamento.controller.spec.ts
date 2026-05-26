@@ -1,18 +1,196 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { CanActivate } from '@nestjs/common';
 import { AgendamentoController } from './agendamento.controller';
+import { AgendamentoService } from './agendamento.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { TenantGuard } from '../auth/guards/tenant.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { CreateAgendamentoDto } from './dto/create-agendamento.dto';
+import {
+  PatchStatusAgendamentoDto,
+  StatusAgendamento,
+} from './dto/patch-status-agendamento.dto';
+
+const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
+
+const mockAgendamentoService = {
+  create: jest.fn(),
+  createWalkIn: jest.fn(),
+  findAll: jest.fn(),
+  findOne: jest.fn(),
+  findOneForCliente: jest.fn(),
+  patchStatus: jest.fn(),
+  cancel: jest.fn(),
+  meusAgendamentos: jest.fn(),
+  proximoAgendamento: jest.fn(),
+  agendamentoAtual: jest.fn(),
+};
 
 describe('AgendamentoController', () => {
   let controller: AgendamentoController;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const module = await Test.createTestingModule({
       controllers: [AgendamentoController],
-    }).compile();
-
-    controller = module.get<AgendamentoController>(AgendamentoController);
+      providers: [
+        { provide: AgendamentoService, useValue: mockAgendamentoService },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(TenantGuard)
+      .useValue(mockGuard)
+      .overrideGuard(RolesGuard)
+      .useValue(mockGuard)
+      .compile();
+    controller = module.get(AgendamentoController);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  afterEach(() => jest.clearAllMocks());
+
+  describe('create', () => {
+    it('delega para service.create com barCodigo convertido', () => {
+      const dto: CreateAgendamentoDto = {
+        barbeiroId: 5,
+        clienteId: 10,
+        servicosIds: [1],
+        inicio: '2024-06-01T09:00:00Z',
+      };
+      mockAgendamentoService.create.mockResolvedValue({ codigo: 1 });
+
+      void controller.create(dto, '3');
+
+      expect(mockAgendamentoService.create).toHaveBeenCalledWith(dto, 3);
+    });
+  });
+
+  describe('criarWalkIn', () => {
+    it('delega para service.createWalkIn com barCodigo convertido', () => {
+      const dto = {
+        barbeiroId: 5,
+        servicosIds: [1],
+        cliente: { nome: 'João', email: 'j@x.com' },
+      } as never;
+      mockAgendamentoService.createWalkIn.mockResolvedValue({ codigo: 1 });
+
+      void controller.criarWalkIn(dto, '3');
+
+      expect(mockAgendamentoService.createWalkIn).toHaveBeenCalledWith(dto, 3);
+    });
+  });
+
+  describe('findAll', () => {
+    it('delega para service.findAll com barCodigo e filtros', () => {
+      mockAgendamentoService.findAll.mockResolvedValue([]);
+      const filtros = { data: '2024-06-01' };
+
+      void controller.findAll(filtros as never, '3');
+
+      expect(mockAgendamentoService.findAll).toHaveBeenCalledWith(3, filtros);
+    });
+  });
+
+  describe('findOne', () => {
+    it('staff: delega para service.findOne com codigo e barCodigo', () => {
+      mockAgendamentoService.findOne.mockResolvedValue({ codigo: 42 });
+      const req = { user: { sub: 10, perfil: 'barbeiro' } } as never;
+
+      void controller.findOne(42, '3', req);
+
+      expect(mockAgendamentoService.findOne).toHaveBeenCalledWith(42, 3);
+    });
+
+    it('cliente: delega para service.findOneForCliente com clienteId', () => {
+      mockAgendamentoService.findOneForCliente.mockResolvedValue({
+        codigo: 42,
+      });
+      const req = { user: { sub: 20, perfil: 'cliente' } } as never;
+
+      void controller.findOne(42, '3', req);
+
+      expect(mockAgendamentoService.findOneForCliente).toHaveBeenCalledWith(
+        42,
+        3,
+        20,
+      );
+    });
+  });
+
+  describe('patchStatus', () => {
+    it('delega para service.patchStatus com o executor (req.user.sub)', () => {
+      const dto: PatchStatusAgendamentoDto = {
+        status: StatusAgendamento.CONCLUIDO,
+      };
+      mockAgendamentoService.patchStatus.mockResolvedValue({
+        status: 'concluido',
+      });
+      const req = { user: { sub: 77, perfil: 'barbeiro' } } as never;
+
+      void controller.patchStatus(42, dto, '3', req);
+
+      expect(mockAgendamentoService.patchStatus).toHaveBeenCalledWith(
+        42,
+        dto,
+        3,
+        77,
+      );
+    });
+  });
+
+  describe('cancel', () => {
+    it('staff: delega para service.cancel sem callerUserId', () => {
+      mockAgendamentoService.cancel.mockResolvedValue({ status: 'cancelado' });
+      const req = { user: { sub: 10, perfil: 'barbeiro' } } as never;
+
+      void controller.cancel(42, '3', req);
+
+      expect(mockAgendamentoService.cancel).toHaveBeenCalledWith(
+        42,
+        3,
+        undefined,
+      );
+    });
+
+    it('cliente: passa callerUserId para service.cancel', () => {
+      mockAgendamentoService.cancel.mockResolvedValue({ status: 'cancelado' });
+      const req = { user: { sub: 20, perfil: 'cliente' } } as never;
+
+      void controller.cancel(42, '3', req);
+
+      expect(mockAgendamentoService.cancel).toHaveBeenCalledWith(42, 3, 20);
+    });
+  });
+
+  describe('meusAgendamentos', () => {
+    it('delega para service.meusAgendamentos com sub e barCodigo', () => {
+      mockAgendamentoService.meusAgendamentos.mockResolvedValue([]);
+      void controller.meusAgendamentos({ user: { sub: 20 } } as never, '3');
+      expect(mockAgendamentoService.meusAgendamentos).toHaveBeenCalledWith(
+        20,
+        3,
+      );
+    });
+  });
+
+  describe('proximoAgendamento', () => {
+    it('delega para service.proximoAgendamento', () => {
+      mockAgendamentoService.proximoAgendamento.mockResolvedValue(null);
+      void controller.proximoAgendamento({ user: { sub: 20 } } as never, '3');
+      expect(mockAgendamentoService.proximoAgendamento).toHaveBeenCalledWith(
+        20,
+        3,
+      );
+    });
+  });
+
+  describe('agendamentoAtual', () => {
+    it('delega para service.agendamentoAtual', () => {
+      mockAgendamentoService.agendamentoAtual.mockResolvedValue(null);
+      void controller.agendamentoAtual({ user: { sub: 10 } } as never, '3');
+      expect(mockAgendamentoService.agendamentoAtual).toHaveBeenCalledWith(
+        10,
+        3,
+      );
+    });
   });
 });

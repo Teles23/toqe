@@ -1,0 +1,36 @@
+appId: com.teles23.toqe
+---
+# E2E — Bug 3: o sheet de encaixe não deve "tremer" ao fechar o teclado.
+# Pré-requisito: usuário autenticado como barbeiro (logar antes deste flow).
+- launchApp
+
+# Garante que está na aba Agenda
+- tapOn:
+    text: "Agenda"
+    optional: true
+
+# Abre o FAB → menu de adicionar
+- assertVisible:
+    id: "fab-adicionar"
+- tapOn:
+    id: "fab-adicionar"
+- assertVisible: "Adicionar"
+
+# Abre o sheet de encaixe
+- tapOn:
+    id: "menu-walkin"
+- assertVisible:
+    id: "walkin-sheet"
+- assertVisible: "Encaixe agora"
+
+# Foca o input de nome e digita
+- tapOn:
+    accessibilityLabel: "Nome do cliente"
+- inputText: "Cliente Maestro"
+
+# Fecha o teclado (simula o gesto de dispensar) e confirma que o sheet
+# continua íntegro — o CTA segue visível e o sheet não desmontou/tremeu.
+- hideKeyboard
+- assertVisible:
+    id: "walkin-sheet"
+- assertVisible: "Atender agora"

@@ -1,0 +1,23 @@
+appId: com.toqe.mobile
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "joao@example.com"
+- tapOn: "Senha"
+- inputText: "senha123"
+- tapOn: "Entrar"
+- assertVisible: "Bem-vindo"
+- tapOn: "Novo Agendamento"
+- tapOn:
+    id: "barbeiro-selector"
+- tapOn:
+    index: 0
+- tapOn:
+    id: "data-picker"
+- tapOn: "15"
+- tapOn:
+    id: "servico-selector"
+- tapOn:
+    index: 0
+- tapOn: "Confirmar"
+- assertVisible: "Agendamento confirmado"

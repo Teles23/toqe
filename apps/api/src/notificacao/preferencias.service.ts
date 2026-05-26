@@ -14,18 +14,34 @@ export class PreferenciasService {
     });
 
     // Defaults: email=true, demais=false
-    const resultado: Record<string, boolean> = { email: true, push: false, whatsapp: false, sms: false };
+    const resultado: Record<string, boolean> = {
+      email: true,
+      push: false,
+      whatsapp: false,
+      sms: false,
+    };
     for (const r of registros) {
       resultado[r.canal] = r.ativo;
     }
     return resultado;
   }
 
-  async update(usrCodigo: number, barCodigo: number, dto: UpdatePreferenciasDto) {
+  async update(
+    usrCodigo: number,
+    barCodigo: number,
+    dto: UpdatePreferenciasDto,
+  ) {
     await this.prisma.$transaction([
-      this.prisma.notificacaoPreferencia.deleteMany({ where: { usrCodigo, barCodigo } }),
+      this.prisma.notificacaoPreferencia.deleteMany({
+        where: { usrCodigo, barCodigo },
+      }),
       this.prisma.notificacaoPreferencia.createMany({
-        data: CANAIS.map((canal) => ({ usrCodigo, barCodigo, canal, ativo: dto[canal] })),
+        data: CANAIS.map((canal) => ({
+          usrCodigo,
+          barCodigo,
+          canal,
+          ativo: dto[canal],
+        })),
       }),
     ]);
 

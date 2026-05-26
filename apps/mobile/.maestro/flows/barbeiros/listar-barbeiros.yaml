@@ -1,0 +1,12 @@
+appId: com.toqe.mobile
+---
+- launchApp
+- tapOn: "Email"
+- inputText: "joao@example.com"
+- tapOn: "Senha"
+- inputText: "senha123"
+- tapOn: "Entrar"
+- assertVisible: "Bem-vindo"
+- tapOn: "Barbeiros"
+- assertVisible:
+    id: "barbeiros-list"

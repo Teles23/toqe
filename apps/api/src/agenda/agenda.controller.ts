@@ -1,12 +1,35 @@
-import { Controller, Post, Body, Get, UseGuards, Param, ParseIntPipe, Headers, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Put,
+  Body,
+  Get,
+  UseGuards,
+  Param,
+  ParseIntPipe,
+  Headers,
+  Query,
+  Request,
+  ForbiddenException,
+  DefaultValuePipe,
+} from '@nestjs/common';
 import { AgendaService } from './agenda.service';
 import { ConfigJornadaDto } from './dto/config-jornada.dto';
+import { ConfigJornadaSemanalDto } from './dto/config-jornada-semanal.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
+import type { TenantRequest } from '../common/types/jwt-request';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiSecurity,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 @ApiTags('Agenda')
 @ApiBearerAuth('JWT')
@@ -18,46 +41,131 @@ export class AgendaController {
 
   @Post('jornada/:barbeiroId')
   @Roles('dono', 'gerente', 'barbeiro')
-  @ApiOperation({ summary: 'Configura a jornada de trabalho semanal de um barbeiro' })
+  @ApiOperation({
+    summary: 'Configura a jornada de trabalho semanal de um barbeiro',
+  })
   @ApiResponse({ status: 201, description: 'Jornada configurada.' })
   configurarJornada(
     @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
     @Headers('x-tenant-id') barCodigo: string,
     @Body() dto: ConfigJornadaDto,
+    @Request() req: TenantRequest,
   ) {
+    // Barbeiro só pode alterar sua própria jornada
+    if (req.user.perfil === 'barbeiro' && req.user.sub !== barbeiroId) {
+      throw new ForbiddenException(
+        'Barbeiro só pode configurar sua própria jornada de trabalho',
+      );
+    }
     return this.agendaService.upsertJornada(barbeiroId, Number(barCodigo), dto);
+  }
+
+  @Put('jornada/:barbeiroId')
+  @Roles('dono', 'gerente', 'barbeiro')
+  @ApiOperation({
+    summary: 'Salva a jornada semanal inteira (7 dias) numa única transação',
+  })
+  @ApiResponse({ status: 200, description: 'Jornada semanal salva.' })
+  salvarJornadaSemanal(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
+    @Body() dto: ConfigJornadaSemanalDto,
+    @Request() req: TenantRequest,
+  ) {
+    // Barbeiro só pode alterar sua própria jornada
+    if (req.user.perfil === 'barbeiro' && req.user.sub !== barbeiroId) {
+      throw new ForbiddenException(
+        'Barbeiro só pode configurar sua própria jornada de trabalho',
+      );
+    }
+    return this.agendaService.upsertJornadaSemanal(
+      barbeiroId,
+      Number(barCodigo),
+      dto,
+    );
   }
 
   @Get('jornada/:barbeiroId')
   @Roles('dono', 'gerente', 'barbeiro', 'recepcionista')
   @ApiOperation({ summary: 'Obtém a jornada de trabalho de um barbeiro' })
   @ApiResponse({ status: 200, description: 'Jornada retornada.' })
-  obterJornada(@Param('barbeiroId', ParseIntPipe) barbeiroId: number) {
-    return this.agendaService.getJornada(barbeiroId);
+  obterJornada(
+    @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
+    @Headers('x-tenant-id') barCodigo: string,
+  ) {
+    // barCodigo incluído para garantir isolamento de tenant
+    return this.agendaService.getJornada(barbeiroId, Number(barCodigo));
   }
 
   @Post('bloqueios/:barbeiroId')
   @Roles('dono', 'gerente', 'barbeiro')
-  @ApiOperation({ summary: 'Cria um bloqueio manual na agenda (ex: folga, médico)' })
+  @ApiOperation({
+    summary: 'Cria um bloqueio manual na agenda (ex: folga, médico)',
+  })
   @ApiResponse({ status: 201, description: 'Bloqueio criado.' })
   criarBloqueio(
     @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
     @Headers('x-tenant-id') barCodigo: string,
     @Body() dto: CreateBloqueioDto,
+    @Request() req: TenantRequest,
   ) {
-    return this.agendaService.createBloqueio(barbeiroId, Number(barCodigo), dto);
+    // Barbeiro só pode criar bloqueio na própria agenda
+    if (req.user.perfil === 'barbeiro' && req.user.sub !== barbeiroId) {
+      throw new ForbiddenException(
+        'Barbeiro só pode bloquear sua própria agenda',
+      );
+    }
+    return this.agendaService.createBloqueio(
+      barbeiroId,
+      Number(barCodigo),
+      dto,
+    );
   }
 
   @Get('disponibilidade/:barbeiroId')
   @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
-  @ApiOperation({ summary: 'Calcula e retorna os horários livres (slots) de um barbeiro' })
-  @ApiResponse({ status: 200, description: 'Lista de horários (ex: ["09:00", "09:30"]).' })
+  @ApiOperation({
+    summary: 'Calcula e retorna os horários livres (slots) de um barbeiro',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de horários (ex: ["09:00", "09:30"]).',
+  })
   async obterDisponibilidade(
     @Param('barbeiroId', ParseIntPipe) barbeiroId: number,
     @Headers('x-tenant-id') barCodigo: string,
     @Query('data') data: string,
     @Query('duracao', ParseIntPipe) duracao: number,
+    @Query('srvCodigo') srvCodigo?: string,
   ) {
-    return this.agendaService.getAvailableSlots(barbeiroId, Number(barCodigo), data, duracao);
+    // barCodigo é passado ao service que valida que barbeiroId pertence ao tenant
+    return this.agendaService.getAvailableSlots(
+      barbeiroId,
+      Number(barCodigo),
+      data,
+      duracao,
+      srvCodigo ? Number(srvCodigo) : undefined,
+    );
+  }
+
+  @Get('proximos')
+  @Roles('dono', 'gerente', 'barbeiro', 'recepcionista', 'cliente')
+  @ApiOperation({
+    summary:
+      'Retorna os próximos slots disponíveis na barbearia (até 6 slots nos próximos N dias)',
+  })
+  @ApiQuery({
+    name: 'dias',
+    required: false,
+    type: Number,
+    description: 'Número de dias a considerar (padrão: 7)',
+  })
+  @ApiResponse({ status: 200, description: 'Slots disponíveis retornados.' })
+  @ApiResponse({ status: 404, description: 'Nenhum slot disponível.' })
+  async obterProximosSlots(
+    @Headers('x-tenant-id') barCodigo: string,
+    @Query('dias', new DefaultValuePipe(7), ParseIntPipe) dias: number,
+  ) {
+    return this.agendaService.getProximosSlots(Number(barCodigo), dias);
   }
 }

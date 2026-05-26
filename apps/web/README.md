@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# @toqe/web
 
-## Getting Started
+Frontend Next.js 16 (App Router, RSC) do `toqe`.
 
-First, run the development server:
+> Para visão geral do monorepo, ver [`/README.md`](../../README.md). Para arquitetura, ver [`/ARCHITECTURE.md`](../../ARCHITECTURE.md). Para a reorganização em curso, ver [`/docs/10-arquitetura-reorganizacao.md`](../../docs/10-arquitetura-reorganizacao.md).
+
+## Stack
+
+- **Next.js 16.2** (App Router, React Server Components)
+- **React 19**
+- **Tailwind CSS 4** + **shadcn/ui** + **Radix UI**
+- **Framer Motion** (animações)
+- **react-hook-form** + **Zod** (forms)
+- **`@toqe/contracts`** (schemas Zod compartilhados — source of truth de validação)
+- TanStack Query (a ser introduzido na Fase 3)
+
+## Como rodar
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Da raiz do monorepo
+pnpm install
+pnpm dev:web          # http://localhost:3001
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ou diretamente:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm --filter web dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+## Estrutura atual (será reorganizada na Fase 3)
 
-## Learn More
+```
+app/                  # rotas Next (App Router)
+  (auth)/login/
+  (dashboard)/
+  onboarding/
+components/           # UI library (shadcn) + componentes business
+contexts/             # AuthContext, ThemeContext
+hooks/                # custom hooks
+lib/                  # api-client.ts, utils.ts
+proxy.ts              # middleware Next 16 (proteção de rotas privadas)
+```
 
-To learn more about Next.js, take a look at the following resources:
+**Estrutura-alvo (Fase 3):** ver `/docs/13-fase-3-frontend-piloto.md` (a ser criado).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Variáveis de ambiente
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ver `/.env.example` na raiz. Principais:
 
-## Deploy on Vercel
+- `NEXT_PUBLIC_API_URL` — URL do backend (`http://localhost:3000/api/v1` em dev).
+- `NEXT_PUBLIC_SENTRY_DSN` — DSN do Sentry (Fase 3).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm --filter web dev          # next dev --port 3001
+pnpm --filter web build        # build de produção
+pnpm --filter web start        # next start
+pnpm --filter web lint         # ESLint
+pnpm --filter web check-types  # tsc --noEmit
+```
+
+## Proteção de rotas
+
+Dois níveis de proteção:
+
+1. **`proxy.ts`** (convenção Next 16; equivalente ao antigo `middleware.ts`) — guarda **server-side** que bloqueia rotas privadas para visitantes anônimos. Apenas verifica a presença do cookie `access_token` e redireciona para `/login`. Usa `isPublicRoute()` de `src/shared/config/routes.ts`.
+2. **`<RequireRole>`** (`src/shared/components/RequireRole.tsx`) — guarda **client-side** por perfil. Lê `useAuth().perfil` e a matriz `ROUTE_ROLES` de `src/shared/config/roles.ts`. Exemplo:
+
+   ```tsx
+   import { RequireRole } from "@/shared/components/RequireRole";
+   import { Perfil } from "@/shared/config/roles";
+
+   export default function ConfiguracoesPage() {
+     return (
+       <RequireRole roles={[Perfil.SUPER_ADMIN, Perfil.DONO]}>
+         <ConfiguracoesUI />
+       </RequireRole>
+     );
+   }
+   ```
+
+A autorização "de verdade" continua no backend (`@nestjs/passport` + `RolesGuard`). Os guards de FE são puramente UX — não confie neles para esconder dados sensíveis.
+
+## Observabilidade
+
+`@sentry/nextjs` configurado via `instrumentation.ts` + `instrumentation-client.ts` + `sentry.server.config.ts` + `sentry.edge.config.ts`. O SDK só se inicializa se `NEXT_PUBLIC_SENTRY_DSN` estiver definido (no-op em dev local sem configuração).
+
+Para habilitar upload de source maps em produção, defina `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` e `SENTRY_PROJECT` no CI e descomente os campos correspondentes em `next.config.js`.
+
+## Convenções
+
+- **Sem `style={{ }}` para cores/spacing** — usar Tailwind classes ou design tokens (Fase 3).
+- **Validação** via schemas Zod compartilhados em `@toqe/contracts`.
+- **Forms** com `react-hook-form` + `zodResolver`.
+
+Veja [`/CONTRIBUTING.md`](../../CONTRIBUTING.md) para mais detalhes.

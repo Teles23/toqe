@@ -1,159 +1,77 @@
-# Turborepo starter
+# toqe
 
-This Turborepo starter is maintained by the Turborepo core team.
+SaaS multi-tenant para gestão de barbearias — agendamento, agenda, serviços, dashboards e notificações.
 
-## Using this example
+Monorepo gerenciado por **Turborepo** sobre **pnpm 9 workspaces**.
 
-Run the following command:
+## Apps
 
-```sh
-npx create-turbo@latest
+| Caminho                        | Stack                                             | Porta dev |
+| ------------------------------ | ------------------------------------------------- | --------- |
+| [`apps/api`](./apps/api)       | NestJS 11 + Prisma 7 + Postgres 16 + Redis + Bull | 3000      |
+| [`apps/web`](./apps/web)       | Next.js 16 + React 19 + Tailwind 4 + shadcn/ui    | 3001      |
+| [`apps/mobile`](./apps/mobile) | Expo 54 + React Native 0.81 + Expo Router 6       | 19000+    |
+
+## Packages
+
+| Caminho                                                      | Propósito                                                   |
+| ------------------------------------------------------------ | ----------------------------------------------------------- |
+| [`packages/contracts`](./packages/contracts)                 | Schemas Zod, tipos e erros compartilhados. Source of truth. |
+| [`packages/shared`](./packages/shared)                       | Tipos, DTOs e enums compartilhados.                         |
+| [`packages/config`](./packages/config)                       | Configurações base.                                         |
+| [`packages/eslint-config`](./packages/eslint-config)         | Preset ESLint.                                              |
+| [`packages/typescript-config`](./packages/typescript-config) | Preset `tsconfig`.                                          |
+
+## Quickstart
+
+```bash
+pnpm install
+cp .env.example .env
+docker compose -f docker-compose.dev.yml up -d postgres redis
+pnpm dev          # api + web + mobile em paralelo
 ```
 
-## What's inside?
+Subir um app só:
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```bash
+pnpm dev:api      # http://localhost:3000  (Swagger em /docs)
+pnpm dev:web      # http://localhost:3001
+pnpm --filter mobile dev
 ```
 
-Without global `turbo`, use your package manager:
+## Comandos úteis
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+```bash
+pnpm lint              # ESLint em todos os workspaces
+pnpm check-types       # tsc --noEmit
+pnpm format            # Prettier
+pnpm --filter api test
+pnpm --filter api test:cov
+pnpm --filter api test:e2e
+pnpm build             # build de produção
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Documentação
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+- **[`ARCHITECTURE.md`](./ARCHITECTURE.md)** — visão arquitetural do monorepo.
+- **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** — fluxo de branches, Conventional Commits, padrões de PR.
+- **[`docs/10-arquitetura-reorganizacao.md`](./docs/10-arquitetura-reorganizacao.md)** — plano vigente de reorganização (5 fases).
+- **[`docs/`](./docs/)** — histórico de evolução (setup, sprints, decisões).
+- **API**: Swagger em `http://localhost:3000/docs` quando o `apps/api` está rodando.
 
-```sh
-turbo build --filter=docs
-```
+## Status da reorganização arquitetural
 
-Without global `turbo`:
+Todas as fases concluídas. Acompanhe em [`docs/10-arquitetura-reorganizacao.md`](./docs/10-arquitetura-reorganizacao.md).
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+| Fase                                                    | Status        | Doc                                                                              |
+| ------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------- |
+| 1 — Tooling & CI                                        | ✅ concluída  | [docs/11-fase-1-tooling-ci.md](./docs/11-fase-1-tooling-ci.md)                   |
+| 2 — Packages compartilhados (`contracts`, `nestjs-zod`) | ✅ concluída  | [docs/12-fase-2-contracts.md](./docs/12-fase-2-contracts.md)                     |
+| 3 — Reorganização do frontend + design tokens + RBAC    | ✅ concluída  | [docs/13-fase-3-frontend-piloto.md](./docs/13-fase-3-frontend-piloto.md)         |
+| 4 — Replicação + otimização de dev                      | ✅ concluída  | [docs/14-fase-4-replicacao-perf.md](./docs/14-fase-4-replicacao-perf.md)         |
+| 5 — Docker, deploy, observabilidade                     | ✅ concluída  | [docs/17-fase-5-docker-deploy.md](./docs/17-fase-5-docker-deploy.md)             |
+| 6 — Testes                                              | ✅ concluída  | [docs/18-testes.md](./docs/18-testes.md)                                         |
 
-### Develop
+## Licença
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Privado. Todos os direitos reservados.

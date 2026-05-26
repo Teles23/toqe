@@ -1,0 +1,19 @@
+appId: com.teles23.toqe
+---
+- launchApp
+
+# Navega para Perfil
+- tapOn: "Perfil"
+
+# Toca em Sair
+- tapOn:
+    text: "Sair"
+    optional: true
+
+# Confirma se necessário
+- tapOn:
+    text: "Confirmar"
+    optional: true
+
+# Verifica redirecionamento para login
+- assertVisible: "Toqe"

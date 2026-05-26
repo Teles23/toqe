@@ -1,0 +1,19 @@
+FROM node:20-alpine
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+WORKDIR /app
+
+# Copia apenas os manifests — o source vem do bind mount
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json         ./apps/api/
+COPY apps/web/package.json         ./apps/web/
+COPY apps/mobile/package.json      ./apps/mobile/
+COPY packages/config/package.json          ./packages/config/
+COPY packages/shared/package.json          ./packages/shared/
+COPY packages/contracts/package.json       ./packages/contracts/
+COPY packages/eslint-config/package.json   ./packages/eslint-config/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+
+RUN pnpm install
+
+EXPOSE 3000

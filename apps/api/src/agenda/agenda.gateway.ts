@@ -26,26 +26,36 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('join-barbearia')
-  handleJoin(@MessageBody() barCodigo: number, @ConnectedSocket() client: Socket) {
+  handleJoin(
+    @MessageBody() barCodigo: number,
+    @ConnectedSocket() client: Socket,
+  ) {
     const room = `barbearia-${barCodigo}`;
-    client.join(room);
+    void client.join(room);
     this.logger.log(`Cliente ${client.id} entrou na sala ${room}`);
     return { event: 'joined', room };
   }
 
   @SubscribeMessage('leave-barbearia')
-  handleLeave(@MessageBody() barCodigo: number, @ConnectedSocket() client: Socket) {
+  handleLeave(
+    @MessageBody() barCodigo: number,
+    @ConnectedSocket() client: Socket,
+  ) {
     const room = `barbearia-${barCodigo}`;
-    client.leave(room);
+    void client.leave(room);
     this.logger.log(`Cliente ${client.id} saiu da sala ${room}`);
     return { event: 'left', room };
   }
 
   emitAgendamentoCriado(barCodigo: number, payload: unknown) {
-    this.server.to(`barbearia-${barCodigo}`).emit('agendamento:criado', payload);
+    this.server
+      .to(`barbearia-${barCodigo}`)
+      .emit('agendamento:criado', payload);
   }
 
   emitStatusAtualizado(barCodigo: number, payload: unknown) {
-    this.server.to(`barbearia-${barCodigo}`).emit('agendamento:status', payload);
+    this.server
+      .to(`barbearia-${barCodigo}`)
+      .emit('agendamento:status', payload);
   }
 }

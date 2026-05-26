@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   nginx:
@@ -27,34 +27,36 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-senha_forte}
       - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/v1/health || exit 1"]
+      test:
+        ["CMD-SHELL", "wget -qO- http://localhost:3000/health/ready || exit 1"]
       interval: 30s
       timeout: 5s
-      start_period: 15s
+      start_period: 60s
       retries: 3
     restart: unless-stopped
 
-#  web:
-#    container_name: toqe-web
-#    build:
-#      context: .
-#      dockerfile: apps/web/Dockerfile
-#    environment:
-#      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-secret}
-#      - API_URL=http://api:3000
-#    restart: unless-stopped
+  #  web:
+  #    container_name: toqe-web
+  #    build:
+  #      context: .
+  #      dockerfile: apps/web/Dockerfile
+  #    environment:
+  #      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-secret}
+  #      - API_URL=http://api:3000
+  #    restart: unless-stopped
 
   postgres:
     container_name: toqe-postgres
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: toqe
       POSTGRES_USER: ${POSTGRES_USER:-toqe_app}

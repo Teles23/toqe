@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Toqe — ícone principal (1024x1024)
+  Fundo: #1a73e8 (primary do app)
+  Foreground: monograma "T" branco + acento circular (sugere "toque")
+
+  iOS/Android cortam cantos automaticamente — sem máscara manual.
+  Editar este arquivo + rodar `pnpm branding:generate` para regerar todos os PNGs.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Background full bleed -->
+  <rect width="1024" height="1024" fill="#1a73e8"/>
+
+  <!-- Monograma "T" centralizado.
+       Geometria pura (não depende de fonte instalada).
+       Barra horizontal: 540x140 com cantos arredondados.
+       Tronco vertical: 140x540 com cantos arredondados.
+       Centro do T: 512, 512 -->
+  <g fill="#ffffff">
+    <!-- Barra horizontal: x=242, y=274, w=540, h=140, r=24 -->
+    <rect x="242" y="274" width="540" height="140" rx="24" ry="24"/>
+    <!-- Tronco vertical: x=442, y=274, w=140, h=540, r=24 -->
+    <rect x="442" y="274" width="140" height="540" rx="24" ry="24"/>
+    <!-- Acento circular (o "toque" de Toqe) — canto inferior direito do tronco -->
+    <circle cx="700" cy="770" r="64"/>
+  </g>
+</svg>

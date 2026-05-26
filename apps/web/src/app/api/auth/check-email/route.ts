@@ -1,0 +1,40 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const INTERNAL_API =
+  process.env.INTERNAL_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:3000/api/v1";
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const email = searchParams.get("email");
+
+  if (!email) {
+    return NextResponse.json(
+      { message: "E-mail não informado" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const res = await fetch(
+      `${INTERNAL_API}/auth/check-email?email=${encodeURIComponent(email)}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+    if (!res.ok) {
+      return NextResponse.json({ exists: false }, { status: res.status });
+    }
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: 200 });
+  } catch {
+    return NextResponse.json(
+      { message: "Serviço indisponível" },
+      { status: 503 },
+    );
+  }
+}

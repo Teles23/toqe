@@ -1,0 +1,259 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  StatusAgendamento,
+  STATUSES_ENCERRADOS,
+  STATUSES_ATIVOS,
+} from '../common/constants/agendamento-status';
+import {
+  SELECT_USUARIO_COM_AVATAR,
+  INCLUDE_ITENS_PRECO,
+} from '../common/constants/prisma-selects';
+import { startOfDay, toDateString } from '../common/utils/date.utils';
+import { somarAgendamentos } from '../common/utils/price.utils';
+import type { Periodo } from '@toqe/contracts';
+
+function periodoParaDias(periodo: Periodo): number {
+  return { '7d': 7, '30d': 30, '3m': 90, '6m': 180, '12m': 365 }[periodo] ?? 30;
+}
+
+@Injectable()
+export class RelatorioService {
+  constructor(private prisma: PrismaService) {}
+
+  private getRange(periodo: Periodo) {
+    const fim = new Date();
+    const inicio = new Date();
+    inicio.setDate(inicio.getDate() - periodoParaDias(periodo));
+    return { inicio: startOfDay(inicio), fim };
+  }
+
+  /** Faturamento diário no período */
+  async faturamento(barCodigo: number, periodo: Periodo = '30d') {
+    const { inicio, fim } = this.getRange(periodo);
+
+    const itens = await this.prisma.agendamentoItem.findMany({
+      where: {
+        barCodigo,
+        agendamento: {
+          status: StatusAgendamento.CONCLUIDO,
+          inicio: { gte: inicio, lte: fim },
+        },
+      },
+      select: {
+        preco: true,
+        agendamento: { select: { inicio: true } },
+      },
+    });
+
+    const porDia: Record<string, { total: number }> = {};
+    itens.forEach((it) => {
+      const dia = toDateString(it.agendamento.inicio);
+      porDia[dia] = { total: (porDia[dia]?.total ?? 0) + it.preco.toNumber() };
+    });
+
+    return this.sortedByDay(porDia);
+  }
+
+  /** Agendamentos concluídos vs cancelados por dia */
+  async agendamentos(barCodigo: number, periodo: Periodo = '30d') {
+    const { inicio, fim } = this.getRange(periodo);
+
+    const todos = await this.prisma.agendamento.findMany({
+      where: {
+        barCodigo,
+        status: { in: [...STATUSES_ENCERRADOS] },
+        inicio: { gte: inicio, lte: fim },
+      },
+      select: { inicio: true, status: true },
+    });
+
+    const porDia: Record<
+      string,
+      { concluido: number; cancelado: number; no_show: number }
+    > = {};
+    todos.forEach((ag) => {
+      const dia = toDateString(ag.inicio);
+      if (!porDia[dia])
+        porDia[dia] = { concluido: 0, cancelado: 0, no_show: 0 };
+      porDia[dia][ag.status as 'concluido' | 'cancelado' | 'no_show'] += 1;
+    });
+
+    return this.sortedByDay(porDia);
+  }
+
+  /** Distribuição de receita por serviço */
+  async servicos(barCodigo: number, periodo: Periodo = '30d') {
+    const { inicio, fim } = this.getRange(periodo);
+
+    const itens = await this.prisma.agendamentoItem.findMany({
+      where: {
+        barCodigo,
+        agendamento: {
+          status: StatusAgendamento.CONCLUIDO,
+          inicio: { gte: inicio, lte: fim },
+        },
+      },
+      select: { preco: true, servico: { select: { nome: true } } },
+    });
+
+    const mapa: Record<
+      string,
+      { nome: string; quantidade: number; total: number }
+    > = {};
+    itens.forEach((it) => {
+      const { nome } = it.servico;
+      if (!mapa[nome]) mapa[nome] = { nome, quantidade: 0, total: 0 };
+      mapa[nome].quantidade += 1;
+      mapa[nome].total += it.preco.toNumber();
+    });
+
+    return Object.values(mapa).sort((a, b) => b.quantidade - a.quantidade);
+  }
+
+  /** Ranking de barbeiros por faturamento */
+  async barbeiros(barCodigo: number, periodo: Periodo = '30d') {
+    const { inicio, fim } = this.getRange(periodo);
+
+    const membros = await this.prisma.membroBarbearia.findMany({
+      where: { barCodigo, perfil: 'barbeiro' },
+      include: { usuario: { select: SELECT_USUARIO_COM_AVATAR } },
+    });
+
+    return Promise.all(
+      membros.map(async (m) => {
+        const agendamentos = await this.prisma.agendamento.findMany({
+          where: {
+            barCodigo,
+            barbeiroId: m.usrCodigo,
+            status: StatusAgendamento.CONCLUIDO,
+            inicio: { gte: inicio, lte: fim },
+          },
+          include: INCLUDE_ITENS_PRECO,
+        });
+
+        const faturamento = somarAgendamentos(agendamentos);
+
+        return {
+          ...m.usuario,
+          atendimentos: agendamentos.length,
+          faturamento,
+          ticketMedio:
+            agendamentos.length > 0 ? faturamento / agendamentos.length : 0,
+          avaliacao: 0,
+        };
+      }),
+    ).then((lista) => lista.sort((a, b) => b.faturamento - a.faturamento));
+  }
+
+  private sortedByDay<V extends object>(
+    record: Record<string, V>,
+  ): Array<{ data: string } & V> {
+    return Object.entries(record)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([data, value]) => ({ data, ...value }) as { data: string } & V);
+  }
+
+  /** Volume de agendamentos por hora do dia (horários de pico) */
+  async horariosPico(barCodigo: number, periodo: Periodo = '30d') {
+    const { inicio, fim } = this.getRange(periodo);
+
+    const agendamentos = await this.prisma.agendamento.findMany({
+      where: {
+        barCodigo,
+        status: { in: [...STATUSES_ATIVOS] },
+        inicio: { gte: inicio, lte: fim },
+      },
+      select: { inicio: true },
+    });
+
+    const porHora: Record<number, number> = {};
+    agendamentos.forEach((ag) => {
+      const hora = ag.inicio.getUTCHours();
+      porHora[hora] = (porHora[hora] ?? 0) + 1;
+    });
+
+    return Array.from({ length: 24 }, (_, h) => ({
+      hora: h,
+      quantidade: porHora[h] ?? 0,
+    }));
+  }
+
+  // ─── CSV helpers ──────────────────────────────────────────────────────────
+
+  private toCsv(headers: string[], rows: Record<string, unknown>[]): string {
+    const csvHeaders = headers.join(',');
+    const csvRows = rows.map((row) =>
+      headers
+        .map((h) => {
+          const value = row[h];
+          if (value === null || value === undefined) return '';
+          const str =
+            typeof value === 'number' || typeof value === 'boolean'
+              ? String(value)
+              : typeof value === 'string'
+                ? value
+                : JSON.stringify(value);
+          // Wrap in quotes if contains comma, quote or newline
+          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`;
+          }
+          return str;
+        })
+        .join(','),
+    );
+    return [csvHeaders, ...csvRows].join('\n');
+  }
+
+  async faturamentoCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.faturamento(barCodigo, periodo);
+    return this.toCsv(['data', 'total'], rows as Record<string, unknown>[]);
+  }
+
+  async agendamentosCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.agendamentos(barCodigo, periodo);
+    return this.toCsv(
+      ['data', 'concluido', 'cancelado', 'no_show'],
+      rows as Record<string, unknown>[],
+    );
+  }
+
+  async servicosCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.servicos(barCodigo, periodo);
+    return this.toCsv(
+      ['nome', 'quantidade', 'total'],
+      rows as Record<string, unknown>[],
+    );
+  }
+
+  async barbeirosCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.barbeiros(barCodigo, periodo);
+    return this.toCsv(
+      ['nome', 'atendimentos', 'faturamento', 'ticketMedio'],
+      rows as Record<string, unknown>[],
+    );
+  }
+
+  async horariosPicoCsv(
+    barCodigo: number,
+    periodo: Periodo = '30d',
+  ): Promise<string> {
+    const rows = await this.horariosPico(barCodigo, periodo);
+    return this.toCsv(
+      ['hora', 'quantidade'],
+      rows as Record<string, unknown>[],
+    );
+  }
+}

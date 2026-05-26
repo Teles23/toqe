@@ -1,17 +1,63 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "NODE_ENV",
+    "CI",
+    "NEXT_RUNTIME",
+    "ANALYZE",
+    "TURBO_TELEMETRY_DISABLED",
+    "NEXT_TELEMETRY_DISABLED"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "dist/**"],
+      "env": [
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_SENTRY_DSN",
+        "NEXT_PUBLIC_APP_ENV",
+        "INTERNAL_API_URL",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG",
+        "SENTRY_PROJECT"
+      ]
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": [
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_SENTRY_DSN",
+        "NEXT_PUBLIC_APP_ENV",
+        "INTERNAL_API_URL",
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "JWT_REFRESH_SECRET",
+        "REDIS_URL",
+        "REDIS_PASSWORD"
+      ]
     },
-    "lint": {},
+    "lint": {
+      "env": [
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_SENTRY_DSN",
+        "NEXT_PUBLIC_APP_ENV",
+        "INTERNAL_API_URL"
+      ]
+    },
     "type-check": {
       "dependsOn": ["^build"]
+    },
+    "check-types": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "outputs": ["playwright-report/**"]
     }
   }
 }

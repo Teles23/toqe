@@ -3,7 +3,11 @@
     "baseUrl": ".",
     "paths": {
       "@toqe/shared": ["packages/shared/src/index.ts"],
-      "@toqe/validators": ["packages/validators/src/index.ts"],
+      "@toqe/contracts": ["packages/contracts/src/index.ts"],
+      "@toqe/contracts/schemas": ["packages/contracts/src/schemas/index.ts"],
+      "@toqe/contracts/schemas/*": ["packages/contracts/src/schemas/*.ts"],
+      "@toqe/contracts/types": ["packages/contracts/src/types/index.ts"],
+      "@toqe/contracts/errors": ["packages/contracts/src/errors/index.ts"],
       "@toqe/config": ["packages/config/src/index.ts"]
     },
     "strict": true,

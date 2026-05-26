@@ -1,0 +1,45 @@
+appId: com.teles23.toqe
+---
+- launchApp
+
+# Navega para aba Perfil (assume usuário autenticado como barbeiro)
+- tapOn:
+    text: "Perfil"
+    optional: true
+
+- assertVisible: "Perfil"
+- assertVisible: "CONTA"
+
+# Editar perfil → preencher nome → salvar → voltar
+- tapOn:
+    id: "ir-editar"
+- assertVisible: "Editar perfil"
+- tapOn: "Voltar"
+
+# Mudar senha — só verifica que abre
+- tapOn:
+    id: "ir-senha"
+- assertVisible: "Mudar senha"
+- tapOn: "Voltar"
+
+# Notificações
+- tapOn:
+    id: "ir-notificacoes"
+- assertVisible: "Notificações"
+- tapOn: "Voltar"
+
+# 2FA
+- tapOn:
+    id: "ir-2fa"
+- assertVisible: "Autenticação"
+- tapOn: "Voltar"
+
+# Sessões
+- tapOn:
+    id: "ir-sessoes"
+- assertVisible: "Sessões"
+- tapOn: "Voltar"
+
+# Sair da conta (com cancel)
+- tapOn: "Sair da conta"
+- tapOn: "Cancelar"

@@ -1,19 +1,32 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
-import { ConvidarMembroDto } from './dto/convidar-membro.dto';
-import { UpdateTemaDto } from './dto/update-tema.dto';
+import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
+import { UpsertHorariosDto } from './dto/upsert-horarios.dto';
 
 @Injectable()
 export class BarbeariaService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateBarbeariaDto, usrCodigo: number) {
-    const existing = await this.prisma.barbearia.findUnique({ where: { slug: dto.slug } });
+    const existing = await this.prisma.barbearia.findUnique({
+      where: { slug: dto.slug },
+    });
     if (existing) throw new ConflictException('Slug já está em uso');
 
     return this.prisma.$transaction(async (tx) => {
-      const barbearia = await tx.barbearia.create({ data: { nome: dto.nome, slug: dto.slug } });
+      const barbearia = await tx.barbearia.create({
+        data: {
+          nome: dto.nome,
+          slug: dto.slug,
+          planoStatus: 'trial',
+          trialFim: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        },
+      });
       await tx.membroBarbearia.create({
         data: { barCodigo: barbearia.codigo, usrCodigo, perfil: 'dono' },
       });
@@ -21,55 +34,85 @@ export class BarbeariaService {
     });
   }
 
-  async findMembros(barCodigo: number) {
-    return this.prisma.membroBarbearia.findMany({
-      where: { barCodigo },
-      include: {
-        usuario: { select: { codigo: true, nome: true, email: true, telefone: true, avatarUrl: true } },
+  async findOne(barCodigo: number) {
+    const barbearia = await this.prisma.barbearia.findUnique({
+      where: { codigo: barCodigo },
+      include: { tema: true },
+    });
+    if (!barbearia) throw new NotFoundException('Barbearia não encontrada');
+    return barbearia;
+  }
+
+  findPublico(q?: string) {
+    return this.prisma.barbearia.findMany({
+      where: {
+        ativo: true,
+        ...(q ? { nome: { contains: q, mode: 'insensitive' } } : {}),
       },
-      orderBy: { perfil: 'asc' },
-    });
-  }
-
-  async convidarMembro(barCodigo: number, dto: ConvidarMembroDto) {
-    const usuario = await this.prisma.usuario.findUnique({ where: { email: dto.email } });
-    if (!usuario) throw new NotFoundException(`Usuário com e-mail '${dto.email}' não encontrado`);
-
-    const jaEMembro = await this.prisma.membroBarbearia.findUnique({
-      where: { barCodigo_usrCodigo: { barCodigo, usrCodigo: usuario.codigo } },
-    });
-    if (jaEMembro) throw new ConflictException('Usuário já é membro desta barbearia');
-
-    return this.prisma.membroBarbearia.create({
-      data: { barCodigo, usrCodigo: usuario.codigo, perfil: dto.perfil },
-      include: {
-        usuario: { select: { codigo: true, nome: true, email: true } },
+      select: {
+        codigo: true,
+        nome: true,
+        slug: true,
+        tema: { select: { logoUrl: true } },
       },
+      orderBy: { nome: 'asc' },
+      take: 50,
     });
   }
 
-  async getTema(barCodigo: number) {
-    const tema = await this.prisma.temaTenant.findUnique({ where: { barCodigo } });
-    return tema ?? { barCodigo, corPrimaria: null, corFundo: null, logoUrl: null, subdominio: null };
+  async update(barCodigo: number, dto: UpdateBarbeariaDto) {
+    await this.findOne(barCodigo);
+
+    if (dto.slug) {
+      const existing = await this.prisma.barbearia.findFirst({
+        where: { slug: dto.slug, codigo: { not: barCodigo } },
+      });
+      if (existing) throw new ConflictException('Slug já está em uso');
+    }
+
+    return this.prisma.barbearia.update({
+      where: { codigo: barCodigo },
+      data: dto,
+    });
   }
 
-  async upsertTema(barCodigo: number, dto: UpdateTemaDto) {
-    return this.prisma.temaTenant.upsert({
+  /** Retorna os horários de funcionamento da barbearia (um por dia da semana). */
+  async getHorarios(barCodigo: number) {
+    await this.findOne(barCodigo);
+    return this.prisma.horarioFuncionamento.findMany({
       where: { barCodigo },
-      update: dto,
-      create: { barCodigo, ...dto },
+      orderBy: { diaSemana: 'asc' },
     });
   }
 
-  async removerMembro(barCodigo: number, usrCodigo: number) {
-    const membro = await this.prisma.membroBarbearia.findUnique({
-      where: { barCodigo_usrCodigo: { barCodigo, usrCodigo } },
-    });
-    if (!membro) throw new NotFoundException('Membro não encontrado nesta barbearia');
-    if (membro.perfil === 'dono') throw new BadRequestException('Não é possível remover o dono da barbearia');
+  /**
+   * Substitui em bloco os horários de funcionamento.
+   * Cada entrada identifica um dia (0=Dom … 6=Sáb); dias ausentes não são
+   * tocados. Dias presentes são criados ou atualizados via upsert.
+   */
+  async upsertHorarios(barCodigo: number, dto: UpsertHorariosDto) {
+    await this.findOne(barCodigo);
 
-    return this.prisma.membroBarbearia.delete({
-      where: { barCodigo_usrCodigo: { barCodigo, usrCodigo } },
-    });
+    await this.prisma.$transaction(
+      dto.map((h) =>
+        this.prisma.horarioFuncionamento.upsert({
+          where: { barCodigo_diaSemana: { barCodigo, diaSemana: h.diaSemana } },
+          create: {
+            barCodigo,
+            diaSemana: h.diaSemana,
+            aberto: h.aberto,
+            abertura: h.abertura,
+            fechamento: h.fechamento,
+          },
+          update: {
+            aberto: h.aberto,
+            abertura: h.abertura,
+            fechamento: h.fechamento,
+          },
+        }),
+      ),
+    );
+
+    return this.getHorarios(barCodigo);
   }
 }
