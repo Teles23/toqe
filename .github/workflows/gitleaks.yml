@@ -10,15 +10,12 @@ on:
       - main
       - develop
 
-# Evita escanear o mesmo ref em paralelo; cancela scans antigos quando
-# novos commits chegam no mesmo PR ou branch.
 concurrency:
   group: gitleaks-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   scan:
@@ -31,8 +28,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install gitleaks
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | tr -d 'v')
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | tar -xz -C /usr/local/bin gitleaks
+
       - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional: GITLEAKS_LICENSE for org-level features.
+        run: gitleaks detect --source . --redact --no-git=false
