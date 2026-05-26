@@ -1,8 +1,8 @@
 name: CI Full
 
-# develop → integration + security + Docker (tag: develop)
-# main    → Docker (tag: main, latest) + deploy produção
-# tags v* → Docker (tag: semver) + deploy produção
+# develop → integration + security (validação; sem build/deploy)
+# main    → docker (tags: main, latest, sha) + deploy produção
+# tags v* → docker (tags: semver, sha)  [não faz deploy — só main faz]
 
 on:
   push:
@@ -56,20 +56,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup
 
       - name: Generate Prisma client
         run: pnpm --filter api exec prisma generate

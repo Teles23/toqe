@@ -1,12 +1,12 @@
-# Compose para a VPS de staging (develop).
-# Usa imagens pré-buildadas do GHCR — não builda localmente.
-# Na VPS: /opt/toqe/docker-compose.prod.yml
-# Dependências: /opt/toqe/.env  +  /opt/toqe/nginx/conf.d/toqe.conf
+# Compose de PRODUÇÃO (VPS). Servido pelo deploy automático em push na main.
+# Usa imagens pré-buildadas do GHCR (tag :latest, gerada pelo job docker na main).
+# Na VPS: /opt/projetos/toqe/docker-compose.prod.yml
+# Dependências: /opt/projetos/toqe/.env  +  /opt/projetos/toqe/nginx/conf.d/toqe.conf
 name: toqe-prod
 
 services:
   api:
-    image: ghcr.io/teles23/toqe-api:develop
+    image: ghcr.io/teles23/toqe-api:latest
     restart: unless-stopped
     env_file: .env
     ports:
@@ -25,7 +25,7 @@ services:
       start_period: 60s
 
   web:
-    image: ghcr.io/teles23/toqe-web:develop
+    image: ghcr.io/teles23/toqe-web:latest
     restart: unless-stopped
     env_file: .env
     ports:

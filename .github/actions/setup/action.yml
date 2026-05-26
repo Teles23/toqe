@@ -1,0 +1,22 @@
+name: Setup Node + pnpm
+description: Configura pnpm, Node.js (com cache) e instala dependências com lockfile travado.
+
+# Requer que actions/checkout já tenha rodado antes (precisa do repo p/ ler o lockfile).
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9.0.0
+        run_install: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
