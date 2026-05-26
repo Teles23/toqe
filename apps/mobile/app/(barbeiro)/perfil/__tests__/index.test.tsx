@@ -35,7 +35,6 @@ jest.mock("@/src/shared/hooks/use-toast", () => ({
   useToast: () => ({ showToast: mockShowToast }),
 }));
 
-import { Alert } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
@@ -153,21 +152,25 @@ describe("PerfilIndexScreen", () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it("Sair pede confirmação e chama logout", () => {
+  it("Sair abre sheet de confirmação e chama logout ao confirmar", () => {
     const logout = jest.fn();
-    const alertSpy = jest
-      .spyOn(Alert, "alert")
-      .mockImplementation((_t, _m, buttons) => {
-        const sair = buttons?.find((b) => b.text === "Sair");
-        sair?.onPress?.();
-      });
     mockUseAuth.mockReturnValue(makeAuth({ logout }));
     renderScreen();
 
     fireEvent.press(screen.getByRole("button", { name: "Sair da conta" }));
+    fireEvent.press(screen.getByRole("button", { name: "Sair" }));
 
-    expect(alertSpy).toHaveBeenCalled();
     expect(logout).toHaveBeenCalled();
-    alertSpy.mockRestore();
+  });
+
+  it("Cancelar no sheet de logout não chama logout", () => {
+    const logout = jest.fn();
+    mockUseAuth.mockReturnValue(makeAuth({ logout }));
+    renderScreen();
+
+    fireEvent.press(screen.getByRole("button", { name: "Sair da conta" }));
+    fireEvent.press(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(logout).not.toHaveBeenCalled();
   });
 });

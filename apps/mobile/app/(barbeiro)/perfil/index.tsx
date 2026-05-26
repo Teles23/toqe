@@ -14,9 +14,8 @@
 
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { type ReactNode, useCallback } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -39,7 +38,14 @@ import {
   useJornada,
 } from "@/src/shared/hooks/barbeiro/use-jornada";
 import { useTheme } from "@/src/shared/theme";
-import { Avatar, Divider, SkeletonBox } from "@/src/shared/ui";
+import {
+  Avatar,
+  BottomSheet,
+  DangerButton,
+  Divider,
+  GhostButton,
+  SkeletonBox,
+} from "@/src/shared/ui";
 
 // ─── PerfilStat ───────────────────────────────────────────────────────────────
 
@@ -280,6 +286,7 @@ export default function PerfilIndexScreen() {
   const { palette, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const basePath = usePerfilBasePath();
+  const [logoutSheetVisible, setLogoutSheetVisible] = useState(false);
   const { user, perfil, barbearias, barbearia, switchBarbearia, logout } =
     useAuth();
   const compartilharLink = useCompartilharLink();
@@ -304,17 +311,8 @@ export default function PerfilIndexScreen() {
       : resumoJornada(mergeJornadaComSemana(jornadaData));
 
   const handleLogout = useCallback(() => {
-    Alert.alert("Sair da conta", "Tem certeza que deseja sair?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: () => {
-          void logout();
-        },
-      },
-    ]);
-  }, [logout]);
+    setLogoutSheetVisible(true);
+  }, []);
 
   const go = useCallback(
     (path: string) => router.push(`${basePath}${path}` as never),
@@ -527,7 +525,7 @@ export default function PerfilIndexScreen() {
           <SettingsRow
             icon="clock"
             iconColor="#F4B400"
-            title="Jornada de trabalho"
+            title="Jornada de trabalho "
             value={jornadaResumo}
             onTap={() => go("/jornada")}
             testID="ir-jornada"
@@ -652,6 +650,29 @@ export default function PerfilIndexScreen() {
         {/* ── Version ── */}
         <Text style={styles.version}>Toqe · v1.0.0</Text>
       </ScrollView>
+
+      {/* ── Confirmação de logout ── */}
+      <BottomSheet
+        visible={logoutSheetVisible}
+        onClose={() => setLogoutSheetVisible(false)}
+        height="content"
+      >
+        <View style={styles.sheetContent}>
+          <Text style={styles.sheetTitle}>Sair da conta</Text>
+          <Text style={styles.sheetMessage}>Tem certeza que deseja sair?</Text>
+          <DangerButton
+            label="Sair"
+            onPress={() => {
+              setLogoutSheetVisible(false);
+              void logout();
+            }}
+          />
+          <GhostButton
+            label="Cancelar"
+            onPress={() => setLogoutSheetVisible(false)}
+          />
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -822,5 +843,23 @@ const styles = StyleSheet.create({
     color: "#444444",
     textAlign: "center",
     marginTop: 16,
+  },
+  sheetContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    gap: 10,
+  },
+  sheetTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 18,
+    color: "#f5f5f5",
+    letterSpacing: -0.4,
+    marginBottom: 2,
+  },
+  sheetMessage: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 13,
+    color: "#888888",
+    marginBottom: 6,
   },
 });
