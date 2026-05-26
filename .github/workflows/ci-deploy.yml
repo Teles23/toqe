@@ -35,36 +35,51 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Extract metadata
+      - name: Generate image tags
         id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/toqe-${{ matrix.app }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=sha,prefix=sha-
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+          GIT_SHA: ${{ github.sha }}
+          GIT_REF: ${{ github.ref }}
+          GIT_REF_NAME: ${{ github.ref_name }}
+          APP: ${{ matrix.app }}
+        run: |
+          OWNER=$(echo "${REPO_OWNER}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER}/toqe-${APP}"
+          SHORT_SHA="${GIT_SHA:0:7}"
+
+          TAGS="--tag ${IMAGE}:sha-${SHORT_SHA}"
+
+          if [[ "${GIT_REF}" == "refs/heads/main" ]]; then
+            TAGS="${TAGS} --tag ${IMAGE}:main --tag ${IMAGE}:latest"
+          elif [[ "${GIT_REF}" == refs/tags/* ]]; then
+            TAGS="${TAGS} --tag ${IMAGE}:${GIT_REF_NAME}"
+          fi
+
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup buildx builder
+        run: docker buildx create --use --driver docker-container --name ci-builder
 
       - name: Build & push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/${{ matrix.app }}/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=min,scope=${{ matrix.app }}
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          APP: ${{ matrix.app }}
+        run: |
+          # shellcheck disable=SC2086
+          docker buildx build \
+            $TAGS \
+            --file "apps/${APP}/Dockerfile" \
+            --push \
+            --cache-from "type=gha,scope=${APP}" \
+            --cache-to "type=gha,mode=min,scope=${APP}" \
+            --build-arg "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}" \
+            --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}" \
+            .
 
   deploy-production:
     name: Deploy → VPS (production)
