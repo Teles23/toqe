@@ -4,11 +4,11 @@ module.exports = {
   ignores: [
     (commit) => /^\[\d+\/\d+\]/.test(commit),
     (commit) => commit.startsWith('Merge '),
+    // squash merge de PR — header é o título da PR, fora do controle do autor
+    (commit) => /\(#\d+\)$/.test(commit.split('\n')[0]),
   ],
   rules: {
-    // Squash merges com PR title longo excedem 100 chars naturalmente
-    'header-max-length': [0, 'always', 100],
-    // Corpo de squash merges agrega mensagens de sub-commits, linhas longas são normais
+    'header-max-length': [2, 'always', 150],
     'body-max-line-length': [0, 'always', 100],
     'footer-max-line-length': [0, 'always', 100],
   },
