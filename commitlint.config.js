@@ -2,9 +2,14 @@
 module.exports = {
   extends: ['@commitlint/config-conventional'],
   ignores: [
-    // Sprint/milestone PR titles: "[1/2] Sprint name..." or "[2/2] Sprint name..."
     (commit) => /^\[\d+\/\d+\]/.test(commit),
-    // Git merge commits
     (commit) => commit.startsWith('Merge '),
   ],
+  rules: {
+    // Squash merges com PR title longo excedem 100 chars naturalmente
+    'header-max-length': [0, 'always', 100],
+    // Corpo de squash merges agrega mensagens de sub-commits, linhas longas são normais
+    'body-max-line-length': [0, 'always', 100],
+    'footer-max-line-length': [0, 'always', 100],
+  },
 }
