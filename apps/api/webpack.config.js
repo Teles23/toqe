@@ -22,6 +22,13 @@ const nodeExternals = require('webpack-node-externals');
 module.exports = function (options) {
   return {
     ...options,
+    // Cache de filesystem: persiste módulos compilados em disco entre cold
+    // starts. Não altera o bundling — só evita recompilar tudo do zero a
+    // cada `pnpm dev`. Invalida automaticamente quando este config muda.
+    cache: {
+      type: 'filesystem',
+      buildDependencies: { config: [__filename] },
+    },
     externals: [
       // Prisma: externalizar com schema "commonjs <pkg>" para `require`.
       function ({ request }, callback) {

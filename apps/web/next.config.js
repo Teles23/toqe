@@ -1,7 +1,23 @@
 /* eslint-env node */
 import path from "node:path";
+import fs from "node:fs";
 import { withSentryConfig } from "@sentry/nextjs";
 import bundleAnalyzer from "@next/bundle-analyzer";
+
+// Lê DEV_HOST_IP direto do .env.local porque next.config.js é avaliado
+// antes do Next.js injetar as env vars — process.env não tem o valor ainda.
+function readDevHostIP() {
+  try {
+    const envLocal = fs.readFileSync(
+      new URL(".env.local", import.meta.url),
+      "utf8",
+    );
+    return envLocal.match(/^DEV_HOST_IP=(.+)$/m)?.[1]?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+const devHostIP = readDevHostIP();
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
@@ -64,16 +80,10 @@ const nextConfig = {
     root: path.resolve("../.."),
   },
   // Permite acesso aos recursos de dev (HMR, _next/webpack-hmr) a partir
-  // de outros hosts da LAN. Em prod isso e ignorado. Lista permite tanto
-  // o IP do Wi-Fi do host quanto o IP da bridge Hyper-V/WSL — adicione
-  // outros conforme necessario.
-  allowedDevOrigins: [
-    "192.168.0.134",
-    "172.31.160.54",
-    // Wildcards LAN privada — descomente se mudar de rede frequentemente:
-    // "192.168.0.*",
-    // "10.*",
-  ],
+  // de outros hosts da LAN. Em prod isso e ignorado.
+  // DEV_HOST_IP é injetado automaticamente pelo scripts/detect-ip.js via
+  // apps/web/.env.local — contém o IP LAN real do host Windows.
+  allowedDevOrigins: [devHostIP, "172.31.160.1"].filter(Boolean),
   experimental: {
     // Tree-shake granular de pacotes "barrel-heavy" — Next reescreve
     // `import { Foo } from "lucide-react"` em import direto do submodulo

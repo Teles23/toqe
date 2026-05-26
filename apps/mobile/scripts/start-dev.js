@@ -11,6 +11,9 @@
  *    Solução: detectar a interface LAN real e exportar
  *    `REACT_NATIVE_PACKAGER_HOSTNAME` antes do `expo start`.
  *
+ * 3. **.env.local do app** é atualizado com o IP detectado para que
+ *    EXPO_PUBLIC_API_URL sempre aponte para a interface LAN correta.
+ *
  * Heurística da escolha de IP (em ordem):
  *   - prefere 192.168.x.x (Wi-Fi doméstica típica)
  *   - depois 10.x.x.x ou 172.16-31.x.x não-virtual
@@ -22,15 +25,58 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
-const { spawn } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 
-// Carrega .env antes de detectar o IP para que MOBILE_HOST_IP seja respeitado
+// Roda detect-ip.js PRIMEIRO para atualizar .env.local com IP detectado
+const detectIpScript = path.resolve(__dirname, "../../../scripts/detect-ip.js");
+console.log("[start-dev] Rodando detect-ip...", detectIpScript);
+if (fs.existsSync(detectIpScript)) {
+  const result = spawnSync("node", [detectIpScript], { stdio: "inherit" });
+  if (result.error) {
+    console.error("[start-dev] Erro ao rodar detect-ip:", result.error);
+  }
+} else {
+  console.warn("[start-dev] detect-ip.js não encontrado em", detectIpScript);
+}
+
+// Configura port forwarding Windows → WSL (requer UAC)
+const portforwardScript = path.resolve(
+  __dirname,
+  "../../../scripts/portforward.js",
+);
+if (fs.existsSync(portforwardScript)) {
+  const pfResult = spawnSync("node", [portforwardScript], { stdio: "inherit" });
+  if (pfResult.error) {
+    console.error(
+      "[start-dev] Erro ao configurar port forwarding:",
+      pfResult.error,
+    );
+  }
+} else {
+  console.warn(
+    "[start-dev] portforward.js não encontrado em",
+    portforwardScript,
+  );
+}
+
+// Carrega .env APÓS detect-ip atualizar .env.local
 const envFile = path.resolve(__dirname, "../.env");
 if (fs.existsSync(envFile)) {
   for (const line of fs.readFileSync(envFile, "utf8").split("\n")) {
     const match = line.match(/^\s*([^#][^=]*?)\s*=\s*(.*?)\s*$/);
     if (match && !(match[1] in process.env)) {
       process.env[match[1]] = match[2];
+    }
+  }
+}
+
+// Carrega .env.local TAMBÉM para sobrescrever com IP atualizado
+const envLocalFile = path.resolve(__dirname, "../.env.local");
+if (fs.existsSync(envLocalFile)) {
+  for (const line of fs.readFileSync(envLocalFile, "utf8").split("\n")) {
+    const match = line.match(/^\s*([^#][^=]*?)\s*=\s*(.*?)\s*$/);
+    if (match) {
+      process.env[match[1]] = match[2]; // Sobrescreve variáveis com .env.local
     }
   }
 }
@@ -65,7 +111,6 @@ function detectLanIPv4() {
 
 const detected = detectLanIPv4();
 const env = { ...process.env };
-env.TOQE_DISABLE_KEEP_AWAKE = "1";
 
 if (detected) {
   env.REACT_NATIVE_PACKAGER_HOSTNAME = detected.ip;
