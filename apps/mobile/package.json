@@ -11,7 +11,7 @@
     "web": "node scripts/start-dev.js --web",
     "lint": "expo lint",
     "type-check": "tsc --noEmit",
-    "test": "jest --passWithNoTests",
+    "test": "jest",
     "test:e2e": "maestro test .maestro/flows"
   },
   "jest": {
