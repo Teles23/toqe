@@ -5,8 +5,9 @@ import { NotificacaoService } from './notificacao.service';
 import {
   AGENDAMENTO_CONFIRMADO,
   NOTIFICACAO_QUEUE,
+  SEND_CONVITE,
 } from './notificacao.producer';
-import { AgendamentoConfirmadoJob } from './notificacao.types';
+import { AgendamentoConfirmadoJob, ConviteEmailJob } from './notificacao.types';
 import { PushNotificationService } from '../push-token/push-notification.service';
 
 @Processor(NOTIFICACAO_QUEUE)
@@ -41,6 +42,17 @@ export class NotificacaoConsumer {
         { barCodigo: job.data.barCodigo, dataAgendamento: job.data.inicio },
       );
     }
+
+    this.logger.log(`Job ${job.id} processado com sucesso.`);
+  }
+
+  @Process(SEND_CONVITE)
+  async handleSendConvite(job: Job<ConviteEmailJob>) {
+    this.logger.log(
+      `Processando job ${job.id} — Convite para ${job.data.email} (${job.data.barbeariaNome})`,
+    );
+
+    await this.notificacaoService.enviarConviteEmail(job.data);
 
     this.logger.log(`Job ${job.id} processado com sucesso.`);
   }

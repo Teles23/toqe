@@ -52,4 +52,94 @@ describe('Security (supertest)', () => {
     );
     expect(res.status).toBe(401);
   });
+
+  describe('POST /barbearias/:id/convite (geração de convite)', () => {
+    let donoToken: string;
+    let barbeiroToken: string;
+    let estranhoToken: string;
+    let barCodigo: number;
+
+    beforeAll(async () => {
+      const ts = Date.now();
+
+      // Dono: cria a barbearia
+      const donoEmail = `sec_dono_${ts}@x.com`;
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ nome: 'Dono', email: donoEmail, senha: 'Senha@123' });
+      donoToken = (
+        await request(app.getHttpServer())
+          .post('/auth/login')
+          .send({ email: donoEmail, senha: 'Senha@123' })
+      ).body.access_token;
+
+      const bar = await request(app.getHttpServer())
+        .post('/barbearias')
+        .set('Authorization', `Bearer ${donoToken}`)
+        .send({ nome: 'Sec Convite', slug: `sec-cvt-${ts}` });
+      barCodigo = bar.body.codigo;
+
+      // Barbeiro: usuário existente vinculado como 'barbeiro' (role insuficiente)
+      const barbeiroEmail = `sec_barbeiro_${ts}@x.com`;
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ nome: 'Barbeiro', email: barbeiroEmail, senha: 'Senha@123' });
+      await request(app.getHttpServer())
+        .post(`/barbearias/${barCodigo}/membros`)
+        .set('Authorization', `Bearer ${donoToken}`)
+        .set('x-tenant-id', String(barCodigo))
+        .send({ email: barbeiroEmail, perfil: 'barbeiro' });
+      barbeiroToken = (
+        await request(app.getHttpServer())
+          .post('/auth/login')
+          .send({ email: barbeiroEmail, senha: 'Senha@123' })
+      ).body.access_token;
+
+      // Estranho: usuário autenticado que NÃO é membro da barbearia
+      const estranhoEmail = `sec_estranho_${ts}@x.com`;
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ nome: 'Estranho', email: estranhoEmail, senha: 'Senha@123' });
+      estranhoToken = (
+        await request(app.getHttpServer())
+          .post('/auth/login')
+          .send({ email: estranhoEmail, senha: 'Senha@123' })
+      ).body.access_token;
+    });
+
+    it('sem Authorization → 401', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/barbearias/${barCodigo}/convite`)
+        .set('x-tenant-id', String(barCodigo))
+        .send({ email: 'alvo@x.com', perfil: 'barbeiro' });
+      expect(res.status).toBe(401);
+    });
+
+    it('usuário que não é membro da barbearia → 403', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/barbearias/${barCodigo}/convite`)
+        .set('Authorization', `Bearer ${estranhoToken}`)
+        .set('x-tenant-id', String(barCodigo))
+        .send({ email: 'alvo@x.com', perfil: 'barbeiro' });
+      expect(res.status).toBe(403);
+    });
+
+    it('membro com perfil insuficiente (barbeiro) → 403', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/barbearias/${barCodigo}/convite`)
+        .set('Authorization', `Bearer ${barbeiroToken}`)
+        .set('x-tenant-id', String(barCodigo))
+        .send({ email: 'alvo@x.com', perfil: 'barbeiro' });
+      expect(res.status).toBe(403);
+    });
+
+    it('dono da barbearia → 201', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/barbearias/${barCodigo}/convite`)
+        .set('Authorization', `Bearer ${donoToken}`)
+        .set('x-tenant-id', String(barCodigo))
+        .send({ email: `alvo_${Date.now()}@x.com`, perfil: 'barbeiro' });
+      expect(res.status).toBe(201);
+    });
+  });
 });

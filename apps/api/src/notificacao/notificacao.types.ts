@@ -11,3 +11,10 @@ export interface AgendamentoConfirmadoJob {
   fim: string; // ISO string
   servicos: string[];
 }
+
+export interface ConviteEmailJob {
+  email: string;
+  conviteLink: string;
+  barbeariaNome: string;
+  perfil: string;
+}

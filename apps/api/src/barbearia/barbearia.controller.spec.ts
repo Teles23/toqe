@@ -4,6 +4,7 @@ import { BarbeariaController } from './barbearia.controller';
 import { BarbeariaService } from './barbearia.service';
 import { MembroBarbeariaService } from './membro-barbearia.service';
 import { TemaTenantService } from './tema-tenant.service';
+import { ConviteService } from '../convite/convite.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -32,6 +33,10 @@ const mockTemaService = {
   upsertTema: jest.fn(),
 };
 
+const mockConviteService = {
+  gerarConvite: jest.fn(),
+};
+
 describe('BarbeariaController', () => {
   let controller: BarbeariaController;
 
@@ -42,6 +47,7 @@ describe('BarbeariaController', () => {
         { provide: BarbeariaService, useValue: mockBarbeariaService },
         { provide: MembroBarbeariaService, useValue: mockMembroService },
         { provide: TemaTenantService, useValue: mockTemaService },
+        { provide: ConviteService, useValue: mockConviteService },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -93,6 +99,23 @@ describe('BarbeariaController', () => {
         dto,
         'dono',
       );
+    });
+  });
+
+  describe('gerarConvite', () => {
+    it('delega para conviteService.gerarConvite com barCodigo e dto', () => {
+      const dto = { email: 'novo@x.com', perfil: 'barbeiro' as const };
+      mockConviteService.gerarConvite.mockResolvedValue({
+        codigo: 1,
+        email: 'novo@x.com',
+        perfil: 'barbeiro',
+        expiresAt: new Date().toISOString(),
+        reaproveitado: false,
+      });
+
+      void controller.gerarConvite(1, dto, '1');
+
+      expect(mockConviteService.gerarConvite).toHaveBeenCalledWith(1, dto);
     });
   });
 

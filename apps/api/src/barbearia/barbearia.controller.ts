@@ -25,9 +25,11 @@ import { existsSync, mkdirSync } from 'fs';
 import { BarbeariaService } from './barbearia.service';
 import { MembroBarbeariaService } from './membro-barbearia.service';
 import { TemaTenantService } from './tema-tenant.service';
+import { ConviteService } from '../convite/convite.service';
 import { CreateBarbeariaDto } from './dto/create-barbearia.dto';
 import { UpdateBarbeariaDto } from './dto/update-barbearia.dto';
 import { ConvidarMembroDto } from './dto/convidar-membro.dto';
+import { GerarConviteDto } from '../convite/dto/gerar-convite.dto';
 import { CriarClienteManualDto } from './dto/criar-cliente-manual.dto';
 import { UpdateTemaDto } from './dto/update-tema.dto';
 import { UpsertHorariosDto } from './dto/upsert-horarios.dto';
@@ -54,6 +56,7 @@ export class BarbeariaController {
     private readonly barbeariaService: BarbeariaService,
     private readonly membroService: MembroBarbeariaService,
     private readonly temaService: TemaTenantService,
+    private readonly conviteService: ConviteService,
   ) {}
 
   @Post()
@@ -197,6 +200,25 @@ export class BarbeariaController {
     const callerPerfil = req.user.perfil;
     if (!callerPerfil) throw new ForbiddenException('Perfil não identificado');
     return this.membroService.convidarMembro(barCodigo, dto, callerPerfil);
+  }
+
+  @Post(':barCodigo/convite')
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('dono', 'gerente')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiSecurity('x-tenant-id')
+  @ApiOperation({
+    summary:
+      'Gera um convite por e-mail (link de aceite) e dispara o envio via fila',
+  })
+  @ApiResponse({ status: 201, description: 'Convite gerado e enfileirado.' })
+  @ApiResponse({ status: 404, description: 'Barbearia não encontrada.' })
+  gerarConvite(
+    @Param('barCodigo', ParseIntPipe) barCodigo: number,
+    @Body() dto: GerarConviteDto,
+    @Headers('x-tenant-id') _tenantId: string,
+  ) {
+    return this.conviteService.gerarConvite(barCodigo, dto);
   }
 
   @Get(':barCodigo/tema')

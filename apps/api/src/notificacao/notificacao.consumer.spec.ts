@@ -9,11 +9,12 @@ jest.mock('expo-server-sdk', () => {
 import { NotificacaoConsumer } from './notificacao.consumer';
 import { NotificacaoService } from './notificacao.service';
 import { PushNotificationService } from '../push-token/push-notification.service';
-import { AgendamentoConfirmadoJob } from './notificacao.types';
+import { AgendamentoConfirmadoJob, ConviteEmailJob } from './notificacao.types';
 import type { Job } from 'bull';
 
 const mockNotificacaoService = {
   enviarConfirmacaoAgendamento: jest.fn().mockResolvedValue(undefined),
+  enviarConviteEmail: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockPushService = {
@@ -115,5 +116,26 @@ describe('NotificacaoConsumer', () => {
       expect.any(String),
       { barCodigo: 99, dataAgendamento: '2026-06-01T14:30:00.000Z' },
     );
+  });
+
+  it('handleSendConvite delega ao service.enviarConviteEmail com o payload do job', async () => {
+    const data: ConviteEmailJob = {
+      email: 'novo@example.com',
+      conviteLink: 'https://app.toqe.com.br/convite?token=abc',
+      barbeariaNome: 'BarberShop',
+      perfil: 'barbeiro',
+    };
+    const job = {
+      id: 'convite-1',
+      data,
+    } as unknown as Job<ConviteEmailJob>;
+
+    await consumer.handleSendConvite(job);
+
+    expect(mockNotificacaoService.enviarConviteEmail).toHaveBeenCalledWith(
+      data,
+    );
+    // convite não dispara push
+    expect(mockPushService.send).not.toHaveBeenCalled();
   });
 });
