@@ -1,6 +1,6 @@
 # 76 — Agenda por dia ancorada em America/Sao_Paulo (fix off-by-one)
 
-**Status:** Implementado e commitado (3 checks da API verdes)
+**Status:** Implementado e commitado (3 checks da API verdes) + teste de integração (Postgres real) cobrindo os slots
 **Branch:** develop
 **Base:** doc 75 (seed idempotente), enum `StatusAgendamento`
 
@@ -50,11 +50,29 @@ mesmo fuso.
 
 As asserções usam ISO em UTC, então são determinísticas em qualquer fuso de CI.
 
+### Teste de integração (Testcontainers + Postgres real)
+
+O unit acima mocka o Prisma; o integration prova o mesmo contra o banco real,
+via HTTP (`AppModule` + supertest + register/login/barbearia/serviço reais).
+
+| Arquivo                                             | Cobre                                                                                                                                                                                                                                                                            |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test/integration/agenda-slots.integration.spec.ts` | `GET /agenda/disponibilidade/:barbeiroId?data=YYYY-MM-DD`: pedir `2026-06-15` (segunda BRT) retorna a jornada de segunda e não a de domingo (regressão off-by-one); exclui o almoço (12:00/12:30); um agendamento real ocupando 10:00 BRT (`2026-06-15T13:00:00Z`) some da lista |
+
+Por que `2026-06-15`: é **segunda** (diaSemana 1) em America/Sao_Paulo, e o dia
+começa às `03:00:00Z`. Se a API parseasse a data como meia-noite UTC + `startOfDay`
+local (UTC-3), o range andaria para `2026-06-14` (**domingo**, sem jornada) →
+lista vazia. Receber a jornada de segunda preenchida prova o dia-calendário certo.
+
 ## Validação
 
 - `pnpm --filter api lint` — OK
 - `cd apps/api && npx tsc --noEmit` — OK
 - `pnpm --filter api test` — 47 suites / 436 testes OK (+5 novos)
+- `pnpm --filter api test:integration` — 6 suites / 32 testes OK (+1 suite / +3 testes de slots)
+  - Env exigido (igual ao CI): `JWT_SECRET`, e Redis acessível
+    (`REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`); Postgres é provisionado via
+    Testcontainers (`postgres:16-alpine`).
 
 ## Observações / escopo
 
