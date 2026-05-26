@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -18,6 +19,7 @@ import {
   use2faSetup,
 } from "@/src/shared/hooks/perfil/use-2fa";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { useTheme } from "@/src/shared/theme";
 import { ScreenHeader } from "@/src/shared/ui";
 
 const AMBER = "#F4B400";
@@ -30,6 +32,7 @@ const FG4 = "#666666";
 const GREEN = "#22c55e";
 
 export default function Perfil2faScreen() {
+  const { palette } = useTheme();
   const { user } = useAuth();
   const [enabledLocal, setEnabledLocal] = useState<boolean | null>(null);
   const enabled =
@@ -158,7 +161,8 @@ export default function Perfil2faScreen() {
         >
           <View testID="2fa-enabled-section">
             <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>✓ 2FA ativo</Text>
+              <Feather name="check" size={16} color={palette.success} />
+              <Text style={styles.activeBadgeText}>2FA ativo</Text>
             </View>
 
             {error ? (
@@ -230,7 +234,7 @@ export default function Perfil2faScreen() {
           <View testID="step-0-intro">
             <View style={styles.heroContainer}>
               <View style={styles.heroCircle}>
-                <Text style={styles.heroEmoji}>🛡</Text>
+                <Feather name="shield" size={40} color={palette.primary} />
               </View>
             </View>
 
@@ -241,12 +245,12 @@ export default function Perfil2faScreen() {
 
             <View style={styles.benefitsContainer}>
               <BenefitRow
-                emoji="🔑"
+                iconName="key"
                 text="Mesmo que alguém descubra sua senha, não entra sem o código"
               />
-              <BenefitRow emoji="⏱" text="Código novo a cada 30s" />
+              <BenefitRow iconName="clock" text="Código novo a cada 30s" />
               <BenefitRow
-                emoji="📶"
+                iconName="smartphone"
                 text="Funciona offline · Sem SMS necessário"
               />
             </View>
@@ -331,7 +335,12 @@ export default function Perfil2faScreen() {
             </View>
 
             <View style={styles.codeHintBox}>
-              <Text style={styles.codeHintIcon}>⏱</Text>
+              <Feather
+                name="clock"
+                size={14}
+                color={palette.success}
+                style={styles.codeHintIcon}
+              />
               <Text style={styles.codeHintText}>
                 O código muda a cada 30s. Se mudou enquanto você digitava, pegue
                 o próximo.
@@ -393,11 +402,18 @@ export default function Perfil2faScreen() {
   );
 }
 
-function BenefitRow({ emoji, text }: { emoji: string; text: string }) {
+function BenefitRow({
+  iconName,
+  text,
+}: {
+  iconName: keyof typeof Feather.glyphMap;
+  text: string;
+}) {
+  const { palette } = useTheme();
   return (
     <View style={styles.benefitRow}>
       <View style={styles.benefitIcon}>
-        <Text style={styles.benefitEmoji}>{emoji}</Text>
+        <Feather name={iconName} size={16} color={palette.success} />
       </View>
       <Text style={styles.benefitText}>{text}</Text>
     </View>
@@ -438,9 +454,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  heroEmoji: {
-    fontSize: 40,
-  },
   heroTitle: {
     fontFamily: "Sora_700Bold",
     fontSize: 22,
@@ -477,9 +490,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#22c55e20",
     alignItems: "center",
     justifyContent: "center",
-  },
-  benefitEmoji: {
-    fontSize: 16,
   },
   benefitText: {
     flex: 1,
@@ -560,8 +570,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   codeHintIcon: {
-    fontSize: 14,
-    color: GREEN,
     marginTop: 1,
   },
   codeHintText: {
@@ -578,6 +586,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   activeBadgeText: {
     color: GREEN,
