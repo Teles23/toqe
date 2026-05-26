@@ -7,7 +7,8 @@ import {
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
-import { addHours, startOfDay, setHours, setMinutes } from 'date-fns';
+import { addHours } from 'date-fns';
+import { buildAgendamentosDemo } from './seed-demo-data';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -127,28 +128,8 @@ async function main() {
   }
   console.log('  ✔ Serviços sincronizados');
 
-  // 6. Agendamentos para HOJE
-  const hoje = startOfDay(new Date());
-  const agendamentosRaw = [
-    {
-      email: 'joao.cliente@email.com',
-      inicio: setHours(setMinutes(hoje, 0), 9),
-      status: 'CONCLUIDO',
-      barbeiroEmail: 'thiago@email.com',
-    },
-    {
-      email: 'marcos.silva@email.com',
-      inicio: setHours(setMinutes(hoje, 0), 10),
-      status: 'CONCLUIDO',
-      barbeiroEmail: 'barbeiro1@email.com',
-    },
-    {
-      email: 'joao.cliente@email.com',
-      inicio: addHours(new Date(), -1),
-      status: 'EM_ATENDIMENTO',
-      barbeiroEmail: 'thiago@email.com',
-    },
-  ];
+  // 6. Agendamentos para HOJE (fonte única, idempotente — ver seed-demo-data.js)
+  const agendamentosRaw = buildAgendamentosDemo();
 
   for (const a of agendamentosRaw) {
     const inicio = a.inicio;
@@ -170,7 +151,7 @@ async function main() {
         data: {
           barCodigo: barbearia.codigo,
           barbeiroId: dbUsers[a.barbeiroEmail].codigo,
-          clienteId: dbUsers[a.email].codigo,
+          clienteId: dbUsers[a.clienteEmail].codigo,
           inicio: inicio,
           fim: fim,
           status: a.status,
