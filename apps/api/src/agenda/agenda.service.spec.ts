@@ -135,6 +135,38 @@ describe('AgendaService', () => {
       expect(result).toEqual(['09:00', '09:30']);
     });
 
+    it('com data date-only (YYYY-MM-DD) ancora no dia certo do fuso da barbearia (regressão off-by-one)', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
+        inicio: '09:00',
+        fim: '10:00',
+        almocoIni: null,
+        almocoFim: null,
+      });
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
+
+      const result = await service.getAvailableSlots(5, 1, '2026-05-26', 30);
+
+      // 26/05/2026 é terça → diaSemana 2 (getDay): jornada buscada para o dia correto
+      expect(mockPrisma.jornadaTrabalho.findFirst).toHaveBeenCalledWith({
+        where: { barbeiroId: 5, diaSemana: 2 },
+      });
+      // busca de agendamentos no range do dia 26 em America/Sao_Paulo (UTC-3)
+      const [callAg] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: { inicio: { gte: Date }; fim: { lte: Date } } },
+      ];
+      expect(callAg.where.inicio.gte.toISOString()).toBe(
+        '2026-05-26T03:00:00.000Z',
+      );
+      expect(callAg.where.fim.lte.toISOString()).toBe(
+        '2026-05-27T02:59:59.999Z',
+      );
+      // horários exibidos no relógio local da barbearia
+      expect(result).toEqual(['09:00', '09:30']);
+    });
+
     it('retorna lista vazia quando barbeiro nao tem jornada no dia', async () => {
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
       mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
