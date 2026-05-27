@@ -4,7 +4,7 @@
 node_modules
 .pnp
 .pnp.js
-.claude
+.claude/settings*.json
 .agent
 .agents
 .pnpm-store/

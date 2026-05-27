@@ -66,3 +66,31 @@ no client. Nunca use `upsert({ where: { compoundKey: ... } })` baseado nesses í
   - Testes: corrigir a implementação ou o mock, não remover o cenário
   - Build: corrigir a causa, não comentar o código
 - **Nunca usar duck-typing para contornar tipos do Prisma** — campos `Decimal` devem ser anotados com `Prisma.Decimal` ou via `Prisma.XxxGetPayload<...>`, nunca com `{ toNumber(): number } | number`
+
+## Estrutura de arquivos chave
+
+- API: apps/api/src/
+- Mobile: apps/mobile/app/
+- Contratos: packages/contracts/src/schemas/
+- Docs: docs/
+- Comandos customizados: .claude/commands/
+
+## Validação mobile (obrigatório junto com api/web)
+
+pnpm --filter mobile lint
+pnpm --filter mobile type-check
+pnpm --filter mobile test
+
+## Status atual do projeto
+
+- App barbeiro: MVP completo (Sprints A, B, C concluídas — ver docs/62-maturidade-e-roadmap.md)
+- Próximos passos: fluxo de convite e2e + definição do fluxo de auth por perfil + app cliente
+- Tokens sensíveis: sempre SecureStore, nunca AsyncStorage
+- Google Sign-In: usa @react-native-google-signin/google-signin com Development Build Android (não funciona em Expo Go)
+
+## Regras de autenticação Google
+
+- No logout, sempre chamar GoogleSignin.signOut() antes de limpar o SecureStore — nunca usar revokeAccess()
+- O signOut() deve estar em try/catch para não quebrar o logout de usuários que não entraram via Google
+- Após logout, o seletor de contas Google deve sempre ser exibido ao tentar logar novamente
+- Usuários OAuth têm senhaHash null no banco — nunca tentar login por senha nessa conta
