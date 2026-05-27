@@ -1,3 +1,5 @@
+import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,18 +11,18 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 
 import {
-  useBarbeariasPublico,
   type BarbeariaPublica,
+  useBarbeariasPublico,
 } from "@/src/shared/hooks/use-barbearias-publico";
 import { useTheme } from "@/src/shared/theme";
+import { CircleIconButton } from "@/src/shared/ui";
 
-// ─── Barbeiro card row ────────────────────────────────────────────────────────
+// ─── Barbearia card row ─────────────────────────────────────────────────────────
 
 function BarbeariaRow({ item }: { item: BarbeariaPublica }) {
-  const { palette } = useTheme();
+  const { palette, radius } = useTheme();
   const initial = item.nome.charAt(0).toUpperCase();
 
   function handlePress() {
@@ -32,11 +34,21 @@ function BarbeariaRow({ item }: { item: BarbeariaPublica }) {
       testID={`barbearia-publica-${item.codigo}`}
       accessibilityRole="button"
       onPress={handlePress}
-      style={({ pressed }) => [styles.card, { opacity: pressed ? 0.8 : 1 }]}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          backgroundColor: palette.surfaceHigh,
+          borderColor: palette.border,
+          borderRadius: radius.lg,
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}
     >
       {/* Logo square */}
       <View style={[styles.logoBox, { backgroundColor: palette.primary }]}>
-        <Text style={styles.logoLetter}>{initial}</Text>
+        <Text style={[styles.logoLetter, { color: palette.primaryOn }]}>
+          {initial}
+        </Text>
       </View>
 
       {/* Info column */}
@@ -48,16 +60,22 @@ function BarbeariaRow({ item }: { item: BarbeariaPublica }) {
           {item.nome}
         </Text>
         <View style={styles.cardMeta}>
-          <Text style={styles.cardDistance}>— km</Text>
-          <Text style={styles.cardDot}>·</Text>
-          <Text style={styles.cardRatingStar}>★ </Text>
-          <Text style={styles.cardRatingNum}>—</Text>
+          <Feather name="map-pin" size={11} color={palette.textDisabled} />
+          <Text style={[styles.cardDistance, { color: palette.textMuted }]}>
+            — km
+          </Text>
+          <Text style={[styles.cardDot, { color: palette.textDisabled }]}>
+            ·
+          </Text>
+          <Feather name="star" size={11} color={palette.primary} />
+          <Text style={[styles.cardRatingNum, { color: palette.textMuted }]}>
+            —
+          </Text>
         </View>
-        {/* Feature chips — not available in API, skip */}
       </View>
 
       {/* Chevron */}
-      <Text style={styles.chevron}>›</Text>
+      <Feather name="chevron-right" size={18} color={palette.textDisabled} />
     </Pressable>
   );
 }
@@ -65,7 +83,7 @@ function BarbeariaRow({ item }: { item: BarbeariaPublica }) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function ClienteBuscarScreen() {
-  const { palette } = useTheme();
+  const { palette, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
   const {
@@ -81,39 +99,64 @@ export default function ClienteBuscarScreen() {
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Pressable
+        <CircleIconButton
+          icon="arrow-left"
+          iconColor={palette.textMuted}
+          size={40}
           onPress={() => router.back()}
-          accessibilityRole="button"
-          style={styles.backBtn}
-        >
-          <Text style={styles.backBtnText}>‹</Text>
-        </Pressable>
+          accessibilityLabel="Voltar"
+        />
 
         <View style={styles.headerTitle}>
           <Text style={[styles.titleText, { color: palette.text }]}>
             Descobrir
           </Text>
-          <Text style={styles.subtitleText}>
+          <Text style={[styles.subtitleText, { color: palette.textMuted }]}>
             {data.length} barbearia{data.length !== 1 ? "s" : ""} encontrada
             {data.length !== 1 ? "s" : ""}
           </Text>
         </View>
 
-        <Pressable accessibilityRole="button" style={styles.qrChip}>
-          <Text style={styles.qrChipText}>📷 Escanear QR</Text>
+        <Pressable
+          testID="btn-escanear-qr"
+          accessibilityRole="button"
+          accessibilityLabel="Escanear QR"
+          onPress={() => router.push("/(cliente)/buscar/qr" as never)}
+          style={({ pressed }) => [
+            styles.qrChip,
+            {
+              backgroundColor: palette.primary + "14",
+              borderColor: palette.primary + "38",
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Feather name="maximize" size={14} color={palette.primary} />
+          <Text style={[styles.qrChipText, { color: palette.primary }]}>
+            Escanear QR
+          </Text>
         </Pressable>
       </View>
 
       {/* ── Search bar ── */}
       <View style={styles.searchWrap}>
-        <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: palette.surfaceHigh,
+              borderColor: palette.border,
+              borderRadius: radius.full,
+            },
+          ]}
+        >
+          <Feather name="search" size={16} color={palette.textDisabled} />
           <TextInput
             testID="buscar-input"
             value={search}
             onChangeText={setSearch}
             placeholder="Nome da barbearia ou bairro…"
-            placeholderTextColor="#444444"
+            placeholderTextColor={palette.textDisabled}
             style={[styles.searchInput, { color: palette.text }]}
             returnKeyType="search"
           />
@@ -131,24 +174,30 @@ export default function ClienteBuscarScreen() {
         </View>
       ) : isError ? (
         <View style={styles.centered}>
-          <Text style={[styles.emptyText, { color: "#888888" }]}>
+          <Text style={[styles.emptyText, { color: palette.textMuted }]}>
             Não foi possível carregar as barbearias.
           </Text>
         </View>
       ) : data.length === 0 ? (
         <View style={styles.centered} testID="buscar-empty">
-          <Text style={[styles.emptyText, { color: "#888888" }]}>
+          <Text style={[styles.emptyText, { color: palette.textMuted }]}>
             Nenhuma barbearia encontrada
           </Text>
           {search.trim().length >= 2 ? (
             <Text
-              style={[styles.emptyText, { color: "#666666", marginTop: 4 }]}
+              style={[
+                styles.emptyText,
+                { color: palette.textDisabled, marginTop: 4 },
+              ]}
             >
               {`para "${search}"`}
             </Text>
           ) : (
             <Text
-              style={[styles.emptyText, { color: "#666666", marginTop: 4 }]}
+              style={[
+                styles.emptyText,
+                { color: palette.textDisabled, marginTop: 4 },
+              ]}
             >
               Digite o nome de uma barbearia para buscar.
             </Text>
@@ -182,21 +231,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 10,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#171717",
-    borderWidth: 1,
-    borderColor: "#262626",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backBtnText: {
-    color: "#aaaaaa",
-    fontSize: 22,
-    lineHeight: 26,
-  },
   headerTitle: {
     flex: 1,
   },
@@ -207,21 +241,18 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     fontSize: 11,
-    color: "#888888",
     marginTop: 1,
   },
   qrChip: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
     height: 40,
     paddingHorizontal: 12,
-    backgroundColor: "#F4B40014",
     borderWidth: 1,
-    borderColor: "#F4B40038",
     borderRadius: 100,
   },
   qrChipText: {
-    color: "#F4B400",
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
@@ -234,15 +265,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 46,
-    backgroundColor: "#171717",
     borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 23,
     paddingHorizontal: 14,
     gap: 8,
-  },
-  searchIcon: {
-    fontSize: 14,
   },
   searchInput: {
     flex: 1,
@@ -262,10 +287,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     padding: 14,
-    backgroundColor: "#171717",
     borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 16,
   },
   logoBox: {
     width: 54,
@@ -278,7 +300,6 @@ const styles = StyleSheet.create({
   logoLetter: {
     fontFamily: "Sora_700Bold",
     fontSize: 22,
-    color: "#0d0d0d",
   },
   cardInfo: {
     flex: 1,
@@ -297,25 +318,13 @@ const styles = StyleSheet.create({
   },
   cardDistance: {
     fontSize: 11,
-    color: "#888888",
   },
   cardDot: {
     fontSize: 11,
-    color: "#444444",
-  },
-  cardRatingStar: {
-    fontSize: 11,
-    color: "#F4B400",
   },
   cardRatingNum: {
     fontSize: 11,
-    color: "#aaaaaa",
     fontFamily: "JetBrainsMono_400Regular",
-  },
-  chevron: {
-    fontSize: 16,
-    color: "#444444",
-    flexShrink: 0,
   },
   // ── States
   centered: {

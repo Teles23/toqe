@@ -121,13 +121,15 @@ describe("BarbeariaPublicaScreen", () => {
     expect(mockRouterBack).toHaveBeenCalled();
   });
 
-  it("7. exibe rating quando ratingMedio > 0", () => {
+  it("7. exibe a nota (rating) quando ratingMedio > 0", () => {
     mockUseBarbeariaPublica.mockReturnValue({
       data: barbeariaFixture,
       isLoading: false,
     });
     render(<BarbeariaPublicaScreen />);
-    expect(screen.getByText("★ 4.8")).toBeTruthy();
+    // A estrela virou ícone Feather; a nota numérica continua como texto.
+    expect(screen.getByText("4.8")).toBeTruthy();
+    expect(screen.getByText("· avaliações")).toBeTruthy();
   });
 
   it("8. não exibe rating quando ratingMedio é null", () => {
@@ -136,6 +138,6 @@ describe("BarbeariaPublicaScreen", () => {
       isLoading: false,
     });
     render(<BarbeariaPublicaScreen />);
-    expect(screen.queryByText(/★/)).toBeNull();
+    expect(screen.queryByText("· avaliações")).toBeNull();
   });
 });

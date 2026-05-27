@@ -1,6 +1,9 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useTheme } from "@/src/shared/theme";
 
 /**
  * QR Scan Screen — visual mock (expo-camera não disponível).
@@ -8,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  * Design: Urban Flow v2 / QRScanScreen spec.
  */
 export default function QRScanScreen() {
+  const { palette } = useTheme();
   const insets = useSafeAreaInsets();
 
   const handleBack = () => {
@@ -39,11 +43,11 @@ export default function QRScanScreen() {
           accessibilityRole="button"
           accessibilityLabel="Voltar"
           onPress={handleBack}
-          style={styles.backBtn}
+          style={styles.glassBtn}
         >
-          <Text style={styles.backBtnText}>←</Text>
+          <Feather name="x" size={18} color="#ffffff" />
         </Pressable>
-        <Text style={styles.topTitle}>Escanear QR</Text>
+        <Text style={styles.topTitle}>Escanear QR da barbearia</Text>
         <View style={styles.topSpacer} />
       </View>
 
@@ -52,22 +56,51 @@ export default function QRScanScreen() {
         {/* QR frame container */}
         <View testID="qr-frame" style={styles.frameContainer}>
           {/* Corners */}
-          <View style={[styles.corner, styles.cornerTopLeft]} />
-          <View style={[styles.corner, styles.cornerTopRight]} />
-          <View style={[styles.corner, styles.cornerBottomLeft]} />
-          <View style={[styles.corner, styles.cornerBottomRight]} />
+          <View
+            style={[
+              styles.corner,
+              styles.cornerTopLeft,
+              { borderColor: palette.primary },
+            ]}
+          />
+          <View
+            style={[
+              styles.corner,
+              styles.cornerTopRight,
+              { borderColor: palette.primary },
+            ]}
+          />
+          <View
+            style={[
+              styles.corner,
+              styles.cornerBottomLeft,
+              { borderColor: palette.primary },
+            ]}
+          />
+          <View
+            style={[
+              styles.corner,
+              styles.cornerBottomRight,
+              { borderColor: palette.primary },
+            ]}
+          />
+
+          {/* Scan line */}
+          <View
+            style={[styles.scanLine, { backgroundColor: palette.primary }]}
+          />
 
           {/* Camera unavailable placeholder */}
           <View style={styles.cameraPlaceholder}>
             <Text style={styles.cameraUnavailableText}>
-              Câmera indisponível
+              posicione o QR aqui
             </Text>
           </View>
         </View>
 
         {/* Hint text */}
         <Text style={styles.hintText}>
-          Aponte para o código QR da barbearia
+          Aponte a câmera para o QR Code que está na recepção da barbearia.
         </Text>
       </View>
 
@@ -80,6 +113,7 @@ export default function QRScanScreen() {
           onPress={handleDigitarManual}
           style={styles.manualBtn}
         >
+          <Feather name="edit-2" size={14} color="#ffffff" />
           <Text style={styles.manualBtnText}>Digitar código manualmente</Text>
         </Pressable>
       </View>
@@ -90,7 +124,6 @@ export default function QRScanScreen() {
 const FRAME_SIZE = 260;
 const CORNER_SIZE = 36;
 const CORNER_WIDTH = 3;
-const CORNER_COLOR = "#F4B400";
 
 const styles = StyleSheet.create({
   container: {
@@ -106,24 +139,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     zIndex: 1,
   },
-  backBtn: {
+  glassBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
-  backBtnText: {
-    color: "#ffffff",
-    fontSize: 18,
-    lineHeight: 22,
-  },
   topTitle: {
     fontFamily: "Sora_700Bold",
-    fontSize: 16,
+    fontSize: 14,
     color: "#ffffff",
   },
   topSpacer: {
@@ -145,7 +173,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: CORNER_SIZE,
     height: CORNER_SIZE,
-    borderColor: CORNER_COLOR,
     borderRadius: 2,
   },
   cornerTopLeft: {
@@ -172,31 +199,37 @@ const styles = StyleSheet.create({
     borderBottomWidth: CORNER_WIDTH,
     borderRightWidth: CORNER_WIDTH,
   },
+  scanLine: {
+    position: "absolute",
+    top: "50%",
+    left: 8,
+    right: 8,
+    height: 2,
+  },
   // Camera placeholder
   cameraPlaceholder: {
     position: "absolute",
-    inset: 0,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#111111",
+    top: CORNER_WIDTH,
+    left: CORNER_WIDTH,
+    right: CORNER_WIDTH,
+    bottom: CORNER_WIDTH,
     alignItems: "center",
     justifyContent: "center",
-    margin: CORNER_WIDTH,
   },
   cameraUnavailableText: {
     fontFamily: "JetBrainsMono_400Regular",
-    fontSize: 12,
-    color: "#444444",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.3)",
+    letterSpacing: 1,
   },
   hintText: {
-    fontFamily: "JetBrainsMono_400Regular",
-    fontSize: 13,
-    color: "#aaaaaa",
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
+    color: "#ffffff",
     textAlign: "center",
     marginTop: 24,
-    paddingHorizontal: 32,
+    paddingHorizontal: 40,
+    lineHeight: 18,
   },
   // ── Bottom bar
   bottomBar: {
@@ -210,13 +243,15 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.3)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
   manualBtnText: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
     fontSize: 13,
     color: "#ffffff",
-    fontWeight: "600",
   },
 });

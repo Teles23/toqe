@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -15,7 +16,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, Avatar, GhostButton } from "@/src/shared/ui";
+import {
+  AmberButton,
+  Avatar,
+  CircleIconButton,
+  GhostButton,
+} from "@/src/shared/ui";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -230,7 +236,7 @@ export default function AgendarScreen() {
       >
         {/* Ícone de sucesso */}
         <View style={styles.successIcon}>
-          <Text style={styles.successIconText}>✓</Text>
+          <Feather name="check" size={36} color="#22c55e" />
         </View>
 
         <Text style={[styles.confirmedTitle, { color: palette.text }]}>
@@ -289,15 +295,17 @@ export default function AgendarScreen() {
           },
         ]}
       >
-        <Pressable
+        <CircleIconButton
           testID="agendar-btn-voltar"
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          icon="chevron-left"
+          iconSize={20}
+          size={40}
+          iconColor={palette.text}
+          background={palette.surface}
+          borderColor={palette.border}
           onPress={handleBack}
-          style={styles.backBtn}
-        >
-          <Text style={[typography.body, { color: palette.primary }]}>‹</Text>
-        </Pressable>
+          accessibilityLabel="Voltar"
+        />
         <Text style={[typography.label, { color: palette.textMuted, flex: 1 }]}>
           Passo {step + 1}/4 · {STEP_LABELS[step]}
         </Text>
@@ -317,7 +325,7 @@ export default function AgendarScreen() {
             style={[
               styles.progressDot,
               {
-                backgroundColor: i <= step ? "#F4B400" : "#262626",
+                backgroundColor: i <= step ? palette.primary : palette.border,
               },
             ]}
           />
@@ -435,7 +443,7 @@ function StepServico({
           >
             {/* Ícone da tesoura */}
             <View style={styles.servicoIconBox}>
-              <Text style={styles.servicoIconText}>✂</Text>
+              <Feather name="scissors" size={18} color={palette.primary} />
             </View>
             {/* Detalhes do serviço */}
             <View style={styles.servicoInfo}>
@@ -519,8 +527,9 @@ function StepBarbeiro({
                 {b.nome}
               </Text>
               <View style={styles.barbeiroMeta}>
+                <Feather name="star" size={11} color={palette.primary} />
                 <Text style={styles.barbeiroNota}>
-                  ⭐ {nota !== null ? String(nota) : "—"}
+                  {nota !== null ? String(nota) : "—"}
                 </Text>
                 {!disponivel && (
                   <View style={styles.folga}>
@@ -545,7 +554,7 @@ function StepData({
   selected: string;
   onSelect: (d: string) => void;
 }) {
-  const { spacing } = useTheme();
+  const { palette, spacing } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
   const cardWidth = (screenWidth - 48) / 2;
 
@@ -565,15 +574,17 @@ function StepData({
                 styles.dateCard,
                 {
                   width: cardWidth,
-                  backgroundColor: isSelected ? "#F4B400" : "#171717",
-                  borderColor: isSelected ? "#F4B400" : "#262626",
+                  backgroundColor: isSelected
+                    ? palette.primary
+                    : palette.surfaceHigh,
+                  borderColor: isSelected ? palette.primary : palette.border,
                 },
               ]}
             >
               <Text
                 style={[
                   styles.dateCardDayName,
-                  { color: isSelected ? "#0d0d0d" : "#888888" },
+                  { color: isSelected ? palette.primaryOn : palette.textMuted },
                 ]}
               >
                 {dayName}
@@ -581,7 +592,7 @@ function StepData({
               <Text
                 style={[
                   styles.dateCardDay,
-                  { color: isSelected ? "#0d0d0d" : "#f5f5f5" },
+                  { color: isSelected ? palette.primaryOn : palette.text },
                 ]}
               >
                 {day}
@@ -589,7 +600,7 @@ function StepData({
               <Text
                 style={[
                   styles.dateCardMonth,
-                  { color: isSelected ? "#0d0d0d" : "#888888" },
+                  { color: isSelected ? palette.primaryOn : palette.textMuted },
                 ]}
               >
                 {month}
@@ -739,13 +750,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
     borderBottomWidth: 1,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
   },
   progressRow: {
     flexDirection: "row",
@@ -780,9 +786,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
-  },
-  servicoIconText: {
-    fontSize: 18,
   },
   servicoInfo: {
     flex: 1,
@@ -890,10 +893,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
-  },
-  successIconText: {
-    fontSize: 32,
-    color: "#22c55e",
   },
   confirmedTitle: {
     fontFamily: "Sora_700Bold",

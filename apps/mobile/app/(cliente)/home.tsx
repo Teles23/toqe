@@ -433,7 +433,9 @@ export default function ClienteHomeScreen() {
         {semBarbearias ? (
           /* EmptyClienteSemBarbearia — pixel-accurate */
           <View testID="home-sem-barbearia" style={styles.emptyBarbearia}>
-            <Text style={styles.emptyIcon}>✂</Text>
+            <View style={styles.emptyIconBox}>
+              <Feather name="scissors" size={32} color={ACCENT} />
+            </View>
             <Text style={styles.emptyLine1}>Bem-vindo ao</Text>
             <Text style={styles.emptyBrand}>Toqe.</Text>
             <Text style={styles.emptySubtitle}>
@@ -954,8 +956,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 40,
   },
-  emptyIcon: {
-    fontSize: 72,
+  emptyIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: ACCENT + "14",
+    borderWidth: 1,
+    borderColor: ACCENT + "38",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 24,
   },
   emptyLine1: {
