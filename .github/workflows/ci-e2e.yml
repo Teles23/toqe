@@ -1,12 +1,8 @@
 name: CI E2E
 
-# push → develop : sobe stack completa e roda Playwright (Chrome system)
 # workflow_dispatch: gatilho manual para rodar em qualquer branch
 
 on:
-  push:
-    branches:
-      - develop
   workflow_dispatch:
 
 concurrency:
@@ -85,17 +81,20 @@ jobs:
           NODE_ENV: production
           PORT: "3000"
           CORS_ORIGINS: "http://localhost:3001"
+          GOOGLE_CLIENT_ID: ci-e2e-placeholder
 
       - name: Wait for API
         run: |
           for i in $(seq 1 30); do
             if curl -sf http://localhost:3000/health; then
               echo "API pronta"
-              break
+              exit 0
             fi
             echo "Aguardando API... ($i/30)"
             sleep 3
           done
+          echo "✗ API não respondeu após 90s"
+          exit 1
 
       - name: Build Web
         run: pnpm --filter web build
@@ -112,11 +111,13 @@ jobs:
           for i in $(seq 1 30); do
             if curl -sf http://localhost:3001; then
               echo "Web pronta"
-              break
+              exit 0
             fi
             echo "Aguardando Web... ($i/30)"
             sleep 3
           done
+          echo "✗ Web não respondeu após 90s"
+          exit 1
 
       - name: Install Google Chrome
         run: |
