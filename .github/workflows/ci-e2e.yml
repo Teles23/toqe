@@ -1,0 +1,141 @@
+name: CI E2E
+
+# workflow_dispatch: gatilho manual para rodar em qualquer branch
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-web:
+    name: E2E Web (Playwright · Chrome)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TURBO_TELEMETRY_DISABLED: 1
+      NEXT_TELEMETRY_DISABLED: 1
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup
+
+      - name: Generate Prisma client
+        run: pnpm --filter api exec prisma generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+      - name: Migrate DB
+        run: pnpm --filter api exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+      - name: Seed DB
+        run: pnpm --filter api exec prisma db seed
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          JWT_SECRET: ci-e2e-secret
+
+      - name: Build API
+        run: pnpm --filter api build
+
+      - name: Start API
+        run: pnpm --filter api start:prod &
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          JWT_SECRET: ci-e2e-secret
+          JWT_REFRESH_SECRET: ci-e2e-refresh-secret
+          NODE_ENV: production
+          PORT: "3000"
+          CORS_ORIGINS: "http://localhost:3001"
+
+      - name: Wait for API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health; then
+              echo "API pronta"
+              exit 0
+            fi
+            echo "Aguardando API... ($i/30)"
+            sleep 3
+          done
+          echo "✗ API não respondeu após 90s"
+          exit 1
+
+      - name: Build Web
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
+
+      - name: Start Web
+        run: pnpm --filter web exec next start -p 3001 &
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
+
+      - name: Wait for Web
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3001; then
+              echo "Web pronta"
+              exit 0
+            fi
+            echo "Aguardando Web... ($i/30)"
+            sleep 3
+          done
+          echo "✗ Web não respondeu após 90s"
+          exit 1
+
+      - name: Install Google Chrome
+        run: |
+          curl -fsSLo /tmp/chrome.deb \
+            "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+          sudo apt-get install -y /tmp/chrome.deb
+
+      - name: Install Playwright system deps
+        run: pnpm --filter web exec playwright install-deps chromium
+
+      - name: Run E2E (Chromium only)
+        run: pnpm --filter web exec playwright test --project=chromium
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3001
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

@@ -1,0 +1,57 @@
+name: CI Load (k6)
+
+# Execução manual: dispara contra qualquer ambiente via BASE_URL
+# Não roda automaticamente em push — load tests não devem bloquear CI normal
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL base da API (ex: http://localhost:3000 ou https://api.toqe.com.br)"
+        required: false
+        default: "http://localhost:3000"
+      scenario:
+        description: "Cenário a rodar (auth | agendamento | barbearia | all)"
+        required: false
+        default: "all"
+
+permissions:
+  contents: read
+
+jobs:
+  load:
+    name: Load tests — k6
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TURBO_TELEMETRY_DISABLED: 1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo mkdir -p /etc/apt/keyrings
+          curl -s https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/k6.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/k6.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update -q
+          sudo apt-get install -y k6
+
+      - name: Run auth load test
+        if: ${{ inputs.scenario == 'auth' || inputs.scenario == 'all' }}
+        run: k6 run tools/load/scenarios/auth-load.js
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+
+      - name: Run agendamento load test
+        if: ${{ inputs.scenario == 'agendamento' || inputs.scenario == 'all' }}
+        run: k6 run tools/load/scenarios/agendamento-load.js
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+
+      - name: Run barbearia load test
+        if: ${{ inputs.scenario == 'barbearia' || inputs.scenario == 'all' }}
+        run: k6 run tools/load/scenarios/barbearia-load.js
+        env:
+          BASE_URL: ${{ inputs.base_url }}
