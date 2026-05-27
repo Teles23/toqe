@@ -195,6 +195,28 @@ describe("AuthProvider — login", () => {
   });
 });
 
+describe("AuthProvider — establishSession (auto-login)", () => {
+  it("recarrega /usuarios/me e popula estado sem redirecionar", async () => {
+    // load inicial sem sessão; depois establishSession recarrega
+    mockApi.get
+      .mockRejectedValueOnce(new Error("sem sessão"))
+      .mockResolvedValueOnce(mockMe);
+
+    const ref = captureContext();
+    await waitFor(() => expect(ref.current?.loading).toBe(false));
+
+    await act(async () => {
+      await ref.current?.establishSession();
+    });
+
+    expect(ref.current?.user?.nome).toBe("Test User");
+    expect(ref.current?.barbearia?.nome).toBe("BarberShop");
+    expect(ref.current?.perfil).toBe("dono");
+    // Auto-login NÃO redireciona — a tela do convite controla a navegação.
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});
+
 describe("AuthProvider — logout", () => {
   it("chama requestLogout e limpa estado", async () => {
     mockApi.get.mockResolvedValueOnce(mockMe);

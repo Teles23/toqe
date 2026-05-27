@@ -230,6 +230,119 @@ Exercitam os **hooks reais** (`useConvite`/`useAceitarConvite`/`useRejeitarConvi
 - `pnpm --filter mobile type-check` — OK
 - `pnpm --filter mobile test` — OK (suite `[token].test.tsx`: 13/13)
 
-## Próximos chunks
+## Chunk 3/3 — WEB (página pública de aceite)
 
-- **Chunk 3 (web):** mesma frente no painel web; MSW handlers + specs.
+**Status:** Implementado (3 checks do web verdes — lint, tipos, unit)
+**Branch:** develop
+**Base:** padrão de página pública por token do reset de senha
+(`app/(auth)/reset-password/`), BFF de login (`app/api/auth/login/route.ts`
+seta cookies httpOnly), `AuthProvider`/`useAuth`, `api-client`, design system
+do web (tokens CSS `var(--*)`, classes `tqe-*`, `AuthErrorBanner`,
+`AuthBrandingPanel`). Test harness Vitest + RTL + MSW (`src/test/*`).
+
+> **Escopo desta entrega:** apenas o **web**. A página pública
+> `FRONTEND_URL/convite?token=...` (destino do e-mail do chunk 1), espelhando a
+> jornada do mobile (chunk 2). O contrato HTTP da API **não mudou** — os 3
+> endpoints (`GET /convite/:token`, `POST /convite/:token/aceitar`,
+> `DELETE /convite/:token`) são públicos e já existiam.
+
+### Auto-login via BFF (mesmo mecanismo do login)
+
+O aceite é um **auto-login**: a posse do link prova a identidade. O backend
+retorna `access_token`/`refresh_token`; o web os transforma em cookies do mesmo
+jeito que o login do web — via **route handler BFF**:
+
+```
+POST /api/convite/:token/aceitar  (BFF, Next.js route handler)
+   │  proxy → NestJS POST /convite/:token/aceitar
+   │  sucesso → seta cookies:
+   │     access_token  : não-httpOnly, sameSite=strict, 15 min, path=/
+   │     refresh_token : httpOnly,     sameSite=strict, 30 dias, path=/api/auth
+   ▼
+useAceitarConvite → establishSession() (AuthProvider recarrega /usuarios/me,
+                    SEM redirecionar — a tela controla a navegação)
+```
+
+`GET` e `DELETE` também passam por BFF (`app/api/convite/[token]/route.ts`),
+mantendo o mesmo padrão de proxy/erros do `reset-password/route.ts` (sem auth,
+pois os endpoints são públicos).
+
+### Estados da tela (`ConviteView`, `ConviteForm`)
+
+| Estado      | testID              | Conteúdo                                                                                                                                                                   |
+| ----------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loading`   | `convite-loading`   | Spinner `Loader2` âmbar                                                                                                                                                    |
+| `landing`   | `convite-landing`   | Ícone `Mail`, eyebrow "Convite · barbeiro", headline "{barbeariaNome} quer você na equipe.", e-mail + função, CTAs aceitar/rejeitar (`btn-aceitar-convite`/`btn-rejeitar`) |
+| `form`      | —                   | "Criar sua conta" (novo) / "Confirmar acesso" (existente); nome (`isNew`), e-mail **readonly** (do convite), senha (mín. 8); botão `btn-aceitar`; "← Voltar" → landing     |
+| `accepting` | `convite-accepting` | Spinner + "Vinculando à barbearia…"                                                                                                                                        |
+| `welcome`   | `convite-success`   | Círculo âmbar `Scissors`, "Bem-vindo, {nome}.", CTA "Ver minha agenda" (`btn-ver-agenda`) → `/agenda`                                                                      |
+| `expired`   | `convite-expirado`  | Ícone `XCircle`, "Link inválido", link "Ir para o login"                                                                                                                   |
+
+- Usuário novo (`isNew=true`) → nome + senha; existente (`isNew=false`) → só
+  senha. E-mail sempre **readonly** (origem: o convite).
+- Mapeamento de erros do aceite (espelha o mobile): 409 "Convite já utilizado.",
+  404 "Convite expirado ou não encontrado.", 401 "Senha incorreta.", 400
+  "Senha de ao menos 8 caracteres.". Em erro, volta ao `form` com a mensagem
+  via `AuthErrorBanner`.
+- `/convite` adicionada às `PUBLIC_ROUTES` (`shared/config/routes.ts`) para o
+  proxy não redirecionar visitantes anônimos ao login.
+
+### Arquivos criados
+
+| Arquivo                                                            | Conteúdo                                                                                    |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `apps/web/src/app/(auth)/convite/page.tsx`                         | Server component: lê `?token=`, redireciona ao login se ausente                             |
+| `apps/web/src/app/(auth)/convite/convite-client.tsx`               | Client wrapper que monta `ConviteForm`                                                      |
+| `apps/web/src/app/api/convite/[token]/route.ts`                    | BFF GET (dados do convite) + DELETE (rejeitar), proxy público                               |
+| `apps/web/src/app/api/convite/[token]/aceitar/route.ts`            | BFF POST aceitar — proxy + seta cookies (auto-login, igual ao login)                        |
+| `apps/web/src/features/convite/services/convite.service.ts`        | `fetchConvite` / `requestAceitarConvite` / `requestRejeitarConvite` + `ConviteServiceError` |
+| `apps/web/src/features/convite/hooks/use-convite.ts`               | Query do convite (404/401 → `null`)                                                         |
+| `apps/web/src/features/convite/hooks/use-aceitar-convite.ts`       | Mutation de aceite + `establishSession()`                                                   |
+| `apps/web/src/features/convite/hooks/use-rejeitar-convite.ts`      | Mutation de rejeição (DELETE)                                                               |
+| `apps/web/src/features/convite/components/ConviteForm.tsx`         | Componente com todos os estados (espelha o mobile)                                          |
+| `apps/web/src/features/convite/components/ConviteForm.spec.tsx`    | Spec RTL + MSW da jornada (13 testes)                                                       |
+| `apps/web/src/features/convite/hooks/use-convite.spec.ts`          | Spec do hook de query (5 testes)                                                            |
+| `apps/web/src/features/convite/hooks/use-aceitar-convite.spec.ts`  | Spec do hook de aceite (2 testes)                                                           |
+| `apps/web/src/features/convite/hooks/use-rejeitar-convite.spec.ts` | Spec do hook de rejeição (2 testes)                                                         |
+| `apps/web/src/features/convite/services/convite.service.spec.ts`   | Spec do service (fetch real contra MSW, 8 testes)                                           |
+
+### Arquivos modificados
+
+| Arquivo                                                | Mudança                                                                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/shared/providers/auth-provider.tsx`      | Nova ação `establishSession()` (auto-login: recarrega `/usuarios/me` sem redirecionar); `loadMe` refatorado para reusar `loadMeState` |
+| `apps/web/src/shared/providers/auth-provider.spec.tsx` | +1 teste (`establishSession` popula estado sem `router.push`)                                                                         |
+| `apps/web/src/test/render-helpers.tsx`                 | `mockAuthContext` ganhou `establishSession: vi.fn()`                                                                                  |
+| `apps/web/src/test/msw-handlers.ts`                    | Handlers padrão dos 3 endpoints BFF de convite                                                                                        |
+| `apps/web/src/shared/config/routes.ts`                 | `ROUTES.CONVITE` + entrada em `PUBLIC_ROUTES`                                                                                         |
+| `apps/web/eslint.config.js`                            | `convite` adicionado à allowlist de `no-restricted-syntax` (tokens CSS dinâmicos, igual a `auth`/`barbeiros`)                         |
+
+### Cenários cobertos (Vitest + RTL + MSW)
+
+Os specs exercitam os **hooks e services reais** (sem duplicar lógica); apenas
+`useAuth` e `next/navigation` são mockados (concerns externos). O service é
+testado fazendo fetch real contra o MSW.
+
+- **ConviteForm** (13): loading; expired em 404 e 500; landing com nome da
+  barbearia + e-mail; form de usuário novo (nome+senha) vs. existente (só
+  senha) com e-mail readonly; aceite com sucesso → `establishSession` +
+  welcome "Bem-vindo, {nome}."; "Ver minha agenda" → `/agenda`; erros 409/401/400
+  voltam ao form com a mensagem (e 409 **não** estabelece sessão); rejeitar →
+  `DELETE /api/convite/:token` + `router.push('/login')`; "Voltar" → landing.
+- **useConvite** (5): query desabilitada sem token; sucesso; 404/401 → `null`;
+  500 → `isError`.
+- **useAceitarConvite** (2): aceite chama service + `establishSession`; falha
+  não estabelece sessão e propaga `ConviteServiceError` com `status`.
+- **useRejeitarConvite** (2): sucesso e erro.
+- **convite.service** (8): `fetchConvite` (sucesso, 404, encode do token),
+  `requestAceitarConvite` (sucesso, 409, 401), `requestRejeitarConvite`
+  (sucesso idempotente, 503).
+- **AuthProvider** (+1): `establishSession` popula estado sem redirecionar.
+
+### Validação
+
+- `pnpm --filter web lint` — OK (0 erros, 0 warnings)
+- `cd apps/web && npx tsc --noEmit` — OK
+- `pnpm --filter web test` — 35 suites / 236 testes OK (+5 suites / +31 testes
+  vs. baseline 30/205: 30 testes em 5 suites novas + 1 teste de
+  `establishSession` na suite existente do `AuthProvider`)

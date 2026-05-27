@@ -49,6 +49,7 @@ export const mockAuthContext: AuthContextValue = {
   loading: false,
   login: vi.fn(),
   verifyTwoFa: vi.fn(),
+  establishSession: vi.fn(),
   logout: vi.fn(),
   switchBarbearia: vi.fn(),
 };

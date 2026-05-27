@@ -10,6 +10,7 @@ export const ROUTES = {
   LOGIN: "/login",
   ONBOARDING: "/onboarding",
   RESET_PASSWORD: "/reset-password",
+  CONVITE: "/convite",
 
   // Privadas (dashboard)
   DASHBOARD: "/dashboard",
@@ -29,6 +30,7 @@ export const PUBLIC_ROUTES = new Set<string>([
   ROUTES.LOGIN,
   ROUTES.ONBOARDING,
   ROUTES.RESET_PASSWORD,
+  ROUTES.CONVITE,
 ]);
 
 /** Conjunto de rotas privadas que exigem login. */
