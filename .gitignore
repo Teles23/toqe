@@ -4,7 +4,7 @@
 node_modules
 .pnp
 .pnp.js
-.claude/settings*.json
+**/.claude/settings*.json
 .agent
 .agents
 .pnpm-store/
@@ -17,6 +17,8 @@ node_modules
 
 # Testing
 coverage
+playwright-report/
+test-results/
 
 # Turbo
 .turbo
