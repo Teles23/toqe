@@ -15,7 +15,6 @@ permissions:
 
 jobs:
   quality:
-    name: Lint · Types · Unit tests · Build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
