@@ -235,8 +235,8 @@ describe('AgendaService', () => {
       // Use Date constructor (always local time) to match parse() output
       mockPrisma.agendamento.findMany.mockResolvedValue([
         {
-          inicio: new Date(2025, 0, 6, 9, 0, 0),
-          fim: new Date(2025, 0, 6, 9, 30, 0),
+          inicio: new Date('2025-01-06T12:00:00Z'), // 09:00 America/Sao_Paulo
+          fim: new Date('2025-01-06T12:30:00Z'), // 09:30 America/Sao_Paulo
         },
       ]);
       mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
