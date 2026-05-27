@@ -130,7 +130,8 @@ export function BarbeirosView() {
                 color: "#0D0D0D",
               }}
             >
-              <Plus size={13} strokeWidth={2.5} /> Novo barbeiro
+              <Plus size={13} strokeWidth={2.5} />
+              <span className="hidden sm:inline">Novo barbeiro</span>
             </button>
           </div>
 

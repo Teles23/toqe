@@ -57,7 +57,7 @@ export function AgendaFilters({
 }: AgendaFiltersProps) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
-      <div className="relative flex items-center flex-shrink-0">
+      <div className="relative flex items-center w-full sm:w-auto sm:flex-shrink-0">
         <Search
           size={13}
           className="absolute left-2.5"
@@ -71,7 +71,8 @@ export function AgendaFilters({
             paddingLeft: 28,
             height: 30,
             fontSize: 12,
-            width: 160,
+            width: "100%",
+            minWidth: 0,
             background: "var(--bg-card)",
             border: "1px solid var(--border-default)",
             borderRadius: 6,
