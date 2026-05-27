@@ -103,7 +103,7 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
 
       - name: Start Web
-        run: pnpm --filter web start -- -p 3001 &
+        run: pnpm --filter web exec next start -p 3001 &
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
 
@@ -128,7 +128,7 @@ jobs:
         run: pnpm --filter web exec playwright install-deps chromium
 
       - name: Run E2E (Chromium only)
-        run: pnpm --filter web test:e2e -- --project=chromium
+        run: pnpm --filter web exec playwright test --project=chromium
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3001
 
