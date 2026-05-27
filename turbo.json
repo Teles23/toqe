@@ -57,7 +57,8 @@
     },
     "test:e2e": {
       "dependsOn": ["^build"],
-      "outputs": ["playwright-report/**"]
+      "outputs": ["playwright-report/**"],
+      "env": ["PLAYWRIGHT_BASE_URL"]
     }
   }
 }

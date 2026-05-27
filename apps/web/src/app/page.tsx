@@ -2,12 +2,6 @@
 
 import React from "react";
 import {
-  AnimatePresence,
-  motion,
-  useScroll,
-  useTransform,
-} from "framer-motion";
-import {
   type LucideIcon,
   ArrowRight,
   BarChart3,
@@ -16,15 +10,23 @@ import {
   ChevronDown,
   Menu,
   Scissors,
-  Shield,
   Smartphone,
   Star,
   Users,
   X,
   Zap,
+  Play,
+  TrendingUp,
+  Network,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  AnimatePresence,
+  motion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 
 /* ── Contador animado ── */
 function CountUp({
@@ -64,18 +66,386 @@ function CountUp({
   );
 }
 
+/* ── Live ticking value ── */
+function useLiveValue(start: number, increment: number, intervalMs = 3500) {
+  const [val, setVal] = useState(start);
+  useEffect(() => {
+    const id = setInterval(
+      () => setVal((prev) => prev + increment),
+      intervalMs,
+    );
+    return () => clearInterval(id);
+  }, [increment, intervalMs]);
+  return val;
+}
+
+/* ── Live Console (hero right panel) ── */
+function LiveConsole(): React.JSX.Element {
+  const fatHoje = useLiveValue(2840, 35, 3500);
+  const chairs = [
+    {
+      name: "Carlos R.",
+      client: "João Silva · Corte degradê",
+      start: "09:42",
+      status: "active",
+      progress: 65,
+    },
+    {
+      name: "Lucas M.",
+      client: "Ana Costa · Sobrancelha",
+      start: "09:55",
+      status: "active",
+      progress: 30,
+    },
+    {
+      name: "Felipe B.",
+      client: "Próximo: Pedro · 10:30",
+      start: "—",
+      status: "idle",
+      progress: 0,
+    },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 24, scale: 0.97 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ delay: 0.4, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="relative rounded-[18px] overflow-hidden"
+      style={{
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-default)",
+        boxShadow:
+          "0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(244,180,0,0.04)",
+      }}
+    >
+      {/* Amber accent top line */}
+      <div
+        className="absolute top-0 left-6 right-6 rounded-b"
+        style={{ height: 2, background: "var(--primary)", opacity: 0.6 }}
+      />
+      {/* Console header */}
+      <div
+        className="flex items-center gap-3 px-4 h-[44px]"
+        style={{
+          borderBottom: "1px solid var(--border-subtle)",
+          background: "var(--bg-secondary)",
+        }}
+      >
+        <div className="flex gap-1.5">
+          {(
+            [
+              "var(--status-error)",
+              "var(--status-warning)",
+              "var(--status-success)",
+            ] as const
+          ).map((c, i) => (
+            <span
+              key={i}
+              className="rounded-full"
+              style={{ width: 10, height: 10, background: c, opacity: 0.5 }}
+            />
+          ))}
+        </div>
+        <span
+          className="ml-3 text-[11px]"
+          style={{
+            color: "var(--text-secondary)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          app.toqe.com/dashboard
+        </span>
+        <span
+          className="ml-auto flex items-center gap-1.5 text-[10px] font-medium"
+          style={{
+            color: "var(--status-success)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.1em",
+          }}
+        >
+          <span
+            className="rounded-full"
+            style={{
+              width: 6,
+              height: 6,
+              background: "var(--status-success)",
+              animation: "tqe-pulse-green 1.5s ease-in-out infinite",
+            }}
+          />
+          AO VIVO
+        </span>
+      </div>
+
+      {/* KPI row */}
+      <div className="p-4 flex flex-col gap-3.5">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            {
+              label: "Fat. hoje",
+              value: "R$ " + fatHoje.toLocaleString("pt-BR"),
+              color: "var(--status-success)",
+              delta: "+12% vs ontem",
+            },
+            {
+              label: "Agend.",
+              value: "14",
+              color: "var(--status-info)",
+              delta: "3 confirmados",
+            },
+            {
+              label: "Ticket",
+              value: "R$ 63",
+              color: "var(--text-primary)",
+              delta: "+R$4",
+            },
+            {
+              label: "Avaliação",
+              value: "4.8★",
+              color: "var(--primary)",
+              delta: "32 avaliações",
+            },
+          ].map((kpi) => (
+            <div
+              key={kpi.label}
+              className="rounded-xl p-2.5 relative overflow-hidden"
+              style={{
+                background: "var(--bg-base)",
+                border: "1px solid var(--border-default)",
+              }}
+            >
+              <div
+                className="text-[9px] uppercase tracking-widest mb-1.5"
+                style={{
+                  color: "var(--text-muted)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                {kpi.label}
+              </div>
+              <div
+                className="font-bold text-[15px] leading-none"
+                style={{
+                  color: kpi.color,
+                  fontFamily: "var(--font-heading)",
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                {kpi.value}
+              </div>
+              <div
+                className="mt-1.5 flex items-center gap-1 text-[10px]"
+                style={{
+                  color: "var(--status-success)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                <TrendingUp size={8} strokeWidth={2} />
+                {kpi.delta}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chairs */}
+        <div className="flex flex-col gap-1.5">
+          <div
+            className="flex items-center justify-between text-[10px] uppercase tracking-widest mb-0.5"
+            style={{
+              color: "var(--text-muted)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            <span>Cadeiras · agora</span>
+            <span
+              className="px-1.5 py-0.5 rounded"
+              style={{
+                background: "var(--bg-hover)",
+                color: "var(--text-primary)",
+              }}
+            >
+              2 / 3 ativas
+            </span>
+          </div>
+          {chairs.map((c) => (
+            <div
+              key={c.name}
+              className="rounded-[10px] px-3 py-2 flex items-center gap-2.5 relative overflow-hidden"
+              style={{
+                background:
+                  c.status === "active"
+                    ? "rgba(29,185,84,0.03)"
+                    : "var(--bg-base)",
+                border: `1px solid ${c.status === "active" ? "rgba(29,185,84,0.28)" : "var(--border-default)"}`,
+              }}
+            >
+              {c.status === "active" && (
+                <div
+                  className="absolute left-0 top-2 bottom-2 rounded-r"
+                  style={{
+                    width: 2,
+                    background: "var(--status-success)",
+                    animation: "tqe-sidebar-pulse 2s ease-in-out infinite",
+                  }}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[12px] font-semibold"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {c.name}
+                  </span>
+                  <span
+                    className="text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      letterSpacing: "0.1em",
+                      background:
+                        c.status === "active"
+                          ? "rgba(29,185,84,0.12)"
+                          : "var(--bg-hover)",
+                      color:
+                        c.status === "active"
+                          ? "var(--status-success)"
+                          : "var(--text-muted)",
+                    }}
+                  >
+                    {c.status === "active" ? "OCUPADO" : "LIVRE"}
+                  </span>
+                </div>
+                <div
+                  className="text-[11px] mt-0.5"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {c.client}
+                </div>
+                {c.status === "active" && (
+                  <div
+                    className="mt-1.5 h-[3px] rounded-full overflow-hidden"
+                    style={{ background: "var(--bg-hover)" }}
+                  >
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${c.progress}%`,
+                        background: "var(--status-success)",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div
+                className="text-[11px] flex-shrink-0"
+                style={{
+                  color: "var(--text-secondary)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                {c.start}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── Marquee de eventos ── */
+function Marquee(): React.JSX.Element {
+  const events = [
+    { city: "SSA", text: "Carlos finalizou corte", amount: "R$ 45" },
+    { city: "FOR", text: "Novo agendamento confirmado", amount: "+1" },
+    { city: "REC", text: "Pedro avaliou Lucas", amount: "5.0★" },
+    { city: "SP", text: "Bruna chegou para 14:30", amount: "on-time" },
+    { city: "RJ", text: "Marca atingiu meta diária", amount: "R$ 1.200" },
+    { city: "BSB", text: "Renan abriu a barbearia", amount: "08:00" },
+    { city: "CWB", text: "Fim de turno · Maurício", amount: "17 cortes" },
+  ];
+  const items = [...events, ...events];
+
+  return (
+    <div
+      className="overflow-hidden"
+      style={{
+        borderTop: "1px solid var(--border-subtle)",
+        borderBottom: "1px solid var(--border-subtle)",
+        background: "var(--bg-secondary)",
+        padding: "14px 0",
+      }}
+    >
+      <div
+        className="flex gap-14 whitespace-nowrap"
+        style={{
+          animation: "tqe-marquee 40s linear infinite",
+          width: "max-content",
+        }}
+      >
+        {items.map((e, i) => (
+          <div key={i} className="flex items-center gap-3.5">
+            <span
+              className="text-[10px] uppercase tracking-widest"
+              style={{
+                color: "var(--text-muted)",
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.1em",
+              }}
+            >
+              {e.city}
+            </span>
+            <span
+              className="text-[12px]"
+              style={{
+                color: "var(--text-secondary)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {e.text}
+            </span>
+            <span
+              className="text-[12px] font-semibold"
+              style={{
+                color: "var(--primary)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {e.amount}
+            </span>
+            <span
+              className="rounded-full"
+              style={{
+                width: 4,
+                height: 4,
+                background: "var(--border-strong)",
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Feature card ── */
 function FeatureCard({
   icon: Icon,
   title,
   desc,
   color,
   delay,
+  num,
+  live,
 }: {
   icon: LucideIcon;
   title: string;
   desc: string;
   color: string;
   delay: number;
+  num: string;
+  live: string;
 }): React.JSX.Element {
   return (
     <motion.div
@@ -83,13 +453,18 @@ function FeatureCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -4 }}
-      className="relative rounded-2xl p-6 bg-[var(--bg-card)] border border-[var(--border-default)]"
+      whileHover={{ y: -2 }}
+      className="relative rounded-2xl flex flex-col gap-3.5 min-h-[220px]"
       style={{
+        padding: "28px 24px 24px",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-default)",
+        overflow: "hidden",
         transition: "border-color 200ms, box-shadow 200ms",
       }}
       onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-        (e.currentTarget as HTMLElement).style.borderColor = `${color}40`;
+        (e.currentTarget as HTMLElement).style.borderColor =
+          "var(--border-strong)";
         (e.currentTarget as HTMLElement).style.boxShadow =
           `0 0 32px ${color}12`;
       }}
@@ -99,38 +474,84 @@ function FeatureCard({
         (e.currentTarget as HTMLElement).style.boxShadow = "none";
       }}
     >
-      <div
-        className="absolute top-0 left-6 right-6 rounded-b"
-        style={{ height: 2, background: color, opacity: 0.45 }}
-      />
-      <div
-        className="flex items-center justify-center rounded-xl mb-4"
-        style={{ width: 44, height: 44, background: `${color}12`, color }}
-      >
-        <Icon size={20} strokeWidth={1.8} />
+      {/* Icon + number */}
+      <div className="flex items-center justify-between">
+        <div
+          className="flex items-center justify-center rounded-xl"
+          style={{
+            width: 40,
+            height: 40,
+            background: `${color}14`,
+            color,
+            border: `1px solid ${color}33`,
+          }}
+        >
+          <Icon size={18} strokeWidth={2} />
+        </div>
+        <span
+          className="text-[10px]"
+          style={{
+            color: "var(--text-muted)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.14em",
+          }}
+        >
+          {num}
+        </span>
       </div>
-      <h3 className="font-bold text-[15px] mb-2 font-heading text-[var(--text-primary)]">
+
+      <h3
+        className="font-bold text-[17px] leading-[1.2]"
+        style={{ fontFamily: "var(--font-heading)", letterSpacing: "-0.025em" }}
+      >
         {title}
       </h3>
-      <p className="text-[13px] leading-relaxed text-[var(--text-secondary)]">
+      <p
+        className="text-[13px] leading-[1.6]"
+        style={{ color: "var(--text-secondary)" }}
+      >
         {desc}
       </p>
+
+      {/* Live stat footer */}
+      <div
+        className="mt-auto pt-3.5 flex items-center gap-2 text-[11px]"
+        style={{
+          borderTop: "1px dashed var(--border-default)",
+          color: "var(--text-muted)",
+          fontFamily: "var(--font-mono)",
+        }}
+      >
+        <span
+          className="rounded-full flex-shrink-0"
+          style={{
+            width: 5,
+            height: 5,
+            background: "var(--status-success)",
+            animation: "tqe-pulse-green 1.5s ease-in-out infinite",
+          }}
+        />
+        {live}
+      </div>
     </motion.div>
   );
 }
 
+/* ── Plan card ── */
 function PlanCard({
   nome,
   preco,
   features,
   destaque,
   delay,
+  desc,
 }: {
   nome: string;
   preco: number;
   features: string[];
   destaque?: boolean;
   delay: number;
+  desc: string;
 }): React.JSX.Element {
   const router = useRouter();
   return (
@@ -140,70 +561,110 @@ function PlanCard({
       viewport={{ once: true }}
       transition={{ delay, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -4 }}
-      className="relative rounded-2xl p-6"
+      className="relative rounded-[18px] flex flex-col gap-5"
       style={{
-        background: destaque ? "rgba(244,180,0,0.04)" : "var(--bg-card)",
+        padding: "28px 24px",
+        background: destaque
+          ? "linear-gradient(180deg, rgba(244,180,0,0.04) 0%, var(--bg-card) 50%)"
+          : "var(--bg-card)",
         border: `1px solid ${destaque ? "rgba(244,180,0,0.3)" : "var(--border-default)"}`,
-        boxShadow: destaque ? "0 0 40px rgba(244,180,0,0.08)" : "none",
-        transition: "all 200ms",
+        boxShadow: destaque ? "0 0 60px rgba(244,180,0,0.06)" : "none",
       }}
     >
       {destaque && (
         <div
-          className="absolute top-0 left-6 right-6 rounded-b bg-[var(--primary)] opacity-70"
-          style={{ height: 2 }}
-        />
+          className="absolute top-[-10px] right-6 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+          style={{
+            background: "var(--primary)",
+            color: "var(--primary-on)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.14em",
+          }}
+        >
+          MAIS POPULAR
+        </div>
       )}
-      {destaque && (
-        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-4 bg-[rgba(244,180,0,0.15)] text-[var(--primary)]">
-          <Zap size={9} /> Mais popular
-        </span>
-      )}
-      <span
-        className="block font-bold text-[13px] mb-1 uppercase tracking-wider"
-        style={{ color: destaque ? "var(--primary)" : "var(--text-secondary)" }}
+
+      <div
+        className="text-[12px] uppercase tracking-widest"
+        style={{
+          color: destaque ? "var(--primary)" : "var(--text-muted)",
+          fontFamily: "var(--font-mono)",
+          letterSpacing: "0.18em",
+        }}
       >
         {nome}
-      </span>
-      <div className="flex items-baseline gap-1 mb-5">
-        <span className="font-bold font-heading text-[2rem] tracking-[-0.04em] text-[var(--text-primary)]">
-          R${preco}
-        </span>
-        <span className="text-[12px] text-[var(--text-muted)]">/mês</span>
       </div>
-      <ul className="space-y-2.5 mb-6">
+
+      <div className="flex items-baseline gap-1">
+        <span
+          className="font-bold leading-none"
+          style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: 44,
+            letterSpacing: "-0.04em",
+            color: "var(--text-primary)",
+          }}
+        >
+          R$ {preco}
+        </span>
+        <span className="text-[14px]" style={{ color: "var(--text-muted)" }}>
+          /mês
+        </span>
+      </div>
+
+      <p
+        className="text-[13px] leading-[1.6]"
+        style={{ color: "var(--text-secondary)" }}
+      >
+        {desc}
+      </p>
+
+      <ul className="flex flex-col gap-3 flex-1">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2.5">
-            <CheckCircle
-              size={13}
-              className="flex-shrink-0 mt-0.5"
+            <span
+              className="flex-shrink-0 rounded-full flex items-center justify-center mt-0.5"
               style={{
+                width: 16,
+                height: 16,
+                background: destaque
+                  ? "rgba(244,180,0,0.12)"
+                  : "rgba(29,185,84,0.12)",
                 color: destaque ? "var(--primary)" : "var(--status-success)",
               }}
-            />
-            <span className="text-[13px] text-[var(--text-secondary)]">
+            >
+              <CheckCircle size={10} strokeWidth={2.8} />
+            </span>
+            <span
+              className="text-[13px]"
+              style={{ color: "var(--text-secondary)", lineHeight: 1.55 }}
+            >
               {f}
             </span>
           </li>
         ))}
       </ul>
+
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => router.push("/onboarding")}
-        className="w-full py-2.5 rounded-xl text-[13px] font-semibold"
+        className="h-11 rounded-xl text-[13px] font-semibold"
         style={{
           background: destaque ? "var(--primary)" : "transparent",
           color: destaque ? "#0D0D0D" : "var(--text-primary)",
           border: destaque ? "none" : "1px solid var(--border-strong)",
+          boxShadow: destaque ? "0 6px 18px rgba(244,180,0,0.2)" : "none",
         }}
       >
-        Começar grátis 14 dias
+        {destaque ? "Começar 14 dias grátis" : "Selecionar plano"}
       </motion.button>
     </motion.div>
   );
 }
 
+/* ── Depoimento ── */
 function Depoimento({
   nome,
   barbearia,
@@ -223,36 +684,58 @@ function Depoimento({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay, duration: 0.4 }}
-      className="rounded-2xl p-6 bg-[var(--bg-card)] border border-[var(--border-default)]"
+      className="rounded-2xl flex flex-col gap-5"
+      style={{
+        padding: "28px",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-default)",
+      }}
     >
-      <div className="flex gap-1 mb-4">
+      <div className="flex gap-0.5">
         {Array.from({ length: avaliacao }).map((_, i) => (
           <Star
             key={i}
             size={13}
-            fill="var(--status-warning)"
-            color="var(--status-warning)"
+            fill="var(--primary)"
+            color="var(--primary)"
+            strokeWidth={1}
           />
         ))}
       </div>
-      <p className="text-[13px] leading-relaxed mb-5 text-[var(--text-secondary)]">
-        "{texto}"
+      <p
+        className="font-medium leading-[1.4]"
+        style={{
+          fontFamily: "var(--font-heading)",
+          fontSize: 17,
+          letterSpacing: "-0.015em",
+          color: "var(--text-primary)",
+        }}
+      >
+        &ldquo;{texto}&rdquo;
       </p>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 mt-auto">
         <div
-          className="flex items-center justify-center rounded-full font-bold text-sm bg-[rgba(244,180,0,0.1)] text-[var(--primary)] font-heading"
+          className="flex items-center justify-center rounded-full font-bold"
           style={{
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
+            background: "rgba(244,180,0,0.1)",
+            color: "var(--primary)",
+            fontFamily: "var(--font-heading)",
+            fontSize: 15,
+            fontWeight: 700,
           }}
         >
           {nome[0]}
         </div>
         <div>
-          <span className="block text-[13px] font-semibold text-[var(--text-primary)]">
+          <span
+            className="block text-[13px] font-semibold"
+            style={{ color: "var(--text-primary)" }}
+          >
             {nome}
           </span>
-          <span className="text-[11px] text-[var(--text-muted)]">
+          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
             {barbearia}
           </span>
         </div>
@@ -275,38 +758,50 @@ export default function Landing(): React.JSX.Element {
     {
       icon: Calendar,
       color: "var(--status-info)",
-      title: "Agenda em tempo real",
-      desc: "Veja todos os horários, quem está atendendo e o que está livre — tudo atualizado na hora, sem precisar perguntar para ninguém.",
+      title: "Agenda viva",
+      desc: "Quem chegou, quem ainda vem, quem está atrasado. Conflitos são bloqueados antes de acontecer.",
+      num: "02 / 07",
+      live: "Próximo: 10:30 · Pedro",
     },
     {
       icon: Zap,
       color: "var(--status-warning)",
       title: "Painel ao vivo",
-      desc: "Equipe ativa, fila de espera e tempo médio do dia visíveis de uma vez. Como ter câmeras em cima de cada cadeira.",
+      desc: "A cadeira do Carlos pisca verde quando está atendendo. Verde apagado quando está livre. Não tem mistério.",
+      num: "03 / 07",
+      live: "2 / 3 cadeiras ativas",
     },
     {
       icon: Smartphone,
       color: "var(--status-success)",
-      title: "App para seu cliente",
-      desc: "O cliente agenda sozinho em menos de 20 segundos. Escolhe horário, barbeiro e serviço — sem ligação, sem mensagem no WhatsApp.",
+      title: "App do cliente",
+      desc: "Em 20 segundos: serviço, barbeiro, horário, confirmação. Sem WhatsApp, sem ligação, sem ruído.",
+      num: "04 / 07",
+      live: "94% agendam sem pedir ajuda",
     },
     {
       icon: BarChart3,
       color: "#C084FC",
-      title: "Relatórios que importam",
-      desc: "Quanto entrou hoje, qual serviço mais pediu, qual barbeiro mais faturou. Números reais para decisões reais.",
+      title: "Números honestos",
+      desc: "Faturamento por serviço, por barbeiro, por dia. Decisões deixam de ser achismo.",
+      num: "05 / 07",
+      live: "Quinta é o pior dia · ↓18%",
     },
     {
       icon: Users,
       color: "var(--status-error)",
-      title: "Sua equipe organizada",
-      desc: "Cada barbeiro com seu histórico, horários e desempenho. Você sabe quem está rendendo e quem precisa de atenção.",
+      title: "Equipe organizada",
+      desc: "Cada barbeiro com seu histórico, seus horários, sua avaliação. Você gerencia gente, não papel.",
+      num: "06 / 07",
+      live: "Lucas: 4.9★ · 142 cortes/mês",
     },
     {
-      icon: Shield,
+      icon: Network,
       color: "var(--status-info)",
-      title: "Dados sempre seguros",
-      desc: "Informações de cada barbearia completamente isoladas. Seus dados são só seus — ponto.",
+      title: "Multi-barbearia",
+      desc: "Várias unidades? Uma rede? Cada uma com seus dados isolados, todas no mesmo painel.",
+      num: "07 / 07",
+      live: "3 unidades · sincronizadas",
     },
   ];
 
@@ -314,6 +809,7 @@ export default function Landing(): React.JSX.Element {
     {
       nome: "Básico",
       preco: 49,
+      desc: "Para quem está começando ou tem uma operação enxuta.",
       features: [
         "1 barbearia",
         "Até 2 barbeiros",
@@ -326,11 +822,12 @@ export default function Landing(): React.JSX.Element {
       nome: "Pro",
       preco: 99,
       destaque: true,
+      desc: "O ponto doce — a maioria das barbearias está aqui.",
       features: [
         "1 barbearia",
         "Até 10 barbeiros",
         "Agendamentos ilimitados",
-        "Avisos por WhatsApp e SMS",
+        "Lembretes WhatsApp + SMS",
         "Relatórios completos",
         "Suporte prioritário",
       ],
@@ -338,12 +835,13 @@ export default function Landing(): React.JSX.Element {
     {
       nome: "Rede",
       preco: 249,
+      desc: "Para quem opera mais de uma unidade ou planeja crescer.",
       features: [
-        "Várias unidades",
+        "Unidades ilimitadas",
         "Equipe ilimitada",
         "Marca própria no app",
-        "Suporte com gerente dedicado",
-        "Disponibilidade garantida 99,9%",
+        "Gerente dedicado",
+        "SLA 99.9%",
       ],
     },
   ];
@@ -360,7 +858,7 @@ export default function Landing(): React.JSX.Element {
       nome: "Rafael Mendes",
       barbearia: "Corte Fino · Fortaleza",
       texto:
-        "Meus clientes adoraram o app. Agendam sozinhos, recebem lembrete e ainda avaliam. O no-show caiu mais da metade.",
+        "Meus clientes adoraram o app. Agendam sozinhos, recebem lembrete e avaliam. O no-show caiu mais da metade no primeiro mês.",
       avaliacao: 5,
     },
     {
@@ -372,21 +870,40 @@ export default function Landing(): React.JSX.Element {
     },
   ];
 
+  const STEPS = [
+    {
+      n: "STEP 01",
+      title: "Crie a sua barbearia",
+      p: "Nome, endereço, horário de funcionamento. Importamos sua lista de serviços de um template ou você cria do zero em 2 minutos.",
+    },
+    {
+      n: "STEP 02",
+      title: "Adicione sua equipe",
+      p: "Cada barbeiro recebe um link mágico. Entra, completa o perfil e já aparece na agenda. Sem instalar nada, sem criar senha.",
+    },
+    {
+      n: "STEP 03",
+      title: "Compartilhe o link",
+      p: "Um link único para seus clientes agendarem direto no app do Toqe. Cola no Instagram, no Google Maps, no WhatsApp business.",
+    },
+  ];
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[var(--bg-base)] text-[var(--text-primary)]">
+    <div
+      className="min-h-screen overflow-x-hidden"
+      style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}
+    >
       {/* ── Navbar ── */}
       <motion.nav
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 h-[60px]"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 h-[64px]"
         style={{
-          background: scrolled
-            ? "rgba(13,13,13,0.97)"
-            : "rgba(13,13,13,0.5)" /* CSS var dinâmico — não migrar */,
+          background: scrolled ? "rgba(10,10,10,0.95)" : "rgba(10,10,10,0.6)",
           backdropFilter: "blur(20px)",
-          borderBottom: `1px solid ${scrolled ? "var(--border-subtle)" : "transparent"}` /* CSS var dinâmico — não migrar */,
-          transition: "background 300ms, border-color 300ms",
+          borderBottom: `1px solid ${scrolled ? "var(--border-subtle)" : "transparent"}`,
+          transition: "background 200ms, border-color 200ms",
         }}
       >
         {/* Logo */}
@@ -397,38 +914,50 @@ export default function Landing(): React.JSX.Element {
         >
           <motion.div
             whileHover={{ scale: 1.08 }}
-            className="flex items-center justify-center rounded-lg bg-[var(--primary)]"
+            className="flex items-center justify-center rounded-lg"
             style={{
               width: 30,
               height: 30,
+              background: "var(--primary)",
               boxShadow: "0 0 14px rgba(244,180,0,0.25)",
             }}
           >
-            <Scissors size={13} color="#0D0D0D" strokeWidth={2.5} />
+            <Scissors size={13} color="#0a0a0a" strokeWidth={2.5} />
           </motion.div>
-          <span className="font-bold text-[17px] font-heading tracking-[-0.02em] text-[var(--text-primary)]">
+          <span
+            className="font-bold text-[17px]"
+            style={{
+              fontFamily: "var(--font-heading)",
+              letterSpacing: "-0.02em",
+              color: "var(--text-primary)",
+            }}
+          >
             Toqe
           </span>
         </motion.button>
 
         {/* Links desktop */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-0.5">
           {[
-            { label: "Como funciona", href: "#funcionalidades" },
+            { label: "Operação", href: "#operacao" },
+            { label: "Como funciona", href: "#funciona" },
             { label: "Planos", href: "#planos" },
             { label: "Depoimentos", href: "#depoimentos" },
           ].map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all text-[var(--text-primary)] opacity-70"
+              className="px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all"
+              style={{ color: "var(--text-secondary)" }}
               onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                (e.currentTarget as HTMLElement).style.opacity = "1";
+                (e.currentTarget as HTMLElement).style.color =
+                  "var(--text-primary)";
                 (e.currentTarget as HTMLElement).style.background =
                   "var(--bg-hover)";
               }}
               onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                (e.currentTarget as HTMLElement).style.opacity = "0.7";
+                (e.currentTarget as HTMLElement).style.color =
+                  "var(--text-secondary)";
                 (e.currentTarget as HTMLElement).style.background =
                   "transparent";
               }}
@@ -441,33 +970,43 @@ export default function Landing(): React.JSX.Element {
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push("/login")}
-            className="hidden sm:block text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all text-[var(--text-primary)] opacity-80"
+            className="hidden sm:block text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all"
+            style={{ color: "var(--text-secondary)" }}
             onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-              (e.currentTarget as HTMLElement).style.opacity = "1";
+              (e.currentTarget as HTMLElement).style.color =
+                "var(--text-primary)";
               (e.currentTarget as HTMLElement).style.background =
                 "var(--bg-hover)";
             }}
             onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-              (e.currentTarget as HTMLElement).style.opacity = "0.8";
+              (e.currentTarget as HTMLElement).style.color =
+                "var(--text-secondary)";
               (e.currentTarget as HTMLElement).style.background = "transparent";
             }}
           >
             Entrar
           </button>
           <motion.button
-            whileHover={{ scale: 1.03 }}
+            whileHover={{
+              scale: 1.03,
+              boxShadow: "0 6px 24px rgba(244,180,0,0.3)",
+            }}
             whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/onboarding")}
-            className="flex items-center gap-1.5 px-4 rounded-lg text-[13px] font-semibold h-[34px] bg-[var(--primary)] text-[#0D0D0D]"
+            className="flex items-center gap-1.5 px-4 rounded-lg text-[13px] font-semibold h-[36px]"
             style={{
-              boxShadow: "0 0 14px rgba(244,180,0,0.2)",
+              background: "var(--primary)",
+              color: "#0D0D0D",
+              boxShadow: "0 0 14px rgba(244,180,0,0.18)",
             }}
           >
             Começar grátis
+            <ArrowRight size={12} strokeWidth={2.5} />
           </motion.button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 rounded-lg ml-1 text-[var(--text-primary)]"
+            className="md:hidden p-1.5 rounded-lg ml-1"
+            style={{ color: "var(--text-primary)" }}
           >
             {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -482,171 +1021,235 @@ export default function Landing(): React.JSX.Element {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="fixed top-[60px] left-0 right-0 z-40 py-3 px-4 border-b border-[var(--border-subtle)]"
+            className="fixed top-[64px] left-0 right-0 z-40 py-2 px-6"
             style={{
-              background: "rgba(13,13,13,0.98)",
+              background: "rgba(10,10,10,0.98)",
+              backdropFilter: "blur(20px)",
+              borderBottom: "1px solid var(--border-subtle)",
             }}
           >
-            {["Como funciona", "Planos", "Depoimentos"].map((label, i) => (
-              <a
-                key={label}
-                href={`#${["funcionalidades", "planos", "depoimentos"][i]}`}
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-3 text-[14px] text-[var(--text-primary)]"
-                style={{
-                  borderBottom:
-                    i < 2
-                      ? "1px solid var(--border-subtle)"
-                      : "none" /* CSS var dinâmico — não migrar */,
-                }}
-              >
-                {label}
-              </a>
-            ))}
+            {["Operação", "Como funciona", "Planos", "Depoimentos"].map(
+              (label, i) => (
+                <a
+                  key={label}
+                  href={`#${["operacao", "funciona", "planos", "depoimentos"][i]}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3.5 text-[15px] font-medium"
+                  style={{
+                    color: "var(--text-primary)",
+                    borderBottom:
+                      i < 3 ? "1px solid var(--border-subtle)" : "none",
+                  }}
+                >
+                  {label}
+                </a>
+              ),
+            )}
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 router.push("/login");
               }}
-              className="block w-full text-left py-3 text-[14px] text-[var(--text-primary)] opacity-70"
+              className="block w-full text-left py-3.5 text-[15px]"
+              style={{
+                color: "var(--text-secondary)",
+                borderBottom: "1px solid var(--border-subtle)",
+              }}
             >
               Entrar
             </button>
+            <div className="py-3">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  router.push("/onboarding");
+                }}
+                className="w-full h-11 rounded-xl text-[14px] font-semibold flex items-center justify-center"
+                style={{ background: "var(--primary)", color: "#0D0D0D" }}
+              >
+                Começar grátis
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Hero ── */}
-      <section className="relative flex flex-col items-center justify-center text-center overflow-hidden min-h-screen pt-[100px] pb-[80px] px-6">
+      {/* ── Hero (split) ── */}
+      <section
+        className="relative flex items-center overflow-hidden min-h-screen pt-[140px] pb-[80px] px-6"
+        style={{ background: "var(--bg-base)" }}
+      >
+        {/* Grid bg */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundImage:
               "linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-            opacity: 0.3,
+            backgroundSize: "64px 64px",
+            opacity: 0.35,
             maskImage:
-              "radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%)",
+              "radial-gradient(ellipse 80% 70% at 70% 40%, black 30%, transparent 90%)",
           }}
         />
+        {/* Amber glow */}
         <div
           className="absolute pointer-events-none"
           style={{
-            width: 600,
-            height: 400,
-            left: "50%",
-            top: "45%",
-            transform: "translate(-50%, -50%)",
+            right: "-10%",
+            top: "10%",
+            width: "60%",
+            height: "60%",
             background:
-              "radial-gradient(ellipse, rgba(244,180,0,0.06) 0%, transparent 70%)",
+              "radial-gradient(ellipse, rgba(244,180,0,0.07) 0%, transparent 60%)",
           }}
         />
 
         <motion.div
           style={{ opacity: heroOpacity, y: heroY }}
-          className="relative z-10 max-w-4xl"
+          className="relative z-10 w-full max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-16 items-center"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 bg-[rgba(29,185,84,0.08)] border border-[rgba(29,185,84,0.2)]"
-          >
-            <span
-              className="rounded-full bg-[var(--status-success)]"
+          {/* Left: copy */}
+          <div>
+            {/* Status pill */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full mb-7"
               style={{
-                width: 6,
-                height: 6,
-                animation: "tqe-pulse-green 1.5s ease-in-out infinite",
-              }}
-            />
-            <span className="text-[12px] font-medium text-[var(--status-success)]">
-              Mais de 1.200 barbearias já usam o Toqe
-            </span>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="font-bold mb-6 font-heading tracking-[-0.03em] leading-[1.1] text-[var(--text-primary)]"
-            style={{
-              fontSize: "clamp(2.4rem, 6vw, 4rem)",
-            }}
-          >
-            Sua barbearia,{" "}
-            <span className="text-[var(--primary)]">
-              do jeito que deveria ser.
-            </span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="mx-auto mb-10 max-w-[540px] text-[var(--text-secondary)] leading-[1.75]"
-            style={{
-              fontSize: "clamp(1rem, 2vw, 1.1rem)",
-            }}
-          >
-            Agenda, equipe e faturamento em um lugar só. Seu cliente agenda
-            sozinho, você acompanha tudo em tempo real e não perde mais nada.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.4 }}
-            className="flex items-center justify-center gap-3 flex-wrap"
-          >
-            <motion.button
-              whileHover={{
-                scale: 1.04,
-                boxShadow: "0 0 32px rgba(244,180,0,0.3)",
-              }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => router.push("/onboarding")}
-              className="flex items-center gap-2 px-7 rounded-xl font-bold text-[15px] h-[50px] bg-[var(--primary)] text-[#0D0D0D]"
-              style={{
-                boxShadow: "0 0 20px rgba(244,180,0,0.2)",
+                background: "rgba(29,185,84,0.06)",
+                border: "1px solid rgba(29,185,84,0.18)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--status-success)",
+                letterSpacing: "0.04em",
               }}
             >
-              Começar grátis por 14 dias
-              <ArrowRight size={16} strokeWidth={2.5} />
-            </motion.button>
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="flex items-center gap-2 px-6 rounded-xl font-medium text-[14px] h-[50px] border border-[var(--border-strong)] text-[var(--text-secondary)]"
-            >
-              Ver demonstração
-            </button>
-          </motion.div>
+              <span
+                className="rounded-full"
+                style={{
+                  width: 6,
+                  height: 6,
+                  background: "var(--status-success)",
+                  animation: "tqe-pulse-green 1.5s ease-in-out infinite",
+                }}
+              />
+              1.247 BARBEARIAS · 8.342 ATENDIMENTOS HOJE
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex items-center justify-center gap-6 mt-10 flex-wrap"
-          >
-            {[
-              { v: "Sem cartão", l: "para começar" },
-              { v: "14 dias", l: "gratuitos" },
-              { v: "Cancela", l: "quando quiser" },
-            ].map((item) => (
-              <div key={item.l} className="flex items-center gap-1.5">
-                <CheckCircle
-                  size={13}
-                  className="text-[var(--status-success)]"
-                />
-                <span className="text-[12px] text-[var(--text-secondary)]">
-                  <strong className="text-[var(--text-primary)]">
-                    {item.v}
-                  </strong>{" "}
-                  {item.l}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                delay: 0.2,
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="font-bold mb-6"
+              style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: "clamp(2.6rem, 6.5vw, 4.5rem)",
+                fontWeight: 800,
+                lineHeight: 1.02,
+                letterSpacing: "-0.035em",
+              }}
+            >
+              Sua barbearia,
+              <br />
+              <span style={{ color: "var(--primary)" }}>em tempo real.</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="mb-9 max-w-[480px]"
+              style={{
+                fontSize: 17,
+                color: "var(--text-secondary)",
+                lineHeight: 1.6,
+              }}
+            >
+              Quem está na cadeira, quanto entrou, qual o próximo. O painel que
+              substitui o caderninho, o WhatsApp do gerente e a planilha de fim
+              de semana.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              className="flex items-center gap-3 flex-wrap"
+            >
+              <motion.button
+                whileHover={{
+                  scale: 1.04,
+                  boxShadow: "0 0 32px rgba(244,180,0,0.3)",
+                }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push("/onboarding")}
+                className="flex items-center gap-2 px-7 rounded-xl font-bold text-[14px] h-[50px]"
+                style={{
+                  background: "var(--primary)",
+                  color: "#0D0D0D",
+                  boxShadow: "0 0 20px rgba(244,180,0,0.2)",
+                }}
+              >
+                Começar grátis — 14 dias
+                <ArrowRight size={14} strokeWidth={2.5} />
+              </motion.button>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="flex items-center gap-2 px-6 rounded-xl font-medium text-[14px] h-[50px]"
+                style={{
+                  border: "1px solid var(--border-strong)",
+                  color: "var(--text-primary)",
+                  background: "transparent",
+                  transition: "background 150ms",
+                }}
+                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  (e.currentTarget as HTMLElement).style.background =
+                    "var(--bg-hover)";
+                }}
+                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  (e.currentTarget as HTMLElement).style.background =
+                    "transparent";
+                }}
+              >
+                <Play size={13} strokeWidth={2} />
+                Ver demonstração
+              </button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="flex items-center gap-6 mt-7 flex-wrap"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                color: "var(--text-muted)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              {[
+                "Sem cartão",
+                "Configura em 5 min",
+                "Cancela quando quiser",
+              ].map((item) => (
+                <span key={item} className="flex items-center gap-1.5">
+                  <span style={{ color: "var(--primary)", fontWeight: 700 }}>
+                    +
+                  </span>
+                  {item}
                 </span>
-              </div>
-            ))}
-          </motion.div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Right: live console */}
+          <LiveConsole />
         </motion.div>
 
         <motion.div
@@ -658,62 +1261,60 @@ export default function Landing(): React.JSX.Element {
           }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
-          <ChevronDown size={20} className="text-[var(--text-muted)]" />
+          <ChevronDown size={20} style={{ color: "var(--text-muted)" }} />
         </motion.div>
       </section>
 
-      {/* ── Números ── */}
-      <section className="py-16 px-6 border-y border-[var(--border-subtle)]">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {[
-            { value: 1200, suffix: "+", label: "Barbearias ativas" },
-            { value: 48000, suffix: "+", label: "Agendamentos por mês" },
-            { value: 98, suffix: "%", label: "Clientes satisfeitos" },
-            { value: 4, suffix: ".9★", label: "Avaliação média" },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.4 }}
-            >
-              <div className="font-bold mb-1 font-heading text-[2rem] tracking-[-0.04em] text-[var(--primary)]">
-                <CountUp to={stat.value} suffix={stat.suffix} />
-              </div>
-              <span className="text-[13px] text-[var(--text-secondary)]">
-                {stat.label}
-              </span>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      {/* ── Marquee ── */}
+      <Marquee />
 
-      {/* ── Como funciona ── */}
-      <section id="funcionalidades" className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <span className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full bg-[rgba(77,163,255,0.1)] text-[var(--status-info)]">
-              Como funciona
-            </span>
-            <h2
-              className="font-bold mb-4 font-heading tracking-[-0.03em] text-[var(--text-primary)]"
-              style={{
-                fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-              }}
+      {/* ── Operação / Features ── */}
+      <section
+        id="operacao"
+        className="py-24 px-6"
+        style={{ background: "var(--bg-base)" }}
+      >
+        <div className="max-w-[1200px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-14">
+            <div>
+              <div
+                className="mb-4 flex items-center gap-2.5"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span style={{ color: "var(--primary)" }}>/</span> Operação 01
+              </div>
+              <motion.h2
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="font-bold leading-[1.05]"
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "clamp(1.8rem, 4.5vw, 3rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.035em",
+                }}
+              >
+                A tela que{" "}
+                <span style={{ color: "var(--primary)" }}>não fecha</span> o dia
+                inteiro.
+              </motion.h2>
+            </div>
+            <p
+              className="text-[16px] leading-[1.6] max-w-[460px]"
+              style={{ color: "var(--text-secondary)" }}
             >
-              Tudo o que sua barbearia precisa
-            </h2>
-            <p className="text-[var(--text-secondary)] max-w-[440px] mx-auto text-[15px] leading-[1.7]">
-              Feito do zero para o dia a dia de uma barbearia. Não é um sistema
-              genérico adaptado.
+              Cada cadeira é uma linha. Cada serviço, um cronômetro. Não é um
+              sistema de agendamento — é a sala de controle da sua barbearia.
             </p>
-          </motion.div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {FEATURES.map((f, i) => (
               <FeatureCard key={f.title} {...f} delay={i * 0.07} />
@@ -722,238 +1323,216 @@ export default function Landing(): React.JSX.Element {
         </div>
       </section>
 
-      {/* ── Preview ── */}
-      <section className="py-20 px-6 bg-[var(--bg-secondary)] border-y border-[var(--border-subtle)]">
-        <div className="max-w-5xl mx-auto">
+      {/* ── Como funciona (3 steps) ── */}
+      <section
+        id="funciona"
+        className="py-24 px-6"
+        style={{
+          background: "var(--bg-secondary)",
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
+      >
+        <div className="max-w-[1200px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-14">
+            <div>
+              <div
+                className="mb-4 flex items-center gap-2.5"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span style={{ color: "var(--primary)" }}>/</span> Como funciona
+              </div>
+              <motion.h2
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="font-bold leading-[1.05]"
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "clamp(1.8rem, 4.5vw, 3rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.035em",
+                }}
+              >
+                Configurou hoje.{" "}
+                <span style={{ color: "var(--primary)" }}>Roda amanhã.</span>
+              </motion.h2>
+            </div>
+            <p
+              className="text-[16px] leading-[1.6] max-w-[460px]"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Sem implantação. Sem treinamento de duas semanas. Sem ligar para o
+              suporte para perguntar onde clica.
+            </p>
+          </div>
+
+          {/* 3-column step grid */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-10"
-          >
-            <h2
-              className="font-bold mb-3 font-heading tracking-[-0.03em] text-[var(--text-primary)]"
-              style={{
-                fontSize: "clamp(1.4rem, 3vw, 2rem)",
-              }}
-            >
-              O painel que você sempre quis ter
-            </h2>
-            <p className="text-[var(--text-secondary)] text-[14px]">
-              Veja o que está acontecendo na sua barbearia agora.
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl overflow-hidden border border-[var(--border-default)]"
+            transition={{ duration: 0.5 }}
+            className="rounded-[18px] overflow-hidden"
             style={{
-              boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+              border: "1px solid var(--border-default)",
+              background: "var(--bg-card)",
             }}
           >
-            <div className="flex items-center gap-3 px-5 h-[44px] bg-[var(--bg-secondary)] border-b border-[var(--border-subtle)]">
-              <div
-                className="flex items-center justify-center rounded bg-[var(--primary)]"
-                style={{ width: 24, height: 24 }}
-              >
-                <Scissors size={11} color="#0D0D0D" strokeWidth={2.5} />
-              </div>
-              <div className="flex gap-1.5 ml-auto">
-                {[
-                  "var(--status-error)",
-                  "var(--status-warning)",
-                  "var(--status-success)",
-                ].map((c, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-3">
+              {STEPS.map((s, i) => (
+                <div
+                  key={s.n}
+                  className="p-8"
+                  style={{
+                    borderRight:
+                      i < 2 ? "1px solid var(--border-subtle)" : "none",
+                    borderBottom: "none",
+                  }}
+                >
                   <div
-                    key={i}
-                    className="rounded-full"
+                    className="mb-4 text-[11px] uppercase tracking-widest"
                     style={{
-                      width: 10,
-                      height: 10,
-                      background: c,
-                      opacity: 0.7,
+                      color: "var(--primary)",
+                      fontFamily: "var(--font-mono)",
+                      letterSpacing: "0.18em",
                     }}
-                  />
-                ))}
-              </div>
-            </div>
-            <div className="p-5 bg-[var(--bg-base)]">
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                {[
-                  {
-                    label: "Hoje",
-                    value: "R$890",
-                    color: "var(--status-success)",
-                  },
-                  {
-                    label: "Agendamentos",
-                    value: "14",
-                    color: "var(--status-info)",
-                  },
-                  {
-                    label: "Ticket médio",
-                    value: "R$63",
-                    color: "var(--status-warning)",
-                  },
-                  {
-                    label: "Avaliação",
-                    value: "4.8★",
-                    color: "var(--status-success)",
-                  },
-                ].map((m) => (
-                  <div
-                    key={m.label}
-                    className="rounded-xl px-3 py-2.5 relative overflow-hidden bg-[var(--bg-card)] border border-[var(--border-default)]"
                   >
-                    <div
-                      className="absolute top-0 left-3 right-3 rounded-b"
-                      style={{ height: 2, background: m.color, opacity: 0.5 }}
-                    />
-                    <span
-                      className="block font-bold text-base font-heading tracking-[-0.03em]"
-                      style={{
-                        color: m.color /* CSS var dinâmico — não migrar */,
-                      }}
-                    >
-                      {m.value}
-                    </span>
-                    <span className="text-[10px] text-[var(--text-muted)]">
-                      {m.label}
-                    </span>
+                    {s.n}
                   </div>
-                ))}
-              </div>
-              <div className="rounded-xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-default)]">
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border-subtle)]">
-                  <span
-                    className="rounded-full bg-[var(--status-success)]"
+                  <h4
+                    className="font-bold mb-2.5"
                     style={{
-                      width: 6,
-                      height: 6,
-                      animation: "tqe-pulse-green 1.5s ease-in-out infinite",
+                      fontFamily: "var(--font-heading)",
+                      fontSize: 20,
+                      letterSpacing: "-0.025em",
                     }}
-                  />
-                  <span className="text-[11px] font-semibold text-[var(--text-primary)]">
-                    Ao vivo agora
-                  </span>
+                  >
+                    {s.title}
+                  </h4>
+                  <p
+                    className="text-[14px] leading-[1.6]"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {s.p}
+                  </p>
                 </div>
-                <div className="flex divide-x border-b border-[var(--border-subtle)]">
-                  {[
-                    {
-                      label: "Atendendo",
-                      value: "3",
-                      color: "var(--status-success)",
-                    },
-                    {
-                      label: "Próximo",
-                      value: "10:30",
-                      color: "var(--text-primary)",
-                    },
-                    {
-                      label: "Esperando",
-                      value: "2",
-                      color: "var(--status-warning)",
-                    },
-                    {
-                      label: "Tempo médio",
-                      value: "38min",
-                      color: "var(--status-info)",
-                    },
-                  ].map((s) => (
-                    <div
-                      key={s.label}
-                      className="flex-1 px-3 py-2 border-[var(--border-subtle)]"
-                    >
-                      <span
-                        className="block font-bold text-sm font-heading tracking-[-0.02em]"
-                        style={{
-                          color: s.color /* CSS var dinâmico — não migrar */,
-                        }}
-                      >
-                        {s.value}
-                      </span>
-                      <span className="text-[10px] text-[var(--text-muted)]">
-                        {s.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-2 p-3">
-                  {[
-                    { n: "Carlos", st: "active", c: "João · Corte" },
-                    { n: "Lucas", st: "idle", c: null },
-                    { n: "Felipe", st: "active", c: "Ana · Sobrancelha" },
-                  ].map((b) => (
-                    <div
-                      key={b.n}
-                      className="rounded-lg px-3 py-2 relative overflow-hidden"
-                      style={{
-                        background:
-                          b.st === "active"
-                            ? "rgba(29,185,84,0.04)"
-                            : "var(--bg-secondary)",
-                        border: `1px solid ${b.st === "active" ? "rgba(29,185,84,0.2)" : "var(--border-subtle)"}`,
-                      }}
-                    >
-                      {b.st === "active" && (
-                        <div
-                          className="absolute left-0 top-2 bottom-2 rounded-r bg-[var(--status-success)]"
-                          style={{
-                            width: 2,
-                            animation:
-                              "tqe-sidebar-pulse 2s ease-in-out infinite",
-                          }}
-                        />
-                      )}
-                      <span className="block text-[11px] font-semibold pl-1 text-[var(--text-primary)]">
-                        {b.n}
-                      </span>
-                      <span
-                        className="block text-[10px] pl-1"
-                        style={{
-                          color:
-                            b.st === "active"
-                              ? "var(--text-secondary)"
-                              : "var(--text-muted)",
-                        }}
-                      >
-                        {b.c ?? "Disponível"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ── Planos ── */}
-      <section id="planos" className="py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <span className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full bg-[rgba(244,180,0,0.1)] text-[var(--primary)]">
-              Planos
-            </span>
-            <h2
-              className="font-bold mb-3 font-heading tracking-[-0.03em] text-[var(--text-primary)]"
+      {/* ── Stats strip ── */}
+      <div
+        style={{
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
+          background: "var(--bg-base)",
+        }}
+      >
+        <div className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-4">
+          {[
+            { v: 1247, s: "+", l: "Barbearias ativas no Brasil" },
+            { v: 48, s: "k", l: "Agendamentos por mês" },
+            { v: 98, s: "%", l: "Renovação após teste grátis" },
+            { v: 4.9, s: "★", l: "Média na App Store" },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.l}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08, duration: 0.4 }}
+              className="px-6 py-10"
               style={{
-                fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
+                borderRight: i < 3 ? "1px solid var(--border-subtle)" : "none",
               }}
             >
-              Simples, transparente, sem surpresas
-            </h2>
-            <p className="text-[var(--text-secondary)] text-[14px]">
-              14 dias gratuitos. Sem cartão de crédito para começar.
+              <div
+                className="font-bold leading-none mb-2.5"
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "clamp(2rem, 4vw, 2.6rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.04em",
+                  color: "var(--primary)",
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 2,
+                }}
+              >
+                {stat.v === 4.9 ? "4.9" : <CountUp to={stat.v} />}
+                <span
+                  style={{ fontSize: "0.55em", color: "var(--text-primary)" }}
+                >
+                  {stat.s}
+                </span>
+              </div>
+              <span
+                className="text-[13px]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {stat.l}
+              </span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Planos ── */}
+      <section
+        id="planos"
+        className="py-24 px-6"
+        style={{ background: "var(--bg-base)" }}
+      >
+        <div className="max-w-[1200px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-14">
+            <div>
+              <div
+                className="mb-4 flex items-center gap-2.5"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span style={{ color: "var(--primary)" }}>/</span> Planos
+              </div>
+              <motion.h2
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="font-bold leading-[1.05]"
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "clamp(1.8rem, 4.5vw, 3rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.035em",
+                }}
+              >
+                Preço claro.{" "}
+                <span style={{ color: "var(--primary)" }}>
+                  Sem letra miúda.
+                </span>
+              </motion.h2>
+            </div>
+            <p
+              className="text-[16px] leading-[1.6] max-w-[460px]"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              Tudo o que você precisa em cada plano. Cresce com a sua operação,
+              não com o tamanho da fatura.
             </p>
-          </motion.div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {PLANOS.map((p, i) => (
               <PlanCard key={p.nome} {...p} delay={i * 0.08} />
@@ -965,27 +1544,55 @@ export default function Landing(): React.JSX.Element {
       {/* ── Depoimentos ── */}
       <section
         id="depoimentos"
-        className="py-20 px-6 bg-[var(--bg-secondary)] border-y border-[var(--border-subtle)]"
+        className="py-24 px-6"
+        style={{
+          background: "var(--bg-secondary)",
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
       >
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <span className="inline-block text-[11px] font-bold uppercase tracking-widest mb-4 px-3 py-1 rounded-full bg-[rgba(29,185,84,0.1)] text-[var(--status-success)]">
-              Depoimentos
-            </span>
-            <h2
-              className="font-bold font-heading tracking-[-0.03em] text-[var(--text-primary)]"
-              style={{
-                fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-              }}
+        <div className="max-w-[1200px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-end mb-14">
+            <div>
+              <div
+                className="mb-4 flex items-center gap-2.5"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span style={{ color: "var(--primary)" }}>/</span> Depoimentos
+              </div>
+              <motion.h2
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="font-bold leading-[1.05]"
+                style={{
+                  fontFamily: "var(--font-heading)",
+                  fontSize: "clamp(1.8rem, 4.5vw, 3rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.035em",
+                }}
+              >
+                Donos que{" "}
+                <span style={{ color: "var(--primary)" }}>
+                  não voltam atrás.
+                </span>
+              </motion.h2>
+            </div>
+            <p
+              className="text-[16px] leading-[1.6] max-w-[460px]"
+              style={{ color: "var(--text-secondary)" }}
             >
-              Quem usa não volta atrás
-            </h2>
-          </motion.div>
+              Cada cliente entrevistado faz mais de R$ 30 mil/mês depois de
+              migrar. Não medimos satisfação por avaliação — medimos por NPS de
+              11 meses.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {DEPOIMENTOS.map((d, i) => (
               <Depoimento key={d.nome} {...d} delay={i * 0.08} />
@@ -995,12 +1602,12 @@ export default function Landing(): React.JSX.Element {
       </section>
 
       {/* ── CTA final ── */}
-      <section className="py-24 px-6 text-center relative overflow-hidden">
+      <section className="py-28 px-6 text-center relative overflow-hidden">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(244,180,0,0.05) 0%, transparent 70%)",
+              "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(244,180,0,0.08) 0%, transparent 60%)",
           }}
         />
         <motion.div
@@ -1009,16 +1616,26 @@ export default function Landing(): React.JSX.Element {
           viewport={{ once: true }}
           className="relative max-w-xl mx-auto"
         >
-          <h2
-            className="font-bold mb-4 font-heading tracking-[-0.03em] text-[var(--text-primary)] leading-[1.15]"
+          <motion.h2
+            className="font-bold mb-5 leading-[1.05]"
             style={{
-              fontSize: "clamp(1.8rem, 5vw, 2.8rem)",
+              fontFamily: "var(--font-heading)",
+              fontSize: "clamp(2rem, 5vw, 3.2rem)",
+              fontWeight: 800,
+              letterSpacing: "-0.035em",
             }}
           >
-            Pronto para mudar como sua barbearia funciona?
-          </h2>
-          <p className="mb-8 text-[15px] text-[var(--text-secondary)] leading-[1.7]">
-            Configure em menos de 5 minutos e veja a diferença no primeiro dia.
+            Hoje, na sua barbearia,{" "}
+            <span style={{ color: "var(--primary)" }}>
+              tudo já está acontecendo.
+            </span>
+          </motion.h2>
+          <p
+            className="mb-10 text-[16px] leading-[1.7] max-w-[480px] mx-auto"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Você está só sem ver. 14 dias grátis para mudar isso. Sem cartão.
+            Sem ligação. Sem chato no telefone.
           </p>
           <motion.button
             whileHover={{
@@ -1027,34 +1644,46 @@ export default function Landing(): React.JSX.Element {
             }}
             whileTap={{ scale: 0.97 }}
             onClick={() => router.push("/onboarding")}
-            className="inline-flex items-center gap-2 px-8 rounded-xl font-bold text-[15px] h-[52px] bg-[var(--primary)] text-[#0D0D0D]"
+            className="inline-flex items-center gap-2 px-8 rounded-xl font-bold text-[15px] h-[52px]"
             style={{
+              background: "var(--primary)",
+              color: "#0D0D0D",
               boxShadow: "0 0 24px rgba(244,180,0,0.2)",
             }}
           >
-            Começar grátis agora <ArrowRight size={17} strokeWidth={2.5} />
+            Começar agora <ArrowRight size={17} strokeWidth={2.5} />
           </motion.button>
         </motion.div>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="flex items-center justify-between px-8 py-5 border-t border-[var(--border-subtle)]">
+      <footer
+        className="flex items-center justify-between px-8 py-5 flex-wrap gap-4"
+        style={{ borderTop: "1px solid var(--border-subtle)" }}
+      >
         <button
           onClick={() => router.push("/")}
           className="flex items-center gap-2"
         >
           <div
-            className="flex items-center justify-center rounded bg-[var(--primary)]"
-            style={{ width: 22, height: 22 }}
+            className="flex items-center justify-center rounded"
+            style={{ width: 24, height: 24, background: "var(--primary)" }}
           >
-            <Scissors size={10} color="#0D0D0D" strokeWidth={2.5} />
+            <Scissors size={11} color="#0a0a0a" strokeWidth={2.5} />
           </div>
-          <span className="font-bold text-[14px] font-heading tracking-[-0.02em] text-[var(--text-primary)]">
+          <span
+            className="font-bold text-[14px]"
+            style={{
+              fontFamily: "var(--font-heading)",
+              letterSpacing: "-0.02em",
+              color: "var(--text-primary)",
+            }}
+          >
             Toqe
           </span>
         </button>
-        <span className="text-[12px] text-[var(--text-muted)]">
-          © 2026 Toqe. Todos os direitos reservados.
+        <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+          © 2026 Toqe · feito no Brasil, para barbearias do Brasil.
         </span>
       </footer>
     </div>
