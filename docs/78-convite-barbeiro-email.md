@@ -170,8 +170,66 @@ GET /convite/:token  →  POST /convite/:token/aceitar  →  cria/vincula usuár
     `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`; Postgres via Testcontainers
     (`postgres:16-alpine`). `RESEND_API_KEY` ausente nos testes → e-mail no-op.
 
+## Chunk 2/3 — MOBILE (onboarding do convite, slides 2-4)
+
+**Status:** Implementado e commitado (3 checks do mobile verdes — lint, tipos, unit)
+**Branch:** develop
+**Base:** tela de aceite `apps/mobile/app/convite/[token].tsx` (fluxo de auto-login do
+doc 57) + design system Urban Flow Native (`AmberButton`/`GhostButton`/`FormInput`,
+`useTheme()`).
+
+> **Escopo desta entrega:** redesign editorial da jornada de **aceite** do barbeiro
+> convidado — os slides 02 (landing), 03 (form) e 04 (boas-vindas) e os estados de
+> erro. O contrato HTTP (`GET /convite/:token`, `POST /convite/:token/aceitar`,
+> `DELETE /convite/:token`) e os hooks (`useConvite`/`useAceitarConvite`/
+> `useRejeitarConvite`) **não mudaram** — só a camada de apresentação.
+
+### Estados da tela (`ConviteView`)
+
+| Estado           | testID              | Conteúdo                                                                                                                                                                                               |
+| ---------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `loading`        | —                   | `ActivityIndicator` âmbar centralizado                                                                                                                                                                 |
+| `landing` (s.02) | `convite-landing`   | Ícone Feather `mail`, eyebrow "Convite · barbeiro", headline Sora "{barbeariaNome} quer você na equipe.", e-mail + função no parágrafo, CTA `AmberButton` "Aceitar convite" + `GhostButton` "Rejeitar" |
+| `form` (s.03)    | —                   | "Criar sua conta" / "Confirmar acesso"; campos nome (`user`), e-mail **readonly** (`mail`, vem do convite), senha (`shield`, hint "mín. 8 chars")                                                      |
+| `accepting`      | `convite-accepting` | Spinner + "Vinculando à barbearia…"                                                                                                                                                                    |
+| `welcome` (s.04) | `convite-success`   | Círculo âmbar com Feather `scissors`, "Bem-vindo, {nome}.", CTA "Ver minha agenda" (ícones `calendar` + `arrow-right`)                                                                                 |
+| `expired`        | `convite-expirado`  | Ícone `x-circle` (danger), "Link inválido"                                                                                                                                                             |
+| `already_member` | `convite-ja-membro` | Ícone `check-circle` (success), "Você já é membro"                                                                                                                                                     |
+
+- Usuário novo (`isNew=true`) vê nome + senha; usuário existente (`isNew=false`)
+  vê só o campo de senha. O e-mail é sempre **readonly** (origem: o convite).
+- Ícones Feather: `mail`, `arrow-right`, `arrow-left`, `user`, `shield`,
+  `scissors`, `calendar`, `x-circle`, `check-circle`. Cores 100% via `useTheme()`
+  (sem hex hardcoded; emojis e estilos órfãos removidos).
+
+### Arquivos modificados
+
+| Arquivo                                              | Mudança                                                                                         |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/mobile/app/convite/[token].tsx`                | Redesign editorial dos 5 estados (slides 2-4 + erro/já-membro); testIDs preservados             |
+| `apps/mobile/app/convite/__tests__/[token].test.tsx` | Teste 5 alinhado: nome agora vive na headline "{nome} quer você na equipe." (matcher por regex) |
+
+### Cenários cobertos (Jest + RTL — `[token].test.tsx`, 13 testes)
+
+Exercitam os **hooks reais** (`useConvite`/`useAceitarConvite`/`useRejeitarConvite`)
+
+- `api-client` real; só `global.fetch` e `useAuth.establishSession` são mockados.
+
+* loading enquanto a query está pendente; `convite-expirado` em 500 e 404.
+* `convite-landing` quando válido; headline editorial com o nome da barbearia
+  (regex "{nome} quer você na equipe."); e-mail do convite visível.
+* "Aceitar convite" → form com nome + senha (novo) ou só senha (existente).
+* `btn-aceitar` → `convite-accepting`; sucesso faz `establishSession(acc, ref)`
+  e mostra `convite-success` com "Bem-vindo".
+* "Ver minha agenda" navega para `/(barbeiro)/agenda`.
+* `btn-voltar-convite` chama `router.back()`; "Rejeitar" faz `DELETE /convite/:token` e volta.
+
+### Validação
+
+- `pnpm --filter mobile lint` — OK
+- `pnpm --filter mobile type-check` — OK
+- `pnpm --filter mobile test` — OK (suite `[token].test.tsx`: 13/13)
+
 ## Próximos chunks
 
-- **Chunk 2 (mobile):** tela de convite no app (dono/gerente) consumindo
-  `gerarConviteSchema`/`GerarConviteResponse`; MSW handlers + specs.
 - **Chunk 3 (web):** mesma frente no painel web; MSW handlers + specs.

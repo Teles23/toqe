@@ -135,10 +135,13 @@ describe("ConviteTokenScreen", () => {
     expect(await screen.findByTestId("convite-landing")).toBeTruthy();
   });
 
-  it("5. landing mostra nome da barbearia", async () => {
+  it("5. landing mostra nome da barbearia no título editorial", async () => {
     setupFetch({});
     renderScreen();
-    expect(await screen.findByText("Urban Flow Barber")).toBeTruthy();
+    // O nome agora vive dentro da headline "{nome} quer você na equipe."
+    expect(
+      await screen.findByText(/Urban Flow Barber quer você na equipe\./),
+    ).toBeTruthy();
   });
 
   it("6. landing mostra o e-mail do convite", async () => {
