@@ -1,5 +1,16 @@
 # Regras do projeto toqe
 
+## Leitura obrigatória ao iniciar qualquer tarefa
+
+Antes de qualquer implementação, leia estes dois arquivos para entender o projeto:
+
+1. **[`ARCHITECTURE.md`](./ARCHITECTURE.md)** — stack, módulos NestJS, fluxo de autenticação, multi-tenancy, design system, CI/CD, padrões de código e como rodar localmente
+2. **[`docs/INDEX.md`](./docs/INDEX.md)** — índice categorizado de todos os documentos de domínio (auth, agendamento, barbeiro, cliente, rede, mobile, web, infra, testes)
+
+Se a tarefa envolver um domínio específico (ex: agendamento, auth, mobile), localize e leia o doc correspondente no índice antes de escrever qualquer código.
+
+---
+
 ## Sempre que implementar qualquer coisa
 
 ### 1. Documentar
