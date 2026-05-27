@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -143,7 +144,7 @@ export class ConviteService {
     }
 
     if (convite.usadoEm) {
-      throw new BadRequestException('Este convite já foi utilizado');
+      throw new ConflictException('Este convite já foi utilizado');
     }
 
     const existente = await this.prisma.usuario.findUnique({

@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import {
   BadRequestException,
+  ConflictException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -239,13 +240,13 @@ describe('ConviteService', () => {
       );
     });
 
-    it('lança BadRequestException se convite já foi utilizado', async () => {
+    it('lança ConflictException se convite já foi utilizado', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(
         makeConvite({ usadoEm: new Date() }),
       );
 
       await expect(service.aceitarConvite('tok123', {})).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
     });
   });
