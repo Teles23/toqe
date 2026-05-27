@@ -81,6 +81,7 @@ jobs:
           NODE_ENV: production
           PORT: "3000"
           CORS_ORIGINS: "http://localhost:3001"
+          GOOGLE_CLIENT_ID: ci-e2e-placeholder
 
       - name: Wait for API
         run: |
