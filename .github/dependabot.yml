@@ -1,6 +1,8 @@
 version: 2
 updates:
-  # Root and workspaces (pnpm)
+  # Workspace inteiro via pnpm-lock.yaml na raiz
+  # Entradas por sub-diretório causam erro "workspace:*" porque Dependabot
+  # usa npm internamente e npm não entende o protocolo workspace do pnpm.
   - package-ecosystem: npm
     directory: "/"
     target-branch: develop
@@ -9,61 +11,10 @@ updates:
       day: monday
       time: "06:00"
       timezone: America/Sao_Paulo
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     labels: [dependencies, npm]
     commit-message:
       prefix: "chore(deps)"
-    groups:
-      minor-and-patch:
-        applies-to: version-updates
-        update-types: [minor, patch]
-
-  - package-ecosystem: npm
-    directory: /apps/api
-    target-branch: develop
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: America/Sao_Paulo
-    open-pull-requests-limit: 5
-    labels: [dependencies, npm, api]
-    commit-message:
-      prefix: "chore(api,deps)"
-    groups:
-      minor-and-patch:
-        applies-to: version-updates
-        update-types: [minor, patch]
-
-  - package-ecosystem: npm
-    directory: /apps/web
-    target-branch: develop
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: America/Sao_Paulo
-    open-pull-requests-limit: 5
-    labels: [dependencies, npm, web]
-    commit-message:
-      prefix: "chore(web,deps)"
-    groups:
-      minor-and-patch:
-        applies-to: version-updates
-        update-types: [minor, patch]
-
-  - package-ecosystem: npm
-    directory: /apps/mobile
-    target-branch: develop
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: America/Sao_Paulo
-    open-pull-requests-limit: 3
-    labels: [dependencies, npm, mobile]
-    commit-message:
-      prefix: "chore(mobile,deps)"
     groups:
       minor-and-patch:
         applies-to: version-updates
