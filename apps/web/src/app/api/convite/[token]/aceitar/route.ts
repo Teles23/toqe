@@ -7,8 +7,10 @@ import { NextRequest, NextResponse } from "next/server";
  * É um **auto-login**: a posse do link prova a identidade. O backend retorna
  * access/refresh tokens e o BFF os transforma em cookies — exatamente como o
  * BFF de login:
- *  - access_token  : não-httpOnly (lido pelo api-client via document.cookie), 15 min
+ *  - access_token  : httpOnly (nunca exposto ao JS), 15 min
  *  - refresh_token : httpOnly (nunca exposto ao JS), 30 dias, restrito a /api/auth
+ *
+ * O api-client.ts obtém o access_token via GET /api/auth/token (BFF server-side).
  *
  * Erros propagados do backend: 404 (expirado/inexistente), 409 (já utilizado),
  * 401 (senha incorreta), 400 (senha < 8 chars).
@@ -71,7 +73,7 @@ export async function POST(
   );
 
   res.cookies.set("access_token", access_token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict",
     maxAge: 900,

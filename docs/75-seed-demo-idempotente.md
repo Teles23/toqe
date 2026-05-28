@@ -64,3 +64,21 @@ enum. Teste sob `src/` importa o módulo real + o enum e trava as duas garantias
 - A divergência só foi possível porque há dois seeds (TS via ts-node e JS puro
   para o Docker sem ts-node). O módulo CJS único elimina a divergência sem exigir
   build extra no container.
+
+## Separação produção × desenvolvimento (auditoria de segurança)
+
+O `seed-runner.js` (dados demo: `thiago@email.com/senha123`, barbearia fictícia,
+agendamentos) **não deve rodar em produção** — representa um backdoor. A separação
+foi implementada em duas camadas de defesa:
+
+1. **`prisma/seed-estrutural.js`** — arquivo novo, contém apenas os planos
+   (`free`, `starter`, `pro`, `enterprise`). É o único seed que roda no Dockerfile.
+
+2. **Guarda em `seed-runner.js`** — abort com `process.exit(1)` se
+   `NODE_ENV=production` e `RUN_DEMO_SEED` não for `'true'`.
+
+3. **Dockerfile atualizado** — `node prisma/seed-runner.js` substituído por
+   `node prisma/seed-estrutural.js`.
+
+As credenciais `thiago@email.com / senha123` e `barbeiro1@email.com / senha123`
+existem **exclusivamente** para desenvolvimento local.

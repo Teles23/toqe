@@ -29,7 +29,6 @@ function makeAgendamento(
       codigo: 5,
       nome: "João Silva",
       tipo: "usuario",
-      email: "j@test.com",
     },
     barbeiro: { codigo: 1, nome: "Carlos" },
     itens: [

@@ -19,6 +19,7 @@ export const handlers = [
       user: { codigo: 1, nome: "Test", email: "test@test.com" },
     }),
   ),
+  http.get("/api/auth/token", () => HttpResponse.json({ token: "mock-token" })),
   http.post("/api/auth/logout", () => HttpResponse.json({ ok: true })),
   http.post("/api/auth/forgot-password", () =>
     HttpResponse.json({
