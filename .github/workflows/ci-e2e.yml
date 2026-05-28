@@ -85,15 +85,15 @@ jobs:
 
       - name: Wait for API
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             if curl -sf http://localhost:3000/health; then
               echo "API pronta"
               exit 0
             fi
-            echo "Aguardando API... ($i/30)"
+            echo "Aguardando API... ($i/60)"
             sleep 3
           done
-          echo "✗ API não respondeu após 90s"
+          echo "✗ API não respondeu após 180s"
           exit 1
 
       - name: Build Web
@@ -108,15 +108,15 @@ jobs:
 
       - name: Wait for Web
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             if curl -sf http://localhost:3001; then
               echo "Web pronta"
               exit 0
             fi
-            echo "Aguardando Web... ($i/30)"
+            echo "Aguardando Web... ($i/60)"
             sleep 3
           done
-          echo "✗ Web não respondeu após 90s"
+          echo "✗ Web não respondeu após 180s"
           exit 1
 
       - name: Install Google Chrome
