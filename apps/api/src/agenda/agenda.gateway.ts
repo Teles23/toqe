@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @WebSocketGateway({
   cors: {
@@ -32,20 +33,22 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleConnection(client: Socket) {
     try {
-      const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers?.authorization?.replace('Bearer ', '');
+      const auth = client.handshake.auth as { token?: string };
+      const token: string =
+        auth?.token ||
+        client.handshake.headers?.authorization?.replace('Bearer ', '') ||
+        '';
 
       if (!token) {
         client.disconnect();
         return;
       }
 
-      const payload = this.jwtService.verify(token, {
+      const payload = this.jwtService.verify<JwtPayload>(token, {
         secret: process.env.JWT_SECRET,
       });
 
-      client.data.user = payload;
+      (client.data as { user: JwtPayload }).user = payload;
       this.logger.log(`Cliente conectado: ${client.id}`);
     } catch {
       client.disconnect();
@@ -61,10 +64,11 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() barCodigo: number,
     @ConnectedSocket() client: Socket,
   ) {
+    const user = (client.data as { user?: JwtPayload }).user;
     const membro = await this.prisma.membroBarbearia.findFirst({
       where: {
         barCodigo: Number(barCodigo),
-        usrCodigo: client.data.user?.sub,
+        usrCodigo: user?.sub,
       },
     });
 
