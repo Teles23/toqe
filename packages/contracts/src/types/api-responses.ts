@@ -84,8 +84,6 @@ export interface AgendamentoAPI {
     nome: string;
     /** "usuario" = tem conta/login; "contato" = walk-in sem conta. */
     tipo: "usuario" | "contato";
-    /** null para contatos operacionais sem e-mail. */
-    email: string | null;
   } | null;
   barbeiro: { codigo: number; nome: string } | null;
   itens: { servico: { nome: string }; duracaoMin: number }[];

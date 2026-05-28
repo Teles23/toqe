@@ -579,7 +579,7 @@ export class AgendamentoService {
     }
 
     const atualizado = await this.prisma.agendamento.update({
-      where: { codigo },
+      where: { codigo, barCodigo },
       data: { inicio: novoInicio, fim: novoFim },
       include: INCLUDE_COMPLETO,
     });
@@ -634,7 +634,7 @@ export class AgendamentoService {
     }
 
     return this.prisma.agendamento.update({
-      where: { codigo },
+      where: { codigo, barCodigo },
       data: { barbeiroId: dto.novoBarbeiroId },
       include: INCLUDE_COMPLETO,
     });

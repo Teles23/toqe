@@ -404,8 +404,7 @@ export class AuthService {
   private async generateTokens(codigo: number, nome: string, email: string) {
     const payload = { sub: codigo, jti: randomUUID() };
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken =
-      Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const refreshToken = randomBytes(32).toString('hex');
 
     const salt = await bcrypt.genSalt();
     const hashedRT = await bcrypt.hash(refreshToken, salt);

@@ -27,6 +27,7 @@ async function bootstrap() {
   // ValidationPipe (class-validator) trata DTOs legados ainda não migrados.
   app.useGlobalPipes(
     new ValidationPipe({
+      whitelist: true,
       transform: true,
     }),
   );
@@ -35,8 +36,12 @@ async function bootstrap() {
   app.use(helmet());
 
   // CORS — credentials obrigatório para cookies httpOnly do frontend
+  const origins = process.env.CORS_ORIGINS?.split(',');
+  if (!origins && process.env.NODE_ENV === 'production') {
+    throw new Error('CORS_ORIGINS não definido em produção');
+  }
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') ?? [
+    origin: origins ?? [
       'http://localhost:3002',
       'http://localhost:8082',
       'http://localhost:8081',
@@ -48,32 +53,34 @@ async function bootstrap() {
   // pelos DTOs gerados via `createZodDto`.
   patchNestJsSwagger();
 
-  // Swagger
-  const config = new DocumentBuilder()
-    .setTitle('Toqe API')
-    .setDescription(
-      'API REST do sistema Toqe — SaaS multi-tenant para gestão de barbearias.\n\n' +
-        '## Como usar\n' +
-        '1. Use `POST /api/v1/auth/register` para criar um usuário\n' +
-        '2. Use `POST /api/v1/auth/login` para obter o `access_token`\n' +
-        '3. Clique em **Authorize** e cole o token no campo `Bearer`\n' +
-        '4. Passe o header `x-tenant-id` com o código da barbearia nas rotas de tenant',
-    )
-    .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'JWT',
-    )
-    .addApiKey(
-      { type: 'apiKey', in: 'header', name: 'x-tenant-id' },
-      'x-tenant-id',
-    )
-    .build();
+  // Swagger — apenas em ambientes não-produção
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Toqe API')
+      .setDescription(
+        'API REST do sistema Toqe — SaaS multi-tenant para gestão de barbearias.\n\n' +
+          '## Como usar\n' +
+          '1. Use `POST /api/v1/auth/register` para criar um usuário\n' +
+          '2. Use `POST /api/v1/auth/login` para obter o `access_token`\n' +
+          '3. Clique em **Authorize** e cole o token no campo `Bearer`\n' +
+          '4. Passe o header `x-tenant-id` com o código da barbearia nas rotas de tenant',
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+        'JWT',
+      )
+      .addApiKey(
+        { type: 'apiKey', in: 'header', name: 'x-tenant-id' },
+        'x-tenant-id',
+      )
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: { persistAuthorization: true },
-  });
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: { persistAuthorization: true },
+    });
+  }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

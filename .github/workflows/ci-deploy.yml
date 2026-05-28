@@ -106,7 +106,7 @@ jobs:
           envs: GOOGLE_CLIENT_ID
           script_stop: true
           script: |
-            set -ex
+            set -e
             cd /opt/projetos/toqe
             touch .env
             grep -v '^GOOGLE_CLIENT_ID=' .env > .env.tmp || true

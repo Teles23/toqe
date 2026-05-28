@@ -14,7 +14,7 @@
  */
 
 type UsuarioRel =
-  | { codigo: number; nome: string; email: string; telefone: string | null }
+  | { codigo: number; nome: string; email?: string; telefone: string | null }
   | null
   | undefined;
 
@@ -35,7 +35,6 @@ function mapCliente(usuario: UsuarioRel, contato: ContatoRel) {
       nome: usuario.nome,
       telefone: usuario.telefone ?? null,
       tipo: 'usuario' as const,
-      email: usuario.email,
     };
   }
   if (contato) {
@@ -44,7 +43,6 @@ function mapCliente(usuario: UsuarioRel, contato: ContatoRel) {
       nome: contato.nome,
       telefone: contato.telefone ?? null,
       tipo: 'contato' as const,
-      email: null,
     };
   }
   return null;

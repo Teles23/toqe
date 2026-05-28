@@ -14,6 +14,13 @@ export class FidelidadeService {
     clienteCodigo: number,
     barCodigo: number,
   ): Promise<{ pontos: number; historico: PontoFidelidade[] }> {
+    const membroCliente = await this.prisma.membroBarbearia.findFirst({
+      where: { barCodigo, usrCodigo: clienteCodigo },
+    });
+    if (!membroCliente) {
+      throw new NotFoundException('Cliente não encontrado nesta barbearia');
+    }
+
     const cliente = await this.prisma.usuario.findFirst({
       where: { codigo: clienteCodigo },
       select: { codigo: true, pontosAcumulados: true },
@@ -113,6 +120,13 @@ export class FidelidadeService {
   ): Promise<{ desconto: number }> {
     if (pontos < 10) {
       throw new BadRequestException('Mínimo de 10 pontos para resgate');
+    }
+
+    const membroCliente = await this.prisma.membroBarbearia.findFirst({
+      where: { barCodigo, usrCodigo: clienteCodigo },
+    });
+    if (!membroCliente) {
+      throw new NotFoundException('Cliente não encontrado nesta barbearia');
     }
 
     const cliente = await this.prisma.usuario.findFirst({
