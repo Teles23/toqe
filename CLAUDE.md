@@ -11,6 +11,21 @@ Se a tarefa envolver um domínio específico (ex: agendamento, auth, mobile), lo
 
 ---
 
+## Proibido responder com achismos — leia antes de falar
+
+**Nunca afirmar, configurar ou recomendar algo sem antes ler o arquivo-fonte relevante.**
+
+Exemplos obrigatórios:
+
+- Antes de referenciar uma rota HTTP → ler o controller/main.ts para confirmar o path real
+- Antes de dizer que uma env var é necessária → ler o código que a consome
+- Antes de configurar um check name no ruleset → ler o workflow YAML para confirmar o job key
+- Antes de qualquer afirmação sobre comportamento do sistema → ler o código, não inferir
+
+Se a informação não foi lida nesta sessão, **leia agora** antes de responder. Achismo causa retrabalho e erros em produção.
+
+---
+
 ## Sempre que implementar qualquer coisa
 
 ### 1. Documentar
