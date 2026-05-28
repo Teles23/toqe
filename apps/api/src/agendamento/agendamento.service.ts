@@ -14,7 +14,8 @@ import { ListAgendamentoDto } from './dto/list-agendamento.dto';
 import { PatchStatusAgendamentoDto } from './dto/patch-status-agendamento.dto';
 import { TransferirAgendamentoDto } from './dto/transferir-agendamento.dto';
 import type { ReagendarAgendamentoInput } from '@toqe/contracts';
-import { addMinutes, startOfDay, endOfDay, subDays } from 'date-fns';
+import { addMinutes, subDays } from 'date-fns';
+import { rangeDoDia } from '../common/utils/date.utils';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AgendamentoConfirmadoJob } from '../notificacao/notificacao.types';
 import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
@@ -331,8 +332,8 @@ export class AgendamentoService {
     const where: Prisma.AgendamentoWhereInput = { barCodigo };
 
     if (filtros.data) {
-      const dia = new Date(filtros.data);
-      where.inicio = { gte: startOfDay(dia), lte: endOfDay(dia) };
+      const { inicio, fim } = rangeDoDia(filtros.data);
+      where.inicio = { gte: inicio, lte: fim };
     } else if (!filtros.clienteId) {
       // Sem data e sem cliente específico: aplica janela de 90 dias para evitar
       // full scan crescente conforme a barbearia acumula histórico.

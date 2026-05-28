@@ -5,10 +5,10 @@ type AuthFixtures = { authenticatedPage: Page };
 export const test = base.extend<AuthFixtures>({
   authenticatedPage: async ({ page }, playwrightUse) => {
     await page.goto("/login");
-    await page.getByLabel(/email/i).fill("admin@toqe.com");
-    await page.getByLabel(/senha/i).fill("Senha@123");
+    await page.locator("#login-email").fill("thiago@email.com");
+    await page.locator("#login-senha").fill("senha123");
     await page.getByRole("button", { name: /entrar/i }).click();
-    await page.waitForURL("**/dashboard");
+    await page.waitForURL("**/dashboard", { timeout: 30000 });
     await playwrightUse(page);
   },
 });

@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import {
   BadRequestException,
+  ConflictException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -8,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { ConviteService } from './convite.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
+import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 
 jest.mock('bcrypt', () => ({
@@ -30,6 +32,10 @@ const mockAuthService = {
   }),
 };
 
+const mockNotificacaoProducer = {
+  enviarConvite: jest.fn().mockResolvedValue(undefined),
+};
+
 const makeConvite = (overrides: Record<string, unknown> = {}) => ({
   token: 'tok123',
   barCodigo: 1,
@@ -50,6 +56,7 @@ describe('ConviteService', () => {
         ConviteService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuthService, useValue: mockAuthService },
+        { provide: NotificacaoProducer, useValue: mockNotificacaoProducer },
       ],
     }).compile();
     service = module.get(ConviteService);
@@ -233,13 +240,13 @@ describe('ConviteService', () => {
       );
     });
 
-    it('lança BadRequestException se convite já foi utilizado', async () => {
+    it('lança ConflictException se convite já foi utilizado', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(
         makeConvite({ usadoEm: new Date() }),
       );
 
       await expect(service.aceitarConvite('tok123', {})).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
     });
   });
@@ -264,6 +271,171 @@ describe('ConviteService', () => {
       const result = await service.rejeitarConvite('inexistente');
 
       expect(result).toEqual({ sucesso: true });
+    });
+  });
+
+  // ─── gerarConvite ──────────────────────────────────────────────────────────
+
+  describe('gerarConvite', () => {
+    const ORIGINAL_FRONTEND_URL = process.env.FRONTEND_URL;
+
+    afterEach(() => {
+      if (ORIGINAL_FRONTEND_URL === undefined) {
+        delete process.env.FRONTEND_URL;
+      } else {
+        process.env.FRONTEND_URL = ORIGINAL_FRONTEND_URL;
+      }
+    });
+
+    it('cria convite novo, dispara o producer e retorna metadata (reaproveitado=false)', async () => {
+      process.env.FRONTEND_URL = 'https://app.toqe.com.br';
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
+      mockPrisma.conviteBarbearia.findFirst.mockResolvedValue(null);
+      mockPrisma.conviteBarbearia.create.mockImplementation(
+        ({ data }: { data: Record<string, unknown> }) =>
+          Promise.resolve({
+            codigo: 7,
+            email: data.email,
+            perfil: data.perfil,
+            expiresAt: data.expiresAt,
+            token: data.token,
+          }),
+      );
+
+      const result = await service.gerarConvite(1, {
+        email: 'novo@x.com',
+        perfil: 'barbeiro',
+      });
+
+      expect(result.codigo).toBe(7);
+      expect(result.email).toBe('novo@x.com');
+      expect(result.perfil).toBe('barbeiro');
+      expect(result.reaproveitado).toBe(false);
+      expect(typeof result.expiresAt).toBe('string');
+      // expira ~7 dias no futuro
+      expect(new Date(result.expiresAt).getTime()).toBeGreaterThan(Date.now());
+
+      expect(mockPrisma.conviteBarbearia.create).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.conviteBarbearia.update).not.toHaveBeenCalled();
+
+      // não vaza o token no retorno
+      expect(result).not.toHaveProperty('token');
+
+      // dispara o job com o link no formato esperado
+      expect(mockNotificacaoProducer.enviarConvite).toHaveBeenCalledTimes(1);
+      const enviarConviteCalls = mockNotificacaoProducer.enviarConvite.mock
+        .calls as Array<
+        [
+          {
+            email: string;
+            conviteLink: string;
+            barbeariaNome: string;
+            perfil: string;
+          },
+        ]
+      >;
+      const jobArg = enviarConviteCalls[0][0];
+      expect(jobArg.email).toBe('novo@x.com');
+      expect(jobArg.barbeariaNome).toBe('Urban Flow');
+      expect(jobArg.perfil).toBe('barbeiro');
+      expect(jobArg.conviteLink).toMatch(
+        /^https:\/\/app\.toqe\.com\.br\/convite\?token=[0-9a-f]+$/,
+      );
+    });
+
+    it('normaliza o e-mail (lowercase/trim) antes de persistir', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
+      mockPrisma.conviteBarbearia.findFirst.mockResolvedValue(null);
+      mockPrisma.conviteBarbearia.create.mockImplementation(
+        ({ data }: { data: Record<string, unknown> }) =>
+          Promise.resolve({
+            codigo: 1,
+            email: data.email,
+            perfil: data.perfil,
+            expiresAt: data.expiresAt,
+            token: data.token,
+          }),
+      );
+
+      await service.gerarConvite(1, {
+        email: '  MaIuSc@X.CoM  ',
+        perfil: 'barbeiro',
+      });
+
+      const createCalls = mockPrisma.conviteBarbearia.create.mock
+        .calls as Array<[{ data: { email: string } }]>;
+      expect(createCalls[0][0].data.email).toBe('maiusc@x.com');
+      // a busca de convite ativo também usa o e-mail normalizado
+      const findCalls = mockPrisma.conviteBarbearia.findFirst.mock
+        .calls as Array<[{ where: { email: string } }]>;
+      expect(findCalls[0][0].where.email).toBe('maiusc@x.com');
+    });
+
+    it('renova convite ativo existente em vez de duplicar (reaproveitado=true)', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
+      mockPrisma.conviteBarbearia.findFirst.mockResolvedValue({ codigo: 42 });
+      mockPrisma.conviteBarbearia.update.mockImplementation(
+        ({
+          data,
+          where,
+        }: {
+          data: Record<string, unknown>;
+          where: { codigo: number };
+        }) =>
+          Promise.resolve({
+            codigo: where.codigo,
+            email: 'existente@x.com',
+            perfil: data.perfil,
+            expiresAt: data.expiresAt,
+            token: data.token,
+          }),
+      );
+
+      const result = await service.gerarConvite(1, {
+        email: 'existente@x.com',
+        perfil: 'gerente',
+      });
+
+      expect(result.reaproveitado).toBe(true);
+      expect(result.codigo).toBe(42);
+      expect(result.perfil).toBe('gerente');
+      expect(mockPrisma.conviteBarbearia.update).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.conviteBarbearia.create).not.toHaveBeenCalled();
+      expect(mockNotificacaoProducer.enviarConvite).toHaveBeenCalledTimes(1);
+    });
+
+    it('usa fallback de URL quando FRONTEND_URL ausente', async () => {
+      delete process.env.FRONTEND_URL;
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
+      mockPrisma.conviteBarbearia.findFirst.mockResolvedValue(null);
+      mockPrisma.conviteBarbearia.create.mockImplementation(
+        ({ data }: { data: Record<string, unknown> }) =>
+          Promise.resolve({
+            codigo: 1,
+            email: data.email,
+            perfil: data.perfil,
+            expiresAt: data.expiresAt,
+            token: data.token,
+          }),
+      );
+
+      await service.gerarConvite(1, { email: 'a@x.com', perfil: 'barbeiro' });
+
+      const fallbackCalls = mockNotificacaoProducer.enviarConvite.mock
+        .calls as Array<[{ conviteLink: string }]>;
+      expect(fallbackCalls[0][0].conviteLink).toMatch(
+        /^http:\/\/localhost:4001\/convite\?token=/,
+      );
+    });
+
+    it('lança NotFoundException se a barbearia não existe', async () => {
+      mockPrisma.barbearia.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.gerarConvite(999, { email: 'a@x.com', perfil: 'barbeiro' }),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockNotificacaoProducer.enviarConvite).not.toHaveBeenCalled();
+      expect(mockPrisma.conviteBarbearia.create).not.toHaveBeenCalled();
     });
   });
 });

@@ -3,6 +3,7 @@ updates:
   # Root and workspaces (pnpm)
   - package-ecosystem: npm
     directory: "/"
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday
@@ -19,16 +20,16 @@ updates:
 
   - package-ecosystem: npm
     directory: /apps/api
+    target-branch: develop
     schedule:
-      {
-        interval: weekly,
-        day: monday,
-        time: "06:00",
-        timezone: America/Sao_Paulo,
-      }
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
     open-pull-requests-limit: 5
     labels: [dependencies, npm, api]
-    commit-message: { prefix: "chore(api,deps)" }
+    commit-message:
+      prefix: "chore(api,deps)"
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -36,16 +37,16 @@ updates:
 
   - package-ecosystem: npm
     directory: /apps/web
+    target-branch: develop
     schedule:
-      {
-        interval: weekly,
-        day: monday,
-        time: "06:00",
-        timezone: America/Sao_Paulo,
-      }
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
     open-pull-requests-limit: 5
     labels: [dependencies, npm, web]
-    commit-message: { prefix: "chore(web,deps)" }
+    commit-message:
+      prefix: "chore(web,deps)"
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -53,16 +54,16 @@ updates:
 
   - package-ecosystem: npm
     directory: /apps/mobile
+    target-branch: develop
     schedule:
-      {
-        interval: weekly,
-        day: monday,
-        time: "06:00",
-        timezone: America/Sao_Paulo,
-      }
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
     open-pull-requests-limit: 3
     labels: [dependencies, npm, mobile]
-    commit-message: { prefix: "chore(mobile,deps)" }
+    commit-message:
+      prefix: "chore(mobile,deps)"
     groups:
       minor-and-patch:
         applies-to: version-updates
@@ -71,43 +72,43 @@ updates:
   # Docker base images
   - package-ecosystem: docker
     directory: /apps/api
+    target-branch: develop
     schedule:
-      {
-        interval: weekly,
-        day: monday,
-        time: "06:00",
-        timezone: America/Sao_Paulo,
-      }
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
     open-pull-requests-limit: 3
     labels: [dependencies, docker, api]
-    commit-message: { prefix: "chore(api,docker)" }
+    commit-message:
+      prefix: "chore(api,docker)"
 
   - package-ecosystem: docker
     directory: /apps/web
+    target-branch: develop
     schedule:
-      {
-        interval: weekly,
-        day: monday,
-        time: "06:00",
-        timezone: America/Sao_Paulo,
-      }
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
     open-pull-requests-limit: 3
     labels: [dependencies, docker, web]
-    commit-message: { prefix: "chore(web,docker)" }
+    commit-message:
+      prefix: "chore(web,docker)"
 
   # GitHub Actions
   - package-ecosystem: github-actions
     directory: /
+    target-branch: develop
     schedule:
-      {
-        interval: weekly,
-        day: monday,
-        time: "06:00",
-        timezone: America/Sao_Paulo,
-      }
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
     open-pull-requests-limit: 3
     labels: [dependencies, github-actions]
-    commit-message: { prefix: "chore(ci,deps)" }
+    commit-message:
+      prefix: "chore(ci,deps)"
     groups:
       actions:
         applies-to: version-updates

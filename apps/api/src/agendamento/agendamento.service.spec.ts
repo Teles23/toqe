@@ -20,6 +20,7 @@ import {
   PatchStatusAgendamentoDto,
   StatusAgendamento,
 } from './dto/patch-status-agendamento.dto';
+import { rangeDoDia } from '../common/utils/date.utils';
 
 const mockPrisma = createPrismaMock();
 
@@ -368,6 +369,20 @@ describe('AgendamentoService', () => {
         }),
       );
       expect(result).toHaveLength(1);
+    });
+
+    it('filtra pelo dia no fuso da barbearia com data date-only (regressão off-by-one)', async () => {
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+      await service.findAll(barCodigo, { data: '2026-05-26' });
+      const { inicio, fim } = rangeDoDia('2026-05-26');
+      const [call] = mockPrisma.agendamento.findMany.mock.calls[0] as [
+        { where: { inicio: { gte: Date; lte: Date } } },
+      ];
+      expect(call.where.inicio.gte.toISOString()).toBe(inicio.toISOString());
+      expect(call.where.inicio.lte.toISOString()).toBe(fim.toISOString());
+      // garante que um agendamento do dia anterior (25/05 15:57 BRT) ficaria de fora
+      const ontem = new Date('2026-05-25T15:57:16-03:00');
+      expect(ontem >= call.where.inicio.gte).toBe(false);
     });
 
     it('filtra por clienteId quando fornecido e não aplica janela de data', async () => {

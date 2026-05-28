@@ -21,8 +21,6 @@ import { useTheme } from "@/src/shared/theme";
 import { AmberButton, SkeletonBox, TenantSwitcherSheet } from "@/src/shared/ui";
 
 // ─── Design tokens (Quick Book Slots v2) ──────────────────────────────────────
-const ACCENT = "#F4B400";
-const ACCENT_ON = "#0d0d0d";
 const CARD = "#171717";
 const CARD2 = "#1f1f1f";
 const BORDER = "#262626";
@@ -42,6 +40,7 @@ type QuickView =
   | "error";
 
 function QuickBookCard() {
+  const { palette } = useTheme();
   const { data, isLoading, isError } = useProximosSlots();
   const [view, setView] = useState<QuickView | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -79,7 +78,7 @@ function QuickBookCard() {
         style={[styles.qbCard, styles.qbCardPlain]}
       >
         <View style={styles.qbLoadingLabel}>
-          <ActivityIndicator size="small" color={ACCENT} />
+          <ActivityIndicator size="small" color={palette.primary} />
           <Text style={styles.monoMuted}>GET /agenda/proximos…</Text>
         </View>
         {["Hoje", "Amanhã", "Sex"].map((day) => (
@@ -114,12 +113,14 @@ function QuickBookCard() {
           </Text>
           <Pressable
             onPress={() => setView(null)}
-            style={styles.retryBtn}
+            style={[styles.retryBtn, { backgroundColor: palette.primary }]}
             accessibilityRole="button"
             accessibilityLabel="Tentar de novo"
           >
-            <Feather name="refresh-cw" size={16} color={ACCENT_ON} />
-            <Text style={styles.retryBtnText}>Tentar de novo</Text>
+            <Feather name="refresh-cw" size={16} color={palette.primaryOn} />
+            <Text style={[styles.retryBtnText, { color: palette.primaryOn }]}>
+              Tentar de novo
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -153,12 +154,22 @@ function QuickBookCard() {
               <Text style={styles.emptyBtnNeutralText}>Outro barbeiro</Text>
             </Pressable>
             <Pressable
-              style={styles.emptyBtnAccent}
+              style={[
+                styles.emptyBtnAccent,
+                {
+                  backgroundColor: palette.primary + "1a",
+                  borderColor: palette.primary + "40",
+                },
+              ]}
               accessibilityRole="button"
               accessibilityLabel="Avisar vaga"
             >
-              <Feather name="bell" size={14} color={ACCENT} />
-              <Text style={styles.emptyBtnAccentText}>Avisar vaga</Text>
+              <Feather name="bell" size={14} color={palette.primary} />
+              <Text
+                style={[styles.emptyBtnAccentText, { color: palette.primary }]}
+              >
+                Avisar vaga
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -194,11 +205,28 @@ function QuickBookCard() {
 
   // ── IDLE / LOADED / CONFIRMING (card com borda-esquerda accent + header) ──
   return (
-    <View testID="quick-book-card" style={styles.qbCard}>
+    <View
+      testID="quick-book-card"
+      style={[
+        styles.qbCard,
+        {
+          borderColor: palette.primary + "30",
+          borderLeftColor: palette.primary,
+        },
+      ]}
+    >
       {/* Header */}
       <View style={styles.qbHeader}>
-        <View style={styles.qbAvatar}>
-          <Text style={styles.qbAvatarLetter}>
+        <View
+          style={[
+            styles.qbAvatar,
+            {
+              backgroundColor: palette.primary + "1a",
+              borderColor: palette.primary + "30",
+            },
+          ]}
+        >
+          <Text style={[styles.qbAvatarLetter, { color: palette.primary }]}>
             {data?.barbeiroInicial ?? "?"}
           </Text>
         </View>
@@ -213,9 +241,16 @@ function QuickBookCard() {
             </Text>
           </View>
         </View>
-        <View style={styles.oneToqueBadge}>
-          <Feather name="zap" size={10} color={ACCENT} />
-          <Text style={styles.oneToqueText}>1 TOQUE</Text>
+        <View
+          style={[
+            styles.oneToqueBadge,
+            { backgroundColor: palette.primary + "14" },
+          ]}
+        >
+          <Feather name="zap" size={10} color={palette.primary} />
+          <Text style={[styles.oneToqueText, { color: palette.primary }]}>
+            1 TOQUE
+          </Text>
         </View>
       </View>
 
@@ -224,12 +259,20 @@ function QuickBookCard() {
         <Pressable
           testID="quick-book-btn-ver-horarios"
           onPress={handleVerHorarios}
-          style={styles.verHorariosBtn}
+          style={[
+            styles.verHorariosBtn,
+            {
+              backgroundColor: palette.primary + "14",
+              borderColor: palette.primary + "38",
+            },
+          ]}
           accessibilityRole="button"
           accessibilityLabel="Ver horários disponíveis"
         >
-          <Text style={styles.verHorariosText}>Ver horários disponíveis</Text>
-          <Feather name="arrow-right" size={16} color={ACCENT} />
+          <Text style={[styles.verHorariosText, { color: palette.primary }]}>
+            Ver horários disponíveis
+          </Text>
+          <Feather name="arrow-right" size={16} color={palette.primary} />
         </Pressable>
       )}
 
@@ -266,7 +309,12 @@ function QuickBookCard() {
                       onPress={() => setSelectedSlot(slot.inicio)}
                       style={[
                         styles.slotBtn,
-                        isSel ? styles.slotBtnSel : styles.slotBtnIdle,
+                        isSel
+                          ? {
+                              backgroundColor: palette.primary + "1c",
+                              borderColor: palette.primary,
+                            }
+                          : styles.slotBtnIdle,
                       ]}
                       accessibilityRole="button"
                       accessibilityLabel={`Horário ${slot.hora}`}
@@ -274,7 +322,7 @@ function QuickBookCard() {
                       <Text
                         style={[
                           styles.slotText,
-                          { color: isSel ? ACCENT : "#bbbbbb" },
+                          { color: isSel ? palette.primary : "#bbbbbb" },
                         ]}
                       >
                         {slot.hora}
@@ -291,16 +339,24 @@ function QuickBookCard() {
             testID="quick-book-btn-confirmar"
             onPress={handleConfirm}
             disabled={resolvedView === "confirming"}
-            style={styles.confirmBtn}
+            style={[styles.confirmBtn, { backgroundColor: palette.primary }]}
             accessibilityRole="button"
             accessibilityLabel="Confirmar agendamento"
           >
             {resolvedView === "confirming" ? (
-              <ActivityIndicator size="small" color={ACCENT_ON} />
+              <ActivityIndicator size="small" color={palette.primaryOn} />
             ) : (
               <>
-                <Text style={styles.confirmBtnText}>Confirmar reserva</Text>
-                <Feather name="arrow-right" size={16} color={ACCENT_ON} />
+                <Text
+                  style={[styles.confirmBtnText, { color: palette.primaryOn }]}
+                >
+                  Confirmar reserva
+                </Text>
+                <Feather
+                  name="arrow-right"
+                  size={16}
+                  color={palette.primaryOn}
+                />
               </>
             )}
           </Pressable>
@@ -312,6 +368,7 @@ function QuickBookCard() {
 
 // ─── Next appointment — strip style ───────────────────────────────────────────
 function NextAppointmentStrip() {
+  const { palette } = useTheme();
   const { data: proximo } = useProximoAgendamento();
   if (!proximo) return null;
 
@@ -332,10 +389,12 @@ function NextAppointmentStrip() {
       <View style={styles.stripTopRow}>
         <Text style={styles.stripLabel}>PRÓXIMO</Text>
         <View style={styles.stripLine} />
-        <Text style={styles.stripDays}>em {daysAway}d</Text>
+        <Text style={[styles.stripDays, { color: palette.primary }]}>
+          em {daysAway}d
+        </Text>
       </View>
       <View style={styles.stripBottomRow}>
-        <View style={styles.stripDot} />
+        <View style={[styles.stripDot, { backgroundColor: palette.primary }]} />
         <Text style={styles.stripDate}>
           {date} · {time}
         </Text>
@@ -353,6 +412,7 @@ function NextAppointmentStrip() {
 
 // ─── Stats grid ───────────────────────────────────────────────────────────────
 function StatsGrid({ visitas }: { visitas: number }) {
+  const { palette } = useTheme();
   return (
     <View style={styles.statsRow}>
       <View testID="stats-visitas" style={styles.statCard}>
@@ -363,8 +423,13 @@ function StatsGrid({ visitas }: { visitas: number }) {
         <Text style={styles.statLabel}>Total visitas</Text>
       </View>
       <View testID="stats-ticket" style={styles.statCard}>
-        <View style={[styles.statIconBox, { backgroundColor: ACCENT + "1a" }]}>
-          <Feather name="credit-card" size={16} color={ACCENT} />
+        <View
+          style={[
+            styles.statIconBox,
+            { backgroundColor: palette.primary + "1a" },
+          ]}
+        >
+          <Feather name="credit-card" size={16} color={palette.primary} />
         </View>
         <Text style={styles.statValue}>—</Text>
         <Text style={styles.statLabel}>Ticket médio</Text>
@@ -433,7 +498,17 @@ export default function ClienteHomeScreen() {
         {semBarbearias ? (
           /* EmptyClienteSemBarbearia — pixel-accurate */
           <View testID="home-sem-barbearia" style={styles.emptyBarbearia}>
-            <Text style={styles.emptyIcon}>✂</Text>
+            <View
+              style={[
+                styles.emptyIconBox,
+                {
+                  backgroundColor: palette.primary + "14",
+                  borderColor: palette.primary + "38",
+                },
+              ]}
+            >
+              <Feather name="scissors" size={32} color={palette.primary} />
+            </View>
             <Text style={styles.emptyLine1}>Bem-vindo ao</Text>
             <Text style={styles.emptyBrand}>Toqe.</Text>
             <Text style={styles.emptySubtitle}>
@@ -473,9 +548,12 @@ export default function ClienteHomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Buscar barbearias"
           onPress={() => router.push("/(cliente)/buscar")}
-          style={[styles.fab, { borderRadius: radius.full }]}
+          style={[
+            styles.fab,
+            { borderRadius: radius.full, backgroundColor: palette.primary },
+          ]}
         >
-          <Feather name="search" size={20} color={ACCENT_ON} />
+          <Feather name="search" size={20} color={palette.primaryOn} />
         </Pressable>
       )}
 
@@ -555,7 +633,6 @@ const styles = StyleSheet.create({
   },
   stripDays: {
     fontSize: 10,
-    color: ACCENT,
     fontWeight: "700",
     fontFamily: "JetBrainsMono_400Regular",
   },
@@ -568,7 +645,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: ACCENT,
   },
   stripDate: {
     fontSize: 13,
@@ -584,9 +660,7 @@ const styles = StyleSheet.create({
   qbCard: {
     backgroundColor: CARD,
     borderWidth: 1,
-    borderColor: ACCENT + "30",
     borderLeftWidth: 3,
-    borderLeftColor: ACCENT,
     borderRadius: 20,
     padding: 18,
   },
@@ -604,16 +678,13 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: ACCENT + "1a",
     borderWidth: 1,
-    borderColor: ACCENT + "30",
     alignItems: "center",
     justifyContent: "center",
   },
   qbAvatarLetter: {
     fontFamily: "Sora_700Bold",
     fontSize: 17,
-    color: ACCENT,
   },
   qbTitle: {
     fontSize: 15,
@@ -638,14 +709,12 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: ACCENT + "14",
     borderRadius: 6,
   },
   oneToqueText: {
     fontSize: 9,
     fontWeight: "800",
     letterSpacing: 0.8,
-    color: ACCENT,
     fontFamily: "Inter_600SemiBold",
   },
   // ── idle CTA
@@ -657,15 +726,12 @@ const styles = StyleSheet.create({
     marginTop: 14,
     minHeight: 48,
     paddingHorizontal: 14,
-    backgroundColor: ACCENT + "14",
     borderWidth: 1,
-    borderColor: ACCENT + "38",
     borderRadius: 14,
   },
   verHorariosText: {
     fontSize: 13,
     fontWeight: "700",
-    color: ACCENT,
     fontFamily: "Inter_600SemiBold",
   },
   // ── slots
@@ -715,10 +781,7 @@ const styles = StyleSheet.create({
     backgroundColor: CARD2,
     borderColor: BORDER2,
   },
-  slotBtnSel: {
-    backgroundColor: ACCENT + "1c",
-    borderColor: ACCENT,
-  },
+  slotBtnSel: {},
   slotText: {
     fontFamily: "JetBrainsMono_500Medium",
     fontSize: 13,
@@ -731,13 +794,11 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 48,
     marginTop: 10,
-    backgroundColor: ACCENT,
     borderRadius: 13,
   },
   confirmBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: ACCENT_ON,
     fontFamily: "Inter_600SemiBold",
   },
   // ── plain-state shared
@@ -796,13 +857,11 @@ const styles = StyleSheet.create({
     gap: 8,
     minHeight: 44,
     paddingHorizontal: 18,
-    backgroundColor: ACCENT,
     borderRadius: 12,
   },
   retryBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: ACCENT_ON,
     fontFamily: "Inter_600SemiBold",
   },
   emptyBtnRow: {
@@ -833,15 +892,12 @@ const styles = StyleSheet.create({
     gap: 6,
     minHeight: 44,
     paddingHorizontal: 14,
-    backgroundColor: ACCENT + "1a",
     borderWidth: 1,
-    borderColor: ACCENT + "40",
     borderRadius: 12,
   },
   emptyBtnAccentText: {
     fontSize: 12,
     fontWeight: "700",
-    color: ACCENT,
     fontFamily: "Inter_600SemiBold",
   },
   // ── confirmed
@@ -937,7 +993,6 @@ const styles = StyleSheet.create({
     right: 18,
     width: 52,
     height: 52,
-    backgroundColor: ACCENT,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#F4B40066",
@@ -954,8 +1009,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 40,
   },
-  emptyIcon: {
-    fontSize: 72,
+  emptyIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 24,
   },
   emptyLine1: {

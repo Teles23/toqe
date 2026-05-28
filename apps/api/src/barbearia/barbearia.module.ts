@@ -5,9 +5,10 @@ import { TemaTenantService } from './tema-tenant.service';
 import { BarbeariaController } from './barbearia.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { FeatureFlagGuard } from '../auth/guards/feature-flag.guard';
+import { ConviteModule } from '../convite/convite.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, ConviteModule],
   controllers: [BarbeariaController],
   providers: [
     BarbeariaService,

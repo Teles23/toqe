@@ -25,82 +25,46 @@ const mockReplace = router.replace as jest.MockedFunction<
   typeof router.replace
 >;
 
-describe("OnboardingScreen", () => {
+describe("OnboardingScreen (minimal)", () => {
   beforeEach(() => {
     mockReplace.mockReset();
   });
 
-  it("renderiza o primeiro slide (step 0) com texto 'Encontre'", () => {
+  it("renderiza a tela minimal com a promessa '1 toque'", () => {
     render(<OnboardingScreen />);
-    expect(screen.getByTestId("slide-0")).toBeTruthy();
-    expect(screen.getByText("Encontre")).toBeTruthy();
+    expect(screen.getByTestId("onboarding-minimal")).toBeTruthy();
+    expect(screen.getByText("1 toque")).toBeTruthy();
   });
 
-  it("botão 'Pular' chama router.replace com '/(auth)/login'", async () => {
+  it("exibe a value prop completa do cliente", () => {
+    render(<OnboardingScreen />);
+    expect(
+      screen.getByText(
+        "Encontre, agende e seja lembrado. Sem ligar, sem WhatsApp, sem complicação.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("expõe os dois CTAs: 'Começar' e 'Já tenho conta · entrar'", () => {
+    render(<OnboardingScreen />);
+    expect(screen.getByTestId("btn-comecar")).toBeTruthy();
+    expect(screen.getByTestId("btn-ja-tenho-conta")).toBeTruthy();
+    expect(screen.getByText("Já tenho conta · entrar")).toBeTruthy();
+  });
+
+  it("pressionar 'Começar' chama router.replace com '/(auth)/login'", async () => {
     render(<OnboardingScreen />);
     await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-pular"));
+      fireEvent.press(screen.getByTestId("btn-comecar"));
     });
     expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
   });
 
-  it("pressionar 'Próximo' no slide 0 exibe o slide 1 ('Agende')", async () => {
+  it("pressionar 'Já tenho conta · entrar' chama router.replace com '/(auth)/login'", async () => {
     render(<OnboardingScreen />);
     await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
-    });
-    expect(screen.getByTestId("slide-1")).toBeTruthy();
-    expect(screen.getByText("Agende")).toBeTruthy();
-  });
-
-  it("pressionar 'Próximo' no slide 1 exibe o slide 2 ('Sem')", async () => {
-    render(<OnboardingScreen />);
-    // avança para slide 1
-    await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
-    });
-    // avança para slide 2
-    await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
-    });
-    expect(screen.getByTestId("slide-2")).toBeTruthy();
-    expect(screen.getByText("Sem")).toBeTruthy();
-  });
-
-  it("no último slide o botão exibe 'Começar'", async () => {
-    render(<OnboardingScreen />);
-    // avança para slide 1
-    await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
-    });
-    // avança para slide 2 (último)
-    await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
-    });
-    expect(screen.getByText("Começar")).toBeTruthy();
-  });
-
-  it("pressionar 'Começar' no slide 2 chama router.replace", async () => {
-    render(<OnboardingScreen />);
-    // avança para slide 1
-    await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
-    });
-    // avança para slide 2
-    await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
-    });
-    // pressiona "Começar"
-    await act(async () => {
-      fireEvent.press(screen.getByTestId("btn-proximo"));
+      fireEvent.press(screen.getByTestId("btn-ja-tenho-conta"));
     });
     expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
-  });
-
-  it("renderiza os 3 dots com testIDs dot-0, dot-1, dot-2", () => {
-    render(<OnboardingScreen />);
-    expect(screen.getByTestId("dot-0")).toBeTruthy();
-    expect(screen.getByTestId("dot-1")).toBeTruthy();
-    expect(screen.getByTestId("dot-2")).toBeTruthy();
   });
 });

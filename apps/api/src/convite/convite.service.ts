@@ -1,20 +1,109 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
+import type { GerarConviteResponse } from '@toqe/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
+import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { AceitarConviteDto } from './dto/aceitar-convite.dto';
+import { GerarConviteDto } from './dto/gerar-convite.dto';
 import * as bcrypt from 'bcrypt';
+
+/** Janela de validade do convite: 7 dias a partir da geração/renovação. */
+const CONVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class ConviteService {
   constructor(
     private prisma: PrismaService,
     private authService: AuthService,
+    private notificacaoProducer: NotificacaoProducer,
   ) {}
+
+  /**
+   * Gera (ou renova) um convite por e-mail para uma barbearia e dispara o envio
+   * via job BullMQ. AuthZ é feita na controller (dono/gerente do tenant).
+   *
+   * Idempotência: se já existe um convite NÃO usado e NÃO expirado para o mesmo
+   * e-mail+barbearia, ele é renovado (novo token + nova validade + perfil
+   * atualizado) em vez de duplicar a linha.
+   */
+  async gerarConvite(
+    barCodigo: number,
+    dto: GerarConviteDto,
+  ): Promise<GerarConviteResponse> {
+    const barbearia = await this.prisma.barbearia.findUnique({
+      where: { codigo: barCodigo },
+      select: { nome: true },
+    });
+    if (!barbearia) {
+      throw new NotFoundException('Barbearia não encontrada');
+    }
+
+    const email = dto.email.toLowerCase().trim();
+
+    // 36 chars em VARCHAR(36) — randomBytes(16).toString('hex') = 32 chars,
+    // 128 bits de entropia, cabe na coluna com folga.
+    const token = randomBytes(16).toString('hex');
+    const expiresAt = new Date(Date.now() + CONVITE_TTL_MS);
+
+    const agora = new Date();
+    const conviteAtivo = await this.prisma.conviteBarbearia.findFirst({
+      where: {
+        barCodigo,
+        email,
+        usadoEm: null,
+        expiresAt: { gt: agora },
+      },
+      select: { codigo: true },
+    });
+
+    const convite = conviteAtivo
+      ? await this.prisma.conviteBarbearia.update({
+          where: { codigo: conviteAtivo.codigo },
+          data: { token, perfil: dto.perfil, expiresAt },
+          select: {
+            codigo: true,
+            email: true,
+            perfil: true,
+            expiresAt: true,
+            token: true,
+          },
+        })
+      : await this.prisma.conviteBarbearia.create({
+          data: { barCodigo, email, perfil: dto.perfil, token, expiresAt },
+          select: {
+            codigo: true,
+            email: true,
+            perfil: true,
+            expiresAt: true,
+            token: true,
+          },
+        });
+
+    const base = process.env.FRONTEND_URL ?? 'http://localhost:4001';
+    const conviteLink = `${base}/convite?token=${convite.token}`;
+
+    await this.notificacaoProducer.enviarConvite({
+      email: convite.email,
+      conviteLink,
+      barbeariaNome: barbearia.nome,
+      perfil: convite.perfil,
+    });
+
+    return {
+      codigo: convite.codigo,
+      email: convite.email,
+      perfil: convite.perfil,
+      expiresAt: convite.expiresAt.toISOString(),
+      reaproveitado: conviteAtivo !== null,
+    };
+  }
 
   async obterConvite(token: string) {
     const convite = await this.prisma.conviteBarbearia.findUnique({
@@ -55,7 +144,7 @@ export class ConviteService {
     }
 
     if (convite.usadoEm) {
-      throw new BadRequestException('Este convite já foi utilizado');
+      throw new ConflictException('Este convite já foi utilizado');
     }
 
     const existente = await this.prisma.usuario.findUnique({

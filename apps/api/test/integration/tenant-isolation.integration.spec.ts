@@ -2,9 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
 
 describe('Tenant Isolation Integration', () => {
   let app: INestApplication;
+  let prisma: PrismaService;
   let tokenA: string;
   let tokenB: string;
   let barCodigoA: string;
@@ -20,6 +22,7 @@ describe('Tenant Isolation Integration', () => {
 
     app = module.createNestApplication();
     await app.init();
+    prisma = app.get(PrismaService);
 
     const ts = Date.now();
 
@@ -79,5 +82,108 @@ describe('Tenant Isolation Integration', () => {
     expect(res.status).toBe(200);
     const nomes = (res.body as { nome: string }[]).map((s) => s.nome);
     expect(nomes).not.toContain('Serviço A');
+  });
+
+  describe('Plano bloqueado bloqueia endpoint protegido', () => {
+    let tokenP: string;
+    let barBloqueada: string;
+    let barLivre: string;
+
+    beforeAll(async () => {
+      const ts = Date.now();
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          nome: 'Dono Plano',
+          email: `tenantP_${ts}@int.com`,
+          senha: 'Senha@123',
+        });
+      const loginP = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email: `tenantP_${ts}@int.com`, senha: 'Senha@123' });
+      tokenP = loginP.body.access_token;
+
+      const bloq = await request(app.getHttpServer())
+        .post('/barbearias')
+        .set('Authorization', `Bearer ${tokenP}`)
+        .send({ nome: 'Bar Bloqueada', slug: `bar-bloq-${ts}` });
+      barBloqueada = String(bloq.body.codigo);
+
+      const livre = await request(app.getHttpServer())
+        .post('/barbearias')
+        .set('Authorization', `Bearer ${tokenP}`)
+        .send({ nome: 'Bar Livre', slug: `bar-livre-${ts}` });
+      barLivre = String(livre.body.codigo);
+    });
+
+    it('planoStatus=inadimplente → GET /servicos retorna 403 com a mensagem', async () => {
+      await prisma.barbearia.update({
+        where: { codigo: Number(barBloqueada) },
+        data: { planoStatus: 'inadimplente' },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get('/servicos')
+        .set('Authorization', `Bearer ${tokenP}`)
+        .set('x-tenant-id', barBloqueada);
+
+      expect(res.status).toBe(403);
+      expect((res.body as { message: string }).message).toContain(
+        'inadimplente',
+      );
+    });
+
+    it('planoStatus=cancelado → GET /servicos retorna 403 com a mensagem', async () => {
+      await prisma.barbearia.update({
+        where: { codigo: Number(barBloqueada) },
+        data: { planoStatus: 'cancelado' },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get('/servicos')
+        .set('Authorization', `Bearer ${tokenP}`)
+        .set('x-tenant-id', barBloqueada);
+
+      expect(res.status).toBe(403);
+      expect((res.body as { message: string }).message).toContain('cancelado');
+    });
+
+    it('planoStatus=ativo → GET /servicos retorna 200', async () => {
+      await prisma.barbearia.update({
+        where: { codigo: Number(barBloqueada) },
+        data: { planoStatus: 'ativo' },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get('/servicos')
+        .set('Authorization', `Bearer ${tokenP}`)
+        .set('x-tenant-id', barBloqueada);
+
+      expect(res.status).toBe(200);
+    });
+
+    it('bloquear uma barbearia não afeta outra ativa do mesmo dono', async () => {
+      await prisma.barbearia.update({
+        where: { codigo: Number(barBloqueada) },
+        data: { planoStatus: 'cancelado' },
+      });
+      await prisma.barbearia.update({
+        where: { codigo: Number(barLivre) },
+        data: { planoStatus: 'ativo' },
+      });
+
+      const bloqueada = await request(app.getHttpServer())
+        .get('/servicos')
+        .set('Authorization', `Bearer ${tokenP}`)
+        .set('x-tenant-id', barBloqueada);
+      expect(bloqueada.status).toBe(403);
+
+      const livre = await request(app.getHttpServer())
+        .get('/servicos')
+        .set('Authorization', `Bearer ${tokenP}`)
+        .set('x-tenant-id', barLivre);
+      expect(livre.status).toBe(200);
+    });
   });
 });

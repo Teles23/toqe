@@ -1,3 +1,5 @@
+import { Feather } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,14 +9,44 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
 
 import { useBarbeariaPublica } from "@/src/shared/hooks/use-barbearia-publica";
 import { useTheme } from "@/src/shared/theme";
+import { AmberButton } from "@/src/shared/ui";
+
+// ─── Info line ──────────────────────────────────────────────────────────────────
+
+function InfoLine({
+  icon,
+  label,
+  color,
+}: {
+  icon: keyof typeof Feather.glyphMap;
+  label: string;
+  color?: string;
+}) {
+  const { palette } = useTheme();
+  return (
+    <View style={styles.infoLine}>
+      <Feather
+        name={icon}
+        size={14}
+        color={color ?? palette.textDisabled}
+        style={styles.infoIcon}
+      />
+      <Text
+        style={[styles.infoText, { color: color ?? palette.textMuted }]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 export default function BarbeariaPublicaScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { palette } = useTheme();
+  const { palette, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { data, isLoading } = useBarbeariaPublica(slug);
 
@@ -43,9 +75,12 @@ export default function BarbeariaPublicaScreen() {
           testID="btn-voltar-barbearia"
           accessibilityRole="button"
           onPress={() => router.back()}
-          style={{ marginTop: 16 }}
+          style={styles.notFoundBack}
         >
-          <Text style={{ color: palette.primary, fontSize: 14 }}>← Voltar</Text>
+          <Feather name="arrow-left" size={16} color={palette.primary} />
+          <Text style={[styles.notFoundBackText, { color: palette.primary }]}>
+            Voltar
+          </Text>
         </Pressable>
       </View>
     );
@@ -56,6 +91,7 @@ export default function BarbeariaPublicaScreen() {
   }
 
   const initial = data.nome.charAt(0).toUpperCase();
+  const temRating = data.ratingMedio != null && data.ratingMedio > 0;
 
   return (
     <View
@@ -67,13 +103,18 @@ export default function BarbeariaPublicaScreen() {
         <Pressable
           testID="btn-voltar-barbearia"
           accessibilityRole="button"
+          accessibilityLabel="Voltar"
           onPress={() => router.back()}
           style={styles.topBarBtn}
         >
-          <Text style={styles.topBarBtnText}>‹</Text>
+          <Feather name="arrow-left" size={18} color="#ffffff" />
         </Pressable>
-        <Pressable accessibilityRole="button" style={styles.topBarBtn}>
-          <Text style={styles.topBarBtnText}>☆</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Favoritar"
+          style={styles.topBarBtn}
+        >
+          <Feather name="star" size={16} color="#ffffff" />
         </Pressable>
       </View>
 
@@ -83,67 +124,95 @@ export default function BarbeariaPublicaScreen() {
       >
         {/* ── Hero block ── */}
         <View style={[styles.hero, { backgroundColor: palette.primary }]}>
-          <Text style={styles.heroWatermark}>✂</Text>
+          <Feather
+            name="scissors"
+            size={180}
+            color={palette.primaryOn}
+            style={styles.heroWatermark}
+          />
         </View>
 
         {/* ── Body card (overlaps hero) ── */}
         <View style={[styles.bodyCard, { backgroundColor: palette.bg }]}>
-          {/* Logo overlapping */}
-          <View style={styles.logoWrap}>
+          {/* Logo + name row */}
+          <View style={styles.identityRow}>
             <View
               style={[
                 styles.logoBox,
                 { backgroundColor: palette.primary, borderColor: palette.bg },
               ]}
             >
-              <Text style={styles.logoLetter}>{initial}</Text>
+              <Text style={[styles.logoLetter, { color: palette.primaryOn }]}>
+                {initial}
+              </Text>
             </View>
-          </View>
-
-          {/* Name + rating */}
-          <View style={styles.nameSection}>
-            <Text style={[styles.barbeariaNome, { color: palette.text }]}>
-              {data.nome}
-            </Text>
-            {data.ratingMedio != null && data.ratingMedio > 0 ? (
-              <View style={styles.ratingRow}>
-                <Text style={[styles.ratingStar, { color: palette.primary }]}>
-                  {`★ ${data.ratingMedio.toFixed(1)}`}
-                </Text>
-                <Text style={styles.ratingLabel}>{" · avaliações"}</Text>
-              </View>
-            ) : null}
+            <View style={styles.nameSection}>
+              <Text
+                style={[styles.barbeariaNome, { color: palette.text }]}
+                numberOfLines={2}
+              >
+                {data.nome}
+              </Text>
+              {temRating ? (
+                <View style={styles.ratingRow}>
+                  <Feather name="star" size={11} color={palette.primary} />
+                  <Text style={[styles.ratingNum, { color: palette.text }]}>
+                    {data.ratingMedio!.toFixed(1)}
+                  </Text>
+                  <Text
+                    style={[styles.ratingLabel, { color: palette.textMuted }]}
+                  >
+                    · avaliações
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </View>
 
           {/* Info card */}
-          <View style={styles.infoCard}>
-            {/* Endereço */}
-            <View style={styles.infoLine}>
-              <Text style={styles.infoIcon}>📍</Text>
-              <Text style={styles.infoText} numberOfLines={1}>
-                {data.endereco ?? "Endereço não informado"}
-              </Text>
-            </View>
-            {/* Horário */}
-            <View style={styles.infoLine}>
-              <Text style={styles.infoIcon}>🕐</Text>
-              <Text style={styles.infoText}>Horários disponíveis</Text>
-            </View>
-            {/* Telefone */}
+          <View
+            style={[
+              styles.infoCard,
+              {
+                backgroundColor: palette.surfaceHigh,
+                borderColor: palette.border,
+                borderRadius: radius.lg,
+              },
+            ]}
+          >
+            <InfoLine
+              icon="map-pin"
+              label={data.endereco ?? "Endereço não informado"}
+            />
+            <InfoLine
+              icon="clock"
+              label="Horários disponíveis"
+              color={palette.success}
+            />
             {data.telefone ? (
-              <View style={styles.infoLine}>
-                <Text style={styles.infoIcon}>📞</Text>
-                <Text style={styles.infoText}>{data.telefone}</Text>
-              </View>
+              <InfoLine icon="phone" label={data.telefone} />
             ) : null}
           </View>
 
           {/* Sobre */}
           {data.descricao ? (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>SOBRE</Text>
-              <View style={styles.sobreCard}>
-                <Text style={styles.sobreText}>{data.descricao}</Text>
+              <Text style={[styles.sectionLabel, { color: palette.textMuted }]}>
+                SOBRE
+              </Text>
+              <View
+                style={[
+                  styles.sobreCard,
+                  {
+                    backgroundColor: palette.surfaceHigh,
+                    borderColor: palette.border,
+                    borderRadius: radius.lg,
+                  },
+                ]}
+              >
+                <Text style={[styles.sobreText, { color: palette.textMuted }]}>
+                  {data.descricao}
+                </Text>
               </View>
             </View>
           ) : null}
@@ -151,7 +220,9 @@ export default function BarbeariaPublicaScreen() {
           {/* Profissionais */}
           {data.barbeiros.length > 0 ? (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>PROFISSIONAIS</Text>
+              <Text style={[styles.sectionLabel, { color: palette.textMuted }]}>
+                PROFISSIONAIS
+              </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -160,14 +231,31 @@ export default function BarbeariaPublicaScreen() {
                 {data.barbeiros.map((b) => {
                   const bInitial = b.nome.charAt(0).toUpperCase();
                   return (
-                    <View key={b.usrCodigo} style={styles.profCard}>
+                    <View
+                      key={b.usrCodigo}
+                      style={[
+                        styles.profCard,
+                        {
+                          backgroundColor: palette.surfaceHigh,
+                          borderColor: palette.border,
+                          borderRadius: radius.lg,
+                        },
+                      ]}
+                    >
                       <View
                         style={[
                           styles.profAvatar,
                           { backgroundColor: palette.primary },
                         ]}
                       >
-                        <Text style={styles.profAvatarLetter}>{bInitial}</Text>
+                        <Text
+                          style={[
+                            styles.profAvatarLetter,
+                            { color: palette.primaryOn },
+                          ]}
+                        >
+                          {bInitial}
+                        </Text>
                       </View>
                       <Text
                         style={[styles.profName, { color: palette.text }]}
@@ -175,7 +263,17 @@ export default function BarbeariaPublicaScreen() {
                       >
                         {b.nome.split(" ")[0]}
                       </Text>
-                      <Text style={styles.profRatingNum}>nota —</Text>
+                      <View style={styles.profRating}>
+                        <Feather name="star" size={9} color={palette.primary} />
+                        <Text
+                          style={[
+                            styles.profRatingNum,
+                            { color: palette.textMuted },
+                          ]}
+                        >
+                          —
+                        </Text>
+                      </View>
                     </View>
                   );
                 })}
@@ -190,17 +288,12 @@ export default function BarbeariaPublicaScreen() {
 
       {/* ── CTA fixo ── */}
       <View style={styles.ctaWrap}>
-        <Pressable
+        <AmberButton
           testID="btn-reservar"
-          accessibilityRole="button"
+          label="Reservar horário"
+          iconRight="arrow-right"
           onPress={handleReservar}
-          style={({ pressed }) => [
-            styles.ctaBtn,
-            { backgroundColor: palette.primary, opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Text style={styles.ctaBtnText}>Reservar horário</Text>
-        </Pressable>
+        />
       </View>
     </View>
   );
@@ -218,6 +311,16 @@ const styles = StyleSheet.create({
   notFoundTitle: {
     fontFamily: "Sora_700Bold",
     fontSize: 18,
+  },
+  notFoundBack: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+  },
+  notFoundBackText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
   },
   // ── Top bar
   topBar: {
@@ -239,11 +342,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  topBarBtnText: {
-    color: "#ffffff",
-    fontSize: 22,
-    lineHeight: 26,
-  },
   // ── Scroll
   scrollContent: {
     flexGrow: 1,
@@ -256,26 +354,29 @@ const styles = StyleSheet.create({
   },
   heroWatermark: {
     position: "absolute",
-    right: 20,
+    right: -10,
     bottom: -20,
-    fontSize: 120,
     opacity: 0.15,
-    color: "#0d0d0d",
     transform: [{ rotate: "-10deg" }],
   },
   // ── Body card
   bodyCard: {
     marginTop: -60,
-    borderRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 18,
     paddingBottom: 24,
     position: "relative",
     zIndex: 1,
   },
-  // ── Logo
-  logoWrap: {
-    alignItems: "center",
-    marginTop: -40,
-    marginBottom: 12,
+  // ── Identity row
+  identityRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 14,
+    paddingHorizontal: 18,
+    marginTop: -50,
+    marginBottom: 14,
   },
   logoBox: {
     width: 80,
@@ -288,19 +389,16 @@ const styles = StyleSheet.create({
   logoLetter: {
     fontFamily: "Sora_700Bold",
     fontSize: 32,
-    color: "#0d0d0d",
   },
-  // ── Name section
   nameSection: {
-    alignItems: "center",
-    paddingHorizontal: 18,
-    marginBottom: 14,
+    flex: 1,
+    minWidth: 0,
+    paddingBottom: 8,
   },
   barbeariaNome: {
     fontFamily: "Sora_700Bold",
     fontSize: 20,
     letterSpacing: -0.5,
-    textAlign: "center",
   },
   ratingRow: {
     flexDirection: "row",
@@ -308,30 +406,18 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
   },
-  ratingStar: {
-    fontSize: 12,
-  },
   ratingNum: {
     fontFamily: "JetBrainsMono_400Regular",
     fontSize: 12,
-    color: "#f5f5f5",
-  },
-  ratingDot: {
-    fontSize: 12,
-    color: "#444444",
   },
   ratingLabel: {
     fontSize: 12,
-    color: "#888888",
   },
   // ── Info card
   infoCard: {
     marginHorizontal: 16,
     marginBottom: 14,
-    backgroundColor: "#171717",
     borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 14,
     padding: 14,
     gap: 10,
   },
@@ -341,14 +427,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   infoIcon: {
-    fontSize: 14,
     width: 18,
     textAlign: "center",
   },
   infoText: {
     flex: 1,
     fontSize: 12,
-    color: "#aaaaaa",
     fontFamily: "Inter_400Regular",
   },
   // ── Sections
@@ -358,7 +442,6 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 10,
-    color: "#666666",
     letterSpacing: 1.5,
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
@@ -366,15 +449,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sobreCard: {
-    backgroundColor: "#171717",
     borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 14,
     padding: 14,
   },
   sobreText: {
     fontSize: 12,
-    color: "#aaaaaa",
     lineHeight: 18,
     fontFamily: "Inter_400Regular",
   },
@@ -386,10 +465,7 @@ const styles = StyleSheet.create({
   profCard: {
     width: 104,
     padding: 12,
-    backgroundColor: "#171717",
     borderWidth: 1,
-    borderColor: "#262626",
-    borderRadius: 14,
     alignItems: "center",
   },
   profAvatar: {
@@ -402,7 +478,6 @@ const styles = StyleSheet.create({
   profAvatarLetter: {
     fontFamily: "Sora_700Bold",
     fontSize: 18,
-    color: "#0d0d0d",
   },
   profName: {
     fontSize: 12,
@@ -416,13 +491,9 @@ const styles = StyleSheet.create({
     gap: 3,
     marginTop: 4,
   },
-  profRatingStar: {
-    fontSize: 9,
-  },
   profRatingNum: {
     fontFamily: "JetBrainsMono_400Regular",
     fontSize: 9,
-    color: "#888888",
   },
   // ── CTA fixo
   ctaWrap: {
@@ -431,16 +502,5 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 10,
-  },
-  ctaBtn: {
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ctaBtnText: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 15,
-    color: "#0d0d0d",
   },
 });

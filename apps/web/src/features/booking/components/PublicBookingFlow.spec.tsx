@@ -6,6 +6,27 @@ import { server } from "@/test/msw-handlers";
 import { PublicBookingFlow } from "./PublicBookingFlow";
 import { createWrapper } from "@/test/render-helpers";
 
+// AnimatePresence mode="wait" atrasa a renderização do próximo step até que
+// a animação de saída termine. Em jsdom (CI sem GPU) isso não completa dentro
+// do timeout do waitFor → flakiness. Mock elimina animações em testes.
+vi.mock("framer-motion", () => ({
+  motion: new Proxy(
+    {},
+    {
+      get:
+        (_, tag) =>
+        ({
+          children,
+          ...props
+        }: React.HTMLAttributes<HTMLElement> & {
+          children?: React.ReactNode;
+        }) =>
+          React.createElement(String(tag), props, children),
+    },
+  ),
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 const BASE = "http://localhost:3000/api/v1";
 
 vi.mock("next/navigation", () => ({
@@ -125,9 +146,7 @@ describe("PublicBookingFlow", () => {
     // O hero carrega a barbearia
     expect(await screen.findByText("Barbearia Mock")).toBeInTheDocument();
     // A seção de avaliações deve aparecer
-    expect(
-      await screen.findByTestId("avaliacoes-section"),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId("avaliacoes-section")).toBeInTheDocument();
     // Média e comentários devem estar visíveis
     expect(screen.getByTestId("media-label")).toHaveTextContent("4.8");
     expect(screen.getByText("Excelente atendimento!")).toBeInTheDocument();

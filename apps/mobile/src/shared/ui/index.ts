@@ -33,6 +33,18 @@ export {
   type QuickActionBarProps,
   type QuickActionVariant,
 } from "./QuickActionBar";
+export {
+  CircleIconButton,
+  type CircleIconButtonProps,
+} from "./CircleIconButton";
+export { StarRating, type StarRatingProps } from "./StarRating";
+export { StatusPill, type StatusPillProps } from "./StatusPill";
+export {
+  SettingsGroup,
+  type SettingsGroupProps,
+  SettingsRow as SettingsListRow,
+  type SettingsRowProps as SettingsListRowProps,
+} from "./SettingsRow";
 
 // Helpers puros
 export {

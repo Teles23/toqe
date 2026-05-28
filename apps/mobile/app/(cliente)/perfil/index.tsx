@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
 import {
@@ -16,6 +17,12 @@ import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useTheme } from "@/src/shared/theme";
+import {
+  Avatar,
+  CircleIconButton,
+  SettingsGroup,
+  SettingsListRow,
+} from "@/src/shared/ui";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,18 +60,30 @@ function StatCard({
   label,
   color,
 }: {
-  icon: string;
+  icon: keyof typeof Feather.glyphMap;
   value: string;
   label: string;
   color: string;
 }) {
+  const { palette, radius } = useTheme();
   return (
-    <View style={[styles.statCard]}>
+    <View
+      style={[
+        styles.statCard,
+        {
+          backgroundColor: palette.surfaceHigh,
+          borderColor: palette.border,
+          borderRadius: radius.lg,
+        },
+      ]}
+    >
       <View style={[styles.statIconWrap, { backgroundColor: color + "1a" }]}>
-        <Text style={styles.statIconText}>{icon}</Text>
+        <Feather name={icon} size={16} color={color} />
       </View>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label.toUpperCase()}</Text>
+      <Text style={[styles.statLabel, { color: palette.textMuted }]}>
+        {label.toUpperCase()}
+      </Text>
     </View>
   );
 }
@@ -72,97 +91,45 @@ function StatCard({
 // ─── SectionHeader ────────────────────────────────────────────────────────────
 
 function SectionHeader({
+  icon,
   label,
   action,
   onAction,
 }: {
+  icon: keyof typeof Feather.glyphMap;
   label: string;
   action?: string;
   onAction?: () => void;
 }) {
+  const { palette } = useTheme();
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{label.toUpperCase()}</Text>
+      <Feather name={icon} size={13} color={palette.textMuted} />
+      <Text style={[styles.sectionHeaderText, { color: palette.textMuted }]}>
+        {label.toUpperCase()}
+      </Text>
       {action ? (
-        <Pressable onPress={onAction} accessibilityRole="button">
-          <Text style={styles.sectionHeaderAction}>{action} →</Text>
+        <Pressable
+          onPress={onAction}
+          accessibilityRole="button"
+          style={styles.sectionHeaderActionWrap}
+        >
+          <Text
+            style={[styles.sectionHeaderAction, { color: palette.textMuted }]}
+          >
+            {action}
+          </Text>
+          <Feather name="arrow-right" size={11} color={palette.textMuted} />
         </Pressable>
       ) : null}
     </View>
   );
 }
 
-// ─── SettingsRow ──────────────────────────────────────────────────────────────
-
-function SettingsRow({
-  icon,
-  label,
-  value,
-  onTap,
-  testID,
-  danger,
-}: {
-  icon: string;
-  label: string;
-  value?: string;
-  onTap?: () => void;
-  testID?: string;
-  danger?: boolean;
-}) {
-  const { palette } = useTheme();
-
-  const inner = (
-    <View style={styles.settingsRow}>
-      <View
-        style={[
-          styles.settingsRowIcon,
-          { backgroundColor: danger ? palette.danger + "1a" : "#F4B40014" },
-        ]}
-      >
-        <Text style={styles.settingsRowIconText}>{icon}</Text>
-      </View>
-      <Text
-        style={[
-          styles.settingsRowLabel,
-          { color: danger ? palette.danger : palette.text },
-        ]}
-      >
-        {label}
-      </Text>
-      {value ? (
-        <Text style={styles.settingsRowValue} numberOfLines={1}>
-          {value}
-        </Text>
-      ) : null}
-      {onTap ? <Text style={styles.settingsRowChevron}>›</Text> : null}
-    </View>
-  );
-
-  if (onTap) {
-    return (
-      <Pressable
-        testID={testID}
-        onPress={onTap}
-        accessibilityRole="button"
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-      >
-        {inner}
-      </Pressable>
-    );
-  }
-  return <View testID={testID}>{inner}</View>;
-}
-
-// ─── SettingsGroup ────────────────────────────────────────────────────────────
-
-function SettingsGroup({ children }: { children: React.ReactNode }) {
-  return <View style={styles.settingsGroup}>{children}</View>;
-}
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function ClientePerfilScreen() {
-  const { palette } = useTheme();
+  const { palette, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const basePath = usePerfilBasePath();
   const { user, barbearias, barbearia, switchBarbearia, logout } = useAuth();
@@ -193,8 +160,6 @@ export default function ClientePerfilScreen() {
 
   const favBarbeiros = useMemo(() => topBarbeiros(data, 3), [data]);
 
-  const initial = user?.nome ? user.nome.charAt(0).toUpperCase() : "?";
-
   return (
     <View style={[styles.container, { backgroundColor: palette.bg }]}>
       {/* ── Header ── */}
@@ -202,14 +167,15 @@ export default function ClientePerfilScreen() {
         <Text style={[styles.headerTitle, { color: palette.text }]}>
           Perfil
         </Text>
-        <Pressable
+        <CircleIconButton
           testID="ir-editar"
+          icon="edit-2"
+          iconSize={16}
+          background="#1c1c1c"
+          borderColor="#262626"
           onPress={() => go("/editar")}
-          accessibilityRole="button"
-          style={styles.editBtn}
-        >
-          <Text style={styles.editBtnText}>✏️</Text>
-        </Pressable>
+          accessibilityLabel="Editar perfil"
+        />
       </View>
 
       <ScrollView
@@ -220,27 +186,25 @@ export default function ClientePerfilScreen() {
       >
         {/* ── Identity ── */}
         <View style={styles.identitySection}>
-          <View
-            style={[styles.avatarCircle, { backgroundColor: palette.primary }]}
-          >
-            <Text style={styles.avatarLetter}>{initial}</Text>
-          </View>
+          <Avatar name={user?.nome} uri={user?.avatarUrl} size="lg" />
           <Text style={[styles.userName, { color: palette.text }]}>
             {user?.nome ?? "—"}
           </Text>
-          <Text style={styles.userSubtitle}>cliente Toqe</Text>
+          <Text style={[styles.userSubtitle, { color: palette.textDisabled }]}>
+            cliente Toqe
+          </Text>
         </View>
 
         {/* ── Stats ── */}
         <View style={styles.statsRow}>
           <StatCard
-            icon="✂"
+            icon="scissors"
             value={cortesLabel}
             label="Cortes feitos"
-            color="#F4B400"
+            color={palette.primary}
           />
           <StatCard
-            icon="🏠"
+            icon="home"
             value={String(barbearias.length)}
             label="Barbearias"
             color="#60a5fa"
@@ -250,52 +214,61 @@ export default function ClientePerfilScreen() {
         {/* ── Barbeiros favoritos ── */}
         {favBarbeiros.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader label="Barbeiros favoritos" action="Ver todos" />
+            <SectionHeader icon="star" label="Barbeiros favoritos" />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.favScrollContent}
             >
-              {favBarbeiros.map((b) => {
-                const bInitial = b.nome.charAt(0).toUpperCase();
-                return (
-                  <View key={b.usrCodigo} style={styles.favBarbeiroCard}>
-                    <View
+              {favBarbeiros.map((b) => (
+                <View
+                  key={b.usrCodigo}
+                  style={[
+                    styles.favBarbeiroCard,
+                    {
+                      backgroundColor: palette.surfaceHigh,
+                      borderColor: palette.border,
+                      borderRadius: radius.lg,
+                    },
+                  ]}
+                >
+                  <Avatar name={b.nome} size="md" />
+                  <Text
+                    style={[styles.favBarbeiroName, { color: palette.text }]}
+                    numberOfLines={1}
+                  >
+                    {b.nome.split(" ")[0]}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.favBarbeiroUltima,
+                      { color: palette.textDisabled },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    última visita
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push("/(cliente)/home" as never)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Agendar com ${b.nome}`}
+                    style={[
+                      styles.favBarbeiroChip,
+                      { backgroundColor: palette.primary + "14" },
+                    ]}
+                  >
+                    <Feather name="zap" size={10} color={palette.primary} />
+                    <Text
                       style={[
-                        styles.favBarbeiroAvatar,
-                        { backgroundColor: palette.primary },
+                        styles.favBarbeiroChipText,
+                        { color: palette.primary },
                       ]}
                     >
-                      <Text style={styles.favBarbeiroAvatarLetter}>
-                        {bInitial}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[styles.favBarbeiroName, { color: palette.text }]}
-                      numberOfLines={1}
-                    >
-                      {b.nome.split(" ")[0]}
+                      Agendar
                     </Text>
-                    <Text style={styles.favBarbeiroUltima} numberOfLines={1}>
-                      última visita
-                    </Text>
-                    <Pressable
-                      onPress={() => router.push("/(cliente)/home" as never)}
-                      accessibilityRole="button"
-                      style={styles.favBarbeiroChip}
-                    >
-                      <Text
-                        style={[
-                          styles.favBarbeiroChipText,
-                          { color: palette.primary },
-                        ]}
-                      >
-                        ✨ Agendar
-                      </Text>
-                    </Pressable>
-                  </View>
-                );
-              })}
+                  </Pressable>
+                </View>
+              ))}
             </ScrollView>
           </View>
         ) : null}
@@ -303,20 +276,32 @@ export default function ClientePerfilScreen() {
         {/* ── Barbearias salvas ── */}
         {barbearias.length > 0 ? (
           <View style={styles.section}>
-            <SectionHeader label="Barbearias salvas" />
-            <View style={styles.barbeariasList}>
+            <SectionHeader icon="home" label="Barbearias salvas" />
+            <View
+              style={[
+                styles.barbeariasList,
+                {
+                  backgroundColor: palette.surfaceHigh,
+                  borderColor: palette.border,
+                  borderRadius: radius.lg,
+                },
+              ]}
+            >
               {barbearias.map((b, idx) => {
                 const isAtiva = b.codigo === barbearia?.codigo;
+                const isLast = idx === barbearias.length - 1;
                 return (
                   <Pressable
                     key={b.codigo}
                     onPress={() => switchBarbearia(b.codigo)}
                     accessibilityRole="button"
+                    accessibilityLabel={`Trocar para ${b.nome}`}
                     style={({ pressed }) => [
                       styles.barbeariaRow,
-                      idx < barbearias.length - 1
-                        ? styles.barbeariaRowSep
-                        : null,
+                      !isLast && {
+                        borderBottomWidth: 1,
+                        borderBottomColor: palette.border,
+                      },
                       { opacity: pressed ? 0.7 : 1 },
                     ]}
                   >
@@ -324,16 +309,17 @@ export default function ClientePerfilScreen() {
                       style={[
                         styles.barbeariaIcon,
                         {
-                          backgroundColor: "#F4B40014",
-                          borderColor: "#F4B40030",
+                          backgroundColor: palette.primary + "14",
+                          borderColor: palette.primary + "30",
                         },
                       ]}
                     >
-                      <Text style={{ fontSize: 18 }}>🏠</Text>
+                      <Feather name="home" size={18} color={palette.primary} />
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <Text
                         style={[styles.barbeariaName, { color: palette.text }]}
+                        numberOfLines={1}
                       >
                         {b.nome}
                       </Text>
@@ -348,7 +334,11 @@ export default function ClientePerfilScreen() {
                         </Text>
                       ) : null}
                     </View>
-                    <Text style={styles.barbeariaChevron}>›</Text>
+                    <Feather
+                      name="chevron-right"
+                      size={16}
+                      color={palette.textDisabled}
+                    />
                   </Pressable>
                 );
               })}
@@ -356,31 +346,33 @@ export default function ClientePerfilScreen() {
           </View>
         ) : null}
 
-        {/* ── Settings rows ── */}
-        <View style={styles.section}>
-          <SettingsGroup>
-            <SettingsRow
-              icon="🔔"
-              label="Lembretes"
-              onTap={() => go("/notificacoes")}
-              testID="ir-notificacoes"
-            />
-            <View style={styles.settingsInternalSep} />
-            <SettingsRow icon="📧" label="E-mail" value={user?.email} />
-            <View style={styles.settingsInternalSep} />
-            <SettingsRow icon="📱" label="Telefone" />
-            <View style={styles.settingsInternalSep} />
-            <SettingsRow
-              icon="🔒"
-              label="Trocar senha"
-              onTap={() => go("/senha")}
-              testID="ir-senha"
-            />
-          </SettingsGroup>
-        </View>
+        {/* ── Settings ── */}
+        <SettingsGroup>
+          <SettingsListRow
+            icon="bell"
+            iconColor={palette.primary}
+            title="Lembretes"
+            value="1h antes · WhatsApp"
+            onTap={() => go("/notificacoes")}
+            testID="ir-notificacoes"
+          />
+          <SettingsListRow icon="mail" title="E-mail" value={user?.email} />
+          <SettingsListRow
+            icon="phone"
+            title="Telefone"
+            value={user?.telefone ?? undefined}
+          />
+          <SettingsListRow
+            icon="shield"
+            title="Trocar senha"
+            onTap={() => go("/senha")}
+            testID="ir-senha"
+            last
+          />
+        </SettingsGroup>
 
         {/* ── Logout ── */}
-        <View style={[styles.section, { marginTop: 6 }]}>
+        <View style={styles.logoutWrap}>
           <Pressable
             testID="btn-logout"
             onPress={handleLogout}
@@ -388,9 +380,13 @@ export default function ClientePerfilScreen() {
             accessibilityLabel="Sair da conta"
             style={({ pressed }) => [
               styles.logoutBtn,
-              { borderColor: palette.danger, opacity: pressed ? 0.7 : 1 },
+              {
+                borderColor: palette.danger + "40",
+                opacity: pressed ? 0.7 : 1,
+              },
             ]}
           >
+            <Feather name="log-out" size={16} color={palette.danger} />
             <Text style={[styles.logoutBtnText, { color: palette.danger }]}>
               Sair da conta
             </Text>
@@ -398,7 +394,9 @@ export default function ClientePerfilScreen() {
         </View>
 
         {/* ── Version ── */}
-        <Text style={styles.versionText}>Toqe · v1.0.0</Text>
+        <Text style={[styles.versionText, { color: palette.textDisabled }]}>
+          Toqe · v1.0.0
+        </Text>
       </ScrollView>
     </View>
   );
@@ -422,19 +420,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     letterSpacing: -0.6,
   },
-  editBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#1c1c1c",
-    borderWidth: 1,
-    borderColor: "#262626",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  editBtnText: {
-    fontSize: 16,
-  },
   // ── Scroll
   scrollContent: {
     paddingBottom: 64,
@@ -446,18 +431,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     gap: 8,
   },
-  avatarCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarLetter: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 32,
-    color: "#0d0d0d",
-  },
   userName: {
     fontFamily: "Sora_700Bold",
     fontSize: 20,
@@ -466,7 +439,6 @@ const styles = StyleSheet.create({
   },
   userSubtitle: {
     fontSize: 11,
-    color: "#666666",
     fontFamily: "JetBrainsMono_400Regular",
   },
   // ── Stats
@@ -478,11 +450,8 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#171717",
-    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#262626",
   },
   statIconWrap: {
     width: 30,
@@ -492,9 +461,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 10,
   },
-  statIconText: {
-    fontSize: 16,
-  },
   statValue: {
     fontFamily: "Sora_700Bold",
     fontSize: 24,
@@ -503,7 +469,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 10,
-    color: "#666666",
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
     letterSpacing: 1.2,
@@ -517,20 +482,24 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 6,
     paddingBottom: 10,
     paddingHorizontal: 4,
   },
   sectionHeaderText: {
     fontSize: 10,
-    color: "#666666",
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
-    letterSpacing: 1.5,
+    letterSpacing: 1.4,
+  },
+  sectionHeaderActionWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginLeft: "auto",
   },
   sectionHeaderAction: {
     fontSize: 11,
-    color: "#F4B400",
     fontFamily: "Inter_400Regular",
   },
   // ── Fav barbeiros
@@ -541,24 +510,9 @@ const styles = StyleSheet.create({
   favBarbeiroCard: {
     width: 108,
     padding: 12,
-    backgroundColor: "#171717",
-    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#262626",
     alignItems: "center",
     gap: 6,
-  },
-  favBarbeiroAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  favBarbeiroAvatarLetter: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 20,
-    color: "#0d0d0d",
   },
   favBarbeiroName: {
     fontSize: 12,
@@ -567,14 +521,15 @@ const styles = StyleSheet.create({
   },
   favBarbeiroUltima: {
     fontSize: 10,
-    color: "#666666",
     fontFamily: "JetBrainsMono_400Regular",
     textAlign: "center",
   },
   favBarbeiroChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: "#F4B40014",
     borderRadius: 6,
   },
   favBarbeiroChipText: {
@@ -583,10 +538,7 @@ const styles = StyleSheet.create({
   },
   // ── Barbearias salvas
   barbeariasList: {
-    backgroundColor: "#171717",
-    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#262626",
     overflow: "hidden",
   },
   barbeariaRow: {
@@ -595,11 +547,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: "#171717",
-  },
-  barbeariaRowSep: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#262626",
   },
   barbeariaIcon: {
     width: 40,
@@ -619,64 +566,19 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     marginTop: 1,
   },
-  barbeariaChevron: {
-    fontSize: 14,
-    color: "#666666",
-  },
-  // ── Settings group
-  settingsGroup: {
-    backgroundColor: "#171717",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#262626",
-    overflow: "hidden",
-  },
-  settingsInternalSep: {
-    height: 1,
-    backgroundColor: "#262626",
-  },
-  settingsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 52,
-    paddingHorizontal: 14,
-    backgroundColor: "#171717",
-    gap: 10,
-  },
-  settingsRowIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  settingsRowIconText: {
-    fontSize: 14,
-  },
-  settingsRowLabel: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-  },
-  settingsRowValue: {
-    fontSize: 11,
-    color: "#888888",
-    fontFamily: "Inter_400Regular",
-    maxWidth: 120,
-  },
-  settingsRowChevron: {
-    fontSize: 14,
-    color: "#666666",
-    flexShrink: 0,
-  },
   // ── Logout
+  logoutWrap: {
+    paddingHorizontal: 22,
+    marginTop: 6,
+  },
   logoutBtn: {
     borderWidth: 1,
     borderRadius: 13,
     minHeight: 48,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
   },
   logoutBtnText: {
     fontSize: 13,
@@ -686,8 +588,7 @@ const styles = StyleSheet.create({
   versionText: {
     textAlign: "center",
     fontSize: 10,
-    color: "#444444",
     fontFamily: "JetBrainsMono_400Regular",
-    marginTop: 8,
+    marginTop: 16,
   },
 });

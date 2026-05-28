@@ -2,8 +2,9 @@ import type { Queue } from 'bull';
 import {
   NotificacaoProducer,
   AGENDAMENTO_CONFIRMADO,
+  SEND_CONVITE,
 } from './notificacao.producer';
-import { AgendamentoConfirmadoJob } from './notificacao.types';
+import { AgendamentoConfirmadoJob, ConviteEmailJob } from './notificacao.types';
 
 describe('NotificacaoProducer', () => {
   let producer: NotificacaoProducer;
@@ -39,6 +40,30 @@ describe('NotificacaoProducer', () => {
 
     await expect(
       producer.agendamentoConfirmado({} as unknown as AgendamentoConfirmadoJob),
+    ).rejects.toThrow('Queue error');
+  });
+
+  it('should call queue.add with SEND_CONVITE and retry config on enviarConvite', async () => {
+    const data: ConviteEmailJob = {
+      email: 'novo@email.com',
+      conviteLink: 'https://app.toqe.com.br/convite?token=abc',
+      barbeariaNome: 'Barber Shop',
+      perfil: 'barbeiro',
+    };
+
+    await producer.enviarConvite(data);
+
+    expect(mockQueue.add).toHaveBeenCalledWith(SEND_CONVITE, data, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
+  });
+
+  it('should propagate queue errors on enviarConvite', async () => {
+    mockQueue.add.mockRejectedValueOnce(new Error('Queue error'));
+
+    await expect(
+      producer.enviarConvite({} as unknown as ConviteEmailJob),
     ).rejects.toThrow('Queue error');
   });
 });

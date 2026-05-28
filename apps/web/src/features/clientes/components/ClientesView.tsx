@@ -240,17 +240,52 @@ export function ClientesView() {
           </div>
         </div>
 
-        {/* Painel de detalhe */}
+        {/* Painel de detalhe — desktop only */}
         <AnimatePresence>
           {selected && barbearia && (
-            <ClienteDetalhe
-              cliente={selected}
-              barCodigo={barbearia.codigo}
-              onClose={() => setSelected(null)}
-            />
+            <div className="hidden md:flex">
+              <ClienteDetalhe
+                cliente={selected}
+                barCodigo={barbearia.codigo}
+                onClose={() => setSelected(null)}
+              />
+            </div>
           )}
         </AnimatePresence>
       </div>
+
+      {/* Mobile bottom-sheet */}
+      <AnimatePresence>
+        {selected && barbearia && (
+          <motion.div
+            key="mobile-cliente-detalhe"
+            className="fixed inset-0 z-50 flex flex-col justify-end md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{ background: "rgba(0,0,0,0.5)" }}
+              onClick={() => setSelected(null)}
+            />
+            <motion.div
+              className="relative z-10 rounded-t-2xl overflow-hidden max-h-[78vh] bg-[var(--bg-card)] border border-[var(--border-default)]"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            >
+              <ClienteDetalhe
+                cliente={selected}
+                barCodigo={barbearia.codigo}
+                onClose={() => setSelected(null)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {modalOpen && <ClienteModal onClose={() => setModalOpen(false)} />}

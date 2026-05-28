@@ -1,5 +1,31 @@
 # Regras do projeto toqe
 
+## Leitura obrigatória ao iniciar qualquer tarefa
+
+Antes de qualquer implementação, leia estes dois arquivos para entender o projeto:
+
+1. **[`ARCHITECTURE.md`](./ARCHITECTURE.md)** — stack, módulos NestJS, fluxo de autenticação, multi-tenancy, design system, CI/CD, padrões de código e como rodar localmente
+2. **[`docs/INDEX.md`](./docs/INDEX.md)** — índice categorizado de todos os documentos de domínio (auth, agendamento, barbeiro, cliente, rede, mobile, web, infra, testes)
+
+Se a tarefa envolver um domínio específico (ex: agendamento, auth, mobile), localize e leia o doc correspondente no índice antes de escrever qualquer código.
+
+---
+
+## Proibido responder com achismos — leia antes de falar
+
+**Nunca afirmar, configurar ou recomendar algo sem antes ler o arquivo-fonte relevante.**
+
+Exemplos obrigatórios:
+
+- Antes de referenciar uma rota HTTP → ler o controller/main.ts para confirmar o path real
+- Antes de dizer que uma env var é necessária → ler o código que a consome
+- Antes de configurar um check name no ruleset → ler o workflow YAML para confirmar o job key
+- Antes de qualquer afirmação sobre comportamento do sistema → ler o código, não inferir
+
+Se a informação não foi lida nesta sessão, **leia agora** antes de responder. Achismo causa retrabalho e erros em produção.
+
+---
+
 ## Sempre que implementar qualquer coisa
 
 ### 1. Documentar
@@ -66,3 +92,31 @@ no client. Nunca use `upsert({ where: { compoundKey: ... } })` baseado nesses í
   - Testes: corrigir a implementação ou o mock, não remover o cenário
   - Build: corrigir a causa, não comentar o código
 - **Nunca usar duck-typing para contornar tipos do Prisma** — campos `Decimal` devem ser anotados com `Prisma.Decimal` ou via `Prisma.XxxGetPayload<...>`, nunca com `{ toNumber(): number } | number`
+
+## Estrutura de arquivos chave
+
+- API: apps/api/src/
+- Mobile: apps/mobile/app/
+- Contratos: packages/contracts/src/schemas/
+- Docs: docs/
+- Comandos customizados: .claude/commands/
+
+## Validação mobile (obrigatório junto com api/web)
+
+pnpm --filter mobile lint
+pnpm --filter mobile type-check
+pnpm --filter mobile test
+
+## Status atual do projeto
+
+- App barbeiro: MVP completo (Sprints A, B, C concluídas — ver docs/62-maturidade-e-roadmap.md)
+- Próximos passos: fluxo de convite e2e + definição do fluxo de auth por perfil + app cliente
+- Tokens sensíveis: sempre SecureStore, nunca AsyncStorage
+- Google Sign-In: usa @react-native-google-signin/google-signin com Development Build Android (não funciona em Expo Go)
+
+## Regras de autenticação Google
+
+- No logout, sempre chamar GoogleSignin.signOut() antes de limpar o SecureStore — nunca usar revokeAccess()
+- O signOut() deve estar em try/catch para não quebrar o logout de usuários que não entraram via Google
+- Após logout, o seletor de contas Google deve sempre ser exibido ao tentar logar novamente
+- Usuários OAuth têm senhaHash null no banco — nunca tentar login por senha nessa conta

@@ -89,6 +89,7 @@ export default [
       "src/app/page.tsx",
       "src/app/not-found.tsx",
       "src/app/(auth)/login/page.tsx",
+      "src/app/(auth)/convite/page.tsx",
       "src/app/(dashboard)/**/*.tsx",
       "src/app/onboarding/page.tsx",
       // Componentes "shared" legados (cross-feature, anteriores à reorganização)
@@ -114,6 +115,11 @@ export default [
       "src/features/booking/components/**/*.tsx",
       "src/features/clientes/components/**/*.tsx",
       "src/features/configuracoes/components/**/*.tsx",
+      // Feature convite — jornada pública de aceite com tokens CSS dinâmicos
+      // (var(--primary), var(--text-secondary), etc.), espelhando o padrão de
+      // auth/components. Mesma motivação: não há classe Tailwind estática
+      // equivalente para esses tokens de tema.
+      "src/features/convite/components/**/*.tsx",
       "src/features/relatorios/components/**/*.tsx",
       "src/features/servicos/components/**/*.tsx",
       // Super Admin — usa inline styles para cores dinâmicas por plano/status

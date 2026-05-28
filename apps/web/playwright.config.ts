@@ -8,12 +8,15 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3001",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3001",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"], channel: "chrome" },
+    },
     { name: "firefox", use: { ...devices["Desktop Firefox"] } },
   ],
 });

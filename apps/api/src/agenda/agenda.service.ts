@@ -4,17 +4,13 @@ import { ConfigJornadaDto } from './dto/config-jornada.dto';
 import { ConfigJornadaSemanalDto } from './dto/config-jornada-semanal.dto';
 import { CreateBloqueioDto } from './dto/create-bloqueio.dto';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
-import { isTimeOverlap } from '../common/utils/date.utils';
 import {
-  addDays,
-  addMinutes,
-  parse,
-  format,
-  isBefore,
-  startOfDay,
-  endOfDay,
-  getDay,
-} from 'date-fns';
+  isTimeOverlap,
+  rangeDoDia,
+  TIMEZONE_BARBEARIA,
+} from '../common/utils/date.utils';
+import { addDays, addMinutes, format, isBefore, startOfDay } from 'date-fns';
+import { fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 
 @Injectable()
 export class AgendaService {
@@ -144,8 +140,11 @@ export class AgendaService {
     totalDuration: number,
     srvCodigo?: number,
   ) {
-    const targetDate = new Date(dateStr);
-    const dayOfWeek = getDay(targetDate);
+    const tz = TIMEZONE_BARBEARIA;
+    const datePart = dateStr.slice(0, 10);
+    const { inicio: inicioDia, fim: fimDia } = rangeDoDia(dateStr, tz);
+    // getDay-compatível (0=Dom..6=Sáb) ancorado no fuso da barbearia
+    const dayOfWeek = Number(formatInTimeZone(inicioDia, tz, 'i')) % 7;
 
     // Valida que barbeiroId pertence ao tenant (barCodigo) — impede cross-tenant leak
     const membroDoTenant = await this.prisma.membroBarbearia.findFirst({
@@ -182,7 +181,8 @@ export class AgendaService {
 
     if (!jornada) return [];
 
-    const parseTime = (timeStr: string) => parse(timeStr, 'HH:mm', targetDate);
+    const parseTime = (timeStr: string) =>
+      fromZonedTime(`${datePart} ${timeStr}:00`, tz);
     const startWork = parseTime(jornada.inicio);
     const endWork = parseTime(jornada.fim);
 
@@ -192,8 +192,8 @@ export class AgendaService {
     const appointments = await this.prisma.agendamento.findMany({
       where: {
         barbeiroId,
-        inicio: { gte: startOfDay(targetDate) },
-        fim: { lte: endOfDay(targetDate) },
+        inicio: { gte: inicioDia },
+        fim: { lte: fimDia },
         status: {
           notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.NO_SHOW],
         },
@@ -203,8 +203,8 @@ export class AgendaService {
     const blocks = await this.prisma.bloqueioAgenda.findMany({
       where: {
         barbeiroId,
-        inicio: { gte: startOfDay(targetDate) },
-        fim: { lte: endOfDay(targetDate) },
+        inicio: { gte: inicioDia },
+        fim: { lte: fimDia },
       },
     });
 
@@ -227,7 +227,7 @@ export class AgendaService {
       const slotEnd = addMinutes(currentSlot, totalDuration);
 
       if (!isBusy(currentSlot, slotEnd)) {
-        availableSlots.push(format(currentSlot, 'HH:mm'));
+        availableSlots.push(formatInTimeZone(currentSlot, tz, 'HH:mm'));
       }
 
       currentSlot = addMinutes(currentSlot, interval);

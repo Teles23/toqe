@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { format, isFuture, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router } from "expo-router";
@@ -17,7 +18,7 @@ import { useAgendamentosMeus } from "@/src/shared/hooks/cliente/use-agendamentos
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { usePullToRefresh } from "@/src/shared/hooks/use-pull-to-refresh";
 import { useTheme } from "@/src/shared/theme";
-import { TenantSwitcherSheet } from "@/src/shared/ui";
+import { StatusPill, TenantSwitcherSheet } from "@/src/shared/ui";
 import type { AgendamentoResponse, StatusAgendamento } from "@toqe/shared";
 
 // ─── Status colors ────────────────────────────────────────────────────────────
@@ -141,23 +142,28 @@ function ClienteAptRow({ item }: { item: AgendamentoResponse }) {
 
         {/* Status pill */}
         {showPill ? (
-          <View style={[styles.statusBadge, { backgroundColor: cor + "1a" }]}>
-            <View style={[styles.statusDot, { backgroundColor: cor }]} />
-            <Text style={[styles.statusBadgeText, { color: cor }]}>
-              {STATUS_SHORT[item.status].toUpperCase()}
-            </Text>
+          <View style={styles.pillWrap}>
+            <StatusPill label={STATUS_SHORT[item.status]} color={cor} />
           </View>
         ) : null}
 
         {/* Avaliar chip */}
         {isConcluido ? (
-          <View style={styles.avaliarChip}>
-            <Text style={styles.avaliarChipText}>★ AVALIAR</Text>
+          <View
+            style={[
+              styles.avaliarChip,
+              { backgroundColor: palette.primary + "14" },
+            ]}
+          >
+            <Feather name="star" size={9} color={palette.primary} />
+            <Text style={[styles.avaliarChipText, { color: palette.primary }]}>
+              AVALIAR
+            </Text>
           </View>
         ) : null}
       </View>
 
-      <Text style={styles.rowChevron}>›</Text>
+      <Feather name="chevron-right" size={16} color={palette.textDisabled} />
     </Pressable>
   );
 }
@@ -264,13 +270,22 @@ export default function ClienteAgendamentosScreen() {
               onPress={() => setShowSwitcher(true)}
               style={styles.tenantPill}
             >
-              <View style={styles.pillLogoMini}>
-                <Text style={styles.pillLogoLetter}>{letraBarbearia}</Text>
+              <View
+                style={[
+                  styles.pillLogoMini,
+                  { backgroundColor: palette.primary },
+                ]}
+              >
+                <Text
+                  style={[styles.pillLogoLetter, { color: palette.primaryOn }]}
+                >
+                  {letraBarbearia}
+                </Text>
               </View>
               <Text style={styles.pillNome} numberOfLines={1}>
                 {barbearia.nome}
               </Text>
-              <Text style={styles.pillSwap}>⇅</Text>
+              <Feather name="repeat" size={11} color={palette.textMuted} />
             </Pressable>
           ) : null}
         </View>
@@ -280,7 +295,7 @@ export default function ClienteAgendamentosScreen() {
           accessibilityLabel="Novo agendamento"
           style={styles.addBtn}
         >
-          <Text style={[styles.addBtnText, { color: palette.primary }]}>+</Text>
+          <Feather name="plus" size={20} color={palette.primary} />
         </Pressable>
       </View>
 
@@ -395,10 +410,6 @@ const styles = StyleSheet.create({
     color: "#f5f5f5",
     maxWidth: 160,
   },
-  pillSwap: {
-    fontSize: 10,
-    color: "#666666",
-  },
   addBtn: {
     width: 44,
     height: 44,
@@ -408,10 +419,6 @@ const styles = StyleSheet.create({
     borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
-  },
-  addBtnText: {
-    fontSize: 22,
-    lineHeight: 26,
   },
   // ── Tabs
   tabsWrap: {
@@ -521,26 +528,8 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     marginBottom: 3,
   },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: "flex-start",
+  pillWrap: {
     marginTop: 4,
-  },
-  statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-  },
-  statusBadgeText: {
-    fontSize: 9,
-    fontFamily: "Inter_700Bold" as never,
-    fontWeight: "800",
-    letterSpacing: 0.8,
   },
   avaliarChip: {
     flexDirection: "row",
@@ -551,18 +540,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignSelf: "flex-start",
     marginTop: 4,
-    backgroundColor: "#F4B40014",
   },
   avaliarChipText: {
     fontSize: 9,
+    fontFamily: "Inter_600SemiBold",
     fontWeight: "800",
-    color: "#F4B400",
     letterSpacing: 0.8,
-  },
-  rowChevron: {
-    fontSize: 16,
-    color: "#444444",
-    flexShrink: 0,
   },
   // ── States
   contentCenter: {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
@@ -6,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,7 +17,7 @@ import { useRejeitarConvite } from "@/src/shared/hooks/use-rejeitar-convite";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { ApiError } from "@/src/shared/api/api-client";
 import { useTheme } from "@/src/shared/theme";
-import { AmberButton, FormInput } from "@/src/shared/ui";
+import { AmberButton, FormInput, GhostButton } from "@/src/shared/ui";
 
 // ─── View state ───────────────────────────────────────────────────────────────
 type ConviteView =
@@ -118,18 +118,30 @@ export default function ConviteTokenScreen() {
           { backgroundColor: palette.bg, flex: 1 },
         ]}
       >
-        <View style={styles.iconBoxRed}>
-          <Text style={styles.iconTextRed}>{"✖"}</Text>
+        <View
+          style={[
+            styles.statusIconBox,
+            { backgroundColor: palette.dangerDim, borderColor: palette.danger },
+          ]}
+        >
+          <Feather name="x-circle" size={40} color={palette.danger} />
         </View>
         <Text style={[styles.screenTitle, { color: palette.text }]}>
           Link inválido
         </Text>
-        <Text style={[styles.screenSubtitle]}>
+        <Text style={[styles.screenSubtitle, { color: palette.textMuted }]}>
           Este convite expirou ou já foi utilizado.
         </Text>
         <Pressable
           disabled
-          style={styles.outlineBtnDisabled}
+          style={[
+            styles.outlineBtnDisabled,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+              borderRadius: radius.xl,
+            },
+          ]}
           accessibilityLabel="Solicitar novo convite"
         >
           <Text style={[typography.label, { color: palette.textMuted }]}>
@@ -151,13 +163,21 @@ export default function ConviteTokenScreen() {
           { backgroundColor: palette.bg, flex: 1 },
         ]}
       >
-        <View style={styles.iconBoxGreen}>
-          <Text style={styles.iconTextGreen}>{"✓"}</Text>
+        <View
+          style={[
+            styles.statusIconBox,
+            {
+              backgroundColor: palette.successDim,
+              borderColor: palette.success,
+            },
+          ]}
+        >
+          <Feather name="check-circle" size={40} color={palette.success} />
         </View>
         <Text style={[styles.screenTitle, { color: palette.text }]}>
           Você já é membro
         </Text>
-        <Text style={[styles.screenSubtitle]}>
+        <Text style={[styles.screenSubtitle, { color: palette.textMuted }]}>
           Sua conta já está vinculada a esta barbearia.
         </Text>
         <AmberButton
@@ -181,17 +201,27 @@ export default function ConviteTokenScreen() {
           { backgroundColor: palette.bg, flex: 1 },
         ]}
       >
-        <View style={styles.iconBoxGreen}>
-          <Text style={styles.iconTextGreen}>{"✓"}</Text>
+        <View
+          style={[
+            styles.welcomeIconBox,
+            {
+              backgroundColor: palette.primaryDim,
+              borderColor: palette.primary,
+            },
+          ]}
+        >
+          <Feather name="scissors" size={42} color={palette.primary} />
         </View>
-        <Text style={[styles.screenTitle, { color: palette.text }]}>
+        <Text style={[styles.welcomeTitle, { color: palette.text }]}>
           {`Bem-vindo,\n${primeiroNome}.`}
         </Text>
-        <Text style={[styles.screenSubtitle]}>
+        <Text style={[styles.screenSubtitle, { color: palette.textMuted }]}>
           {`Você agora faz parte da ${data?.barbeariaNome ?? "equipe"}. Vamos configurar sua agenda?`}
         </Text>
         <AmberButton
           label="Ver minha agenda"
+          icon="calendar"
+          iconRight="arrow-right"
           onPress={() => router.replace("/(barbeiro)/agenda")}
           accessibilityLabel="Ver minha agenda"
         />
@@ -219,7 +249,7 @@ export default function ConviteTokenScreen() {
     );
   }
 
-  // ─── Form ─────────────────────────────────────────────────────────────────────
+  // ─── Form (slide 03 — "Criar sua conta" / "Confirmar acesso") ──────────────────
   if (resolvedView === "form") {
     return (
       <ScrollView
@@ -238,63 +268,60 @@ export default function ConviteTokenScreen() {
 
         <Text
           style={[
-            typography.heading,
+            styles.formTitle,
             { color: palette.text, marginBottom: spacing.sm },
           ]}
         >
-          {data?.isNew ? "Criar conta" : "Confirmar acesso"}
+          {data?.isNew ? "Criar sua conta" : "Confirmar acesso"}
         </Text>
         <Text
           style={[
             typography.caption,
-            { color: palette.textMuted, marginBottom: spacing.xl },
+            {
+              color: palette.textMuted,
+              lineHeight: 18,
+              marginBottom: spacing.xl,
+            },
           ]}
         >
-          {data?.barbeariaNome}
+          {data?.isNew
+            ? "Você é novo por aqui. Informe nome e crie uma senha — o e-mail já vem do convite."
+            : `Confirme sua senha para entrar na ${data?.barbeariaNome ?? "equipe"}.`}
         </Text>
 
         {data?.isNew ? (
-          <View style={{ marginBottom: spacing.md }}>
-            <Text
-              style={[
-                typography.label,
-                { color: palette.textMuted, marginBottom: spacing.xs },
-              ]}
-            >
-              Nome completo
-            </Text>
-            <TextInput
-              testID="input-nome"
-              value={nome}
-              onChangeText={setNome}
-              placeholder="Seu nome"
-              placeholderTextColor={palette.textDisabled}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.inputBorder,
-                  borderRadius: radius.sm,
-                  color: palette.text,
-                  padding: spacing.md,
-                },
-              ]}
-            />
-          </View>
+          <FormInput
+            testID="input-nome"
+            label="Nome completo"
+            leftIcon="user"
+            value={nome}
+            onChangeText={setNome}
+            placeholder="Seu nome"
+            autoCapitalize="words"
+          />
         ) : null}
 
-        <View style={{ marginBottom: spacing.md }}>
-          <FormInput
-            testID="input-senha"
-            label="Senha"
-            value={senha}
-            onChangeText={setSenha}
-            placeholder="Mínimo 8 caracteres"
-            secureToggle
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+        <FormInput
+          label="E-mail · do convite"
+          leftIcon="mail"
+          value={data?.email ?? ""}
+          editable={false}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+
+        <FormInput
+          testID="input-senha"
+          label="Criar senha"
+          hint="mín. 8 chars"
+          leftIcon="shield"
+          value={senha}
+          onChangeText={setSenha}
+          placeholder="Mínimo 8 caracteres"
+          secureToggle
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
 
         {erroConvite ? (
           <Text
@@ -314,16 +341,15 @@ export default function ConviteTokenScreen() {
 
         <AmberButton
           testID="btn-aceitar"
-          label={data?.isNew ? "Criar conta" : "Confirmar"}
+          label={data?.isNew ? "Criar conta e aceitar" : "Confirmar acesso"}
+          iconRight="arrow-right"
           onPress={handleAccept}
         />
       </ScrollView>
     );
   }
 
-  // ─── Landing ─────────────────────────────────────────────────────────────────
-  const primeiraLetra = data?.barbeariaNome?.charAt(0)?.toUpperCase() ?? "B";
-
+  // ─── Landing (slide 02 — convite editorial) ────────────────────────────────────
   return (
     <ScrollView
       testID="convite-landing"
@@ -332,65 +358,57 @@ export default function ConviteTokenScreen() {
         padding: spacing.xl,
         paddingTop: insets.top + spacing.lg,
         paddingBottom: spacing.xxxl,
+        flexGrow: 1,
       }}
     >
       <BackButton palette={palette} spacing={spacing} typography={typography} />
 
-      <View
-        style={[
-          styles.infoCard,
-          {
-            backgroundColor: palette.surface,
-            borderColor: palette.border,
-            borderRadius: radius.md,
-            padding: spacing.lg,
-            marginBottom: spacing.xl,
-            alignItems: "center",
-          },
-        ]}
-      >
-        {/* Barbearia logo placeholder */}
-        <View style={styles.barbeariaBadge}>
-          <Text style={styles.barbeariaBadgeText}>{primeiraLetra}</Text>
+      <View style={styles.landingBody}>
+        <View
+          style={[
+            styles.landingIconBox,
+            {
+              backgroundColor: palette.primaryDim,
+              borderColor: palette.primary,
+              borderRadius: radius.md,
+            },
+          ]}
+        >
+          <Feather name="mail" size={22} color={palette.primary} />
         </View>
 
-        <Text style={styles.conviteLabel}>Você foi convidado para</Text>
-        <Text style={[styles.barbeariaNome, { color: palette.text }]}>
-          {data!.barbeariaNome}
+        <Text style={[styles.eyebrow, { color: palette.primary }]}>
+          Convite · barbeiro
         </Text>
 
-        <View style={styles.divider} />
+        <Text style={[styles.landingTitle, { color: palette.text }]}>
+          {`${data!.barbeariaNome} quer você na equipe.`}
+        </Text>
 
-        <InfoRow
-          label="E-mail"
-          value={data!.email}
-          palette={palette}
-          typography={typography}
-          spacing={spacing}
-        />
-        <InfoRow
-          label="Função"
-          value="Barbeiro"
-          palette={palette}
-          typography={typography}
-          spacing={spacing}
-        />
+        <Text style={[styles.landingParagraph, { color: palette.textMuted }]}>
+          {"O dono enviou um convite para "}
+          <Text style={{ color: palette.text }}>{data!.email}</Text>
+          {" integrar a equipe como "}
+          <Text style={{ color: palette.text }}>barbeiro</Text>
+          {"."}
+        </Text>
       </View>
 
-      <AmberButton
-        label="Aceitar convite"
-        onPress={() => setView("form")}
-        accessibilityLabel="Aceitar convite"
-      />
+      <View style={{ gap: spacing.sm }}>
+        <AmberButton
+          label="Aceitar convite"
+          iconRight="arrow-right"
+          onPress={() => setView("form")}
+          accessibilityLabel="Aceitar convite"
+        />
 
-      <Pressable
-        testID="btn-rejeitar"
-        onPress={handleReject}
-        accessibilityLabel="Rejeitar convite"
-        style={styles.rejeitarBtn}
-      >
-        <Text style={styles.rejeitarBtnText}>Rejeitar convite</Text>
-      </Pressable>
+        <GhostButton
+          testID="btn-rejeitar"
+          label="Rejeitar"
+          onPress={handleReject}
+          accessibilityLabel="Rejeitar convite"
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -411,44 +429,19 @@ function BackButton({
       testID="btn-voltar-convite"
       onPress={() => router.back()}
       accessibilityLabel="Voltar"
-      style={{ marginBottom: spacing.lg, alignSelf: "flex-start" }}
-    >
-      <Text style={[typography.label, { color: palette.textMuted }]}>
-        {"← Voltar"}
-      </Text>
-    </Pressable>
-  );
-}
-
-function InfoRow({
-  label,
-  value,
-  palette,
-  typography,
-  spacing,
-}: {
-  label: string;
-  value: string;
-  palette: ReturnType<typeof useTheme>["palette"];
-  typography: ReturnType<typeof useTheme>["typography"];
-  spacing: ReturnType<typeof useTheme>["spacing"];
-}) {
-  return (
-    <View
       style={{
+        marginBottom: spacing.lg,
+        alignSelf: "flex-start",
         flexDirection: "row",
-        justifyContent: "space-between",
-        marginBottom: spacing.sm,
-        width: "100%",
+        alignItems: "center",
+        gap: spacing.xs,
       }}
     >
-      <Text style={[typography.caption, { color: palette.textMuted }]}>
-        {label}
+      <Feather name="arrow-left" size={16} color={palette.textMuted} />
+      <Text style={[typography.label, { color: palette.textMuted }]}>
+        Voltar
       </Text>
-      <Text style={[typography.captionBold, { color: palette.text }]}>
-        {value}
-      </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -460,41 +453,35 @@ const styles = StyleSheet.create({
   screenPad: {
     padding: 24,
   },
-  input: {
-    borderWidth: 1,
-    fontSize: 16,
-  },
-  infoCard: {
-    borderWidth: 1,
-  },
-  // ─── Icon boxes ───────────────────────────────────────────────────────────────
-  iconBoxGreen: {
+  // ─── Status icon boxes (expired / already member) ───────────────────────────────
+  statusIconBox: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#22c55e20",
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
   },
-  iconTextGreen: {
-    fontSize: 32,
-    color: "#22c55e",
-  },
-  iconBoxRed: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#ef44441a",
+  // ─── Welcome (slide 04) ─────────────────────────────────────────────────────────
+  welcomeIconBox: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 22,
   },
-  iconTextRed: {
-    fontSize: 32,
-    color: "#ef4444",
+  welcomeTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 28,
+    letterSpacing: -1,
+    textAlign: "center",
+    lineHeight: 32,
+    marginBottom: 10,
   },
-  // ─── Screen typography ────────────────────────────────────────────────────────
+  // ─── Shared screen typography (status + welcome subtitle) ────────────────────────
   screenTitle: {
     fontFamily: "Sora_700Bold",
     fontSize: 22,
@@ -504,70 +491,58 @@ const styles = StyleSheet.create({
   screenSubtitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 14,
-    color: "#888888",
+    lineHeight: 21,
     textAlign: "center",
     marginBottom: 24,
+    maxWidth: 300,
   },
   // ─── Expired outline button ───────────────────────────────────────────────────
   outlineBtnDisabled: {
-    backgroundColor: "#171717",
-    borderRadius: 24,
     height: 44,
     borderWidth: 1,
-    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
     opacity: 0.6,
     width: "100%",
   },
-  // ─── Landing: barbearia badge ─────────────────────────────────────────────────
-  barbeariaBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 14,
-    backgroundColor: "#F4B400",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  barbeariaBadgeText: {
-    fontFamily: "Sora_700Bold",
-    fontSize: 24,
-    color: "#0d0d0d",
-  },
-  conviteLabel: {
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    color: "#888888",
-    marginBottom: 4,
-  },
-  barbeariaNome: {
+  // ─── Form (slide 03) ────────────────────────────────────────────────────────────
+  formTitle: {
     fontFamily: "Sora_700Bold",
     fontSize: 22,
-    marginBottom: 16,
-    textAlign: "center",
+    letterSpacing: -0.5,
   },
-  divider: {
-    height: 1,
-    backgroundColor: "#262626",
-    width: "100%",
-    marginBottom: 16,
+  // ─── Landing (slide 02) ─────────────────────────────────────────────────────────
+  landingBody: {
+    flex: 1,
+    justifyContent: "center",
   },
-  // ─── Landing: reject button ───────────────────────────────────────────────────
-  rejeitarBtn: {
-    height: 44,
-    borderRadius: 22,
+  landingIconBox: {
+    width: 46,
+    height: 46,
     borderWidth: 1,
-    borderColor: "#262626",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
-    width: "100%",
+    marginBottom: 24,
   },
-  rejeitarBtnText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 13,
-    color: "#888888",
+  eyebrow: {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  landingTitle: {
+    fontFamily: "Sora_700Bold",
+    fontSize: 30,
+    letterSpacing: -1,
+    lineHeight: 34,
+    marginBottom: 14,
+  },
+  landingParagraph: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 24,
   },
 });

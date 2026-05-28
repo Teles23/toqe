@@ -32,6 +32,29 @@ export const handlers = [
   http.post("/api/auth/change-password", () => HttpResponse.json({ ok: true })),
   http.get("/api/auth/check-email", () => HttpResponse.json({ exists: false })),
 
+  // ── Convite de barbeiro (via Next.js BFF, endpoints públicos) ────────────
+  http.get("/api/convite/:token", ({ params }) =>
+    HttpResponse.json({
+      token: String(params.token),
+      barbeariaNome: "Barbearia Mock",
+      barbeariaSlug: "barbearia-mock",
+      email: "novo@barbeiro.com",
+      perfil: "barbeiro",
+      expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+      isNew: true,
+    }),
+  ),
+  http.post("/api/convite/:token/aceitar", () =>
+    HttpResponse.json({
+      user: { codigo: 42, nome: "Novo Barbeiro", email: "novo@barbeiro.com" },
+      isNew: true,
+      barbeariaNome: "Barbearia Mock",
+    }),
+  ),
+  http.delete("/api/convite/:token", () =>
+    HttpResponse.json({ sucesso: true }),
+  ),
+
   // ── Sessões ──────────────────────────────────────────────────────────────
   http.get("/api/auth/sessions", () =>
     HttpResponse.json([

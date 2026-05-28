@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,6 +20,7 @@ import {
   useCancelarAgendamento,
 } from "@/src/shared/hooks/cliente/use-agendamento";
 import { useTheme } from "@/src/shared/theme";
+import { CircleIconButton } from "@/src/shared/ui";
 import type { StatusAgendamento } from "@toqe/shared";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -59,7 +61,7 @@ function DetailMicro({
   value,
   valueColor,
 }: {
-  icon: string;
+  icon: keyof typeof Feather.glyphMap;
   label: string;
   value: string;
   valueColor?: string;
@@ -68,7 +70,7 @@ function DetailMicro({
   return (
     <View style={styles.detailMicro}>
       <View style={styles.detailMicroLabel}>
-        <Text style={styles.detailMicroIcon}>{icon}</Text>
+        <Feather name={icon} size={11} color={palette.textDisabled} />
         <Text style={styles.detailMicroLabelText}>{label.toUpperCase()}</Text>
       </View>
       <Text
@@ -138,9 +140,10 @@ export default function AgendamentoDetalheScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.back()}
-          style={{ marginTop: 16 }}
+          style={styles.notFoundBack}
         >
-          <Text style={{ color: palette.primary, fontSize: 14 }}>← Voltar</Text>
+          <Feather name="arrow-left" size={16} color={palette.primary} />
+          <Text style={{ color: palette.primary, fontSize: 14 }}>Voltar</Text>
         </Pressable>
       </View>
     );
@@ -188,12 +191,18 @@ export default function AgendamentoDetalheScreen() {
               accessibilityRole="button"
               style={[styles.btnAmber, { backgroundColor: palette.primary }]}
             >
-              <Text style={styles.btnAmberText}>📍 Como chegar</Text>
+              <Feather name="map-pin" size={16} color={palette.primaryOn} />
+              <Text style={[styles.btnAmberText, { color: palette.primaryOn }]}>
+                Como chegar
+              </Text>
             </Pressable>
             <View style={styles.actionsRow}>
               <Pressable accessibilityRole="button" style={styles.btnGhost}>
-                <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
-                  📅 Calendário
+                <Feather name="calendar" size={14} color={palette.textMuted} />
+                <Text
+                  style={[styles.btnGhostText, { color: palette.textMuted }]}
+                >
+                  Calendário
                 </Text>
               </Pressable>
               <Pressable
@@ -205,8 +214,11 @@ export default function AgendamentoDetalheScreen() {
                   )
                 }
               >
-                <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
-                  ✏️ Reagendar
+                <Feather name="repeat" size={14} color={palette.textMuted} />
+                <Text
+                  style={[styles.btnGhostText, { color: palette.textMuted }]}
+                >
+                  Reagendar
                 </Text>
               </Pressable>
               <Pressable
@@ -215,8 +227,9 @@ export default function AgendamentoDetalheScreen() {
                 onPress={handleCancelar}
                 style={styles.btnGhost}
               >
+                <Feather name="x" size={14} color={palette.danger} />
                 <Text style={[styles.btnGhostText, { color: palette.danger }]}>
-                  ✖ Cancelar
+                  Cancelar
                 </Text>
               </Pressable>
             </View>
@@ -261,6 +274,7 @@ export default function AgendamentoDetalheScreen() {
               accessibilityRole="button"
               style={[styles.btnGhostFull, { borderColor: "#262626" }]}
             >
+              <Feather name="refresh-cw" size={15} color="#aaaaaa" />
               <Text style={[styles.btnGhostText, { color: "#aaaaaa" }]}>
                 Repetir esse corte
               </Text>
@@ -271,7 +285,10 @@ export default function AgendamentoDetalheScreen() {
               onPress={() => setAvaliacaoVisible(true)}
               style={styles.btnAvaliar}
             >
-              <Text style={styles.btnAvaliarText}>★ Avaliar atendimento</Text>
+              <Feather name="star" size={15} color={palette.primary} />
+              <Text style={[styles.btnAvaliarText, { color: palette.primary }]}>
+                Avaliar atendimento
+              </Text>
             </Pressable>
           </View>
         );
@@ -324,13 +341,16 @@ export default function AgendamentoDetalheScreen() {
       >
         {/* ── Top bar ── */}
         <View style={styles.topBar}>
-          <Pressable
-            accessibilityRole="button"
+          <CircleIconButton
+            icon="chevron-left"
+            iconSize={20}
+            size={40}
+            iconColor={palette.textMuted}
+            background="#1c1c1c"
+            borderColor="#262626"
             onPress={() => router.back()}
-            style={styles.backBtn}
-          >
-            <Text style={styles.backBtnText}>‹</Text>
-          </Pressable>
+            accessibilityLabel="Voltar"
+          />
           <Text style={styles.topBarTitle}>Detalhes</Text>
           <View style={{ width: 40 }} />
         </View>
@@ -365,8 +385,13 @@ export default function AgendamentoDetalheScreen() {
         <View testID="barbeiro-card" style={styles.serviceCard}>
           {/* Barbeiro row */}
           <View style={styles.serviceCardTop}>
-            <View style={styles.serviceIcon}>
-              <Text style={styles.serviceIconText}>✂</Text>
+            <View
+              style={[
+                styles.serviceIcon,
+                { backgroundColor: palette.primary + "14" },
+              ]}
+            >
+              <Feather name="scissors" size={18} color={palette.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.serviceName, { color: palette.text }]}>
@@ -383,7 +408,14 @@ export default function AgendamentoDetalheScreen() {
                   { backgroundColor: palette.primary },
                 ]}
               >
-                <Text style={styles.barbeiroAvatarLetter}>{initial}</Text>
+                <Text
+                  style={[
+                    styles.barbeiroAvatarLetter,
+                    { color: palette.primaryOn },
+                  ]}
+                >
+                  {initial}
+                </Text>
               </View>
             )}
           </View>
@@ -394,12 +426,12 @@ export default function AgendamentoDetalheScreen() {
           {/* Micro grid */}
           <View style={styles.microGrid}>
             <DetailMicro
-              icon="⏱"
+              icon="clock"
               label="Duração"
               value={`${duracaoTotal}min`}
             />
             <DetailMicro
-              icon="💰"
+              icon="credit-card"
               label="Total"
               value={
                 totalPreco > 0
@@ -415,7 +447,7 @@ export default function AgendamentoDetalheScreen() {
         {podeCancelar ? (
           <View style={styles.locationCard}>
             <View style={styles.locationIcon}>
-              <Text style={{ fontSize: 18 }}>📍</Text>
+              <Feather name="map-pin" size={18} color="#3b82f6" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.locationTitle, { color: palette.text }]}>
@@ -467,6 +499,12 @@ const styles = StyleSheet.create({
     fontFamily: "Sora_700Bold",
     fontSize: 18,
   },
+  notFoundBack: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+  },
   scrollContent: {
     paddingBottom: 120,
   },
@@ -478,21 +516,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 8,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#1c1c1c",
-    borderWidth: 1,
-    borderColor: "#262626",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backBtnText: {
-    color: "#aaaaaa",
-    fontSize: 22,
-    lineHeight: 26,
   },
   topBarTitle: {
     fontSize: 11,
@@ -563,12 +586,8 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 10,
-    backgroundColor: "#F4B40014",
     alignItems: "center",
     justifyContent: "center",
-  },
-  serviceIconText: {
-    fontSize: 18,
   },
   serviceName: {
     fontSize: 14,
@@ -590,7 +609,6 @@ const styles = StyleSheet.create({
   barbeiroAvatarLetter: {
     fontFamily: "Sora_700Bold",
     fontSize: 18,
-    color: "#0d0d0d",
   },
   cardDivider: {
     height: 1,
@@ -610,10 +628,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     marginBottom: 4,
-  },
-  detailMicroIcon: {
-    fontSize: 11,
-    color: "#666666",
   },
   detailMicroLabelText: {
     fontSize: 9,
@@ -691,13 +705,14 @@ const styles = StyleSheet.create({
   btnAmber: {
     height: 48,
     borderRadius: 24,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
   },
   btnAmberText: {
     fontFamily: "Sora_700Bold",
     fontSize: 15,
-    color: "#0d0d0d",
   },
   btnGhost: {
     flex: 1,
@@ -705,16 +720,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#262626",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 5,
     paddingHorizontal: 8,
   },
   btnGhostFull: {
     height: 48,
     borderRadius: 24,
     borderWidth: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
   },
   btnGhostText: {
     fontSize: 12,
@@ -737,13 +756,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F4B40038",
     backgroundColor: "#F4B40014",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
   },
   btnAvaliarText: {
     fontFamily: "Sora_700Bold",
     fontSize: 14,
-    color: "#F4B400",
   },
   noShowBanner: {
     padding: 10,

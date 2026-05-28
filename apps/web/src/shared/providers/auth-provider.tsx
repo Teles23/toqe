@@ -48,6 +48,12 @@ interface AuthActions {
   login: (email: string, senha: string) => Promise<void>;
   /** Completa o login após verificação TOTP. Seta estado e redireciona. */
   verifyTwoFa: (tempToken: string, code: string) => Promise<void>;
+  /**
+   * Estabelece a sessão a partir de cookies já setados pelo BFF (ex: auto-login
+   * após aceite de convite). Apenas recarrega `/usuarios/me` para o estado
+   * global — **não** redireciona (a tela chamadora controla a navegação).
+   */
+  establishSession: () => Promise<void>;
   /** Encerra a sessão. */
   logout: () => Promise<void>;
   /** Troca a barbearia ativa (multi-tenant). */
@@ -128,32 +134,41 @@ export function AuthProvider({
     };
   }, []);
 
+  // Recarrega `/usuarios/me` e popula o estado global. `email` é usado como
+  // fallback quando a resposta não traz o e-mail (ex: 2FA verify sem e-mail).
+  // Retorna `superAdmin` para que o chamador decida o destino de navegação.
+  const loadMeState = useCallback(async (email: string): Promise<boolean> => {
+    const me: UsuarioMe = await api.get("/usuarios/me");
+    const {
+      codigo,
+      nome,
+      email: meEmail,
+      telefone,
+      avatarUrl,
+      twoFaEnabled,
+      superAdmin,
+      barbearias: bars,
+    } = me;
+    setUser({
+      codigo,
+      nome,
+      email: email || meEmail,
+      telefone,
+      avatarUrl,
+      twoFaEnabled: twoFaEnabled ?? false,
+      superAdmin: superAdmin ?? false,
+    });
+    setBarbearias(bars);
+    if (bars.length > 0) {
+      setBarbearia(bars[0]!);
+      setPerfil(bars[0]!.perfil);
+    }
+    return superAdmin ?? false;
+  }, []);
+
   const loadMe = useCallback(
     async (email: string) => {
-      const me: UsuarioMe = await api.get("/usuarios/me");
-      const {
-        codigo,
-        nome,
-        telefone,
-        avatarUrl,
-        twoFaEnabled,
-        superAdmin,
-        barbearias: bars,
-      } = me;
-      setUser({
-        codigo,
-        nome,
-        email,
-        telefone,
-        avatarUrl,
-        twoFaEnabled: twoFaEnabled ?? false,
-        superAdmin: superAdmin ?? false,
-      });
-      setBarbearias(bars);
-      if (bars.length > 0) {
-        setBarbearia(bars[0]!);
-        setPerfil(bars[0]!.perfil);
-      }
+      const superAdmin = await loadMeState(email);
 
       // Super admin vai para o painel interno; usuários normais para o dashboard
       if (superAdmin) {
@@ -163,7 +178,7 @@ export function AuthProvider({
       const params = new URLSearchParams(window.location.search);
       router.push(params.get("redirect") ?? "/dashboard");
     },
-    [router],
+    [router, loadMeState],
   );
 
   // ── Login ──────────────────────────────────────────────────────────────────
@@ -186,6 +201,12 @@ export function AuthProvider({
     },
     [loadMe],
   );
+
+  // ── Establish session (auto-login: cookies já setados pelo BFF) ────────────
+  const establishSession = useCallback(async () => {
+    await loadMeState("");
+    setLoading(false);
+  }, [loadMeState]);
 
   // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
@@ -221,6 +242,7 @@ export function AuthProvider({
       loading,
       login,
       verifyTwoFa,
+      establishSession,
       logout,
       switchBarbearia,
     }),
@@ -232,6 +254,7 @@ export function AuthProvider({
       loading,
       login,
       verifyTwoFa,
+      establishSession,
       logout,
       switchBarbearia,
     ],

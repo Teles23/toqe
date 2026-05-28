@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import { addDays, addMinutes, format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router, useLocalSearchParams } from "expo-router";
@@ -17,7 +18,17 @@ import { useReagendarAgendamento } from "@/src/shared/hooks/cliente/use-reagenda
 import { useTheme } from "@/src/shared/theme";
 import type { AgendamentoItemResponse } from "@toqe/shared";
 
-const HORARIOS = ["08:00", "09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
+const HORARIOS = [
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+];
 
 export default function ReagendarScreen() {
   const { codigo } = useLocalSearchParams<{ codigo: string }>();
@@ -107,13 +118,17 @@ export default function ReagendarScreen() {
           { backgroundColor: palette.surface, borderRadius: radius.md },
         ]}
       >
-        <Text style={[styles.label, { color: palette.textMuted }]}>Barbeiro</Text>
+        <Text style={[styles.label, { color: palette.textMuted }]}>
+          Barbeiro
+        </Text>
         <Text style={[styles.value, { color: palette.text }]}>
           {agendamento.barbeiro.nome}
         </Text>
         {servicosNomes ? (
           <>
-            <Text style={[styles.label, { color: palette.textMuted, marginTop: 8 }]}>
+            <Text
+              style={[styles.label, { color: palette.textMuted, marginTop: 8 }]}
+            >
               Serviços
             </Text>
             <Text style={[styles.value, { color: palette.text }]}>
@@ -129,20 +144,30 @@ export default function ReagendarScreen() {
       <View style={styles.row}>
         <Pressable
           testID="btn-dia-anterior"
+          accessibilityRole="button"
+          accessibilityLabel="Dia anterior"
           onPress={() => setData((d) => subDays(d, 1))}
-          style={[styles.navBtn, { backgroundColor: palette.surface, borderRadius: radius.sm }]}
+          style={[
+            styles.navBtn,
+            { backgroundColor: palette.surface, borderRadius: radius.sm },
+          ]}
         >
-          <Text style={{ color: palette.text, fontSize: 18 }}>‹</Text>
+          <Feather name="chevron-left" size={18} color={palette.text} />
         </Pressable>
         <Text style={[styles.dateText, { color: palette.text }]}>
           {format(data, "EEEE, dd/MM", { locale: ptBR })}
         </Text>
         <Pressable
           testID="btn-proximo-dia"
+          accessibilityRole="button"
+          accessibilityLabel="Próximo dia"
           onPress={() => setData((d) => addDays(d, 1))}
-          style={[styles.navBtn, { backgroundColor: palette.surface, borderRadius: radius.sm }]}
+          style={[
+            styles.navBtn,
+            { backgroundColor: palette.surface, borderRadius: radius.sm },
+          ]}
         >
-          <Text style={{ color: palette.text, fontSize: 18 }}>›</Text>
+          <Feather name="chevron-right" size={18} color={palette.text} />
         </Pressable>
       </View>
 
@@ -158,7 +183,8 @@ export default function ReagendarScreen() {
             style={[
               styles.horarioBtn,
               {
-                backgroundColor: horario === h ? palette.primary : palette.surface,
+                backgroundColor:
+                  horario === h ? palette.primary : palette.surface,
                 borderRadius: radius.sm,
               },
             ]}
@@ -200,15 +226,29 @@ export default function ReagendarScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
-  sectionTitle: { fontSize: 14, fontWeight: "600", marginTop: 20, marginBottom: 10 },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginTop: 20,
+    marginBottom: 10,
+  },
   card: { padding: 16 },
   label: { fontSize: 12, marginBottom: 2 },
   value: { fontSize: 15, fontWeight: "500" },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   navBtn: { padding: 10, width: 40, alignItems: "center" },
   dateText: { fontSize: 15, fontWeight: "600", flex: 1, textAlign: "center" },
   horariosGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  horarioBtn: { paddingHorizontal: 14, paddingVertical: 10, minWidth: 72, alignItems: "center" },
+  horarioBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minWidth: 72,
+    alignItems: "center",
+  },
   confirmBtn: { padding: 16, alignItems: "center", marginTop: 24 },
   confirmBtnText: { fontSize: 15, fontWeight: "700" },
 });

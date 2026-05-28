@@ -108,15 +108,23 @@
 | Web    | 170 passing | ✅   | ✅    |
 | Mobile | 256 passing | ✅   | ✅    |
 
+### CI / Cobertura de testes
+
+| Workflow        | Gatilho             | O que roda                                          |
+| --------------- | ------------------- | --------------------------------------------------- |
+| `ci-fast.yml`   | PR → develop / main | lint, types, unit tests (api+web), build            |
+| `ci-full.yml`   | push → develop      | integration (Testcontainers) + security (supertest) |
+| `ci-e2e.yml`    | push → develop      | E2E web completo (Playwright · Chrome)              |
+| `ci-load.yml`   | workflow_dispatch   | load tests k6 (auth, agendamento, barbearia)        |
+| `ci-deploy.yml` | push → main / tags  | docker build + deploy VPS                           |
+| `gitleaks.yml`  | push / PR           | scan de secrets                                     |
+
 ---
 
 ## Próximas features planejadas
 
 Consultar `docs/toqe_plano_estrategico.md` para o roadmap completo. Itens de médio prazo ainda abertos:
 
-- Testes de integração com Testcontainers (BD real)
-- Testes E2E web (Playwright)
-- Testes E2E mobile (Maestro)
-- Testes de carga (k6)
+- Testes E2E mobile (Maestro) no CI
 - Medição formal de baseline de performance (cold start, bundle size)
 - Super Admin Phase 2: impersonação de tenant, métricas Prometheus, alertas Sentry
