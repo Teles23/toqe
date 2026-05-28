@@ -86,6 +86,22 @@ function ChartContainer({
   );
 }
 
+function sanitizeCssKey(key: string): string {
+  return key.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function sanitizeCssColor(color: string): string {
+  // Permite: hex (#fff, #ffffff, #ffffffff), rgb(...), hsl(...), var(--...)
+  if (
+    /^(#[0-9a-fA-F]{3,8}|rgb\([\d,\s]+\)|hsl\([\d,\s%]+\)|var\(--[\w-]+\))$/.test(
+      color,
+    )
+  ) {
+    return color;
+  }
+  return "transparent";
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme || config.color,
@@ -104,10 +120,13 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color =
+    const rawColor =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    if (!rawColor) return null;
+    const safeKey = sanitizeCssKey(key);
+    const safeColor = sanitizeCssColor(rawColor);
+    return `  --color-${safeKey}: ${safeColor};`;
   })
   .join("\n")}
 }

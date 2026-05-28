@@ -48,6 +48,7 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
   @Get('check-email')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT')

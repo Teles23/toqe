@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { createHmac } from 'crypto';
 import { ApiKeyService } from './api-key.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ApiKey } from '../generated/prisma';
@@ -55,7 +55,7 @@ describe('ApiKeyService', () => {
       expect(result.key).toMatch(/^toqe_[0-9a-f]{8}_[0-9a-f]{32}$/);
     });
 
-    it('persiste keyHash SHA-256 da key no banco', async () => {
+    it('persiste keyHash HMAC-SHA-256 da key no banco', async () => {
       createMock.mockResolvedValue(mockApiKey);
 
       const result = await service.criar(10, 'Minha Integração');
@@ -63,7 +63,9 @@ describe('ApiKeyService', () => {
       const callArg = createMock.mock.calls[0][0] as {
         data: { keyHash: string };
       };
-      const expectedHash = createHash('sha256')
+      const hmacSecret =
+        process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET ?? 'fallback';
+      const expectedHash = createHmac('sha256', hmacSecret)
         .update(result.key)
         .digest('hex');
 

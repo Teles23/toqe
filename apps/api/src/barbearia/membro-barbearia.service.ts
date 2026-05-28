@@ -103,6 +103,7 @@ export class MembroBarbeariaService {
             },
           },
           orderBy: { inicio: 'desc' },
+          take: 50,
         });
 
         const totalGasto = somarAgendamentos(agendamentos);

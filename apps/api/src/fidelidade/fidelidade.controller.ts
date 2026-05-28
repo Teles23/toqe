@@ -41,7 +41,7 @@ export class FidelidadeController {
   ) {
     return this.fidelidadeService.getRanking(
       Number(barCodigo),
-      Number(limit ?? 10),
+      Math.min(Number(limit ?? 10), 100),
     );
   }
 

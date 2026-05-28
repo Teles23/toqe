@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { createHmac } from 'crypto';
 import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -30,7 +30,9 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('invalid api key format');
     }
 
-    const hash = createHash('sha256').update(key).digest('hex');
+    const hmacSecret =
+      process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET ?? 'fallback';
+    const hash = createHmac('sha256', hmacSecret).update(key).digest('hex');
 
     const apiKey = await this.prisma.apiKey.findFirst({
       where: { keyHash: hash, ativo: true },

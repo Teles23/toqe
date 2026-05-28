@@ -45,7 +45,7 @@ Crie `apps/mobile/.env`:
 
 ```env
 EXPO_PUBLIC_API_URL=https://toqe.duckdns.org/api/v1
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=1095847529893-b71gjl8nqpjl5vo0ppd5c5iljfof684m.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=SEU_GOOGLE_CLIENT_ID.apps.googleusercontent.com
 # Preencher após rodar: eas init (veja seção EAS abaixo)
 EAS_PROJECT_ID=
 ```
