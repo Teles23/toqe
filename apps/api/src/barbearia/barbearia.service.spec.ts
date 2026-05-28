@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { BarbeariaService } from './barbearia.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { Barbearia } from '../generated/prisma';
 
 const mockPrisma = createPrismaMock();
 
@@ -26,12 +27,12 @@ describe('BarbeariaService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue(null);
       const barbearia = { codigo: 1, nome: 'BarberShop', slug: 'bs' };
       mockPrisma.$transaction.mockImplementation(
-        (fn: (tx: unknown) => unknown) => {
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
             barbearia: { create: jest.fn().mockResolvedValue(barbearia) },
             membroBarbearia: { create: jest.fn().mockResolvedValue({}) },
           };
-          return fn(tx);
+          return fn(tx as unknown as typeof mockPrisma);
         },
       );
 
@@ -43,7 +44,9 @@ describe('BarbeariaService', () => {
     });
 
     it('lança ConflictException se slug duplicado', async () => {
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ codigo: 1 });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        codigo: 1,
+      } as unknown as Barbearia);
       await expect(
         service.create({ nome: 'X', slug: 'bs' }, 1),
       ).rejects.toThrow(ConflictException);
@@ -53,7 +56,9 @@ describe('BarbeariaService', () => {
   describe('findOne', () => {
     it('retorna barbearia quando encontrada', async () => {
       const barbearia = { codigo: 1, nome: 'BS', slug: 'bs', tema: null };
-      mockPrisma.barbearia.findUnique.mockResolvedValue(barbearia);
+      mockPrisma.barbearia.findUnique.mockResolvedValue(
+        barbearia as unknown as Barbearia,
+      );
 
       const result = await service.findOne(1);
       expect(result).toEqual(barbearia);
@@ -70,7 +75,9 @@ describe('BarbeariaService', () => {
       const mockList = [
         { codigo: 1, nome: 'Barbearia A', slug: 'a', tema: null },
       ];
-      mockPrisma.barbearia.findMany.mockResolvedValue(mockList);
+      mockPrisma.barbearia.findMany.mockResolvedValue(
+        mockList as unknown as Barbearia[],
+      );
       const result = await service.findPublico();
       expect(result).toEqual(mockList);
       expect(mockPrisma.barbearia.findMany).toHaveBeenCalledWith(
@@ -113,7 +120,9 @@ describe('BarbeariaService', () => {
           fechamento: '19:00',
         },
       ];
-      mockPrisma.barbearia.findUnique.mockResolvedValue(barbearia);
+      mockPrisma.barbearia.findUnique.mockResolvedValue(
+        barbearia as unknown as Barbearia,
+      );
       mockPrisma.horarioFuncionamento.findMany.mockResolvedValue(horarios);
 
       const result = await service.getHorarios(1);
@@ -141,7 +150,9 @@ describe('BarbeariaService', () => {
         fechamento: '19:00',
       };
 
-      mockPrisma.barbearia.findUnique.mockResolvedValue(barbearia);
+      mockPrisma.barbearia.findUnique.mockResolvedValue(
+        barbearia as unknown as Barbearia,
+      );
       mockPrisma.$transaction.mockResolvedValue([horarioSalvo]);
       mockPrisma.horarioFuncionamento.findMany.mockResolvedValue([
         horarioSalvo,
