@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # ---- Builder ----
@@ -28,7 +28,7 @@ ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 RUN pnpm --filter web run build
 
 # ---- Runner ----
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
 WORKDIR /app
