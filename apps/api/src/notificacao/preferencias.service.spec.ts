@@ -2,6 +2,7 @@ import { PreferenciasService } from './preferencias.service';
 import { UpdatePreferenciasDto } from './dto/update-preferencias.dto';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { NotificacaoPreferencia } from '../generated/prisma';
 
 describe('PreferenciasService', () => {
   let service: PreferenciasService;
@@ -28,8 +29,8 @@ describe('PreferenciasService', () => {
 
     it('should override defaults with DB records', async () => {
       prisma.notificacaoPreferencia.findMany.mockResolvedValueOnce([
-        { canal: 'email', ativo: false },
-        { canal: 'push', ativo: true },
+        { canal: 'email', ativo: false } as unknown as NotificacaoPreferencia,
+        { canal: 'push', ativo: true } as unknown as NotificacaoPreferencia,
       ]);
 
       const result = await service.find(1, 1);
@@ -47,10 +48,13 @@ describe('PreferenciasService', () => {
     it('should call $transaction and then return find result', async () => {
       prisma.$transaction.mockResolvedValueOnce(undefined);
       prisma.notificacaoPreferencia.findMany.mockResolvedValueOnce([
-        { canal: 'email', ativo: true },
-        { canal: 'push', ativo: true },
-        { canal: 'whatsapp', ativo: false },
-        { canal: 'sms', ativo: false },
+        { canal: 'email', ativo: true } as unknown as NotificacaoPreferencia,
+        { canal: 'push', ativo: true } as unknown as NotificacaoPreferencia,
+        {
+          canal: 'whatsapp',
+          ativo: false,
+        } as unknown as NotificacaoPreferencia,
+        { canal: 'sms', ativo: false } as unknown as NotificacaoPreferencia,
       ]);
 
       const dto: UpdatePreferenciasDto = {

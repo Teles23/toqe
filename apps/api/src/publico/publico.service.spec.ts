@@ -1,5 +1,12 @@
 import { Test } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Barbearia,
+  MembroBarbearia,
+  BarbeiroServico,
+  AvaliacaoAgendamento,
+  Servico,
+} from '../generated/prisma';
 import { PublicoService } from './publico.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
@@ -52,7 +59,9 @@ describe('PublicoService', () => {
         timezone: 'America/Sao_Paulo',
         tema: null,
       };
-      mockPrisma.barbearia.findUnique.mockResolvedValue(barbearia);
+      mockPrisma.barbearia.findUnique.mockResolvedValue(
+        barbearia as unknown as Barbearia,
+      );
 
       const result = await service.getBarbeariaPorSlug('urban');
       expect(result).toEqual(barbearia);
@@ -69,7 +78,7 @@ describe('PublicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         codigo: 1,
         ativo: false,
-      });
+      } as unknown as Barbearia);
       await expect(service.getBarbeariaPorSlug('urban')).rejects.toThrow(
         NotFoundException,
       );
@@ -81,7 +90,7 @@ describe('PublicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         codigo: 1,
         ativo: true,
-      });
+      } as unknown as Barbearia);
       mockServico.findAll.mockResolvedValue([
         {
           codigo: 1,
@@ -106,7 +115,7 @@ describe('PublicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         codigo: 1,
         ativo: true,
-      });
+      } as unknown as Barbearia);
       mockPrisma.membroBarbearia.findMany.mockResolvedValue([
         {
           usrCodigo: 10,
@@ -118,7 +127,7 @@ describe('PublicoService', () => {
             avatarUrl: null,
           },
         },
-      ]);
+      ] as unknown as MembroBarbearia[]);
 
       const result = await service.listarBarbeiros('urban');
       expect(result).toEqual([{ codigo: 10, nome: 'Carlos', avatarUrl: null }]);
@@ -128,7 +137,7 @@ describe('PublicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         codigo: 1,
         ativo: true,
-      });
+      } as unknown as Barbearia);
       mockPrisma.membroBarbearia.findMany.mockResolvedValue([
         {
           usrCodigo: 10,
@@ -138,11 +147,11 @@ describe('PublicoService', () => {
           usrCodigo: 11,
           usuario: { codigo: 11, nome: 'Bruno', avatarUrl: null },
         },
-      ]);
+      ] as unknown as MembroBarbearia[]);
       // Bruno (11) desativou o serviço 5
       mockPrisma.barbeiroServico.findMany.mockResolvedValue([
         { barbeiroId: 11 },
-      ]);
+      ] as unknown as BarbeiroServico[]);
 
       const result = await service.listarBarbeiros('urban', 5);
 
@@ -159,7 +168,7 @@ describe('PublicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         codigo: 1,
         ativo: true,
-      });
+      } as unknown as Barbearia);
     });
 
     it('retorna slots de um barbeiro específico', async () => {
@@ -188,7 +197,7 @@ describe('PublicoService', () => {
       mockPrisma.membroBarbearia.findMany.mockResolvedValue([
         { usrCodigo: 10 },
         { usrCodigo: 11 },
-      ]);
+      ] as unknown as MembroBarbearia[]);
       mockAgenda.getAvailableSlots
         .mockResolvedValueOnce(['09:00', '09:30']) // barbeiro 10
         .mockResolvedValueOnce(['09:30', '10:00']); // barbeiro 11
@@ -214,7 +223,7 @@ describe('PublicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         codigo: 1,
         ativo: true,
-      });
+      } as unknown as Barbearia);
     });
 
     it('retorna media, total e items sem dados pessoais', async () => {
@@ -229,7 +238,7 @@ describe('PublicoService', () => {
           comentario: null,
           criadoEm: new Date('2026-04-20T09:00:00.000Z'),
         },
-      ]);
+      ] as unknown as AvaliacaoAgendamento[]);
 
       const result = await service.listarAvaliacoes('urban');
 
@@ -293,7 +302,7 @@ describe('PublicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         codigo: 1,
         ativo: true,
-      });
+      } as unknown as Barbearia);
       mockMembro.findOrCreateCliente.mockResolvedValue({
         usrCodigo: 99,
         usuario: { codigo: 99, nome: 'João', email: 'joao@x.com' },
@@ -325,11 +334,11 @@ describe('PublicoService', () => {
       mockPrisma.servico.findMany.mockResolvedValue([
         { duracaoBase: 30 },
         { duracaoBase: 20 },
-      ]);
+      ] as unknown as Servico[]);
       mockPrisma.membroBarbearia.findMany.mockResolvedValue([
         { usrCodigo: 11 },
         { usrCodigo: 12 },
-      ]);
+      ] as unknown as MembroBarbearia[]);
       mockAgenda.getAvailableSlots
         .mockResolvedValueOnce(['10:00']) // 11 não tem 09:00
         .mockResolvedValueOnce(['09:00', '09:30']); // 12 tem 09:00
@@ -344,10 +353,12 @@ describe('PublicoService', () => {
     });
 
     it('lança 400 quando nenhum barbeiro tem o horário pedido', async () => {
-      mockPrisma.servico.findMany.mockResolvedValue([{ duracaoBase: 30 }]);
+      mockPrisma.servico.findMany.mockResolvedValue([
+        { duracaoBase: 30 },
+      ] as unknown as Servico[]);
       mockPrisma.membroBarbearia.findMany.mockResolvedValue([
         { usrCodigo: 11 },
-      ]);
+      ] as unknown as MembroBarbearia[]);
       mockAgenda.getAvailableSlots.mockResolvedValue(['10:00', '10:30']); // sem 09:00
 
       await expect(

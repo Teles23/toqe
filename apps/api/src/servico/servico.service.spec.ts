@@ -4,6 +4,13 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  Prisma,
+  Servico,
+  BarbeiroServico,
+  Barbearia,
+  Agendamento,
+} from '../generated/prisma';
 import { ServicoService } from './servico.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
@@ -36,7 +43,15 @@ describe('ServicoService', () => {
         duracaoBase: 30,
         precoBase: 25,
       };
-      const created = { codigo: 1, ...dto, barCodigo, ativo: true };
+      const created = {
+        codigo: 1,
+        nome: dto.nome,
+        duracaoBase: dto.duracaoBase,
+        precoBase: new Prisma.Decimal(dto.precoBase),
+        barCodigo,
+        ativo: true,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico;
       mockPrisma.servico.create.mockResolvedValue(created);
 
       const result = await service.create(dto, barCodigo);
@@ -49,7 +64,17 @@ describe('ServicoService', () => {
 
   describe('findAll', () => {
     it('retorna apenas serviços ativos da barbearia', async () => {
-      mockPrisma.servico.findMany.mockResolvedValue([{ codigo: 1 }]);
+      mockPrisma.servico.findMany.mockResolvedValue([
+        {
+          codigo: 1,
+          nome: 'Corte',
+          barCodigo,
+          ativo: true,
+          precoBase: null,
+          duracaoBase: null,
+          exclusivoBarbeiroId: null,
+        } satisfies Servico,
+      ]);
       await service.findAll(barCodigo);
       expect(mockPrisma.servico.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { barCodigo, ativo: true } }),
@@ -59,7 +84,15 @@ describe('ServicoService', () => {
 
   describe('findOne', () => {
     it('retorna serviço quando encontrado', async () => {
-      const srv = { codigo: 5, nome: 'Barba', barCodigo };
+      const srv = {
+        codigo: 5,
+        nome: 'Barba',
+        barCodigo,
+        ativo: true,
+        precoBase: null,
+        duracaoBase: null,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico;
       mockPrisma.servico.findFirst.mockResolvedValue(srv);
       const result = await service.findOne(5, barCodigo);
       expect(result).toEqual(srv);
@@ -75,7 +108,15 @@ describe('ServicoService', () => {
 
   describe('update', () => {
     it('atualiza e retorna serviço', async () => {
-      const srv = { codigo: 5, nome: 'Barba', barCodigo };
+      const srv = {
+        codigo: 5,
+        nome: 'Barba',
+        barCodigo,
+        ativo: true,
+        precoBase: null,
+        duracaoBase: null,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico;
       mockPrisma.servico.findFirst.mockResolvedValue(srv);
       mockPrisma.servico.update.mockResolvedValue({
         ...srv,
@@ -90,7 +131,15 @@ describe('ServicoService', () => {
 
   describe('remove', () => {
     it('faz soft delete setando ativo: false', async () => {
-      const srv = { codigo: 5, barCodigo, ativo: true };
+      const srv = {
+        codigo: 5,
+        barCodigo,
+        ativo: true,
+        nome: 'Corte',
+        precoBase: null,
+        duracaoBase: null,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico;
       mockPrisma.servico.findFirst.mockResolvedValue(srv);
       mockPrisma.servico.update.mockResolvedValue({ ...srv, ativo: false });
 
@@ -108,7 +157,7 @@ describe('ServicoService', () => {
       mockPrisma.agendamento.findMany.mockResolvedValue([
         { itens: [{ preco: '50.00' }, { preco: '30.00' }] },
         { itens: [{ preco: '100.00' }] },
-      ]);
+      ] as unknown as Agendamento[]);
 
       const result = await service.getMetricas(1);
 
@@ -137,20 +186,32 @@ describe('ServicoService', () => {
         {
           codigo: 1,
           nome: 'Corte',
-          precoBase: 40,
+          precoBase: new Prisma.Decimal(40),
           duracaoBase: 30,
           exclusivoBarbeiroId: null,
-        },
+          barCodigo,
+          ativo: true,
+        } satisfies Servico,
         {
           codigo: 2,
           nome: 'Selagem',
-          precoBase: 80,
+          precoBase: new Prisma.Decimal(80),
           duracaoBase: 60,
           exclusivoBarbeiroId: 7,
-        },
+          barCodigo,
+          ativo: true,
+        } satisfies Servico,
       ]);
       mockPrisma.barbeiroServico.findMany.mockResolvedValue([
-        { srvCodigo: 1, precoProprio: 55, duracaoMin: 45, ativo: true },
+        {
+          codigo: 1,
+          barCodigo,
+          barbeiroId: 7,
+          srvCodigo: 1,
+          precoProprio: new Prisma.Decimal(55),
+          duracaoMin: 45,
+          ativo: true,
+        } satisfies BarbeiroServico,
       ]);
 
       const r = await service.findServicosBarbeiro(barCodigo, 7);
@@ -180,20 +241,32 @@ describe('ServicoService', () => {
         {
           codigo: 1,
           nome: 'A',
-          precoBase: 10,
+          precoBase: new Prisma.Decimal(10),
           duracaoBase: 20,
           exclusivoBarbeiroId: null,
-        },
+          barCodigo,
+          ativo: true,
+        } satisfies Servico,
         {
           codigo: 2,
           nome: 'B',
-          precoBase: 10,
+          precoBase: new Prisma.Decimal(10),
           duracaoBase: 20,
           exclusivoBarbeiroId: null,
-        },
+          barCodigo,
+          ativo: true,
+        } satisfies Servico,
       ]);
       mockPrisma.barbeiroServico.findMany.mockResolvedValue([
-        { srvCodigo: 1, precoProprio: null, duracaoMin: 20, ativo: false },
+        {
+          codigo: 1,
+          barCodigo,
+          barbeiroId: 7,
+          srvCodigo: 1,
+          precoProprio: null,
+          duracaoMin: 20,
+          ativo: false,
+        } satisfies BarbeiroServico,
       ]);
 
       const r = await service.findServicosBarbeiro(barCodigo, 7);
@@ -209,8 +282,20 @@ describe('ServicoService', () => {
         codigo: 5,
         barCodigo,
         duracaoBase: 25,
-      });
-      mockPrisma.barbeiroServico.upsert.mockResolvedValue({});
+        nome: 'Corte',
+        ativo: true,
+        precoBase: null,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico);
+      mockPrisma.barbeiroServico.upsert.mockResolvedValue({
+        codigo: 1,
+        barCodigo,
+        barbeiroId: 7,
+        srvCodigo: 5,
+        ativo: false,
+        duracaoMin: 25,
+        precoProprio: null,
+      } satisfies BarbeiroServico);
 
       await service.toggleServicoBarbeiro(barCodigo, 7, 5, false);
 
@@ -235,7 +320,7 @@ describe('ServicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         barbeiroAlteraPreco: false,
         barbeiroCriaServico: false,
-      });
+      } as unknown as Barbearia);
       await expect(
         service.atualizarServicoBarbeiro(
           barCodigo,
@@ -248,8 +333,24 @@ describe('ServicoService', () => {
     });
 
     it('dono altera mesmo com flag false (upsert)', async () => {
-      mockPrisma.servico.findFirst.mockResolvedValue({ codigo: 5, barCodigo });
-      mockPrisma.barbeiroServico.upsert.mockResolvedValue({});
+      mockPrisma.servico.findFirst.mockResolvedValue({
+        codigo: 5,
+        barCodigo,
+        nome: 'Corte',
+        ativo: true,
+        precoBase: null,
+        duracaoBase: null,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico);
+      mockPrisma.barbeiroServico.upsert.mockResolvedValue({
+        codigo: 1,
+        barCodigo,
+        barbeiroId: 7,
+        srvCodigo: 5,
+        ativo: true,
+        duracaoMin: 30,
+        precoProprio: new Prisma.Decimal(50),
+      } satisfies BarbeiroServico);
 
       await service.atualizarServicoBarbeiro(
         barCodigo,
@@ -267,9 +368,25 @@ describe('ServicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         barbeiroAlteraPreco: true,
         barbeiroCriaServico: false,
-      });
-      mockPrisma.servico.findFirst.mockResolvedValue({ codigo: 5, barCodigo });
-      mockPrisma.barbeiroServico.upsert.mockResolvedValue({});
+      } as unknown as Barbearia);
+      mockPrisma.servico.findFirst.mockResolvedValue({
+        codigo: 5,
+        barCodigo,
+        nome: 'Corte',
+        ativo: true,
+        precoBase: null,
+        duracaoBase: null,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico);
+      mockPrisma.barbeiroServico.upsert.mockResolvedValue({
+        codigo: 1,
+        barCodigo,
+        barbeiroId: 7,
+        srvCodigo: 5,
+        ativo: true,
+        duracaoMin: 40,
+        precoProprio: null,
+      } satisfies BarbeiroServico);
 
       await service.atualizarServicoBarbeiro(
         barCodigo,
@@ -291,11 +408,16 @@ describe('ServicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         barbeiroAlteraPreco: false,
         barbeiroCriaServico: true,
-      });
+      } as unknown as Barbearia);
       mockPrisma.servico.findFirst.mockResolvedValue({
         codigo: 9,
         nome: 'Corte',
-      });
+        barCodigo,
+        ativo: true,
+        precoBase: null,
+        duracaoBase: null,
+        exclusivoBarbeiroId: null,
+      } satisfies Servico);
 
       await expect(
         service.criarServicoExclusivo(
@@ -311,9 +433,17 @@ describe('ServicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         barbeiroAlteraPreco: false,
         barbeiroCriaServico: true,
-      });
+      } as unknown as Barbearia);
       mockPrisma.servico.findFirst.mockResolvedValue(null);
-      mockPrisma.servico.create.mockResolvedValue({ codigo: 10 });
+      mockPrisma.servico.create.mockResolvedValue({
+        codigo: 10,
+        nome: 'Navalhado',
+        barCodigo,
+        ativo: true,
+        precoBase: null,
+        duracaoBase: null,
+        exclusivoBarbeiroId: 7,
+      } satisfies Servico);
 
       await service.criarServicoExclusivo(
         barCodigo,
@@ -336,7 +466,7 @@ describe('ServicoService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         barbeiroAlteraPreco: false,
         barbeiroCriaServico: false,
-      });
+      } as unknown as Barbearia);
       await expect(
         service.criarServicoExclusivo(
           barCodigo,

@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ClienteNotaService } from './cliente-nota.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import type { ClienteNota } from '../generated/prisma';
 
 const mockPrisma = createPrismaMock();
 
@@ -29,7 +30,7 @@ describe('ClienteNotaService', () => {
       mockPrisma.clienteNota.findUnique.mockResolvedValue({
         conteudo: 'máquina 2 nas laterais',
         atualizadoEm: data,
-      });
+      } as unknown as ClienteNota);
 
       const result = await service.obterNota(barCodigo, barbeiroId, clienteId);
 
@@ -60,7 +61,7 @@ describe('ClienteNotaService', () => {
       mockPrisma.clienteNota.upsert.mockResolvedValue({
         conteudo: 'corte na régua',
         atualizadoEm: data,
-      });
+      } as unknown as ClienteNota);
 
       const result = await service.salvarNota(
         barCodigo,

@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { TemaTenantService } from './tema-tenant.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import { TemaTenant } from '../generated/prisma';
 
 const mockPrisma = createPrismaMock();
 
@@ -23,13 +24,14 @@ describe('TemaTenantService', () => {
   describe('getTema', () => {
     it('retorna tema quando existe', async () => {
       const tema = {
+        codigo: 1,
         barCodigo: 1,
         corPrimaria: '#000',
         corFundo: '#fff',
         logoUrl: null,
         subdominio: null,
       };
-      mockPrisma.temaTenant.findUnique.mockResolvedValue(tema);
+      mockPrisma.temaTenant.findUnique.mockResolvedValue(tema as TemaTenant);
 
       const result = await service.getTema(1);
       expect(result).toEqual(tema);
@@ -57,8 +59,8 @@ describe('TemaTenantService', () => {
         logoUrl: null,
         subdominio: null,
       };
-      const tema = { barCodigo: 1, ...dto };
-      mockPrisma.temaTenant.upsert.mockResolvedValue(tema);
+      const tema = { codigo: 1, barCodigo: 1, ...dto };
+      mockPrisma.temaTenant.upsert.mockResolvedValue(tema as TemaTenant);
 
       const result = await service.upsertTema(1, dto as never);
       expect(result).toEqual(tema);
