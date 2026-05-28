@@ -35,26 +35,26 @@ const rawWalkIn = () => ({
 });
 
 describe('serializeAgendamento', () => {
-  it('mapeia cliente.codigo → usrCodigo, tipo="usuario", expõe email (TQE_USR)', () => {
+  it('mapeia cliente.codigo → usrCodigo, tipo="usuario", não expõe email (PII removido)', () => {
     const r = serializeAgendamento(rawAgendamento());
     expect(r.cliente).toEqual({
       usrCodigo: 42,
       nome: 'João',
       telefone: '+5511999999999',
       tipo: 'usuario',
-      email: 'joao@x.com',
     });
+    expect(r.cliente).not.toHaveProperty('email');
   });
 
-  it('walk-in: contato.codigo → usrCodigo, tipo="contato", email=null (TQE_CONTATO)', () => {
+  it('walk-in: contato.codigo → usrCodigo, tipo="contato", sem campo email (TQE_CONTATO)', () => {
     const r = serializeAgendamento(rawWalkIn());
     expect(r.cliente).toEqual({
       usrCodigo: 99,
       nome: 'Encaixe',
       telefone: '+5511888881111',
       tipo: 'contato',
-      email: null,
     });
+    expect(r.cliente).not.toHaveProperty('email');
   });
 
   it('campo contato não aparece na resposta pública (absorvido em cliente)', () => {

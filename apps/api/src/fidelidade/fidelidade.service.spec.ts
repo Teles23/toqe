@@ -8,6 +8,9 @@ const makePrisma = () => ({
     findFirst: jest.fn(),
     update: jest.fn(),
   },
+  membroBarbearia: {
+    findFirst: jest.fn(),
+  },
   pontoFidelidade: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
@@ -49,6 +52,10 @@ describe('FidelidadeService', () => {
           tipo: 'ganho',
         },
       ];
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        barCodigo: 10,
+        usrCodigo: 1,
+      });
       prisma.usuario.findFirst.mockResolvedValue(cliente);
       prisma.pontoFidelidade.findMany.mockResolvedValue(historico);
 
@@ -69,6 +76,10 @@ describe('FidelidadeService', () => {
     });
 
     it('lança NotFoundException quando cliente não existe', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        barCodigo: 10,
+        usrCodigo: 999,
+      });
       prisma.usuario.findFirst.mockResolvedValue(null);
 
       await expect(service.getSaldo(999, 10)).rejects.toThrow(
@@ -181,6 +192,10 @@ describe('FidelidadeService', () => {
 
   describe('resgatar', () => {
     it('resgata pontos e retorna desconto correto (R$0,50 por ponto)', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        barCodigo: 10,
+        usrCodigo: 1,
+      });
       prisma.usuario.findFirst.mockResolvedValue({
         codigo: 1,
         pontosAcumulados: 100,
@@ -205,6 +220,10 @@ describe('FidelidadeService', () => {
     });
 
     it('lança BadRequestException quando saldo é insuficiente', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        barCodigo: 10,
+        usrCodigo: 1,
+      });
       prisma.usuario.findFirst.mockResolvedValue({
         codigo: 1,
         pontosAcumulados: 5,
@@ -217,6 +236,10 @@ describe('FidelidadeService', () => {
     });
 
     it('lança NotFoundException quando cliente não existe', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        barCodigo: 10,
+        usrCodigo: 999,
+      });
       prisma.usuario.findFirst.mockResolvedValue(null);
 
       await expect(service.resgatar(999, 10, 10)).rejects.toThrow(
@@ -225,6 +248,10 @@ describe('FidelidadeService', () => {
     });
 
     it('decrementa exatamente os pontos resgatados', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        barCodigo: 10,
+        usrCodigo: 1,
+      });
       prisma.usuario.findFirst.mockResolvedValue({
         codigo: 1,
         pontosAcumulados: 50,

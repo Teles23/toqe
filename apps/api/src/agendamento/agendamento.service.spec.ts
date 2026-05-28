@@ -951,7 +951,7 @@ describe('AgendamentoService', () => {
       expect(resultado.barbeiroId).toBe(novoBarbeiroId);
       expect(mockPrisma.agendamento.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { codigo },
+          where: { codigo, barCodigo },
           data: { barbeiroId: novoBarbeiroId },
         }),
       );
