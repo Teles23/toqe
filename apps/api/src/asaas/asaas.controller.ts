@@ -3,6 +3,7 @@ import {
   Controller,
   ForbiddenException,
   Headers,
+  InternalServerErrorException,
   Param,
   Post,
   UnauthorizedException,
@@ -98,16 +99,19 @@ export class AsaasController {
     @Headers() headers: Record<string, string>,
   ) {
     const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (webhookToken) {
-      const receivedToken = headers['asaas-access-token'] ?? '';
-      const expected = Buffer.from(webhookToken);
-      const received = Buffer.from(receivedToken);
-      const valid =
-        expected.length === received.length &&
-        timingSafeEqual(expected, received);
-      if (!valid) {
-        throw new UnauthorizedException('Token de webhook inválido');
-      }
+    if (!webhookToken) {
+      throw new InternalServerErrorException(
+        'ASAAS_WEBHOOK_TOKEN não configurado',
+      );
+    }
+    const receivedToken = headers['asaas-access-token'] ?? '';
+    const expected = Buffer.from(webhookToken);
+    const received = Buffer.from(receivedToken);
+    const valid =
+      expected.length === received.length &&
+      timingSafeEqual(expected, received);
+    if (!valid) {
+      throw new UnauthorizedException('Token de webhook inválido');
     }
     const subId = payload.payment?.subscription ?? payload.subscription?.id;
     if (!subId) return { ok: true };
