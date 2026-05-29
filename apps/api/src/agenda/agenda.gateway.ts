@@ -65,10 +65,14 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const user = (client.data as { user?: JwtPayload }).user;
+    if (!user) {
+      client.emit('error', { message: 'Não autenticado' });
+      return;
+    }
     const membro = await this.prisma.membroBarbearia.findFirst({
       where: {
         barCodigo: Number(barCodigo),
-        usrCodigo: user?.sub,
+        usrCodigo: user.sub,
       },
     });
 
