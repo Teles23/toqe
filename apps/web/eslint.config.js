@@ -41,6 +41,22 @@ export default [
       "react/prop-types": "off",
       "react/no-unescaped-entities": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["*/apps/api/*", "**/apps/api/**"],
+              message:
+                "Web não pode importar da API. Use @toqe/contracts ou @toqe/shared.",
+            },
+            {
+              group: ["*/apps/mobile/*", "**/apps/mobile/**"],
+              message: "Web não pode importar do mobile.",
+            },
+          ],
+        },
+      ],
       // Convenção: variáveis/args/vars com prefixo "_" são intencionalmente
       // não utilizados (stubs, callbacks com assinatura imposta, etc.).
       "@typescript-eslint/no-unused-vars": [

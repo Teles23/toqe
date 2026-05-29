@@ -50,6 +50,21 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['*/apps/web/*', '**/apps/web/**'],
+              message: 'API não pode importar do web. Extraia o código para packages/.',
+            },
+            {
+              group: ['*/apps/mobile/*', '**/apps/mobile/**'],
+              message: 'API não pode importar do mobile. Extraia o código para packages/.',
+            },
+          ],
+        },
+      ],
     },
   },
 );
