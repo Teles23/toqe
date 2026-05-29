@@ -165,6 +165,34 @@ if (!user) {
 | `apps/mobile/eslint.config.js`                          | Modificado                     |
 | `CLAUDE.md`                                             | Modificado — matriz de impacto |
 
+---
+
+## Correção pós-merge — TenantInterceptor crash em GET (PR #106)
+
+**Arquivo:** `apps/api/src/tenant/tenant/tenant.interceptor.ts`
+
+**Problema:** O `TenantInterceptor` foi registrado globalmente na auditoria, mas acessava `req.body['barCodigo']` sem null guard. Em requisições GET (sem body), `req.body` é `undefined`, causando `TypeError: Cannot read properties of undefined (reading 'barCodigo')` — crash em todos os endpoints GET da API.
+
+**Correção:** Optional chaining em `req.params`, `req.body` e `req.headers`:
+
+```ts
+// antes
+const barCodigo =
+  req.params["barCodigo"] ??
+  (req.body["barCodigo"] as string | undefined) ??
+  (req.headers["x-tenant-id"] as string | undefined);
+
+// depois
+const barCodigo =
+  (req.params?.["barCodigo"] as string | undefined) ??
+  (req.body?.["barCodigo"] as string | undefined) ??
+  (req.headers?.["x-tenant-id"] as string | undefined);
+```
+
+**Branch:** `fix/tenant-interceptor-body-null` → PR #106 → mergeado em `develop`.
+
+---
+
 ## Testes após auditoria
 
 | Suite         | Antes | Depois |

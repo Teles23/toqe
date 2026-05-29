@@ -141,7 +141,7 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 
 ## Segurança
 
-- [82-auditoria-seguranca.md](82-auditoria-seguranca.md) — auditoria sistêmica de segurança: type safety (Partes 1–7), 2 vulns HIGH corrigidas (webhook fail-open, IDOR fidelidade), hardening WebSocket
+- [82-auditoria-seguranca.md](82-auditoria-seguranca.md) — auditoria sistêmica de segurança: type safety (Partes 1–7), 2 vulns HIGH corrigidas (webhook fail-open, IDOR fidelidade), hardening WebSocket, fix TenantInterceptor crash em GET (PR #106)
 
 ---
 
