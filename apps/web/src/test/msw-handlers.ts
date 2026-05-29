@@ -1,5 +1,13 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import type {
+  AgendamentoAPI,
+  BarbeiroAPI,
+  ClienteAPI,
+  ServicoAPI,
+} from "@toqe/contracts";
+import type { BarbeariaResponse, UsuarioMe } from "@toqe/shared";
+import { Perfil } from "@toqe/shared";
 
 const BASE = "http://localhost:3000/api/v1";
 
@@ -101,9 +109,14 @@ export const handlers = [
       avatarUrl: null,
       twoFaEnabled: false,
       barbearias: [
-        { codigo: 1, nome: "BarberShop", slug: "barbershop", perfil: "dono" },
+        {
+          codigo: 1,
+          nome: "BarberShop",
+          slug: "barbershop",
+          perfil: Perfil.DONO,
+        },
       ],
-    }),
+    } satisfies UsuarioMe),
   ),
 
   // ── Barbearia ────────────────────────────────────────────────────────────
@@ -119,8 +132,10 @@ export const handlers = [
       timezone: "America/Sao_Paulo",
       plano: "basic",
       ativo: true,
+      barbeiroCriaServico: false,
+      barbeiroAlteraPreco: false,
       criadoEm: new Date().toISOString(),
-    }),
+    } satisfies BarbeariaResponse),
   ),
 
   // ── Barbeiros ────────────────────────────────────────────────────────────
@@ -138,7 +153,7 @@ export const handlers = [
         faturamentoMes: 2000,
         ticketMedio: 50,
       },
-    ]),
+    ] satisfies BarbeiroAPI[]),
   ),
 
   http.post(`${BASE}/barbearias/:barCodigo/membros`, async ({ request }) => {
@@ -167,7 +182,7 @@ export const handlers = [
         ultimaVisita: new Date().toISOString(),
         servicoFav: "Corte",
       },
-    ]),
+    ] satisfies ClienteAPI[]),
   ),
 
   http.post(`${BASE}/barbearias/:barCodigo/clientes`, async ({ request }) => {
@@ -189,7 +204,7 @@ export const handlers = [
         duracaoBase: 30,
         ativo: true,
       },
-    ]),
+    ] satisfies ServicoAPI[]),
   ),
   // handler legado (relativo) mantido para setup.spec.ts
   http.get("/servicos", () =>
@@ -230,9 +245,13 @@ export const handlers = [
   ),
 
   // ── Agendamentos ─────────────────────────────────────────────────────────
-  http.get(`${BASE}/agendamentos`, () => HttpResponse.json([])),
+  http.get(`${BASE}/agendamentos`, () =>
+    HttpResponse.json([] satisfies AgendamentoAPI[]),
+  ),
   // handler legado (relativo) mantido para setup.spec.ts
-  http.get("/agendamentos", () => HttpResponse.json([])),
+  http.get("/agendamentos", () =>
+    HttpResponse.json([] satisfies AgendamentoAPI[]),
+  ),
 
   http.post(`${BASE}/agendamentos`, async ({ request }) => {
     const body = await request.json();
