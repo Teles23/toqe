@@ -18,7 +18,6 @@ function makeAgendamento(
       nome: "Carlos Cliente",
       telefone: "+5511999999999",
       tipo: "usuario" as const,
-      email: null,
     },
     itens: [
       {
@@ -30,7 +29,7 @@ function makeAgendamento(
           duracaoBase: 30,
         },
         preco: 50,
-        duracao: 30,
+        duracaoMin: 30,
       },
     ],
     criadoEm: "2026-05-14T20:00:00.000Z",
@@ -75,13 +74,13 @@ describe("AgendamentoCard", () => {
           codigo: 1,
           servico: { codigo: 1, nome: "Corte", precoBase: 40, duracaoBase: 20 },
           preco: 40,
-          duracao: 20,
+          duracaoMin: 20,
         },
         {
           codigo: 2,
           servico: { codigo: 2, nome: "Barba", precoBase: 30, duracaoBase: 15 },
           preco: 30,
-          duracao: 15,
+          duracaoMin: 15,
         },
       ],
     });

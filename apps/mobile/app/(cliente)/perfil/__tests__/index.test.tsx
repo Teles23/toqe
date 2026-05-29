@@ -105,14 +105,13 @@ function makeAg(
       nome: "Maria Cliente",
       telefone: null,
       tipo: "usuario" as const,
-      email: "maria@x.com",
     },
     itens: [
       {
         codigo: 1,
         servico: { codigo: 1, nome: "Corte", precoBase: 50, duracaoBase: 30 },
         preco: 50,
-        duracao: 30,
+        duracaoMin: 30,
       },
     ],
     criadoEm: new Date().toISOString(),

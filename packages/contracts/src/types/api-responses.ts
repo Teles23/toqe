@@ -80,13 +80,29 @@ export interface AgendamentoAPI {
   fim: string;
   status: StatusAgendamento;
   cliente: {
-    codigo: number;
+    /** Código do usuário (TQE_USUARIO) ou contato (TQE_CONTATO). */
+    usrCodigo: number;
     nome: string;
+    telefone: string | null;
     /** "usuario" = tem conta/login; "contato" = walk-in sem conta. */
     tipo: "usuario" | "contato";
   } | null;
-  barbeiro: { codigo: number; nome: string } | null;
-  itens: { servico: { nome: string }; duracaoMin: number }[];
+  barbeiro: {
+    usrCodigo: number;
+    nome: string;
+    avatarUrl: string | null;
+  } | null;
+  itens: {
+    codigo: number;
+    servico: {
+      codigo: number;
+      nome: string;
+      precoBase: number;
+      duracaoBase: number;
+    };
+    preco: number;
+    duracaoMin: number;
+  }[];
 }
 
 // ---- Relatórios ----

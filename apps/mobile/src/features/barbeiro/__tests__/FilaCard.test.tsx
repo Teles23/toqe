@@ -16,14 +16,13 @@ function make(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
       nome: "João",
       telefone: null,
       tipo: "usuario" as const,
-      email: null,
     },
     itens: [
       {
         codigo: 1,
         servico: { codigo: 1, nome: "Corte", precoBase: 40, duracaoBase: 30 },
         preco: 40,
-        duracao: 30,
+        duracaoMin: 30,
       },
     ],
     criadoEm: "2026-05-15T12:55:00.000Z",
@@ -75,13 +74,13 @@ describe("FilaCard", () => {
           codigo: 1,
           servico: { codigo: 1, nome: "Corte", precoBase: 40, duracaoBase: 30 },
           preco: 40,
-          duracao: 30,
+          duracaoMin: 30,
         },
         {
           codigo: 2,
           servico: { codigo: 2, nome: "Barba", precoBase: 30, duracaoBase: 15 },
           preco: 30,
-          duracao: 15,
+          duracaoMin: 15,
         },
       ],
     });

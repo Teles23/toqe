@@ -87,14 +87,13 @@ function makeAg(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
       nome: "Cliente X",
       telefone: null,
       tipo: "usuario" as const,
-      email: "cliente@x.com",
     },
     itens: [
       {
         codigo: 1,
         servico: { codigo: 1, nome: "Corte", precoBase: 50, duracaoBase: 30 },
         preco: 50,
-        duracao: 30,
+        duracaoMin: 30,
       },
     ],
     criadoEm: "2026-06-10T10:00:00.000Z",
