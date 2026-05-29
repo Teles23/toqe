@@ -54,6 +54,7 @@ Se a informação não foi lida nesta sessão, **leia agora** antes de responder
 - Trabalhar **sempre** na branch correta designada para a feature
 - **Nunca criar novas branches** sem permissão explícita do usuário
 - Resolver conflitos ao invés de contorná-los
+- **`develop` é uma branch protegida** — push direto é bloqueado (HTTP 403). Todo commit em `develop` deve ir via PR de uma branch de feature. Não tentar `git push origin develop` nem `mcp__github__push_files` direto em `develop` — ambos falham com erro de proteção de branch.
 
 ### 5. Sincronização total — api + web + testes
 
