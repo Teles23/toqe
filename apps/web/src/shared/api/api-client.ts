@@ -44,13 +44,21 @@ interface RequestOptions {
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
 /**
- * Lê o access_token armazenado em cookie de sessão (setado pelo BFF).
- * No client-side usamos document.cookie; no server-side usamos cookies() do Next.js.
+ * Obtém o access_token via BFF server-side (GET /api/auth/token).
+ * O cookie access_token é httpOnly — inacessível via document.cookie —
+ * portanto precisamos de um round-trip ao BFF para lê-lo com segurança.
+ * Retorna null quando não há sessão ativa.
  */
-function getAccessToken(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]!) : null;
+async function getAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const res = await fetch("/api/auth/token");
+    if (!res.ok) return null;
+    const data = (await res.json()) as { token: string | null };
+    return data.token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -111,14 +119,14 @@ async function request<T>(
       signal,
     });
 
-  let token = getAccessToken();
+  let token = await getAccessToken();
   let res = await execute(token);
 
   // 401 → tenta refresh e retry uma vez
   if (res.status === 401 && auth) {
     const refreshed = await refreshTokens();
     if (refreshed) {
-      token = getAccessToken();
+      token = await getAccessToken();
       res = await execute(token);
     }
   }

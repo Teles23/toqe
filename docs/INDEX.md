@@ -1,6 +1,6 @@
 # Índice de Documentação — toqe
 
-> Atualizado em: 2026-05-27
+> Atualizado em: 2026-05-29
 
 ## Como navegar
 
@@ -136,6 +136,12 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 - [66-testes-codigo-real-lote-3-4.md](66-testes-codigo-real-lote-3-4.md) — Lotes 3 e 4: cobertura de edge cases e isolamento de tenant
 - [67-testes-codigo-real-lote-5.md](67-testes-codigo-real-lote-5.md) — Lote 5: finalização da campanha de testes reais
 - [81-e2e-playwright-correcoes.md](81-e2e-playwright-correcoes.md) — correções nos specs E2E Playwright (seletores alinhados com app real)
+
+---
+
+## Segurança
+
+- [82-auditoria-seguranca.md](82-auditoria-seguranca.md) — auditoria sistêmica de segurança: type safety (Partes 1–7), 2 vulns HIGH corrigidas (webhook fail-open, IDOR fidelidade), hardening WebSocket
 
 ---
 

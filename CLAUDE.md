@@ -93,6 +93,24 @@ no client. Nunca use `upsert({ where: { compoundKey: ... } })` baseado nesses í
   - Build: corrigir a causa, não comentar o código
 - **Nunca usar duck-typing para contornar tipos do Prisma** — campos `Decimal` devem ser anotados com `Prisma.Decimal` ou via `Prisma.XxxGetPayload<...>`, nunca com `{ toNumber(): number } | number`
 
+## Matriz de impacto por tipo de alteração
+
+Quando alterar um arquivo deste tipo, verificar obrigatoriamente:
+
+| Arquivo alterado                     | Verificar                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `*.service.ts` (novo método Prisma)  | spec correspondente tem o modelo no mock via `createPrismaMock()`?                               |
+| `serialize-*.ts`                     | return type bate com `@toqe/contracts`? spec atualizado? MSW handler atualizado?                 |
+| `packages/contracts/src/**`          | MSW handlers (`apps/web/src/test/msw-handlers.ts`), hooks web, api-client mobile, specs de ambos |
+| `packages/shared/src/types/**`       | fixtures de testes mobile e web que usam aquele tipo                                             |
+| `prisma/schema.prisma`               | migration gerada, seed-runner.js, `createPrismaMock()` ainda cobre os novos modelos              |
+| `*.controller.ts` (novo endpoint)    | MSW handler correspondente no web, spec do controller                                            |
+| `*.gateway.ts` (WebSocket payload)   | client WebSocket no web e mobile, spec do gateway                                                |
+| `apps/api/.env.example`              | docker-compose, docs correspondentes                                                             |
+| `packages/contracts` (response type) | serializer que produz esse tipo tem return type explícito?                                       |
+
+---
+
 ## Estrutura de arquivos chave
 
 - API: apps/api/src/

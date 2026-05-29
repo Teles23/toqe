@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ user }, { status: 200 });
 
   res.cookies.set("access_token", access_token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict",
     maxAge: 900,

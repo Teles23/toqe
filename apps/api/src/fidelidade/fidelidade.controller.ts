@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Body,
@@ -8,6 +9,7 @@ import {
   UseGuards,
   Headers,
   Query,
+  Request,
 } from '@nestjs/common';
 import { FidelidadeService } from './fidelidade.service';
 import { ResgatarPontosDto } from './dto/resgatar-pontos.dto';
@@ -15,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import type { TenantRequest } from '../common/types/jwt-request';
 import {
   ApiTags,
   ApiOperation,
@@ -41,7 +44,7 @@ export class FidelidadeController {
   ) {
     return this.fidelidadeService.getRanking(
       Number(barCodigo),
-      Number(limit ?? 10),
+      Math.min(Number(limit ?? 10), 100),
     );
   }
 
@@ -51,11 +54,21 @@ export class FidelidadeController {
     summary: 'Retorna saldo atual de pontos e histórico do cliente',
   })
   @ApiResponse({ status: 200, description: 'Saldo e histórico retornados.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Cliente só pode consultar o próprio saldo.',
+  })
   @ApiResponse({ status: 404, description: 'Cliente não encontrado.' })
   getSaldo(
     @Param('clienteCodigo', ParseIntPipe) clienteCodigo: number,
     @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
   ) {
+    if (req.user.perfil === 'cliente' && clienteCodigo !== req.user.sub) {
+      throw new ForbiddenException(
+        'Clientes só podem consultar o próprio saldo',
+      );
+    }
     return this.fidelidadeService.getSaldo(clienteCodigo, Number(barCodigo));
   }
 
@@ -70,10 +83,20 @@ export class FidelidadeController {
     status: 400,
     description: 'Saldo insuficiente ou pontos abaixo do mínimo.',
   })
+  @ApiResponse({
+    status: 403,
+    description: 'Cliente só pode resgatar os próprios pontos.',
+  })
   resgatar(
     @Body() dto: ResgatarPontosDto,
     @Headers('x-tenant-id') barCodigo: string,
+    @Request() req: TenantRequest,
   ) {
+    if (req.user.perfil === 'cliente' && dto.clienteCodigo !== req.user.sub) {
+      throw new ForbiddenException(
+        'Clientes só podem resgatar os próprios pontos',
+      );
+    }
     return this.fidelidadeService.resgatar(
       dto.clienteCodigo,
       Number(barCodigo),

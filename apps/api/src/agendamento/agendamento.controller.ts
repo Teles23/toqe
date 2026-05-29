@@ -165,7 +165,7 @@ export class AgendamentoController {
       await this.agendamentoService.meusAtendimentos(
         req.user.sub,
         Number(barCodigo),
-        limit ? Number(limit) : 20,
+        limit ? Math.min(Number(limit), 100) : 20,
       ),
     );
   }

@@ -1,14 +1,14 @@
 import { HealthController } from './health.controller';
+import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
+import type { PrismaService } from '../prisma/prisma.service';
 
 describe('HealthController', () => {
   let controller: HealthController;
-  const mockPrisma = { $queryRaw: jest.fn() };
+  let mockPrisma: PrismaMock;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    controller = new HealthController(
-      mockPrisma as unknown as import('../prisma/prisma.service').PrismaService,
-    );
+    mockPrisma = createPrismaMock();
+    controller = new HealthController(mockPrisma as unknown as PrismaService);
   });
 
   describe('live', () => {

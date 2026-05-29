@@ -1,44 +1,8 @@
-export function createPrismaMock() {
-  const makeMethods = () => ({
-    findUnique: jest.fn(),
-    findUniqueOrThrow: jest.fn(),
-    findFirst: jest.fn(),
-    findFirstOrThrow: jest.fn(),
-    findMany: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    upsert: jest.fn(),
-    delete: jest.fn(),
-    deleteMany: jest.fn(),
-    createMany: jest.fn(),
-    count: jest.fn(),
-    aggregate: jest.fn(),
-  });
+import { PrismaClient } from '../generated/prisma';
+import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
 
-  return {
-    usuario: makeMethods(),
-    barbearia: makeMethods(),
-    membroBarbearia: makeMethods(),
-    servico: makeMethods(),
-    barbeiroServico: makeMethods(),
-    agendamento: makeMethods(),
-    agendamentoItem: makeMethods(),
-    refreshToken: makeMethods(),
-    temaTenant: makeMethods(),
-    notificacaoPreferencia: makeMethods(),
-    pushToken: makeMethods(),
-    horarioFuncionamento: makeMethods(),
-    jornadaTrabalho: makeMethods(),
-    bloqueioAgenda: makeMethods(),
-    planoLimite: makeMethods(),
-    avaliacaoAgendamento: makeMethods(),
-    conviteBarbearia: makeMethods(),
-    clienteNota: makeMethods(),
-    contato: makeMethods(),
-    $transaction: jest.fn(),
-    $queryRaw: jest.fn(),
-    $executeRawUnsafe: jest.fn(),
-    $connect: jest.fn(),
-    $disconnect: jest.fn(),
-  };
+export type PrismaMock = DeepMockProxy<PrismaClient>;
+
+export function createPrismaMock(): PrismaMock {
+  return mockDeep<PrismaClient>();
 }

@@ -4,8 +4,10 @@
  * BFF — POST /api/auth/login
  *
  * Faz proxy para NestJS POST /auth/login e seta cookies:
- *  - access_token  : nao-httpOnly (lido pelo api-client.ts via document.cookie), 15 min
+ *  - access_token  : httpOnly (nunca exposto ao JS), 15 min
  *  - refresh_token : httpOnly (nunca exposto ao JS), 30 dias, restrito a /api/auth
+ *
+ * O api-client.ts obtém o access_token via GET /api/auth/token (BFF server-side).
  */
 
 const INTERNAL_API =
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ user }, { status: 200 });
 
   res.cookies.set("access_token", access_token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict",
     maxAge: 900,

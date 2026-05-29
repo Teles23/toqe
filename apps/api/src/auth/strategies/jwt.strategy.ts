@@ -3,9 +3,10 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsuarioService } from '../../usuario/usuario.service';
 
-interface JwtPayload {
+export interface JwtPayload {
   sub: number;
   email: string;
+  type?: string;
   iat?: number;
   exp?: number;
 }
@@ -27,6 +28,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    if (payload.type === '2fa') {
+      throw new UnauthorizedException(
+        'Token de 2FA não pode ser usado como access token',
+      );
+    }
     const user = await this.usuarioService.findById(payload.sub);
     // Rejeita tokens de usuários inexistentes OU desativados
     if (!user || !user.ativo) {

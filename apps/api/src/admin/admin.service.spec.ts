@@ -2,20 +2,34 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { createPrismaMock } from '../test/prisma-mock.factory';
+import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
+import { Barbearia, PlanoLimite, Prisma } from '../generated/prisma';
 
 describe('AdminService', () => {
   let service: AdminService;
-  let mockPrisma: ReturnType<typeof createPrismaMock>;
+  let mockPrisma: PrismaMock;
 
-  const BARBEARIA_BASE = {
+  const BAR_SCALAR: Barbearia = {
     codigo: 1,
     nome: 'Barbearia Urban',
     slug: 'urban',
+    timezone: 'America/Sao_Paulo',
+    slotInterval: 30,
     plano: 'pro',
     planoStatus: 'ativo',
+    trialFim: null,
+    planoValidoAte: null,
+    asaasCustomerId: null,
+    asaasSubscriptionId: null,
+    bloqueadaEm: null,
     ativo: true,
+    barbeiroCriaServico: false,
+    barbeiroAlteraPreco: false,
     criadoEm: new Date('2025-01-01'),
+  };
+
+  const BARBEARIA_BASE = {
+    ...BAR_SCALAR,
     membros: [
       { perfil: 'dono' },
       { perfil: 'barbeiro' },
@@ -23,12 +37,39 @@ describe('AdminService', () => {
     ],
     agendamentos: [{ codigo: 1 }, { codigo: 2 }, { codigo: 3 }],
     tema: null,
-  };
+  } as unknown as Barbearia;
 
-  const PLANO_LIMITS = [
-    { plano: 'free', preco: 0 },
-    { plano: 'basic', preco: 89 },
-    { plano: 'pro', preco: 189 },
+  const PLANO_LIMITS: PlanoLimite[] = [
+    {
+      codigo: 1,
+      plano: 'free',
+      preco: new Prisma.Decimal(0),
+      maxBarbeiros: null,
+      maxAgdMes: null,
+      whiteLabel: false,
+      apiPublica: false,
+      relatoriosAdv: false,
+    },
+    {
+      codigo: 2,
+      plano: 'basic',
+      preco: new Prisma.Decimal(89),
+      maxBarbeiros: null,
+      maxAgdMes: null,
+      whiteLabel: false,
+      apiPublica: false,
+      relatoriosAdv: false,
+    },
+    {
+      codigo: 3,
+      plano: 'pro',
+      preco: new Prisma.Decimal(189),
+      maxBarbeiros: null,
+      maxAgdMes: null,
+      whiteLabel: false,
+      apiPublica: false,
+      relatoriosAdv: false,
+    },
   ];
 
   beforeEach(async () => {
@@ -50,6 +91,7 @@ describe('AdminService', () => {
     it('calcula MRR, ARR e totais corretamente', async () => {
       mockPrisma.barbearia.findMany.mockResolvedValue([
         {
+          ...BAR_SCALAR,
           plano: 'pro',
           planoStatus: 'ativo',
           ativo: true,
@@ -57,6 +99,8 @@ describe('AdminService', () => {
           agendamentos: [{ codigo: 1 }, { codigo: 2 }],
         },
         {
+          ...BAR_SCALAR,
+          codigo: 2,
           plano: 'basic',
           planoStatus: 'ativo',
           ativo: true,
@@ -64,13 +108,15 @@ describe('AdminService', () => {
           agendamentos: [{ codigo: 3 }],
         },
         {
+          ...BAR_SCALAR,
+          codigo: 3,
           plano: 'free',
           planoStatus: 'inativo',
           ativo: false,
           membros: [],
           agendamentos: [],
         },
-      ]);
+      ] as unknown as Barbearia[]);
       mockPrisma.planoLimite.findMany.mockResolvedValue(PLANO_LIMITS);
 
       const result = await service.getMetrics();
@@ -109,7 +155,7 @@ describe('AdminService', () => {
           slug: 'corte-fino',
           codigo: 2,
         },
-      ]);
+      ] as unknown as Barbearia[]);
       mockPrisma.planoLimite.findMany.mockResolvedValue(PLANO_LIMITS);
 
       const result = await service.getBarbearias({ search: 'urban' });
@@ -121,7 +167,7 @@ describe('AdminService', () => {
     it('MRR é 0 para barbearia não ativa', async () => {
       mockPrisma.barbearia.findMany.mockResolvedValue([
         { ...BARBEARIA_BASE, planoStatus: 'suspenso' },
-      ]);
+      ] as unknown as Barbearia[]);
       mockPrisma.planoLimite.findMany.mockResolvedValue(PLANO_LIMITS);
 
       const result = await service.getBarbearias({});
@@ -137,7 +183,7 @@ describe('AdminService', () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         ...BARBEARIA_BASE,
         tema: { logoUrl: null, corPrimaria: '#F4B400' },
-      });
+      } as unknown as Barbearia);
       mockPrisma.planoLimite.findMany.mockResolvedValue(PLANO_LIMITS);
 
       const result = await service.getBarbeariaById(1);
@@ -161,12 +207,10 @@ describe('AdminService', () => {
 
   describe('updatePlano', () => {
     it('atualiza plano da barbearia', async () => {
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ codigo: 1 });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ ...BAR_SCALAR });
       mockPrisma.barbearia.update.mockResolvedValue({
-        codigo: 1,
-        nome: 'Barbearia Urban',
+        ...BAR_SCALAR,
         plano: 'basic',
-        planoStatus: 'ativo',
       });
 
       const result = await service.updatePlano(1, 'basic');
@@ -190,11 +234,9 @@ describe('AdminService', () => {
 
   describe('updateStatus', () => {
     it('suspende barbearia: seta planoStatus + ativo=false', async () => {
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ codigo: 1 });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ ...BAR_SCALAR });
       mockPrisma.barbearia.update.mockResolvedValue({
-        codigo: 1,
-        nome: 'Barbearia Urban',
-        plano: 'pro',
+        ...BAR_SCALAR,
         planoStatus: 'suspenso',
         ativo: false,
       });
@@ -212,11 +254,9 @@ describe('AdminService', () => {
     });
 
     it('reativa barbearia: seta planoStatus=ativo + ativo=true', async () => {
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ codigo: 1 });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({ ...BAR_SCALAR });
       mockPrisma.barbearia.update.mockResolvedValue({
-        codigo: 1,
-        nome: 'Barbearia Urban',
-        plano: 'pro',
+        ...BAR_SCALAR,
         planoStatus: 'ativo',
         ativo: true,
       });
@@ -232,7 +272,7 @@ describe('AdminService', () => {
       expect(callArgs2.data.ativo).toBe(true);
     });
 
-    it('lança NotFoundException para ID inexistente', async () => {
+    it('lança NotFoundException para ID inexistente (updateStatus)', async () => {
       mockPrisma.barbearia.findUnique.mockResolvedValue(null);
 
       await expect(service.updateStatus(999, 'ativo')).rejects.toThrow(

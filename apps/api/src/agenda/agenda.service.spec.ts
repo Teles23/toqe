@@ -2,8 +2,52 @@ import { Test } from '@nestjs/testing';
 import { AgendaService } from './agenda.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import {
+  Agendamento,
+  Barbearia,
+  JornadaTrabalho,
+  MembroBarbearia,
+  Prisma,
+} from '../generated/prisma';
 
 const mockPrisma = createPrismaMock();
+
+const MEMBRO_TENANT_SHARED: MembroBarbearia = {
+  codigo: 1,
+  usrCodigo: 5,
+  barCodigo: 1,
+  perfil: 'barbeiro',
+  criadoEm: new Date('2025-01-01'),
+};
+const BAR_SLOTS_SHARED: Barbearia = {
+  codigo: 1,
+  nome: 'Urban',
+  slug: 'urban',
+  timezone: 'America/Sao_Paulo',
+  slotInterval: 30,
+  plano: 'pro',
+  planoStatus: 'ativo',
+  trialFim: null,
+  planoValidoAte: null,
+  asaasCustomerId: null,
+  asaasSubscriptionId: null,
+  bloqueadaEm: null,
+  ativo: true,
+  barbeiroCriaServico: false,
+  barbeiroAlteraPreco: false,
+  criadoEm: new Date('2025-01-01'),
+};
+const JORNADA_09_10_SHARED: JornadaTrabalho = {
+  codigo: 1,
+  barbeiroId: 5,
+  barCodigo: 1,
+  diaSemana: 1,
+  inicio: '09:00',
+  fim: '10:00',
+  ativo: true,
+  almocoIni: null,
+  almocoFim: null,
+};
 
 describe('AgendaService', () => {
   let service: AgendaService;
@@ -30,6 +74,9 @@ describe('AgendaService', () => {
         diaSemana: 1,
         inicio: '09:00',
         fim: '18:00',
+        ativo: true,
+        almocoIni: null,
+        almocoFim: null,
       });
 
       const dto = { diaSemana: 1, inicio: '09:00', fim: '18:00' };
@@ -45,7 +92,17 @@ describe('AgendaService', () => {
     });
 
     it('atualiza jornada quando ja existe', async () => {
-      const existing = { codigo: 7, barbeiroId: 5, diaSemana: 1 };
+      const existing: JornadaTrabalho = {
+        codigo: 7,
+        barbeiroId: 5,
+        barCodigo: 1,
+        diaSemana: 1,
+        inicio: '09:00',
+        fim: '18:00',
+        ativo: true,
+        almocoIni: null,
+        almocoFim: null,
+      };
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(existing);
       mockPrisma.jornadaTrabalho.update.mockResolvedValue({
         ...existing,
@@ -67,7 +124,7 @@ describe('AgendaService', () => {
   describe('upsertJornadaSemanal (transacional)', () => {
     function mockTx() {
       mockPrisma.$transaction.mockImplementation(
-        (fn: (tx: unknown) => unknown) => fn(mockPrisma),
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
       );
     }
 
@@ -83,13 +140,29 @@ describe('AgendaService', () => {
     it('roda tudo numa transação: cria/atualiza ativos e remove (folga) inativos', async () => {
       mockTx();
       // dia 1: novo (create); dia 2: já existe (update); dia 0: folga (delete)
+      const jornadaBase: JornadaTrabalho = {
+        codigo: 99,
+        barbeiroId: 5,
+        barCodigo: 1,
+        diaSemana: 1,
+        inicio: '09:00',
+        fim: '18:00',
+        ativo: true,
+        almocoIni: null,
+        almocoFim: null,
+      };
       mockPrisma.jornadaTrabalho.findFirst
         .mockResolvedValueOnce(null) // dia 1
-        .mockResolvedValueOnce({ codigo: 99 }); // dia 2
-      mockPrisma.jornadaTrabalho.create.mockResolvedValue({});
-      mockPrisma.jornadaTrabalho.update.mockResolvedValue({});
+        .mockResolvedValueOnce(jornadaBase); // dia 2
+      mockPrisma.jornadaTrabalho.create.mockResolvedValue({
+        ...jornadaBase,
+        codigo: 100,
+      });
+      mockPrisma.jornadaTrabalho.update.mockResolvedValue(jornadaBase);
       mockPrisma.jornadaTrabalho.deleteMany.mockResolvedValue({ count: 1 });
-      mockPrisma.jornadaTrabalho.findMany.mockResolvedValue([{ diaSemana: 1 }]);
+      mockPrisma.jornadaTrabalho.findMany.mockResolvedValue([
+        { ...jornadaBase, diaSemana: 1 },
+      ]);
 
       const result = await service.upsertJornadaSemanal(5, 1, {
         dias: [dia(1, true), dia(2, true), dia(0, false)],
@@ -105,22 +178,21 @@ describe('AgendaService', () => {
       const createCalls = mockPrisma.jornadaTrabalho.create.mock
         .calls as unknown as Array<[{ data: Record<string, unknown> }]>;
       expect(createCalls[0][0].data).not.toHaveProperty('ativo');
-      expect(result).toEqual([{ diaSemana: 1 }]);
+      expect(result).toMatchObject([{ diaSemana: 1 }]);
     });
   });
 
   describe('getAvailableSlots', () => {
-    const MEMBRO_TENANT = { usrCodigo: 5, barCodigo: 1, perfil: 'barbeiro' };
-
     it('retorna slots livres sem conflitos', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
-      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
-        inicio: '09:00',
-        fim: '10:00',
-        almocoIni: null,
-        almocoFim: null,
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
       });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(
+        JORNADA_09_10_SHARED,
+      );
       mockPrisma.agendamento.findMany.mockResolvedValue([]);
       mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
 
@@ -136,14 +208,15 @@ describe('AgendaService', () => {
     });
 
     it('com data date-only (YYYY-MM-DD) ancora no dia certo do fuso da barbearia (regressão off-by-one)', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
-      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
-        inicio: '09:00',
-        fim: '10:00',
-        almocoIni: null,
-        almocoFim: null,
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
       });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(
+        JORNADA_09_10_SHARED,
+      );
       mockPrisma.agendamento.findMany.mockResolvedValue([]);
       mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
 
@@ -168,8 +241,12 @@ describe('AgendaService', () => {
     });
 
     it('retorna lista vazia quando barbeiro nao tem jornada no dia', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
+      });
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(null);
 
       const result = await service.getAvailableSlots(
@@ -183,8 +260,18 @@ describe('AgendaService', () => {
     });
 
     it('retorna [] quando o barbeiro DESATIVOU o serviço informado (srvCodigo)', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
-      mockPrisma.barbeiroServico.findUnique.mockResolvedValue({ ativo: false });
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbeiroServico.findUnique.mockResolvedValue({
+        codigo: 1,
+        barCodigo: 1,
+        barbeiroId: 5,
+        srvCodigo: 9,
+        duracaoMin: 30,
+        precoProprio: null,
+        ativo: false,
+      });
 
       const result = await service.getAvailableSlots(
         5,
@@ -200,15 +287,16 @@ describe('AgendaService', () => {
     });
 
     it('sem registro do serviço, calcula normalmente (fallback base)', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
       mockPrisma.barbeiroServico.findUnique.mockResolvedValue(null);
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
-      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
-        inicio: '09:00',
-        fim: '10:00',
-        almocoIni: null,
-        almocoFim: null,
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
       });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(
+        JORNADA_09_10_SHARED,
+      );
       mockPrisma.agendamento.findMany.mockResolvedValue([]);
       mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
 
@@ -224,21 +312,22 @@ describe('AgendaService', () => {
     });
 
     it('exclui slots ocupados por agendamentos existentes', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
-      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
-        inicio: '09:00',
-        fim: '10:00',
-        almocoIni: null,
-        almocoFim: null,
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
       });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(
+        JORNADA_09_10_SHARED,
+      );
       // Use Date constructor (always local time) to match parse() output
       mockPrisma.agendamento.findMany.mockResolvedValue([
         {
           inicio: new Date('2025-01-06T12:00:00Z'), // 09:00 America/Sao_Paulo
           fim: new Date('2025-01-06T12:30:00Z'), // 09:30 America/Sao_Paulo
         },
-      ]);
+      ] as unknown as Agendamento[]);
       mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
 
       const result = await service.getAvailableSlots(
@@ -252,10 +341,15 @@ describe('AgendaService', () => {
     });
 
     it('exclui slots durante horario de almoco', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 60 });
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
+        slotInterval: 60,
+      });
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
-        inicio: '09:00',
+        ...JORNADA_09_10_SHARED,
         fim: '13:00',
         almocoIni: '12:00',
         almocoFim: '13:00',
@@ -285,7 +379,9 @@ describe('AgendaService', () => {
     });
 
     it('lanca erro quando barbearia nao existe (barbeiro valido)', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(MEMBRO_TENANT);
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
       mockPrisma.barbearia.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -299,26 +395,27 @@ describe('AgendaService', () => {
 
     const setupMocks = () => {
       mockPrisma.membroBarbearia.findMany.mockResolvedValue([
-        { usrCodigo: 5, usuario: { codigo: 5, nome: 'João' } },
-      ]);
+        { ...MEMBRO_TENANT_SHARED, usuario: { codigo: 5, nome: 'João' } },
+      ] as unknown as MembroBarbearia[]);
       mockPrisma.servico.findFirst.mockResolvedValue({
+        codigo: 7,
+        barCodigo,
         nome: 'Corte',
         duracaoBase: 30,
-        precoBase: { toNumber: () => 40 },
+        precoBase: new Prisma.Decimal(40),
+        ativo: true,
+        exclusivoBarbeiroId: null,
       });
       // Para cada chamada interna de getAvailableSlots precisamos configurar os mocks
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
-        usrCodigo: 5,
-        barCodigo,
-        perfil: 'barbeiro',
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
       });
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
-      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue({
-        inicio: '09:00',
-        fim: '10:00',
-        almocoIni: null,
-        almocoFim: null,
-      });
+      mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(
+        JORNADA_09_10_SHARED,
+      );
       mockPrisma.agendamento.findMany.mockResolvedValue([]);
       mockPrisma.bloqueioAgenda.findMany.mockResolvedValue([]);
     };
@@ -347,16 +444,16 @@ describe('AgendaService', () => {
 
     it('lança NotFoundException quando não há slots disponíveis', async () => {
       mockPrisma.membroBarbearia.findMany.mockResolvedValue([
-        { usrCodigo: 5, usuario: { codigo: 5, nome: 'João' } },
-      ]);
+        { ...MEMBRO_TENANT_SHARED, usuario: { codigo: 5, nome: 'João' } },
+      ] as unknown as MembroBarbearia[]);
       mockPrisma.servico.findFirst.mockResolvedValue(null);
       // barbeiro sem jornada configurada → getAvailableSlots retorna []
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
-        usrCodigo: 5,
-        barCodigo,
-        perfil: 'barbeiro',
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(
+        MEMBRO_TENANT_SHARED,
+      );
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        ...BAR_SLOTS_SHARED,
       });
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ slotInterval: 30 });
       mockPrisma.jornadaTrabalho.findFirst.mockResolvedValue(null);
 
       await expect(service.getProximosSlots(barCodigo, 1)).rejects.toThrow(

@@ -35,20 +35,19 @@ export async function POST(req: NextRequest) {
 
   const res = NextResponse.json({ ok: true });
 
-  const cookieOpts = {
-    httpOnly: false,
+  res.cookies.set("access_token", "", {
+    httpOnly: true,
     secure: IS_PROD,
-    sameSite: "strict" as const,
+    sameSite: "strict",
     maxAge: 0,
     path: "/",
-  };
-
-  res.cookies.set("access_token", "", { ...cookieOpts, maxAge: 0 });
+  });
   res.cookies.set("refresh_token", "", {
-    ...cookieOpts,
     httpOnly: true,
-    path: "/api/auth",
+    secure: IS_PROD,
+    sameSite: "strict",
     maxAge: 0,
+    path: "/api/auth",
   });
 
   return res;

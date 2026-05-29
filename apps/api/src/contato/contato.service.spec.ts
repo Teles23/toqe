@@ -3,19 +3,14 @@ import { Test } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ContatoService } from './contato.service';
-
-const mockPrisma = {
-  contato: {
-    findFirst: jest.fn(),
-    create: jest.fn(),
-  },
-};
+import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
 
 describe('ContatoService', () => {
   let service: ContatoService;
+  let mockPrisma: PrismaMock;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    mockPrisma = createPrismaMock();
     const module = await Test.createTestingModule({
       providers: [
         ContatoService,
@@ -28,7 +23,13 @@ describe('ContatoService', () => {
 
   describe('findOrCreate', () => {
     it('cria novo contato quando telefone não é fornecido', async () => {
-      const created = { codigo: 1, barCodigo: 7, nome: 'Ana', telefone: null };
+      const created = {
+        codigo: 1,
+        barCodigo: 7,
+        nome: 'Ana',
+        telefone: null,
+        criadoEm: new Date(),
+      };
       mockPrisma.contato.create.mockResolvedValueOnce(created);
 
       const result = await service.findOrCreate(7, { nome: 'Ana' });
@@ -46,6 +47,7 @@ describe('ContatoService', () => {
         barCodigo: 7,
         nome: 'João',
         telefone: '+5511999',
+        criadoEm: new Date(),
       };
       mockPrisma.contato.findFirst.mockResolvedValueOnce(existing);
 
@@ -68,6 +70,7 @@ describe('ContatoService', () => {
         barCodigo: 7,
         nome: 'Maria',
         telefone: '+5511888',
+        criadoEm: new Date(),
       };
       mockPrisma.contato.create.mockResolvedValueOnce(created);
 
@@ -91,6 +94,7 @@ describe('ContatoService', () => {
         barCodigo: 7,
         nome: 'Carlos',
         telefone: null,
+        criadoEm: new Date(),
       };
       mockPrisma.contato.create.mockResolvedValueOnce(created);
 
@@ -129,7 +133,13 @@ describe('ContatoService', () => {
 
   describe('findById', () => {
     it('retorna contato quando encontrado', async () => {
-      const contato = { codigo: 5, barCodigo: 7, nome: 'Ana', telefone: null };
+      const contato = {
+        codigo: 5,
+        barCodigo: 7,
+        nome: 'Ana',
+        telefone: null,
+        criadoEm: new Date(),
+      };
       mockPrisma.contato.findFirst.mockResolvedValueOnce(contato);
 
       const result = await service.findById(5, 7);

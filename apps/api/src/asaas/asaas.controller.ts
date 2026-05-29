@@ -1,11 +1,16 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
+  Headers,
+  InternalServerErrorException,
   Param,
   Post,
+  UnauthorizedException,
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { timingSafeEqual } from 'crypto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AsaasService } from './asaas.service';
 import type { AsaasWebhookPayload } from './asaas-webhook.dto';
@@ -29,6 +34,18 @@ export class AsaasController {
     @Request() req: JwtRequest,
   ) {
     const barCodigo = Number(barCodigoStr);
+    const membro = await this.prisma.membroBarbearia.findFirst({
+      where: {
+        barCodigo,
+        usrCodigo: req.user.sub,
+        perfil: { in: ['dono', 'gerente'] },
+      },
+    });
+    if (!membro) {
+      throw new ForbiddenException(
+        'Você não tem permissão para fazer checkout para esta barbearia',
+      );
+    }
     const barbearia = await this.prisma.barbearia.findUniqueOrThrow({
       where: { codigo: barCodigo },
     });
@@ -77,7 +94,25 @@ export class AsaasController {
   /** Webhook do Asaas — sem autenticação, verificado pelo token de assinatura */
   @SkipPlanoCheck()
   @Post('webhook')
-  async webhook(@Body() payload: AsaasWebhookPayload) {
+  async webhook(
+    @Body() payload: AsaasWebhookPayload,
+    @Headers() headers: Record<string, string>,
+  ) {
+    const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
+    if (!webhookToken) {
+      throw new InternalServerErrorException(
+        'ASAAS_WEBHOOK_TOKEN não configurado',
+      );
+    }
+    const receivedToken = headers['asaas-access-token'] ?? '';
+    const expected = Buffer.from(webhookToken);
+    const received = Buffer.from(receivedToken);
+    const valid =
+      expected.length === received.length &&
+      timingSafeEqual(expected, received);
+    if (!valid) {
+      throw new UnauthorizedException('Token de webhook inválido');
+    }
     const subId = payload.payment?.subscription ?? payload.subscription?.id;
     if (!subId) return { ok: true };
 

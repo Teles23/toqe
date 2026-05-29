@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { TenantContextService } from './tenant-context.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createPrismaMock } from '../../test/prisma-mock.factory';
+import { createPrismaMock, PrismaMock } from '../../test/prisma-mock.factory';
 
 const mockPrisma = createPrismaMock();
 
@@ -26,7 +26,8 @@ describe('TenantContextService', () => {
       const mockFn = jest.fn().mockResolvedValue('resultado');
 
       mockPrisma.$transaction.mockImplementation(
-        async (cb: (tx: typeof mockTx) => Promise<string>) => cb(mockTx),
+        async (cb: (tx: typeof mockPrisma) => Promise<string>) =>
+          cb(mockTx as unknown as PrismaMock),
       );
 
       const result = await service.run(42, mockFn as never);
@@ -43,7 +44,8 @@ describe('TenantContextService', () => {
     it('propaga erro lancado pela fn', async () => {
       const mockTx = { $executeRawUnsafe: jest.fn().mockResolvedValue(1) };
       mockPrisma.$transaction.mockImplementation(
-        async (cb: (tx: typeof mockTx) => Promise<never>) => cb(mockTx),
+        async (cb: (tx: typeof mockPrisma) => Promise<never>) =>
+          cb(mockTx as unknown as PrismaMock),
       );
 
       await expect(

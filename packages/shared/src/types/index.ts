@@ -142,7 +142,7 @@ export interface AgendamentoItemResponse {
     "codigo" | "nome" | "precoBase" | "duracaoBase"
   >;
   preco: number;
-  duracao: number;
+  duracaoMin: number;
 }
 
 export interface AgendamentoResponse {
@@ -150,15 +150,13 @@ export interface AgendamentoResponse {
   inicio: string; // ISO 8601 UTC
   fim: string;
   status: StatusAgendamento;
-  barbeiro: Pick<MembroResponse, "usrCodigo" | "nome" | "avatarUrl">;
+  barbeiro: Pick<MembroResponse, "usrCodigo" | "nome" | "avatarUrl"> | null;
   cliente: {
     usrCodigo: number;
     nome: string;
     telefone: string | null;
     /** "usuario" = TQE_USUARIO (tem conta/login); "contato" = TQE_CONTATO (walk-in sem conta). */
     tipo: "usuario" | "contato";
-    /** null para contatos operacionais que não têm e-mail. */
-    email: string | null;
   } | null;
   itens: AgendamentoItemResponse[];
   criadoEm: string;

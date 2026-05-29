@@ -152,7 +152,7 @@ const onGoogle = async () => {
 
 ```bash
 # apps/api/.env (e GitHub Secrets para deploy)
-GOOGLE_CLIENT_ID=1095847529893-b71gjl8nqpjl5vo0ppd5c5iljfof684m.apps.googleusercontent.com
+GOOGLE_CLIENT_ID=SEU_GOOGLE_CLIENT_ID.apps.googleusercontent.com
 ```
 
 **Mesmo Client ID** que o mobile usa (`apps/mobile/.env` → `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` e `app.config.ts` → `extra.googleWebClientId`). O backend valida o token contra esse `audience`.

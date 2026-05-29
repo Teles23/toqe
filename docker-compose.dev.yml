@@ -25,12 +25,12 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - DATABASE_URL=${DATABASE_URL:-postgresql://toqe_app:senha_forte@postgres:5432/toqe}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
       - JWT_SECRET=${JWT_SECRET:-dev_secret}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev_refresh_secret}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-senha_forte}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD is required}
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - CORS_ORIGINS=http://localhost:3002,http://localhost:8081,http://127.0.0.1:8081
@@ -100,7 +100,7 @@ services:
   redis:
     container_name: toqe-redis-dev
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD:-senha_forte}
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     ports:
       - "6379:6379"
     volumes:

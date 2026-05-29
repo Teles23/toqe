@@ -147,10 +147,16 @@ produção, deixando o banco sem usuários.
 (formato CommonJS, executável diretamente pelo Node):
 
 ```
-Credenciais de teste criadas pelo seed:
+Credenciais de demonstração (APENAS DESENVOLVIMENTO LOCAL):
   thiago@email.com   / senha123  (dono)
   barbeiro1@email.com / senha123  (barbeiro)
 ```
+
+> **ATENÇÃO — segurança:** Essas credenciais existem apenas para ambiente de
+> desenvolvimento local. O Dockerfile de produção executa `seed-estrutural.js`,
+> que insere somente os planos (dados obrigatórios). O `seed-runner.js` **não
+> roda em produção** e possui guarda explícita que aborta se `NODE_ENV=production`
+> (a menos que `RUN_DEMO_SEED=true` seja definido explicitamente).
 
 ---
 

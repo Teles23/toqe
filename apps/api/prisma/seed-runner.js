@@ -1,5 +1,22 @@
 'use strict';
 require('dotenv/config');
+
+// Proteção de segurança: impede execução acidental em produção.
+// Dados de demonstração (thiago@email.com/senha123, barbearia fictícia)
+// NÃO devem existir em banco de produção — são um backdoor.
+// Em produção, use seed-estrutural.js (apenas planos).
+if (
+  process.env.NODE_ENV === 'production' &&
+  process.env.RUN_DEMO_SEED !== 'true'
+) {
+  console.error(
+    '❌ seed-runner.js bloqueado em NODE_ENV=production.\n' +
+      '   Use seed-estrutural.js para produção.\n' +
+      '   Para forçar (apenas em staging/testes controlados), defina RUN_DEMO_SEED=true.',
+  );
+  process.exit(1);
+}
+
 const { PrismaClient } = require('../src/generated/prisma');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');

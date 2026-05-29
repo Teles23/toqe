@@ -2,29 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { FidelidadeService } from './fidelidade.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-const makePrisma = () => ({
-  usuario: {
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
-  pontoFidelidade: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    create: jest.fn(),
-  },
-  agendamento: {
-    findFirst: jest.fn(),
-  },
-  $transaction: jest.fn(),
-});
+import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
+import type {
+  Usuario,
+  PontoFidelidade,
+  Agendamento,
+} from '../generated/prisma';
 
 describe('FidelidadeService', () => {
   let service: FidelidadeService;
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: PrismaMock;
 
   beforeEach(async () => {
-    prisma = makePrisma();
+    prisma = createPrismaMock();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FidelidadeService,
@@ -47,9 +37,18 @@ describe('FidelidadeService', () => {
           barCodigo: 10,
           pontos: 50,
           tipo: 'ganho',
+          agendamentoCodigo: null,
+          criadoEm: new Date(),
         },
-      ];
-      prisma.usuario.findFirst.mockResolvedValue(cliente);
+      ] as PontoFidelidade[];
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 1,
+        barCodigo: 10,
+        usrCodigo: 1,
+        perfil: 'cliente',
+        criadoEm: new Date(),
+      });
+      prisma.usuario.findFirst.mockResolvedValue(cliente as unknown as Usuario);
       prisma.pontoFidelidade.findMany.mockResolvedValue(historico);
 
       const resultado = await service.getSaldo(1, 10);
@@ -69,6 +68,13 @@ describe('FidelidadeService', () => {
     });
 
     it('lança NotFoundException quando cliente não existe', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 2,
+        barCodigo: 10,
+        usrCodigo: 999,
+        perfil: 'cliente',
+        criadoEm: new Date(),
+      });
       prisma.usuario.findFirst.mockResolvedValue(null);
 
       await expect(service.getSaldo(999, 10)).rejects.toThrow(
@@ -87,17 +93,20 @@ describe('FidelidadeService', () => {
         clienteId: 1,
         barCodigo: 10,
         itens: [{ preco: '50.00' }, { preco: '30.00' }],
-      });
-      prisma.$transaction.mockImplementation((ops: unknown[]) =>
-        Promise.all(ops),
+      } as unknown as Agendamento);
+      prisma.$transaction.mockImplementation(((ops: unknown[]) =>
+        Promise.all(ops)) as unknown as typeof prisma.$transaction);
+      prisma.pontoFidelidade.create.mockResolvedValue(
+        {} as unknown as PontoFidelidade,
       );
-      prisma.pontoFidelidade.create.mockResolvedValue({});
-      prisma.usuario.update.mockResolvedValue({});
+      prisma.usuario.update.mockResolvedValue({} as unknown as Usuario);
 
       await service.registrarGanho(5, 10);
 
       expect(prisma.$transaction).toHaveBeenCalled();
-      const [firstCall] = prisma.$transaction.mock.calls as [unknown[]][];
+      const [firstCall] = prisma.$transaction.mock.calls as unknown as [
+        unknown[],
+      ][];
       const transactionArgs = firstCall[0];
       expect(transactionArgs).toHaveLength(2);
     });
@@ -109,19 +118,18 @@ describe('FidelidadeService', () => {
         clienteId: 1,
         barCodigo: 10,
         itens: [{ preco: '80.00' }],
-      });
+      } as unknown as Agendamento);
 
       let pontosRegistrados = 0;
-      prisma.pontoFidelidade.create.mockImplementation(
-        (args: { data: { pontos: number } }) => {
-          pontosRegistrados = args.data.pontos;
-          return Promise.resolve({});
-        },
-      );
-      prisma.usuario.update.mockResolvedValue({});
-      prisma.$transaction.mockImplementation((ops: unknown[]) =>
-        Promise.all(ops),
-      );
+      prisma.pontoFidelidade.create.mockImplementation(((args: {
+        data: { pontos: number };
+      }) => {
+        pontosRegistrados = args.data.pontos;
+        return Promise.resolve({} as PontoFidelidade);
+      }) as unknown as typeof prisma.pontoFidelidade.create);
+      prisma.usuario.update.mockResolvedValue({} as unknown as Usuario);
+      prisma.$transaction.mockImplementation(((ops: unknown[]) =>
+        Promise.all(ops)) as unknown as typeof prisma.$transaction);
 
       await service.registrarGanho(5, 10);
 
@@ -135,19 +143,18 @@ describe('FidelidadeService', () => {
         clienteId: 1,
         barCodigo: 10,
         itens: [{ preco: '5.00' }],
-      });
+      } as unknown as Agendamento);
 
       let pontosRegistrados = 0;
-      prisma.pontoFidelidade.create.mockImplementation(
-        (args: { data: { pontos: number } }) => {
-          pontosRegistrados = args.data.pontos;
-          return Promise.resolve({});
-        },
-      );
-      prisma.usuario.update.mockResolvedValue({});
-      prisma.$transaction.mockImplementation((ops: unknown[]) =>
-        Promise.all(ops),
-      );
+      prisma.pontoFidelidade.create.mockImplementation(((args: {
+        data: { pontos: number };
+      }) => {
+        pontosRegistrados = args.data.pontos;
+        return Promise.resolve({} as PontoFidelidade);
+      }) as unknown as typeof prisma.pontoFidelidade.create);
+      prisma.usuario.update.mockResolvedValue({} as unknown as Usuario);
+      prisma.$transaction.mockImplementation(((ops: unknown[]) =>
+        Promise.all(ops)) as unknown as typeof prisma.$transaction);
 
       await service.registrarGanho(5, 10);
 
@@ -159,6 +166,10 @@ describe('FidelidadeService', () => {
         codigo: 99,
         agendamentoCodigo: 5,
         tipo: 'ganho',
+        barCodigo: 10,
+        clienteCodigo: 1,
+        pontos: 5,
+        criadoEm: new Date(),
       });
 
       await service.registrarGanho(5, 10);
@@ -181,15 +192,23 @@ describe('FidelidadeService', () => {
 
   describe('resgatar', () => {
     it('resgata pontos e retorna desconto correto (R$0,50 por ponto)', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 3,
+        barCodigo: 10,
+        usrCodigo: 1,
+        perfil: 'cliente',
+        criadoEm: new Date(),
+      });
       prisma.usuario.findFirst.mockResolvedValue({
         codigo: 1,
         pontosAcumulados: 100,
-      });
-      prisma.pontoFidelidade.create.mockResolvedValue({});
-      prisma.usuario.update.mockResolvedValue({});
-      prisma.$transaction.mockImplementation((ops: unknown[]) =>
-        Promise.all(ops),
+      } as unknown as Usuario);
+      prisma.pontoFidelidade.create.mockResolvedValue(
+        {} as unknown as PontoFidelidade,
       );
+      prisma.usuario.update.mockResolvedValue({} as unknown as Usuario);
+      prisma.$transaction.mockImplementation(((ops: unknown[]) =>
+        Promise.all(ops)) as unknown as typeof prisma.$transaction);
 
       const resultado = await service.resgatar(1, 10, 20);
 
@@ -205,10 +224,17 @@ describe('FidelidadeService', () => {
     });
 
     it('lança BadRequestException quando saldo é insuficiente', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 4,
+        barCodigo: 10,
+        usrCodigo: 1,
+        perfil: 'cliente',
+        criadoEm: new Date(),
+      });
       prisma.usuario.findFirst.mockResolvedValue({
         codigo: 1,
         pontosAcumulados: 5,
-      });
+      } as unknown as Usuario);
 
       await expect(service.resgatar(1, 10, 10)).rejects.toThrow(
         BadRequestException,
@@ -217,6 +243,13 @@ describe('FidelidadeService', () => {
     });
 
     it('lança NotFoundException quando cliente não existe', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 5,
+        barCodigo: 10,
+        usrCodigo: 999,
+        perfil: 'cliente',
+        criadoEm: new Date(),
+      });
       prisma.usuario.findFirst.mockResolvedValue(null);
 
       await expect(service.resgatar(999, 10, 10)).rejects.toThrow(
@@ -225,22 +258,30 @@ describe('FidelidadeService', () => {
     });
 
     it('decrementa exatamente os pontos resgatados', async () => {
+      prisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 6,
+        barCodigo: 10,
+        usrCodigo: 1,
+        perfil: 'cliente',
+        criadoEm: new Date(),
+      });
       prisma.usuario.findFirst.mockResolvedValue({
         codigo: 1,
         pontosAcumulados: 50,
-      });
-      prisma.pontoFidelidade.create.mockResolvedValue({});
+      } as unknown as Usuario);
+      prisma.pontoFidelidade.create.mockResolvedValue(
+        {} as unknown as PontoFidelidade,
+      );
 
       let decrementado = 0;
-      prisma.usuario.update.mockImplementation(
-        (args: { data: { pontosAcumulados: { decrement: number } } }) => {
-          decrementado = args.data.pontosAcumulados.decrement;
-          return Promise.resolve({});
-        },
-      );
-      prisma.$transaction.mockImplementation((ops: unknown[]) =>
-        Promise.all(ops),
-      );
+      prisma.usuario.update.mockImplementation(((args: {
+        data: { pontosAcumulados: { decrement: number } };
+      }) => {
+        decrementado = args.data.pontosAcumulados.decrement;
+        return Promise.resolve({} as Usuario);
+      }) as unknown as typeof prisma.usuario.update);
+      prisma.$transaction.mockImplementation(((ops: unknown[]) =>
+        Promise.all(ops)) as unknown as typeof prisma.$transaction);
 
       await service.resgatar(1, 10, 30);
 

@@ -19,14 +19,13 @@ function makeAgendamento(
       nome: "Ana Lima",
       telefone: null,
       tipo: "usuario" as const,
-      email: null,
     },
     itens: [
       {
         codigo: 1,
         servico: { codigo: 1, nome: "Corte", precoBase: 40, duracaoBase: 30 },
         preco: 40,
-        duracao: 30,
+        duracaoMin: 30,
       },
     ],
     criadoEm: "2026-05-14T20:00:00.000Z",
@@ -64,13 +63,13 @@ describe("AgendaRow", () => {
           codigo: 1,
           servico: { codigo: 1, nome: "Corte", precoBase: 40, duracaoBase: 30 },
           preco: 40,
-          duracao: 30,
+          duracaoMin: 30,
         },
         {
           codigo: 2,
           servico: { codigo: 2, nome: "Barba", precoBase: 20, duracaoBase: 15 },
           preco: 20,
-          duracao: 15,
+          duracaoMin: 15,
         },
       ],
     });
