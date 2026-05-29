@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # ---- Builder ----
@@ -31,7 +31,7 @@ RUN pnpm --filter api run build
 RUN pnpm deploy --filter api --prod /prod/api
 
 # ---- Runner ----
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
