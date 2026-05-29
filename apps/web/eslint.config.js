@@ -40,7 +40,7 @@ export default [
     rules: {
       "react/prop-types": "off",
       "react/no-unescaped-entities": "off",
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
       "no-restricted-imports": [
         "error",
         {

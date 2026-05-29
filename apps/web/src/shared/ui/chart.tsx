@@ -144,10 +144,13 @@ interface ChartTooltipContentProps extends React.ComponentProps<"div"> {
   active?: boolean;
   payload?: ChartPayloadItem[];
   label?: string | number;
-  labelFormatter?: (label: any, payload: any[]) => React.ReactNode;
+  labelFormatter?: (
+    label: string | React.ReactNode,
+    payload: ChartPayloadItem[],
+  ) => React.ReactNode;
   formatter?: (
-    value: any,
-    name: any,
+    value: string | number | undefined,
+    name: string | number | undefined,
     item: ChartPayloadItem,
     index: number,
     payload: ChartPayloadItem["payload"],

@@ -3,14 +3,14 @@
 import React from "react";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect, useRef } from "react";
-import type { LucideIcon } from "lucide-react";
 
 type StatusColor = "success" | "warning" | "error" | "info" | "neutral";
 
-type IconComponent =
-  | LucideIcon
-  | React.FC<any>
-  | ((props: any) => React.JSX.Element);
+type IconComponent = React.ComponentType<{
+  size?: number | string;
+  strokeWidth?: number | string;
+  className?: string;
+}>;
 
 interface StatCardProps {
   label: string;

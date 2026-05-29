@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 
-type noop = (...args: any[]) => any;
+type noop = (...args: never[]) => unknown;
 
 export function usePersistFn<T extends noop>(fn: T): T {
   const fnRef = useRef<T>(fn);
