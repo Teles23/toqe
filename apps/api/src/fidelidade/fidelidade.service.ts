@@ -129,35 +129,27 @@ export class FidelidadeService {
       throw new NotFoundException('Cliente não encontrado nesta barbearia');
     }
 
-    const cliente = await this.prisma.usuario.findFirst({
-      where: { codigo: clienteCodigo },
-      select: { codigo: true, pontosAcumulados: true },
-    });
-
-    if (!cliente) {
-      throw new NotFoundException('Cliente não encontrado');
-    }
-
-    if (cliente.pontosAcumulados < pontos) {
-      throw new BadRequestException('Saldo de pontos insuficiente');
-    }
-
     const desconto = pontos * 0.5;
 
-    await this.prisma.$transaction([
-      this.prisma.pontoFidelidade.create({
-        data: {
-          barCodigo,
-          clienteCodigo,
-          pontos,
-          tipo: 'resgate',
-        },
-      }),
-      this.prisma.usuario.update({
-        where: { codigo: clienteCodigo },
+    await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.usuario.updateMany({
+        where: { codigo: clienteCodigo, pontosAcumulados: { gte: pontos } },
         data: { pontosAcumulados: { decrement: pontos } },
-      }),
-    ]);
+      });
+
+      if (updated.count === 0) {
+        const existe = await tx.usuario.findUnique({
+          where: { codigo: clienteCodigo },
+          select: { codigo: true },
+        });
+        if (!existe) throw new NotFoundException('Cliente não encontrado');
+        throw new BadRequestException('Saldo de pontos insuficiente');
+      }
+
+      await tx.pontoFidelidade.create({
+        data: { barCodigo, clienteCodigo, pontos, tipo: 'resgate' },
+      });
+    });
 
     return { desconto };
   }

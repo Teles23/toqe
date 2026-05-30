@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConviteService } from './convite.service';
 import { AceitarConviteDto } from './dto/aceitar-convite.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -17,6 +18,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class ConviteController {
   constructor(private readonly conviteService: ConviteService) {}
 
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Get(':token')
   @ApiOperation({ summary: 'Obtém informações de um convite pelo token' })
   @ApiResponse({ status: 200, description: 'Convite encontrado.' })
@@ -28,6 +30,7 @@ export class ConviteController {
     return this.conviteService.obterConvite(token);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post(':token/aceitar')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -53,6 +56,7 @@ export class ConviteController {
     return this.conviteService.aceitarConvite(token, dto);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Delete(':token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Rejeita um convite (remove o token)' })

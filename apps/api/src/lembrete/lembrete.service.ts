@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PushNotificationService } from '../push-token/push-notification.service';
 import { NotificacaoService } from '../notificacao/notificacao.service';
 import { Prisma } from '../generated/prisma';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
 
 const LEMBRETE_INCLUDE = {
   cliente: { select: { codigo: true, nome: true, email: true } },
@@ -48,7 +49,9 @@ export class LembreteService {
     const [para24h, para2h] = await Promise.all([
       this.prisma.agendamento.findMany({
         where: {
-          status: { in: ['CONFIRMADO', 'PENDENTE'] },
+          status: {
+            in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+          },
           lembrete24hEnviado: false,
           inicio: { gte: janela24hInicio, lte: janela24hFim },
         },
@@ -56,7 +59,9 @@ export class LembreteService {
       }),
       this.prisma.agendamento.findMany({
         where: {
-          status: { in: ['CONFIRMADO', 'PENDENTE'] },
+          status: {
+            in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+          },
           lembrete2hEnviado: false,
           inicio: { gte: janela2hInicio, lte: janela2hFim },
         },
@@ -80,7 +85,9 @@ export class LembreteService {
     const candidatos = await this.prisma.agendamento.findMany({
       where: {
         fim: { lt: agora },
-        status: { in: ['PENDENTE', 'CONFIRMADO'] },
+        status: {
+          in: [StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO],
+        },
       },
       include: NO_SHOW_INCLUDE,
     });
@@ -89,7 +96,7 @@ export class LembreteService {
       try {
         await this.prisma.agendamento.update({
           where: { codigo: ag.codigo },
-          data: { status: 'NO_SHOW' },
+          data: { status: StatusAgendamento.NO_SHOW },
         });
 
         const clienteNome = ag.cliente?.nome ?? ag.contato?.nome ?? 'Cliente';

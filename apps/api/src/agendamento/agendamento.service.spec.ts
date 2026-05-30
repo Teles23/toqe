@@ -824,7 +824,7 @@ describe('AgendamentoService', () => {
 
   describe('meusAtendimentos', () => {
     it('retorna agendamentos concluídos do barbeiro', async () => {
-      const concluido = { ...mockAgendamento, status: 'CONCLUIDO' };
+      const concluido = { ...mockAgendamento, status: 'concluido' };
       mockPrisma.agendamento.findMany.mockResolvedValue([concluido]);
 
       const result = await service.meusAtendimentos(10, barCodigo);
@@ -898,7 +898,7 @@ describe('AgendamentoService', () => {
     it('lança BadRequestException se status é CONCLUIDO', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...mockAgendamento,
-        status: 'CONCLUIDO',
+        status: 'concluido',
       });
 
       await expect(

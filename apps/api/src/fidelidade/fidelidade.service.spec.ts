@@ -191,6 +191,12 @@ describe('FidelidadeService', () => {
   // ─── resgatar ──────────────────────────────────────────────────────────────
 
   describe('resgatar', () => {
+    function mockTxInterativo() {
+      prisma.$transaction.mockImplementation(
+        (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+      );
+    }
+
     it('resgata pontos e retorna desconto correto (R$0,50 por ponto)', async () => {
       prisma.membroBarbearia.findFirst.mockResolvedValue({
         codigo: 3,
@@ -199,16 +205,11 @@ describe('FidelidadeService', () => {
         perfil: 'cliente',
         criadoEm: new Date(),
       });
-      prisma.usuario.findFirst.mockResolvedValue({
-        codigo: 1,
-        pontosAcumulados: 100,
-      } as unknown as Usuario);
+      prisma.usuario.updateMany.mockResolvedValue({ count: 1 });
       prisma.pontoFidelidade.create.mockResolvedValue(
         {} as unknown as PontoFidelidade,
       );
-      prisma.usuario.update.mockResolvedValue({} as unknown as Usuario);
-      prisma.$transaction.mockImplementation(((ops: unknown[]) =>
-        Promise.all(ops)) as unknown as typeof prisma.$transaction);
+      mockTxInterativo();
 
       const resultado = await service.resgatar(1, 10, 20);
 
@@ -220,7 +221,7 @@ describe('FidelidadeService', () => {
       await expect(service.resgatar(1, 10, 9)).rejects.toThrow(
         BadRequestException,
       );
-      expect(prisma.usuario.findFirst).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('lança BadRequestException quando saldo é insuficiente', async () => {
@@ -231,15 +232,15 @@ describe('FidelidadeService', () => {
         perfil: 'cliente',
         criadoEm: new Date(),
       });
-      prisma.usuario.findFirst.mockResolvedValue({
+      prisma.usuario.updateMany.mockResolvedValue({ count: 0 });
+      prisma.usuario.findUnique.mockResolvedValue({
         codigo: 1,
-        pontosAcumulados: 5,
       } as unknown as Usuario);
+      mockTxInterativo();
 
       await expect(service.resgatar(1, 10, 10)).rejects.toThrow(
         BadRequestException,
       );
-      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('lança NotFoundException quando cliente não existe', async () => {
@@ -250,14 +251,16 @@ describe('FidelidadeService', () => {
         perfil: 'cliente',
         criadoEm: new Date(),
       });
-      prisma.usuario.findFirst.mockResolvedValue(null);
+      prisma.usuario.updateMany.mockResolvedValue({ count: 0 });
+      prisma.usuario.findUnique.mockResolvedValue(null);
+      mockTxInterativo();
 
       await expect(service.resgatar(999, 10, 10)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('decrementa exatamente os pontos resgatados', async () => {
+    it('decrementa exatamente os pontos resgatados via updateMany condicional', async () => {
       prisma.membroBarbearia.findFirst.mockResolvedValue({
         codigo: 6,
         barCodigo: 10,
@@ -265,27 +268,23 @@ describe('FidelidadeService', () => {
         perfil: 'cliente',
         criadoEm: new Date(),
       });
-      prisma.usuario.findFirst.mockResolvedValue({
-        codigo: 1,
-        pontosAcumulados: 50,
-      } as unknown as Usuario);
       prisma.pontoFidelidade.create.mockResolvedValue(
         {} as unknown as PontoFidelidade,
       );
 
-      let decrementado = 0;
-      prisma.usuario.update.mockImplementation(((args: {
-        data: { pontosAcumulados: { decrement: number } };
-      }) => {
-        decrementado = args.data.pontosAcumulados.decrement;
-        return Promise.resolve({} as Usuario);
-      }) as unknown as typeof prisma.usuario.update);
-      prisma.$transaction.mockImplementation(((ops: unknown[]) =>
-        Promise.all(ops)) as unknown as typeof prisma.$transaction);
+      let capturedWhere: unknown;
+      prisma.usuario.updateMany.mockImplementation(((args: unknown) => {
+        capturedWhere = args;
+        return Promise.resolve({ count: 1 });
+      }) as unknown as typeof prisma.usuario.updateMany);
+      mockTxInterativo();
 
       await service.resgatar(1, 10, 30);
 
-      expect(decrementado).toBe(30);
+      expect(capturedWhere).toMatchObject({
+        where: { codigo: 1, pontosAcumulados: { gte: 30 } },
+        data: { pontosAcumulados: { decrement: 30 } },
+      });
     });
   });
 });

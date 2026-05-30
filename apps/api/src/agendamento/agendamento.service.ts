@@ -567,7 +567,7 @@ export class AgendamentoService {
       FROM "TQE_AGENDAMENTO"
       WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
         AND "TQE_AGD_CODIGO" != ${codigo}
-        AND "TQE_AGD_STATUS" NOT IN ('CANCELADO', 'NO_SHOW')
+        AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
         AND "TQE_AGD_INICIO" < ${novoFim}
         AND "TQE_AGD_FIM" > ${novoInicio}
     `;
