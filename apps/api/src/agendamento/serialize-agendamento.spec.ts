@@ -79,19 +79,19 @@ describe('serializeAgendamento', () => {
     expect(r.barbearia).toEqual({ codigo: 1, nome: 'Urban Barber' });
   });
 
-  it('normaliza itens.preco/duracao Decimal-string → number (evita "R$ 035")', () => {
+  it('normaliza itens.preco/duracaoMin Decimal-string → number (evita "R$ 035")', () => {
     const raw = {
       codigo: 9,
       itens: [
-        { codigo: 1, preco: '35', duracao: '30' },
-        { codigo: 2, preco: '20.5', duracao: '15' },
+        { codigo: 1, preco: '35', duracaoMin: '30' },
+        { codigo: 2, preco: '20.5', duracaoMin: '15' },
       ],
     };
     const r = serializeAgendamento(raw as never);
     expect(r).toMatchObject({
       itens: [
-        { codigo: 1, preco: 35, duracao: 30 },
-        { codigo: 2, preco: 20.5, duracao: 15 },
+        { codigo: 1, preco: 35, duracaoMin: 30 },
+        { codigo: 2, preco: 20.5, duracaoMin: 15 },
       ],
     });
   });

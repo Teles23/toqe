@@ -24,7 +24,12 @@ export class ApiKeyService {
     const key = `toqe_${prefix}_${secret}`;
 
     const hmacSecret =
-      process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET ?? 'fallback';
+      process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET;
+    if (!hmacSecret) {
+      throw new Error(
+        'API_KEY_HMAC_SECRET (ou JWT_SECRET como fallback) deve estar configurado',
+      );
+    }
     const keyHash = createHmac('sha256', hmacSecret).update(key).digest('hex');
     const keyPrefix = key.slice(0, 15);
 

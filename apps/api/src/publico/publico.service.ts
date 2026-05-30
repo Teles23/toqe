@@ -57,7 +57,7 @@ export class PublicoService {
     return servicos.map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
-      precoBase: s.precoBase,
+      precoBase: s.precoBase != null ? Number(s.precoBase) : null,
       duracaoBase: s.duracaoBase,
     }));
   }

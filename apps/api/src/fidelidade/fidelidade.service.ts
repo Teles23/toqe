@@ -3,8 +3,8 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma, PontoFidelidade } from '../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
-import { PontoFidelidade } from '../generated/prisma';
 
 @Injectable()
 export class FidelidadeService {
@@ -23,20 +23,33 @@ export class FidelidadeService {
 
     const cliente = await this.prisma.usuario.findFirst({
       where: { codigo: clienteCodigo },
-      select: { codigo: true, pontosAcumulados: true },
+      select: { codigo: true },
     });
 
     if (!cliente) {
       throw new NotFoundException('Cliente não encontrado');
     }
 
-    const historico = await this.prisma.pontoFidelidade.findMany({
-      where: { clienteCodigo, barCodigo },
-      orderBy: { criadoEm: 'desc' },
-      take: 20,
-    });
+    const [historico, saldoData] = await Promise.all([
+      this.prisma.pontoFidelidade.findMany({
+        where: { clienteCodigo, barCodigo },
+        orderBy: { criadoEm: 'desc' },
+        take: 20,
+      }),
+      this.prisma.pontoFidelidade.groupBy({
+        by: ['tipo'],
+        where: { clienteCodigo, barCodigo },
+        _sum: { pontos: true },
+      }),
+    ]);
 
-    return { pontos: cliente.pontosAcumulados, historico };
+    // Compute per-barbearia balance: sum of ganhos minus sum of resgates
+    const pontos = saldoData.reduce((acc, row) => {
+      const pts = row._sum.pontos ?? 0;
+      return row.tipo === 'ganho' ? acc + pts : acc - pts;
+    }, 0);
+
+    return { pontos, historico };
   }
 
   async registrarGanho(
@@ -71,29 +84,39 @@ export class FidelidadeService {
 
     const pontos = Math.max(1, Math.floor(totalValor / 10));
 
-    await this.prisma.$transaction([
-      this.prisma.pontoFidelidade.create({
-        data: {
-          barCodigo,
-          clienteCodigo: agendamento.clienteId,
-          pontos,
-          tipo: 'ganho',
-          agendamentoCodigo,
-        },
-      }),
-      this.prisma.usuario.update({
-        where: { codigo: agendamento.clienteId },
-        data: { pontosAcumulados: { increment: pontos } },
-      }),
-    ]);
+    try {
+      await this.prisma.$transaction([
+        this.prisma.pontoFidelidade.create({
+          data: {
+            barCodigo,
+            clienteCodigo: agendamento.clienteId,
+            pontos,
+            tipo: 'ganho',
+            agendamentoCodigo,
+          },
+        }),
+        this.prisma.usuario.update({
+          where: { codigo: agendamento.clienteId },
+          data: { pontosAcumulados: { increment: pontos } },
+        }),
+      ]);
+    } catch (e) {
+      // Unique index "TQE_PONTO_FIDELIDADE_ganho_agd_key" prevents duplicate ganho
+      // for the same appointment — idempotency guarantee at DB level.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        return;
+      }
+      throw e;
+    }
   }
 
   async getRanking(
     barCodigo: number,
     limit: number,
-  ): Promise<
-    { codigo: number; nome: string; email: string; pontosAcumulados: number }[]
-  > {
+  ): Promise<{ codigo: number; nome: string; pontosAcumulados: number }[]> {
     const membros = await this.prisma.membroBarbearia.findMany({
       where: { barCodigo },
       select: {
@@ -101,7 +124,6 @@ export class FidelidadeService {
           select: {
             codigo: true,
             nome: true,
-            email: true,
             pontosAcumulados: true,
           },
         },
@@ -127,6 +149,21 @@ export class FidelidadeService {
     });
     if (!membroCliente) {
       throw new NotFoundException('Cliente não encontrado nesta barbearia');
+    }
+
+    // Validate per-barbearia balance — prevents redeeming in barbearia B points
+    // earned exclusively in barbearia A (pontosAcumulados is a global counter).
+    const saldoData = await this.prisma.pontoFidelidade.groupBy({
+      by: ['tipo'],
+      where: { clienteCodigo, barCodigo },
+      _sum: { pontos: true },
+    });
+    const saldoLocal = saldoData.reduce((acc, row) => {
+      const pts = row._sum.pontos ?? 0;
+      return row.tipo === 'ganho' ? acc + pts : acc - pts;
+    }, 0);
+    if (saldoLocal < pontos) {
+      throw new BadRequestException('Saldo insuficiente nesta barbearia');
     }
 
     const desconto = pontos * 0.5;
