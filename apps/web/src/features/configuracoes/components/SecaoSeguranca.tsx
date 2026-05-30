@@ -18,10 +18,7 @@ export function SecaoSeguranca() {
   const { user } = useAuth();
   const [senha, setSenha] = useState({ atual: "", nova: "", confirma: "" });
   const [twoFaEnabled, setTwoFaEnabled] = useState(user?.twoFaEnabled ?? false);
-  const [twoFaData, setTwoFaData] = useState<{
-    qrCode: string;
-    secret: string;
-  } | null>(null);
+  const [twoFaData, setTwoFaData] = useState<{ qrCode: string } | null>(null);
   const [showDisable2Fa, setShowDisable2Fa] = useState(false);
 
   const changePassword = useChangePassword();
@@ -223,7 +220,6 @@ export function SecaoSeguranca() {
       {twoFaData && (
         <TwoFaModal
           qrCode={twoFaData.qrCode}
-          secret={twoFaData.secret}
           onVerified={() => {
             setTwoFaEnabled(true);
             setTwoFaData(null);

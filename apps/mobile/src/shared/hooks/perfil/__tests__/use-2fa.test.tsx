@@ -33,19 +33,13 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe("use2fa", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it("setup → POST /auth/2fa/setup, retorna qrCode + secret", async () => {
-    mockPost.mockResolvedValueOnce({
-      qrCode: "data:image/png;base64,XXX",
-      secret: "ABCDEF",
-    });
+  it("setup → POST /auth/2fa/setup, retorna qrCode", async () => {
+    mockPost.mockResolvedValueOnce({ qrCode: "data:image/png;base64,XXX" });
     const { result } = renderHook(() => use2faSetup(), { wrapper });
 
     await act(async () => {
       const data = await result.current.mutateAsync();
-      expect(data).toEqual({
-        qrCode: "data:image/png;base64,XXX",
-        secret: "ABCDEF",
-      });
+      expect(data).toEqual({ qrCode: "data:image/png;base64,XXX" });
     });
 
     expect(mockPost).toHaveBeenCalledWith("/auth/2fa/setup");

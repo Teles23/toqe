@@ -26,6 +26,7 @@ const mockUsuario = {
   superAdmin: false,
   dataNascimento: null,
   pontosAcumulados: 0,
+  tokenVersion: 1,
   criadoEm: new Date('2024-01-01'),
 };
 
@@ -82,6 +83,9 @@ describe('AuthService', () => {
     usuarioService = module.get(UsuarioService);
     _jwtService = module.get(JwtService);
     notificacaoService = module.get(NotificacaoService);
+
+    // generateTokens busca tokenVersion do DB — mock padrão para todos os testes
+    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(mockUsuario);
   });
 
   describe('register', () => {

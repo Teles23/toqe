@@ -201,10 +201,7 @@ export async function checkEmailExists(email: string): Promise<boolean> {
   return data.exists;
 }
 
-export async function request2FaSetup(): Promise<{
-  qrCode: string;
-  secret: string;
-}> {
+export async function request2FaSetup(): Promise<{ qrCode: string }> {
   const res = await fetch("/api/auth/2fa/setup", { method: "POST" });
   if (!res.ok) {
     const data = (await parseJsonSafe(res)) as { message?: string };
@@ -213,7 +210,7 @@ export async function request2FaSetup(): Promise<{
       res.status,
     );
   }
-  return res.json() as Promise<{ qrCode: string; secret: string }>;
+  return res.json() as Promise<{ qrCode: string }>;
 }
 
 export async function request2FaEnable(code: string): Promise<void> {

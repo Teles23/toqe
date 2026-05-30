@@ -85,10 +85,7 @@ export const handlers = [
 
   // ── 2FA ──────────────────────────────────────────────────────────────────
   http.post("/api/auth/2fa/setup", () =>
-    HttpResponse.json({
-      qrCode: "data:image/png;base64,mock",
-      secret: "MOCK2FASECRET",
-    }),
+    HttpResponse.json({ qrCode: "data:image/png;base64,mock" }),
   ),
   http.post("/api/auth/2fa/enable", () => HttpResponse.json({ ok: true })),
   http.post("/api/auth/2fa/disable", () => HttpResponse.json({ ok: true })),
