@@ -1,14 +1,20 @@
+// Payload armazenado na fila Bull/Redis — somente IDs, sem PII
 export interface AgendamentoConfirmadoJob {
   agendamentoCodigo: number;
-  clienteNome: string;
-  clienteEmail: string;
   clienteUsrCodigo?: number;
   barbeiroUsrCodigo?: number;
   barCodigo?: number;
+}
+
+// Dados enriquecidos buscados do DB pelo consumer — nunca persistidos na fila
+export interface AgendamentoConfirmadoData {
+  agendamentoCodigo: number;
+  clienteNome: string;
+  clienteEmail: string;
   barbeiroNome: string;
   barbeariaNome: string;
-  inicio: string; // ISO string
-  fim: string; // ISO string
+  inicio: string;
+  fim: string;
   servicos: string[];
 }
 

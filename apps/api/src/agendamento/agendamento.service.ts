@@ -162,7 +162,7 @@ export class AgendamentoService {
       });
 
     await this.notificacaoProducer.agendamentoConfirmado(
-      this.buildNotificacaoJob(agendamento, servicos),
+      this.buildNotificacaoJob(agendamento),
     );
 
     this.agendaGateway.emitAgendamentoCriado(barCodigo, agendamento);
@@ -232,7 +232,7 @@ export class AgendamentoService {
 
     try {
       await this.notificacaoProducer.agendamentoConfirmado(
-        this.buildNotificacaoJob(agendamento, servicos),
+        this.buildNotificacaoJob(agendamento),
       );
     } catch (err) {
       this.logger.warn(
@@ -251,24 +251,13 @@ export class AgendamentoService {
     agendamento: Prisma.AgendamentoGetPayload<{
       include: typeof INCLUDE_COMPLETO;
     }>,
-    servicos: { nome: string }[],
   ): AgendamentoConfirmadoJob {
-    // Walk-ins com TQE_CONTATO têm `cliente` null — sem e-mail para notificação.
-    const clienteNome =
-      agendamento.cliente?.nome ?? agendamento.contato?.nome ?? '';
-    const clienteEmail = agendamento.cliente?.email ?? '';
+    // Armazena apenas IDs na fila Redis; o consumer busca os dados do DB
     return {
       agendamentoCodigo: agendamento.codigo,
-      clienteNome,
-      clienteEmail,
       clienteUsrCodigo: agendamento.cliente?.codigo,
       barbeiroUsrCodigo: agendamento.barbeiro.codigo,
       barCodigo: agendamento.barCodigo,
-      barbeiroNome: agendamento.barbeiro.nome,
-      barbeariaNome: agendamento.barbearia.nome,
-      inicio: agendamento.inicio.toISOString(),
-      fim: agendamento.fim.toISOString(),
-      servicos: servicos.map((s) => s.nome),
     };
   }
 

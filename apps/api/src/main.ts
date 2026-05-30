@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -13,6 +14,10 @@ async function bootstrap() {
 
   // Substitui o logger padrão do NestJS pelo Pino (JSON em prod, pretty em dev)
   app.useLogger(app.get(Logger));
+
+  // Limita o tamanho do corpo das requisições para prevenir DoS via payload gigante
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ limit: '1mb', extended: true }));
 
   // Filtro global: loga erros 5xx com contexto tenant/usuário + resposta padronizada
   app.useGlobalFilters(new GlobalExceptionFilter());

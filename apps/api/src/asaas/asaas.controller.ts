@@ -14,7 +14,7 @@ import { createHash, timingSafeEqual } from 'crypto';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AsaasService } from './asaas.service';
-import type { AsaasWebhookPayload } from './asaas-webhook.dto';
+import { AsaasEvent, AsaasWebhookPayload } from './asaas-webhook.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { SkipPlanoCheck } from '../auth/decorators/skip-plano-check.decorator';
@@ -125,8 +125,8 @@ export class AsaasController {
     if (!barbearia) return { ok: true };
 
     switch (payload.event) {
-      case 'PAYMENT_RECEIVED':
-      case 'SUBSCRIPTION_RENEWED': {
+      case AsaasEvent.PAYMENT_RECEIVED:
+      case AsaasEvent.SUBSCRIPTION_RENEWED: {
         const nextDue =
           payload.payment?.dueDate ?? payload.subscription?.nextDueDate;
         await this.prisma.barbearia.update({
@@ -139,14 +139,14 @@ export class AsaasController {
         });
         break;
       }
-      case 'PAYMENT_OVERDUE': {
+      case AsaasEvent.PAYMENT_OVERDUE: {
         await this.prisma.barbearia.update({
           where: { codigo: barbearia.codigo },
           data: { planoStatus: 'inadimplente', bloqueadaEm: new Date() },
         });
         break;
       }
-      case 'SUBSCRIPTION_INACTIVATED': {
+      case AsaasEvent.SUBSCRIPTION_INACTIVATED: {
         await this.prisma.barbearia.update({
           where: { codigo: barbearia.codigo },
           data: { planoStatus: 'cancelado', bloqueadaEm: new Date() },
