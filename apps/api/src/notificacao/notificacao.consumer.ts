@@ -22,7 +22,7 @@ export class NotificacaoConsumer {
   @Process(AGENDAMENTO_CONFIRMADO)
   async handleAgendamentoConfirmado(job: Job<AgendamentoConfirmadoJob>) {
     this.logger.log(
-      `Processando job ${job.id} — Agendamento #${job.data.agendamentoCodigo} para ${job.data.clienteEmail}`,
+      `Processando job ${job.id} — Agendamento #${job.data.agendamentoCodigo}`,
     );
 
     await this.notificacaoService.enviarConfirmacaoAgendamento(job.data);
@@ -49,7 +49,7 @@ export class NotificacaoConsumer {
   @Process(SEND_CONVITE)
   async handleSendConvite(job: Job<ConviteEmailJob>) {
     this.logger.log(
-      `Processando job ${job.id} — Convite para ${job.data.email} (${job.data.barbeariaNome})`,
+      `Processando job ${job.id} — Convite para barbearia ${job.data.barbeariaNome}`,
     );
 
     await this.notificacaoService.enviarConviteEmail(job.data);

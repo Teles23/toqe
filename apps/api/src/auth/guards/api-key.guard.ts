@@ -2,6 +2,7 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { createHmac } from 'crypto';
@@ -31,7 +32,12 @@ export class ApiKeyGuard implements CanActivate {
     }
 
     const hmacSecret =
-      process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET ?? 'fallback';
+      process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET;
+    if (!hmacSecret) {
+      throw new InternalServerErrorException(
+        'API_KEY_HMAC_SECRET (ou JWT_SECRET como fallback) deve estar configurado',
+      );
+    }
     const hash = createHmac('sha256', hmacSecret).update(key).digest('hex');
 
     const apiKey = await this.prisma.apiKey.findFirst({

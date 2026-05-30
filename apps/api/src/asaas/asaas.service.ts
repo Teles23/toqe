@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 
 export interface AsaasCustomer {
   id: string;
@@ -29,7 +33,13 @@ export class AsaasService {
   constructor() {
     this.baseUrl =
       process.env.ASAAS_BASE_URL ?? 'https://sandbox.asaas.com/api/v3';
-    this.apiKey = process.env.ASAAS_API_KEY ?? '';
+    const apiKey = process.env.ASAAS_API_KEY;
+    if (!apiKey) {
+      this.logger.warn(
+        'ASAAS_API_KEY não configurada — integração de pagamentos desabilitada',
+      );
+    }
+    this.apiKey = apiKey ?? '';
   }
 
   private get headers() {
@@ -44,6 +54,11 @@ export class AsaasService {
     path: string,
     body?: unknown,
   ): Promise<T> {
+    if (!this.apiKey) {
+      throw new InternalServerErrorException(
+        'ASAAS_API_KEY não configurada — configure-a para usar pagamentos',
+      );
+    }
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: this.headers,

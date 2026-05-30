@@ -274,6 +274,7 @@ export class AgendamentoController {
         dto,
         req.user.sub,
         Number(barCodigo),
+        req.user.perfil,
       ),
     );
   }

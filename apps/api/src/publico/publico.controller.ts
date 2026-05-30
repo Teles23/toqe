@@ -21,10 +21,11 @@ import { CreatePublicAgendamentoDto } from './dto/create-public-agendamento.dto'
  * `/b/:slug` no web. Todas as rotas resolvem barbearia por slug e
  * delegam para os services existentes — nada de regras de domínio aqui.
  *
- * `POST /publico/:slug/agendamentos` tem rate-limit dedicado (5 req/min por
- * IP) porque é a única superfície de escrita anônima do projeto.
+ * GETs: 60 req/min por IP (leitura pública).
+ * POST /publico/:slug/agendamentos: 5 req/min por IP (escrita anônima).
  */
 @ApiTags('Público')
+@Throttle({ default: { ttl: 60_000, limit: 60 } })
 @Controller('publico')
 export class PublicoController {
   constructor(private readonly publicoService: PublicoService) {}

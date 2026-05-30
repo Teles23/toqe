@@ -866,7 +866,14 @@ describe('AgendamentoService', () => {
       Date.now() + 86_400_000 + 30 * 60_000,
     ).toISOString();
 
+    function mockReagendar$Transaction() {
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
+      );
+    }
+
     it('reagenda com sucesso para o cliente owner', async () => {
+      mockReagendar$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
       mockPrisma.agendamento.update.mockResolvedValue({
@@ -887,12 +894,27 @@ describe('AgendamentoService', () => {
       expect(result.inicio).toEqual(new Date(futuro));
     });
 
-    it('lança ForbiddenException se requester não é cliente nem barbeiro', async () => {
+    it('lança ForbiddenException se requester não é cliente nem barbeiro nem gestão', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
 
       await expect(
         service.reagendar(1, { inicio: futuro }, 999, barCodigo),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('permite reagendar para dono mesmo não sendo cliente/barbeiro', async () => {
+      mockReagendar$Transaction();
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...mockAgendamento,
+        inicio: new Date(futuro),
+        fim: new Date(futuroPlusMeia),
+      });
+
+      await expect(
+        service.reagendar(1, { inicio: futuro }, 999, barCodigo, 'dono'),
+      ).resolves.toBeDefined();
     });
 
     it('lança BadRequestException se status é CONCLUIDO', async () => {
@@ -916,6 +938,7 @@ describe('AgendamentoService', () => {
     });
 
     it('lança ConflictException se há conflito de horário', async () => {
+      mockReagendar$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(1) }]);
 
@@ -925,6 +948,7 @@ describe('AgendamentoService', () => {
     });
 
     it('calcula fim automaticamente quando não fornecido', async () => {
+      mockReagendar$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...mockAgendamento,
         inicio: new Date('2024-06-01T09:00:00Z'),
@@ -961,6 +985,12 @@ describe('AgendamentoService', () => {
     const codigo = 10;
     const novoBarbeiroId = 5;
 
+    function mockTransferir$Transaction() {
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
+      );
+    }
+
     const agendamentoBase = {
       codigo,
       barCodigo,
@@ -990,6 +1020,7 @@ describe('AgendamentoService', () => {
     };
 
     it('sucesso: transfere o agendamento para o novo barbeiro sem conflito', async () => {
+      mockTransferir$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(membroBarbeiro);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
@@ -1014,6 +1045,7 @@ describe('AgendamentoService', () => {
     });
 
     it('sucesso: transfere agendamento com status confirmado', async () => {
+      mockTransferir$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...agendamentoBase,
         status: 'confirmado',
@@ -1037,7 +1069,7 @@ describe('AgendamentoService', () => {
     it('erro: lança BadRequestException quando status é concluido', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...agendamentoBase,
-        status: 'concluido',
+        status: 'CONCLUIDO',
       });
 
       await expect(
@@ -1048,7 +1080,7 @@ describe('AgendamentoService', () => {
     it('erro: lança BadRequestException quando status é cancelado', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...agendamentoBase,
-        status: 'cancelado',
+        status: 'CANCELADO',
       });
 
       await expect(
@@ -1066,6 +1098,7 @@ describe('AgendamentoService', () => {
     });
 
     it('erro: lança BadRequestException quando há conflito de horário', async () => {
+      mockTransferir$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(membroBarbeiro);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(1) }]);

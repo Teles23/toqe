@@ -410,9 +410,9 @@ export const handlers = [
         inicio: "2026-05-20T09:00:00.000Z",
         fim: "2026-05-20T09:30:00.000Z",
         status: "pendente",
-        barbeiro: { usrCodigo: 10, nome: "Carlos", avatarUrl: null },
+        barbeiro: { codigo: 10, nome: "Carlos", avatarUrl: null },
         cliente: {
-          usrCodigo: 50,
+          codigo: 50,
           nome: "João",
           telefone: null,
           tipo: "usuario",
