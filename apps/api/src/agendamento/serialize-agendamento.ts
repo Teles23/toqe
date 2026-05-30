@@ -57,10 +57,10 @@ function mapBarbeiro(b: BarbeiroRel): AgendamentoAPI['barbeiro'] {
   return { usrCodigo: b.codigo, nome: b.nome, avatarUrl: b.avatarUrl ?? null };
 }
 
-type ItemRel = { preco?: unknown; duracao?: unknown }[] | null | undefined;
+type ItemRel = { preco?: unknown; duracaoMin?: unknown }[] | null | undefined;
 
 /**
- * Normaliza `preco`/`duracao` dos itens para number. O Prisma serializa
+ * Normaliza `preco`/`duracaoMin` dos itens para number. O Prisma serializa
  * `Decimal` como string no JSON (o contrato `AgendamentoItemResponse.preco` é
  * `number`) — sem isso o front faz `0 + "35"` = `"035"`.
  */
@@ -69,7 +69,7 @@ function mapItens(itens: ItemRel) {
   return itens.map((i) => ({
     ...i,
     ...(i.preco != null ? { preco: Number(i.preco) } : {}),
-    ...(i.duracao != null ? { duracao: Number(i.duracao) } : {}),
+    ...(i.duracaoMin != null ? { duracaoMin: Number(i.duracaoMin) } : {}),
   }));
 }
 

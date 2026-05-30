@@ -22,6 +22,7 @@ describe('ApiKeyService', () => {
   let mockPrisma: PrismaMock;
 
   beforeEach(async () => {
+    process.env.JWT_SECRET = 'test-jwt-secret';
     mockPrisma = createPrismaMock();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -52,8 +53,8 @@ describe('ApiKeyService', () => {
         data: { keyHash: string };
       };
       const hmacSecret =
-        process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET ?? 'fallback';
-      const expectedHash = createHmac('sha256', hmacSecret)
+        process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET;
+      const expectedHash = createHmac('sha256', hmacSecret!)
         .update(result.key)
         .digest('hex');
 

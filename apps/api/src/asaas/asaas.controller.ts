@@ -82,7 +82,8 @@ export class AsaasController {
       data: {
         asaasSubscriptionId: subscription.id,
         plano: body.plano,
-        planoStatus: 'ativo',
+        // Status stays 'pendente' until PAYMENT_RECEIVED webhook confirms payment.
+        // Setting 'ativo' here would grant access before money is received.
         planoValidoAte: new Date(subscription.nextDueDate),
       },
     });

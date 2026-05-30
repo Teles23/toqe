@@ -273,7 +273,7 @@ describe('PublicoService', () => {
       expect(mockPrisma.avaliacaoAgendamento.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            agendamento: { barCodigo: 1, status: 'CONCLUIDO' },
+            agendamento: { barCodigo: 1, status: 'concluido' },
           },
           take: 20,
         }),

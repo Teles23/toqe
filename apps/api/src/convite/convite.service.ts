@@ -209,10 +209,15 @@ export class ConviteService {
         });
       }
 
-      await tx.conviteBarbearia.update({
-        where: { token },
+      // Atomic claim: only one concurrent request can set usadoEm from null.
+      // The pre-transaction check (line ~146) is a fast-path UX guard only.
+      const marked = await tx.conviteBarbearia.updateMany({
+        where: { token, usadoEm: null },
         data: { usadoEm: new Date() },
       });
+      if (marked.count === 0) {
+        throw new ConflictException('Este convite já foi utilizado');
+      }
 
       return user;
     });

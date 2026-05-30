@@ -11,6 +11,7 @@ import { AgendamentoService } from '../agendamento/agendamento.service';
 import { CreatePublicAgendamentoDto } from './dto/create-public-agendamento.dto';
 import { serializeAgendamento } from '../agendamento/serialize-agendamento';
 import { SELECT_USUARIO_PERFIL } from '../common/constants/prisma-selects';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
 
 /**
  * Orquestra os endpoints de agendamento público (sem autenticação).
@@ -56,7 +57,7 @@ export class PublicoService {
     return servicos.map((s) => ({
       codigo: s.codigo,
       nome: s.nome,
-      precoBase: s.precoBase,
+      precoBase: s.precoBase != null ? Number(s.precoBase) : null,
       duracaoBase: s.duracaoBase,
     }));
   }
@@ -204,7 +205,7 @@ export class PublicoService {
       where: {
         agendamento: {
           barCodigo: codigo,
-          status: 'CONCLUIDO',
+          status: StatusAgendamento.CONCLUIDO,
         },
       },
       select: {

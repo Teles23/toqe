@@ -141,9 +141,7 @@ describe('ConviteService', () => {
       mockPrisma.membroBarbearia.create.mockResolvedValue(
         {} as unknown as MembroBarbearia,
       );
-      mockPrisma.conviteBarbearia.update.mockResolvedValue(
-        {} as unknown as ConviteBarbearia,
-      );
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.aceitarConvite('tok123', {
         nome: 'João',
@@ -176,9 +174,7 @@ describe('ConviteService', () => {
       mockPrisma.membroBarbearia.create.mockResolvedValue(
         {} as unknown as MembroBarbearia,
       );
-      mockPrisma.conviteBarbearia.update.mockResolvedValue(
-        {} as unknown as ConviteBarbearia,
-      );
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.aceitarConvite('tok123', {
         senha: 'senha1234',
@@ -235,9 +231,7 @@ describe('ConviteService', () => {
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
         codigo: 1,
       } as unknown as MembroBarbearia);
-      mockPrisma.conviteBarbearia.update.mockResolvedValue(
-        {} as unknown as ConviteBarbearia,
-      );
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
 
       await service.aceitarConvite('tok123', { senha: 'senha1234' });
 

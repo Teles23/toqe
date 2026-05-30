@@ -30,7 +30,7 @@ function makeAgendamento(overrides: Record<string, unknown> = {}) {
   return {
     codigo: 1,
     inicio: new Date('2026-05-25T10:00:00Z'),
-    status: 'CONFIRMADO',
+    status: 'confirmado',
     lembrete24hEnviado: false,
     lembrete2hEnviado: false,
     cliente: { codigo: 10, nome: 'João', email: 'joao@example.com' },
@@ -200,7 +200,7 @@ describe('LembreteService', () => {
       return {
         codigo: 42,
         fim: new Date('2026-05-24T09:00:00Z'),
-        status: 'CONFIRMADO',
+        status: 'confirmado',
         barbeiro: { codigo: 5, nome: 'Pedro' },
         barbearia: { nome: 'BarberShop' },
         cliente: { nome: 'João' },
@@ -229,7 +229,7 @@ describe('LembreteService', () => {
 
       expect(mockPrisma.agendamento.update).toHaveBeenCalledWith({
         where: { codigo: 42 },
-        data: { status: 'NO_SHOW' },
+        data: { status: 'no_show' },
       });
       expect(mockPushService.send).toHaveBeenCalledWith(
         5,

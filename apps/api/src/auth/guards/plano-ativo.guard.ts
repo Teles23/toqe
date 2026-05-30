@@ -26,7 +26,9 @@ export class PlanoAtivoGuard implements CanActivate {
     if (skip) return true;
 
     const req = context.switchToHttp().getRequest<TenantRequest>();
-    const barCodigo = Number(req.headers['x-tenant-id']);
+    const barCodigo = Number(
+      req.headers['x-tenant-id'] ?? req.params?.['barCodigo'],
+    );
     if (!barCodigo) return true;
 
     const barbearia = await this.prisma.barbearia.findUnique({

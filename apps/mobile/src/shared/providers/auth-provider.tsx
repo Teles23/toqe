@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import React, { createContext, useCallback, useEffect, useState } from "react";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 import { api, ApiError } from "@/src/shared/api/api-client";
 import { TokenStorage } from "@/src/shared/lib/secure-storage";
@@ -205,6 +206,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignora erros de rede no logout — limpa tokens de qualquer forma
       if (!(err instanceof ApiError)) throw err;
     } finally {
+      try {
+        await GoogleSignin.signOut();
+      } catch {
+        // Ignora — usuário pode não ter entrado via Google
+      }
       await TokenStorage.clearTokens();
       setState({
         user: null,
