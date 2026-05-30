@@ -21,7 +21,7 @@ export class TenantInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<TenantRequest>();
     const barCodigo =
-      (req.params?.['barCodigo'] as string | undefined) ??
+      req.params?.['barCodigo'] ??
       (req.body?.['barCodigo'] as string | undefined) ??
       (req.headers?.['x-tenant-id'] as string | undefined);
 
