@@ -33,6 +33,8 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
       transform: true,
     }),
   );
@@ -83,7 +85,7 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('docs', app, document, {
-      swaggerOptions: { persistAuthorization: true },
+      swaggerOptions: { persistAuthorization: false },
     });
   }
 
