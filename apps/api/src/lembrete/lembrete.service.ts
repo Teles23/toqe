@@ -127,6 +127,23 @@ export class LembreteService {
     ag: Prisma.AgendamentoGetPayload<{ include: typeof LEMBRETE_INCLUDE }>,
     tipo: '24h' | '2h',
   ): Promise<void> {
+    const updateField =
+      tipo === '24h'
+        ? { lembrete24hEnviado: true }
+        : { lembrete2hEnviado: true };
+    const whereField =
+      tipo === '24h'
+        ? { lembrete24hEnviado: false }
+        : { lembrete2hEnviado: false };
+
+    // Atomic claim: only proceed if this process is the first to claim this row.
+    // Prevents duplicate sends when two cron ticks overlap.
+    const claimed = await this.prisma.agendamento.updateMany({
+      where: { codigo: ag.codigo, ...whereField },
+      data: updateField,
+    });
+    if (claimed.count === 0) return;
+
     const clienteNome = ag.cliente?.nome ?? ag.contato?.nome ?? 'Cliente';
     const servicos = ag.itens.map((i) => i.servico.nome).join(', ');
     const horario = ag.inicio.toLocaleString('pt-BR', {
@@ -159,14 +176,6 @@ export class LembreteService {
         });
       }
 
-      const updateField =
-        tipo === '24h'
-          ? { lembrete24hEnviado: true }
-          : { lembrete2hEnviado: true };
-      await this.prisma.agendamento.update({
-        where: { codigo: ag.codigo },
-        data: updateField,
-      });
       this.logger.log(
         `Lembrete ${tipo} enviado para agendamento #${ag.codigo}`,
       );

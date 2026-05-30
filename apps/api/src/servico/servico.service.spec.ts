@@ -58,7 +58,7 @@ describe('ServicoService', () => {
       expect(mockPrisma.servico.create).toHaveBeenCalledWith({
         data: { ...dto, barCodigo },
       });
-      expect(result).toEqual(created);
+      expect(result).toEqual({ ...created, precoBase: 25 });
     });
   });
 

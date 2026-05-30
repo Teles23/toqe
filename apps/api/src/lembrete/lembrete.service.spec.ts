@@ -73,9 +73,7 @@ describe('LembreteService', () => {
       mockPrisma.agendamento.findMany
         .mockResolvedValueOnce([ag]) // para24h
         .mockResolvedValueOnce([]); // para2h
-      mockPrisma.agendamento.update.mockResolvedValue(
-        makeAgendamento({ lembrete24hEnviado: true }),
-      );
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 1 });
 
       await service.enviarLembretes();
 
@@ -97,9 +95,7 @@ describe('LembreteService', () => {
       mockPrisma.agendamento.findMany
         .mockResolvedValueOnce([]) // para24h
         .mockResolvedValueOnce([ag]); // para2h
-      mockPrisma.agendamento.update.mockResolvedValue(
-        makeAgendamento({ lembrete2hEnviado: true }),
-      );
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 1 });
 
       await service.enviarLembretes();
 
@@ -113,55 +109,59 @@ describe('LembreteService', () => {
       );
     });
 
-    it('marca lembrete24hEnviado=true após envio bem-sucedido', async () => {
+    it('marca lembrete24hEnviado=true via updateMany antes do envio', async () => {
       const ag = makeAgendamento();
       mockPrisma.agendamento.findMany
         .mockResolvedValueOnce([ag])
         .mockResolvedValueOnce([]);
-      mockPrisma.agendamento.update.mockResolvedValue(
-        makeAgendamento({ lembrete24hEnviado: true }),
-      );
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 1 });
 
       await service.enviarLembretes();
 
-      expect(mockPrisma.agendamento.update).toHaveBeenCalledWith({
-        where: { codigo: 1 },
+      expect(mockPrisma.agendamento.updateMany).toHaveBeenCalledWith({
+        where: { codigo: 1, lembrete24hEnviado: false },
         data: { lembrete24hEnviado: true },
       });
     });
 
-    it('marca lembrete2hEnviado=true após envio bem-sucedido', async () => {
+    it('marca lembrete2hEnviado=true via updateMany antes do envio', async () => {
       const ag = makeAgendamento();
       mockPrisma.agendamento.findMany
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([ag]);
-      mockPrisma.agendamento.update.mockResolvedValue(
-        makeAgendamento({ lembrete2hEnviado: true }),
-      );
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 1 });
 
       await service.enviarLembretes();
 
-      expect(mockPrisma.agendamento.update).toHaveBeenCalledWith({
-        where: { codigo: 1 },
+      expect(mockPrisma.agendamento.updateMany).toHaveBeenCalledWith({
+        where: { codigo: 1, lembrete2hEnviado: false },
         data: { lembrete2hEnviado: true },
       });
     });
 
-    it('falha de push não impede atualização do flag', async () => {
+    it('não envia quando count=0 (outro processo já reclamou)', async () => {
       const ag = makeAgendamento();
       mockPrisma.agendamento.findMany
         .mockResolvedValueOnce([ag])
         .mockResolvedValueOnce([]);
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.enviarLembretes();
+
+      expect(mockPushService.send).not.toHaveBeenCalled();
+      expect(mockNotificacaoService.enviarLembrete).not.toHaveBeenCalled();
+    });
+
+    it('falha de push não impede outros agendamentos (Promise.allSettled)', async () => {
+      const ag = makeAgendamento();
+      mockPrisma.agendamento.findMany
+        .mockResolvedValueOnce([ag])
+        .mockResolvedValueOnce([]);
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 1 });
       mockPushService.send.mockRejectedValueOnce(new Error('push failed'));
-      mockPrisma.agendamento.update.mockResolvedValue(
-        makeAgendamento({ lembrete24hEnviado: true }),
-      );
 
       // Não deve lançar — a falha é capturada internamente
       await expect(service.enviarLembretes()).resolves.toBeUndefined();
-
-      // update não é chamado porque o erro encerra a execução do enviar() antes
-      // mas o Promise.allSettled garante que outros agendamentos não são afetados
     });
 
     it('não envia push quando cliente não tem codigo', async () => {
@@ -172,7 +172,7 @@ describe('LembreteService', () => {
       mockPrisma.agendamento.findMany
         .mockResolvedValueOnce([ag])
         .mockResolvedValueOnce([]);
-      mockPrisma.agendamento.update.mockResolvedValue(ag);
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 1 });
 
       await service.enviarLembretes();
 
@@ -186,7 +186,7 @@ describe('LembreteService', () => {
       mockPrisma.agendamento.findMany
         .mockResolvedValueOnce([ag])
         .mockResolvedValueOnce([]);
-      mockPrisma.agendamento.update.mockResolvedValue(ag);
+      mockPrisma.agendamento.updateMany.mockResolvedValue({ count: 1 });
 
       await service.enviarLembretes();
 

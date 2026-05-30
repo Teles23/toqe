@@ -83,7 +83,7 @@ describe('AgendaService', () => {
       const result = await service.upsertJornada(5, 1, dto as never);
 
       expect(mockPrisma.jornadaTrabalho.findFirst).toHaveBeenCalledWith({
-        where: { barbeiroId: 5, diaSemana: 1 },
+        where: { barbeiroId: 5, barCodigo: 1, diaSemana: 1 },
       });
       expect(mockPrisma.jornadaTrabalho.create).toHaveBeenCalledWith({
         data: { ...dto, barbeiroId: 5, barCodigo: 1 },
@@ -224,7 +224,7 @@ describe('AgendaService', () => {
 
       // 26/05/2026 é terça → diaSemana 2 (getDay): jornada buscada para o dia correto
       expect(mockPrisma.jornadaTrabalho.findFirst).toHaveBeenCalledWith({
-        where: { barbeiroId: 5, diaSemana: 2 },
+        where: { barbeiroId: 5, barCodigo: 1, diaSemana: 2 },
       });
       // busca de agendamentos no range do dia 26 em America/Sao_Paulo (UTC-3)
       const [callAg] = mockPrisma.agendamento.findMany.mock.calls[0] as [

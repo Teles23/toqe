@@ -516,13 +516,23 @@ export class AgendamentoService {
       throw new ConflictException('Este agendamento já foi avaliado');
     }
 
-    await this.prisma.avaliacaoAgendamento.create({
-      data: {
-        agendamentoCodigo: codigo,
-        nota: dto.nota,
-        comentario: dto.comentario,
-      },
-    });
+    try {
+      await this.prisma.avaliacaoAgendamento.create({
+        data: {
+          agendamentoCodigo: codigo,
+          nota: dto.nota,
+          comentario: dto.comentario,
+        },
+      });
+    } catch (e: unknown) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException('Este agendamento já foi avaliado');
+      }
+      throw e;
+    }
 
     return { sucesso: true };
   }
@@ -541,6 +551,7 @@ export class AgendamentoService {
     dto: ReagendarAgendamentoInput,
     requesterUsrCodigo: number,
     barCodigo: number,
+    callerPerfil?: string,
   ) {
     const ag = await this.prisma.agendamento.findFirst({
       where: { codigo, barCodigo },
@@ -551,7 +562,8 @@ export class AgendamentoService {
 
     const ehCliente = ag.clienteId === requesterUsrCodigo;
     const ehBarbeiro = ag.barbeiroId === requesterUsrCodigo;
-    if (!ehCliente && !ehBarbeiro) {
+    const ehGestao = callerPerfil === 'dono' || callerPerfil === 'gerente';
+    if (!ehCliente && !ehBarbeiro && !ehGestao) {
       throw new ForbiddenException(
         'Sem permissão para reagendar este agendamento',
       );
@@ -577,26 +589,28 @@ export class AgendamentoService {
       ? new Date(dto.fim)
       : new Date(novoInicio.getTime() + duracaoMs);
 
-    const conflitos = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(1) as count
-      FROM "TQE_AGENDAMENTO"
-      WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
-        AND "TQE_AGD_CODIGO" != ${codigo}
-        AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
-        AND "TQE_AGD_INICIO" < ${novoFim}
-        AND "TQE_AGD_FIM" > ${novoInicio}
-    `;
+    const atualizado = await this.prisma.$transaction(async (tx) => {
+      const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(1) as count
+        FROM "TQE_AGENDAMENTO"
+        WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
+          AND "TQE_AGD_CODIGO" != ${codigo}
+          AND "TQE_AGD_STATUS" NOT IN ('CANCELADO', 'NO_SHOW')
+          AND "TQE_AGD_INICIO" < ${novoFim}
+          AND "TQE_AGD_FIM" > ${novoInicio}
+      `;
 
-    if (Number(conflitos[0].count) > 0) {
-      throw new ConflictException(
-        'O barbeiro já tem um agendamento neste horário',
-      );
-    }
+      if (Number(conflitos[0].count) > 0) {
+        throw new ConflictException(
+          'O barbeiro já tem um agendamento neste horário',
+        );
+      }
 
-    const atualizado = await this.prisma.agendamento.update({
-      where: { codigo, barCodigo },
-      data: { inicio: novoInicio, fim: novoFim },
-      include: INCLUDE_COMPLETO,
+      return tx.agendamento.update({
+        where: { codigo, barCodigo },
+        data: { inicio: novoInicio, fim: novoFim },
+        include: INCLUDE_COMPLETO,
+      });
     });
 
     this.agendaGateway.emitAgendamentoCriado(barCodigo, atualizado);
@@ -611,7 +625,7 @@ export class AgendamentoService {
   ) {
     const agendamento = await this.findOne(codigo, barCodigo);
 
-    const statusFinais = ['concluido', 'cancelado', 'no_show'];
+    const statusFinais = ['CONCLUIDO', 'CANCELADO', 'NO_SHOW'];
     if (statusFinais.includes(agendamento.status)) {
       throw new BadRequestException(
         `Não é possível transferir um agendamento com status '${agendamento.status}'`,
@@ -632,26 +646,28 @@ export class AgendamentoService {
       );
     }
 
-    const conflitos = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(1) as count
-      FROM "TQE_AGENDAMENTO"
-      WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.novoBarbeiroId}
-        AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
-        AND "TQE_AGD_CODIGO" <> ${codigo}
-        AND "TQE_AGD_INICIO" < ${agendamento.fim}
-        AND "TQE_AGD_FIM"   > ${agendamento.inicio}
-    `;
+    return this.prisma.$transaction(async (tx) => {
+      const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(1) as count
+        FROM "TQE_AGENDAMENTO"
+        WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.novoBarbeiroId}
+          AND "TQE_AGD_STATUS" NOT IN ('CANCELADO', 'NO_SHOW')
+          AND "TQE_AGD_CODIGO" <> ${codigo}
+          AND "TQE_AGD_INICIO" < ${agendamento.fim}
+          AND "TQE_AGD_FIM"   > ${agendamento.inicio}
+      `;
 
-    if (Number(conflitos[0].count) > 0) {
-      throw new BadRequestException(
-        'Conflito de horário: o barbeiro selecionado já possui um agendamento neste período',
-      );
-    }
+      if (Number(conflitos[0].count) > 0) {
+        throw new BadRequestException(
+          'Conflito de horário: o barbeiro selecionado já possui um agendamento neste período',
+        );
+      }
 
-    return this.prisma.agendamento.update({
-      where: { codigo, barCodigo },
-      data: { barbeiroId: dto.novoBarbeiroId },
-      include: INCLUDE_COMPLETO,
+      return tx.agendamento.update({
+        where: { codigo, barCodigo },
+        data: { barbeiroId: dto.novoBarbeiroId },
+        include: INCLUDE_COMPLETO,
+      });
     });
   }
 }

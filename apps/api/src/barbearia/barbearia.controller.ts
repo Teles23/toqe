@@ -320,10 +320,15 @@ export class BarbeariaController {
         },
       }),
       fileFilter: (_req, file, cb) => {
-        if (!file.mimetype.match(/^image\/(jpeg|png|webp)$/)) {
+        const ext = extname(file.originalname).toLowerCase();
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        if (
+          !file.mimetype.match(/^image\/(jpeg|png|webp)$/) ||
+          !allowedExtensions.includes(ext)
+        ) {
           cb(
             new BadRequestException(
-              'Apenas imagens JPEG, PNG ou WebP são aceitas',
+              'Apenas imagens JPEG, PNG ou WebP são aceitas (.jpg, .jpeg, .png, .webp)',
             ),
             false,
           );

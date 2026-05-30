@@ -10,7 +10,8 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AsaasService } from './asaas.service';
 import type { AsaasWebhookPayload } from './asaas-webhook.dto';
@@ -27,6 +28,7 @@ export class AsaasController {
 
   /** Gera link de checkout para o plano solicitado. Cria customer se necessário. */
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('checkout/:barCodigo')
   async checkout(
     @Param('barCodigo') barCodigoStr: string,
@@ -106,11 +108,11 @@ export class AsaasController {
       );
     }
     const receivedToken = headers['asaas-access-token'] ?? '';
-    const expected = Buffer.from(webhookToken);
-    const received = Buffer.from(receivedToken);
-    const valid =
-      expected.length === received.length &&
-      timingSafeEqual(expected, received);
+    // Hash both to a fixed-length digest so timingSafeEqual never leaks
+    // information about whether the token lengths differ.
+    const expected = createHash('sha256').update(webhookToken).digest();
+    const received = createHash('sha256').update(receivedToken).digest();
+    const valid = timingSafeEqual(expected, received);
     if (!valid) {
       throw new UnauthorizedException('Token de webhook inválido');
     }

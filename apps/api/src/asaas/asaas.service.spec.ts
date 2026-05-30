@@ -23,11 +23,16 @@ describe('AsaasService', () => {
   let service: AsaasService;
 
   beforeEach(async () => {
+    process.env.ASAAS_API_KEY = 'test-api-key';
     const module = await Test.createTestingModule({
       providers: [AsaasService],
     }).compile();
     service = module.get(AsaasService);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    delete process.env.ASAAS_API_KEY;
   });
 
   describe('createCustomer', () => {

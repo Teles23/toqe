@@ -49,12 +49,13 @@ model Usuario {
 }
 
 model RefreshToken {
-  codigo    Int      @id @default(autoincrement()) @map("TQE_RTK_CODIGO")
-  usrCodigo Int      @map("TQE_RTK_USR_CODIGO")
-  hash      String   @map("TQE_RTK_HASH") @db.VarChar(255)
-  expiraEm  DateTime @map("TQE_RTK_EXPIRA_EM") @db.Timestamptz
-  revogado  Boolean  @default(false) @map("TQE_RTK_REVOGADO")
-  criadoEm  DateTime @default(now()) @map("TQE_RTK_CRIADO_EM") @db.Timestamptz
+  codigo     Int      @id @default(autoincrement()) @map("TQE_RTK_CODIGO")
+  usrCodigo  Int      @map("TQE_RTK_USR_CODIGO")
+  hash       String   @map("TQE_RTK_HASH") @db.VarChar(255)
+  tokenHash  String?  @unique @map("TQE_RTK_TOKEN_HASH") @db.VarChar(64)
+  expiraEm   DateTime @map("TQE_RTK_EXPIRA_EM") @db.Timestamptz
+  revogado   Boolean  @default(false) @map("TQE_RTK_REVOGADO")
+  criadoEm   DateTime @default(now()) @map("TQE_RTK_CRIADO_EM") @db.Timestamptz
 
   usuario   Usuario  @relation(fields: [usrCodigo], references: [codigo])
 
@@ -324,6 +325,7 @@ model JornadaTrabalho {
   barbearia   Barbearia @relation(fields: [barCodigo], references: [codigo])
   barbeiro    Usuario   @relation(fields: [barbeiroId], references: [codigo])
 
+  @@unique([barbeiroId, barCodigo, diaSemana])
   @@map("TQE_JORNADA_TRABALHO")
 }
 
