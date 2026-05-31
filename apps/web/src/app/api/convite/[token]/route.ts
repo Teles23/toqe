@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { INTERNAL_API } from "../../_lib/internal-api";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 /**
  * BFF — convite de barbeiro (endpoints PÚBLICOS, sem auth).
@@ -19,7 +19,7 @@ export async function GET(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/convite/${token}`);
+    apiRes = await fetch(`${getInternalApiUrl()}/convite/${token}`);
   } catch {
     return NextResponse.json(
       { message: "Serviço indisponível. Tente novamente em instantes." },
@@ -51,7 +51,7 @@ export async function DELETE(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/convite/${token}`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/convite/${token}`, {
       method: "DELETE",
     });
   } catch {

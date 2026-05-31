@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { INTERNAL_API } from "../../_lib/internal-api";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -8,7 +8,7 @@ export async function GET() {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/sessions`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/sessions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch {
@@ -28,7 +28,7 @@ export async function DELETE() {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/sessions`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/sessions`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

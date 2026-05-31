@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { INTERNAL_API } from "../../../_lib/internal-api";
+import { getInternalApiUrl } from "../../../_lib/internal-api";
 
 export async function DELETE(
   _req: Request,
@@ -12,7 +12,7 @@ export async function DELETE(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/sessions/${id}`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/sessions/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { INTERNAL_API } from "../../../_lib/internal-api";
+import { getInternalApiUrl } from "../../../_lib/internal-api";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/2fa/setup`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/2fa/setup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

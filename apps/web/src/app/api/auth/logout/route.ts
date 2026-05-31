@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { INTERNAL_API } from "../../_lib/internal-api";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 /**
  * BFF — POST /api/auth/logout
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   if (refreshToken && accessToken) {
     try {
-      await fetch(`${INTERNAL_API}/auth/logout`, {
+      await fetch(`${getInternalApiUrl()}/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

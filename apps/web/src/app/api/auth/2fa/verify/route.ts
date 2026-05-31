@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { INTERNAL_API } from "../../../_lib/internal-api";
+import { getInternalApiUrl } from "../../../_lib/internal-api";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/2fa/verify`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/2fa/verify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

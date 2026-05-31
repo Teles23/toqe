@@ -4,8 +4,11 @@
  * INTERNAL_API_URL é obrigatória em produção — aponta para o NestJS dentro
  * da rede privada (ex: http://api:3000/api/v1). NEXT_PUBLIC_API_URL só é
  * usada como fallback em desenvolvimento.
+ *
+ * A resolução é lazy (chamada na request, não no carregamento do módulo)
+ * para não quebrar o next build em ambientes sem a variável configurada.
  */
-function resolveInternalApi(): string {
+export function getInternalApiUrl(): string {
   const url =
     process.env.INTERNAL_API_URL ??
     (process.env.NODE_ENV !== "production"
@@ -21,5 +24,3 @@ function resolveInternalApi(): string {
 
   return url;
 }
-
-export const INTERNAL_API = resolveInternalApi();

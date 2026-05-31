@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { INTERNAL_API } from "../../../_lib/internal-api";
+import { getInternalApiUrl } from "../../../_lib/internal-api";
 
 /**
  * BFF — POST /api/convite/:token/aceitar
@@ -28,7 +28,7 @@ export async function POST(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/convite/${token}/aceitar`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/convite/${token}/aceitar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(reqBody),
