@@ -22,7 +22,7 @@ describe('TenantContextService', () => {
 
   describe('run', () => {
     it('executa fn dentro de $transaction com set_config correto', async () => {
-      const mockTx = { $executeRawUnsafe: jest.fn().mockResolvedValue(1) };
+      const mockTx = { $executeRaw: jest.fn().mockResolvedValue(1) };
       const mockFn = jest.fn().mockResolvedValue('resultado');
 
       mockPrisma.$transaction.mockImplementation(
@@ -32,9 +32,13 @@ describe('TenantContextService', () => {
 
       const result = await service.run(42, mockFn as never);
 
-      expect(mockPrisma.$transaction).toHaveBeenCalled();
-      expect(mockTx.$executeRawUnsafe).toHaveBeenCalledWith(
-        expect.stringContaining('set_config'),
+      expect(mockPrisma.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        { timeout: 10_000, maxWait: 5_000 },
+      );
+      // $executeRaw é chamado como tagged template: primeiro arg é TemplateStringsArray
+      expect(mockTx.$executeRaw).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.stringContaining('set_config')]),
         '42',
       );
       expect(mockFn).toHaveBeenCalledWith(mockTx);
@@ -42,7 +46,7 @@ describe('TenantContextService', () => {
     });
 
     it('propaga erro lancado pela fn', async () => {
-      const mockTx = { $executeRawUnsafe: jest.fn().mockResolvedValue(1) };
+      const mockTx = { $executeRaw: jest.fn().mockResolvedValue(1) };
       mockPrisma.$transaction.mockImplementation(
         async (cb: (tx: typeof mockPrisma) => Promise<never>) =>
           cb(mockTx as unknown as PrismaMock),

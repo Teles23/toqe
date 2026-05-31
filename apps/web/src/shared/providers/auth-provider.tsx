@@ -176,7 +176,13 @@ export function AuthProvider({
         return;
       }
       const params = new URLSearchParams(window.location.search);
-      router.push(params.get("redirect") ?? "/dashboard");
+      const redirect = params.get("redirect") ?? "";
+      // Aceita apenas caminhos relativos para evitar open redirect
+      const safeRedirect =
+        /^\/(?!\/)/.test(redirect) && !redirect.includes("://")
+          ? redirect
+          : "/dashboard";
+      router.push(safeRedirect);
     },
     [router, loadMeState],
   );

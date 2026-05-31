@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -12,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/google`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(reqBody),

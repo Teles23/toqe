@@ -44,6 +44,8 @@ model Usuario {
   notasRecebidas ClienteNota[]      @relation("NotaCliente")
   pontosFidelidade PontoFidelidade[]
   pontosAcumulados Int              @default(0) @map("TQE_USR_PONTOS_ACUMULADOS")
+  // Incrementado a cada troca de senha — invalida todos os access tokens emitidos antes
+  tokenVersion     Int              @default(1) @map("TQE_USR_TOKEN_VERSION")
 
   @@map("TQE_USUARIO")
 }

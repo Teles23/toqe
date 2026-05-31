@@ -193,6 +193,7 @@ export class AgendaService {
     const appointments = await this.prisma.agendamento.findMany({
       where: {
         barbeiroId,
+        barCodigo,
         inicio: { gte: inicioDia },
         fim: { lte: fimDia },
         status: {
@@ -204,6 +205,7 @@ export class AgendaService {
     const blocks = await this.prisma.bloqueioAgenda.findMany({
       where: {
         barbeiroId,
+        barCodigo,
         inicio: { gte: inicioDia },
         fim: { lte: fimDia },
       },

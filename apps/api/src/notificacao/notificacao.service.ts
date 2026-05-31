@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
-import { AgendamentoConfirmadoJob, ConviteEmailJob } from './notificacao.types';
+import {
+  AgendamentoConfirmadoData,
+  ConviteEmailJob,
+} from './notificacao.types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -27,7 +30,7 @@ export class NotificacaoService {
     }
   }
 
-  async enviarConfirmacaoAgendamento(data: AgendamentoConfirmadoJob) {
+  async enviarConfirmacaoAgendamento(data: AgendamentoConfirmadoData) {
     const inicioFormatado = format(
       new Date(data.inicio),
       "dd 'de' MMMM 'de' yyyy 'às' HH:mm",

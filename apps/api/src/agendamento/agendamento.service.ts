@@ -22,7 +22,10 @@ import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
 import { ContatoService } from '../contato/contato.service';
 import { AgendaGateway } from '../agenda/agenda.gateway';
 import { Prisma } from '../generated/prisma';
-import { StatusAgendamento } from '../common/constants/agendamento-status';
+import {
+  StatusAgendamento,
+  STATUSES_ENCERRADOS,
+} from '../common/constants/agendamento-status';
 import { FidelidadeService } from '../fidelidade/fidelidade.service';
 
 const INCLUDE_COMPLETO = {
@@ -162,7 +165,7 @@ export class AgendamentoService {
       });
 
     await this.notificacaoProducer.agendamentoConfirmado(
-      this.buildNotificacaoJob(agendamento, servicos),
+      this.buildNotificacaoJob(agendamento),
     );
 
     this.agendaGateway.emitAgendamentoCriado(barCodigo, agendamento);
@@ -232,7 +235,7 @@ export class AgendamentoService {
 
     try {
       await this.notificacaoProducer.agendamentoConfirmado(
-        this.buildNotificacaoJob(agendamento, servicos),
+        this.buildNotificacaoJob(agendamento),
       );
     } catch (err) {
       this.logger.warn(
@@ -251,24 +254,13 @@ export class AgendamentoService {
     agendamento: Prisma.AgendamentoGetPayload<{
       include: typeof INCLUDE_COMPLETO;
     }>,
-    servicos: { nome: string }[],
   ): AgendamentoConfirmadoJob {
-    // Walk-ins com TQE_CONTATO têm `cliente` null — sem e-mail para notificação.
-    const clienteNome =
-      agendamento.cliente?.nome ?? agendamento.contato?.nome ?? '';
-    const clienteEmail = agendamento.cliente?.email ?? '';
+    // Armazena apenas IDs na fila Redis; o consumer busca os dados do DB
     return {
       agendamentoCodigo: agendamento.codigo,
-      clienteNome,
-      clienteEmail,
       clienteUsrCodigo: agendamento.cliente?.codigo,
       barbeiroUsrCodigo: agendamento.barbeiro.codigo,
       barCodigo: agendamento.barCodigo,
-      barbeiroNome: agendamento.barbeiro.nome,
-      barbeariaNome: agendamento.barbearia.nome,
-      inicio: agendamento.inicio.toISOString(),
-      fim: agendamento.fim.toISOString(),
-      servicos: servicos.map((s) => s.nome),
     };
   }
 
@@ -595,7 +587,7 @@ export class AgendamentoService {
         FROM "TQE_AGENDAMENTO"
         WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
           AND "TQE_AGD_CODIGO" != ${codigo}
-          AND "TQE_AGD_STATUS" NOT IN ('CANCELADO', 'NO_SHOW')
+          AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
           AND "TQE_AGD_INICIO" < ${novoFim}
           AND "TQE_AGD_FIM" > ${novoInicio}
       `;
@@ -625,8 +617,9 @@ export class AgendamentoService {
   ) {
     const agendamento = await this.findOne(codigo, barCodigo);
 
-    const statusFinais = ['CONCLUIDO', 'CANCELADO', 'NO_SHOW'];
-    if (statusFinais.includes(agendamento.status)) {
+    if (
+      (STATUSES_ENCERRADOS as readonly string[]).includes(agendamento.status)
+    ) {
       throw new BadRequestException(
         `Não é possível transferir um agendamento com status '${agendamento.status}'`,
       );
@@ -651,7 +644,7 @@ export class AgendamentoService {
         SELECT COUNT(1) as count
         FROM "TQE_AGENDAMENTO"
         WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.novoBarbeiroId}
-          AND "TQE_AGD_STATUS" NOT IN ('CANCELADO', 'NO_SHOW')
+          AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
           AND "TQE_AGD_CODIGO" <> ${codigo}
           AND "TQE_AGD_INICIO" < ${agendamento.fim}
           AND "TQE_AGD_FIM"   > ${agendamento.inicio}

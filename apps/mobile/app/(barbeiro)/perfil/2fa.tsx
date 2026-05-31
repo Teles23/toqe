@@ -44,7 +44,6 @@ export default function Perfil2faScreen() {
 
   // Step wizard: 0 = intro, 1 = QR, 2 = code
   const [step, setStep] = useState(0);
-  const [showManualKey, setShowManualKey] = useState(false);
   const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
   const [disableCode, setDisableCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -279,24 +278,9 @@ export default function Perfil2faScreen() {
             </View>
 
             <Text style={styles.stepInstruction}>
-              2. Ou{" "}
-              <Text
-                style={styles.toggleManualLink}
-                onPress={() => setShowManualKey((v) => !v)}
-              >
-                {showManualKey
-                  ? "ocultar chave manual"
-                  : "não consegue escanear? Digite manualmente:"}
-              </Text>
+              2. Se não conseguir escanear, use um app autenticador compatível
+              com TOTP e aponte para o QR code acima.
             </Text>
-
-            {showManualKey && (
-              <View style={styles.manualKeyBox}>
-                <Text style={styles.manualKey} selectable>
-                  {setup.data.secret}
-                </Text>
-              </View>
-            )}
           </View>
         )}
 
@@ -518,23 +502,6 @@ const styles = StyleSheet.create({
   qrImage: {
     width: 160,
     height: 160,
-  },
-  toggleManualLink: {
-    color: AMBER,
-    fontFamily: "Inter_500Medium",
-  },
-  manualKeyBox: {
-    backgroundColor: "#F4B40014",
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  manualKey: {
-    fontFamily: "JetBrainsMono_400Regular",
-    fontSize: 13,
-    color: AMBER,
-    letterSpacing: 2,
   },
   // Step 2 — Code
   codeRow: {

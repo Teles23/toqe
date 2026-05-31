@@ -226,7 +226,7 @@ export class AuthService {
       }),
       this.prisma.usuario.update({
         where: { codigo: resetToken.usrCodigo },
-        data: { senhaHash },
+        data: { senhaHash, tokenVersion: { increment: 1 } },
       }),
       // Revogar todos os refresh tokens do usuário (segurança)
       this.prisma.refreshToken.updateMany({
@@ -274,7 +274,7 @@ export class AuthService {
     await this.prisma.$transaction([
       this.prisma.usuario.update({
         where: { codigo: usrCodigo },
-        data: { senhaHash },
+        data: { senhaHash, tokenVersion: { increment: 1 } },
       }),
       this.prisma.refreshToken.updateMany({
         where: {
@@ -318,9 +318,7 @@ export class AuthService {
     });
   }
 
-  async setup2Fa(
-    usrCodigo: number,
-  ): Promise<{ qrCode: string; secret: string }> {
+  async setup2Fa(usrCodigo: number): Promise<{ qrCode: string }> {
     const user = await this.usuarioService.findById(usrCodigo);
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
     const secret = generateSecret();
@@ -335,7 +333,7 @@ export class AuthService {
       where: { codigo: usrCodigo },
       data: { twoFaSecret: secret },
     });
-    return { qrCode: qrCodeDataUrl, secret };
+    return { qrCode: qrCodeDataUrl };
   }
 
   async enable2Fa(usrCodigo: number, code: string): Promise<void> {
@@ -410,7 +408,15 @@ export class AuthService {
   }
 
   private async generateTokens(codigo: number, nome: string, email: string) {
-    const payload = { sub: codigo, jti: randomUUID() };
+    const user = await this.prisma.usuario.findUnique({
+      where: { codigo },
+      select: { tokenVersion: true },
+    });
+    const payload = {
+      sub: codigo,
+      jti: randomUUID(),
+      tokenVersion: user?.tokenVersion ?? 1,
+    };
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = randomBytes(32).toString('hex');
 

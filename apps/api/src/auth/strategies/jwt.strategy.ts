@@ -7,6 +7,7 @@ export interface JwtPayload {
   sub: number;
   email: string;
   type?: string;
+  tokenVersion?: number;
   iat?: number;
   exp?: number;
 }
@@ -37,6 +38,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Rejeita tokens de usuários inexistentes OU desativados
     if (!user || !user.ativo) {
       throw new UnauthorizedException();
+    }
+    // Token emitido antes de troca de senha — tokenVersion não bate
+    const dbVersion = (user as { tokenVersion?: number }).tokenVersion ?? 1;
+    if (
+      payload.tokenVersion !== undefined &&
+      payload.tokenVersion !== dbVersion
+    ) {
+      throw new UnauthorizedException('Token inválido — senha alterada');
     }
     return { sub: user.codigo, email: user.email, superAdmin: user.superAdmin };
   }

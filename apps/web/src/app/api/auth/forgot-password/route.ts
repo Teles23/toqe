@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 /**
  * BFF — POST /api/auth/forgot-password
@@ -8,17 +9,12 @@ import { NextRequest, NextResponse } from "next/server";
  * Se a API retornar outro erro (ex: 400 de validação), repassa o status real.
  */
 
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
-
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/forgot-password`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

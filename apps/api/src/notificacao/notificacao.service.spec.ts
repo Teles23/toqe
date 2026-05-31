@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { NotificacaoService } from './notificacao.service';
-import type { AgendamentoConfirmadoJob } from './notificacao.types';
+import type { AgendamentoConfirmadoData } from './notificacao.types';
 
 const mockSend = jest.fn();
 
@@ -12,7 +12,7 @@ jest.mock('resend', () => ({
   })),
 }));
 
-const mockJob: AgendamentoConfirmadoJob = {
+const mockJob: AgendamentoConfirmadoData = {
   agendamentoCodigo: 42,
   clienteNome: 'João Silva',
   clienteEmail: 'joao@test.com',

@@ -1069,7 +1069,7 @@ describe('AgendamentoService', () => {
     it('erro: lança BadRequestException quando status é concluido', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...agendamentoBase,
-        status: 'CONCLUIDO',
+        status: 'concluido',
       });
 
       await expect(
@@ -1080,7 +1080,7 @@ describe('AgendamentoService', () => {
     it('erro: lança BadRequestException quando status é cancelado', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...agendamentoBase,
-        status: 'CANCELADO',
+        status: 'cancelado',
       });
 
       await expect(

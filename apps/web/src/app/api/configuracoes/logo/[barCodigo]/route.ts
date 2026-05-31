@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
+import { getInternalApiUrl } from "../../../_lib/internal-api";
 
 export async function POST(
   req: NextRequest,
@@ -18,14 +14,17 @@ export async function POST(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/barbearias/${barCodigo}/logo`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "x-tenant-id": barCodigo,
+    apiRes = await fetch(
+      `${getInternalApiUrl()}/barbearias/${barCodigo}/logo`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-tenant-id": barCodigo,
+        },
+        body: formData,
       },
-      body: formData,
-    });
+    );
   } catch {
     return NextResponse.json(
       { message: "Serviço indisponível." },
