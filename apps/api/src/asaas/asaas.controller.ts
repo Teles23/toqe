@@ -15,6 +15,7 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AsaasService } from './asaas.service';
 import { AsaasEvent, AsaasWebhookPayload } from './asaas-webhook.dto';
+import { CheckoutDto } from './dto/checkout.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { SkipPlanoCheck } from '../auth/decorators/skip-plano-check.decorator';
@@ -32,7 +33,7 @@ export class AsaasController {
   @Post('checkout/:barCodigo')
   async checkout(
     @Param('barCodigo') barCodigoStr: string,
-    @Body() body: { plano: string },
+    @Body() body: CheckoutDto,
     @Request() req: JwtRequest,
   ) {
     const barCodigo = Number(barCodigoStr);
