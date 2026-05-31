@@ -5,6 +5,7 @@ node_modules
 .pnp
 .pnp.js
 **/.claude/settings*.json
+.claude/worktrees/
 .agent
 .agents
 .pnpm-store/

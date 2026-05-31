@@ -1,14 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  ForbiddenException,
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { validate } from 'class-validator';
 import { AsaasController } from './asaas.controller';
 import { AsaasService } from './asaas.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
 import type { AsaasWebhookPayload } from './asaas-webhook.dto';
 import type { Barbearia } from '../generated/prisma';
+import { CheckoutDto } from './dto/checkout.dto';
 
 const mockAsaasService = {
   createCustomer: jest.fn(),
@@ -16,6 +19,75 @@ const mockAsaasService = {
   getPaymentLink: jest.fn(),
   cancelSubscription: jest.fn(),
 };
+
+function makeCheckoutDto(plano: string): CheckoutDto {
+  const dto = new CheckoutDto();
+  (dto as unknown as Record<string, string>).plano = plano;
+  return dto;
+}
+
+describe('CheckoutDto — validação de plano', () => {
+  it.each(['basic', 'pro', 'enterprise'])(
+    'aceita plano válido "%s"',
+    async (plano) => {
+      const errors = await validate(makeCheckoutDto(plano));
+      expect(errors).toHaveLength(0);
+    },
+  );
+
+  it.each(['free', 'trial', 'god_mode', 'unlimited', '', 'BASIC', 'PRO'])(
+    'rejeita plano inválido "%s"',
+    async (plano) => {
+      const errors = await validate(makeCheckoutDto(plano));
+      expect(errors.length).toBeGreaterThan(0);
+      const constraints = errors[0].constraints ?? {};
+      expect(Object.keys(constraints)).toContain('isIn');
+    },
+  );
+});
+
+describe('AsaasController — checkout autorização', () => {
+  let controller: AsaasController;
+  let prisma: PrismaMock;
+
+  beforeEach(async () => {
+    prisma = createPrismaMock();
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AsaasController],
+      providers: [
+        {
+          provide: AsaasService,
+          useValue: {
+            createCustomer: jest.fn(),
+            createSubscription: jest
+              .fn()
+              .mockResolvedValue({ id: 'sub_1', nextDueDate: '2026-07-01' }),
+            getPaymentLink: jest.fn().mockResolvedValue({ url: 'https://pay' }),
+          },
+        },
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+
+    controller = module.get<AsaasController>(AsaasController);
+  });
+
+  it('recusa checkout quando usuário não é dono/gerente da barbearia', async () => {
+    prisma.membroBarbearia.findFirst.mockResolvedValue(null);
+
+    await expect(
+      controller.checkout(
+        '1',
+        { plano: 'pro' } as CheckoutDto,
+        {
+          user: { sub: 99 },
+        } as never,
+      ),
+    ).rejects.toThrow(ForbiddenException);
+
+    expect(prisma.barbearia.update).not.toHaveBeenCalled();
+  });
+});
 
 function makePayload(
   event: string,

@@ -6,6 +6,7 @@ import {
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { ServicoService } from '../servico/servico.service';
+import { TenantContextService } from '../tenant/tenant-context/tenant-context.service';
 import { CriarAgendamentoPublicoDto } from './dto/criar-agendamento-publico.dto';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class ApiPublicaService {
   constructor(
     private prisma: PrismaService,
     private servicoService: ServicoService,
+    private tenantContext: TenantContextService,
   ) {}
 
   async listarAgendamentos(barCodigo: number, data?: string) {
@@ -30,7 +32,7 @@ export class ApiPublicaService {
       where,
       include: {
         itens: { include: { servico: true } },
-        cliente: { select: { codigo: true, nome: true } },
+        cliente: { select: { codigo: true, nome: true, email: true } },
         barbeiro: { select: { codigo: true, nome: true } },
       },
       orderBy: { inicio: 'asc' },
@@ -38,6 +40,14 @@ export class ApiPublicaService {
   }
 
   async criarAgendamento(barCodigo: number, dto: CriarAgendamentoPublicoDto) {
+    // Fix 1: Validar que o barbeiroId pertence à barbearia (IDOR guard)
+    const membroBarb = await this.prisma.membroBarbearia.findFirst({
+      where: { barCodigo, usrCodigo: dto.barbeiroId },
+    });
+    if (!membroBarb) {
+      throw new BadRequestException('Barbeiro não pertence a esta barbearia');
+    }
+
     // Buscar serviço fora da transação (read-only, sem lock necessário)
     const servico = await this.prisma.servico.findFirst({
       where: { codigo: dto.servicoCodigo, barCodigo, ativo: true },
@@ -60,7 +70,8 @@ export class ApiPublicaService {
     const inicioDate = new Date(dto.inicio);
     const fimDate = addMinutes(inicioDate, duracaoMin);
 
-    return this.prisma.$transaction(async (tx) => {
+    // Fix 2: Usar tenantContext.run() para ativar RLS (set_config app.current_tenant)
+    return this.tenantContext.run(barCodigo, async (tx) => {
       // Verificar ou criar cliente dentro da transação para atomicidade
       let cliente = await tx.usuario.findUnique({
         where: { email: dto.clienteEmail },

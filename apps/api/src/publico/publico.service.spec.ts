@@ -307,6 +307,10 @@ describe('PublicoService', () => {
         usrCodigo: 99,
         usuario: { codigo: 99, nome: 'João', email: 'joao@x.com' },
       });
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
+        usrCodigo: 10,
+        perfil: 'barbeiro',
+      } as unknown as MembroBarbearia);
     });
 
     it('cria cliente e delega para AgendamentoService.create', async () => {
@@ -372,6 +376,16 @@ describe('PublicoService', () => {
       await expect(
         service.criarAgendamento('inexistente', dto),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lança 400 quando barbeiroId não pertence à barbearia', async () => {
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
+
+      await expect(service.criarAgendamento('urban', dto)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(mockAgendamento.create).not.toHaveBeenCalled();
     });
   });
 });

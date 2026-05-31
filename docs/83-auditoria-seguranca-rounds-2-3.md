@@ -206,3 +206,27 @@ if (pathname.startsWith("/admin")) return true;
 | `apps/web/src/features/configuracoes/components/SecaoSeguranca.tsx`     | Modificado | Estado `secret` removido                                                                                           |
 | `apps/mobile/src/shared/hooks/perfil/use-2fa.ts`                        | Modificado | `TwoFaSetupResponse.secret` removido                                                                               |
 | `apps/mobile/app/(barbeiro)/perfil/2fa.tsx`                             | Modificado | Seção de chave manual removida                                                                                     |
+
+---
+
+## Round 4 — Auditoria em develop (2026-05-31)
+
+### Achado corrigido
+
+| #   | Severidade | Descrição                                                                                                                                                                                                                                                                                        | Arquivo                                  |
+| --- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| 1   | 🔴 Alto    | **Privilege escalation via plano arbitrário no checkout**: `POST /asaas/checkout/:barCodigo` aceitava qualquer string em `plano`. String desconhecida no DB fazia `PlanoLimite.findUnique` retornar `null`, silenciosamente bypassando todos os enforcement de cota de agendamentos e barbeiros. | `asaas.controller.ts`, `checkout.dto.ts` |
+
+### Correção implementada
+
+`@Body()` passou a aceitar `CheckoutDto` com `@IsIn(['basic', 'pro', 'enterprise'])`. Qualquer plano fora do allowlist retorna `400 Bad Request` com mensagem descritiva antes de tocar o banco ou a API do Asaas.
+
+A lógica `null = sem limite` nos services (`agendamento.service.ts`, `membro-barbearia.service.ts`) é intencional para o plano `free`/`trial` (barbearias em período inicial sem limites configurados) e **não foi alterada** — o fix correto é na fronteira de entrada.
+
+### Arquivos criados/modificados
+
+| Arquivo                                       | Tipo       | Descrição                                                                                   |
+| --------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------- |
+| `apps/api/src/asaas/dto/checkout.dto.ts`      | Criado     | DTO com `@IsIn(['basic','pro','enterprise'])`                                               |
+| `apps/api/src/asaas/asaas.controller.ts`      | Modificado | `@Body()` agora usa `CheckoutDto` em vez de interface plain                                 |
+| `apps/api/src/asaas/asaas.controller.spec.ts` | Modificado | 10 novos testes: aceita planos válidos, rejeita inválidos, ForbiddenException sem permissão |
