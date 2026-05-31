@@ -3,19 +3,23 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { ApiPublicaService } from './api-publica.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ServicoService } from '../servico/servico.service';
+import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
 import { TenantContextService } from '../tenant/tenant-context/tenant-context.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import type {
   Agendamento,
   MembroBarbearia,
   Servico,
-  Usuario,
 } from '../generated/prisma';
 
 describe('ApiPublicaService', () => {
   let service: ApiPublicaService;
   let prisma: ReturnType<typeof createPrismaMock>;
   let tenantContext: { run: jest.Mock };
+  let membroService: {
+    isBarbeiroDaBarbearia: jest.Mock;
+    findOrCreateCliente: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -29,6 +33,10 @@ describe('ApiPublicaService', () => {
           ) => fn(prisma),
         ),
     };
+    membroService = {
+      isBarbeiroDaBarbearia: jest.fn(),
+      findOrCreateCliente: jest.fn(),
+    };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -36,6 +44,7 @@ describe('ApiPublicaService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: ServicoService, useValue: { findAll: jest.fn() } },
         { provide: TenantContextService, useValue: tenantContext },
+        { provide: MembroBarbeariaService, useValue: membroService },
       ],
     }).compile();
 
@@ -54,11 +63,6 @@ describe('ApiPublicaService', () => {
       clienteEmail: 'joao@example.com',
     };
 
-    const membroBarb = {
-      usrCodigo: 10,
-      barCodigo: 1,
-      perfil: 'barbeiro',
-    } as unknown as MembroBarbearia;
     const servicoMock = {
       codigo: 5,
       barCodigo: 1,
@@ -67,11 +71,13 @@ describe('ApiPublicaService', () => {
       precoBase: 60,
       barbeiros: [],
     } as unknown as Servico & { barbeiros: unknown[] };
-    const clienteMock = {
-      codigo: 99,
-      email: 'joao@example.com',
-      nome: 'João',
-    } as unknown as Usuario;
+
+    const clienteMembroMock = {
+      usrCodigo: 99,
+      barCodigo: 1,
+      perfil: 'cliente',
+    } as unknown as MembroBarbearia;
+
     const agendamentoMock = {
       codigo: 500,
       barCodigo: 1,
@@ -83,7 +89,7 @@ describe('ApiPublicaService', () => {
     } as unknown as Agendamento;
 
     it('rejeita barbeiroId que não pertence à barbearia', async () => {
-      prisma.membroBarbearia.findFirst.mockResolvedValue(null);
+      membroService.isBarbeiroDaBarbearia.mockResolvedValue(false);
 
       await expect(service.criarAgendamento(barCodigo, dto)).rejects.toThrow(
         BadRequestException,
@@ -93,7 +99,7 @@ describe('ApiPublicaService', () => {
     });
 
     it('rejeita serviço inativo ou de outra barbearia', async () => {
-      prisma.membroBarbearia.findFirst.mockResolvedValue(membroBarb);
+      membroService.isBarbeiroDaBarbearia.mockResolvedValue(true);
       prisma.servico.findFirst.mockResolvedValue(null);
 
       await expect(service.criarAgendamento(barCodigo, dto)).rejects.toThrow(
@@ -102,18 +108,9 @@ describe('ApiPublicaService', () => {
     });
 
     it('lança ConflictException quando há agendamento no horário', async () => {
-      // barber check (called on this.prisma before tenantContext.run)
-      prisma.membroBarbearia.findFirst.mockResolvedValue(membroBarb);
-      // service lookup
+      membroService.isBarbeiroDaBarbearia.mockResolvedValue(true);
       prisma.servico.findFirst.mockResolvedValue(servicoMock);
-      // inside the tx (same prisma mock via tenantContext.run)
-      prisma.usuario.findUnique.mockResolvedValue(clienteMock);
-      prisma.membroBarbearia.findFirst.mockResolvedValue({
-        usrCodigo: 99,
-        barCodigo: 1,
-        perfil: 'cliente',
-      } as unknown as MembroBarbearia);
-      // conflict found
+      membroService.findOrCreateCliente.mockResolvedValue(clienteMembroMock);
       prisma.$queryRaw.mockResolvedValue([{ count: BigInt(1) }]);
 
       await expect(service.criarAgendamento(barCodigo, dto)).rejects.toThrow(
@@ -122,14 +119,9 @@ describe('ApiPublicaService', () => {
     });
 
     it('ativa o contexto de tenant (RLS) durante a transação', async () => {
-      prisma.membroBarbearia.findFirst.mockResolvedValue(membroBarb);
+      membroService.isBarbeiroDaBarbearia.mockResolvedValue(true);
       prisma.servico.findFirst.mockResolvedValue(servicoMock);
-      prisma.usuario.findUnique.mockResolvedValue(clienteMock);
-      prisma.membroBarbearia.findFirst.mockResolvedValue({
-        usrCodigo: 99,
-        barCodigo: 1,
-        perfil: 'cliente',
-      } as unknown as MembroBarbearia);
+      membroService.findOrCreateCliente.mockResolvedValue(clienteMembroMock);
       prisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
       prisma.agendamento.create.mockResolvedValue(agendamentoMock);
 
@@ -142,14 +134,9 @@ describe('ApiPublicaService', () => {
     });
 
     it('cria agendamento com sucesso quando todos os dados são válidos', async () => {
-      prisma.membroBarbearia.findFirst.mockResolvedValue(membroBarb);
+      membroService.isBarbeiroDaBarbearia.mockResolvedValue(true);
       prisma.servico.findFirst.mockResolvedValue(servicoMock);
-      prisma.usuario.findUnique.mockResolvedValue(clienteMock);
-      prisma.membroBarbearia.findFirst.mockResolvedValue({
-        usrCodigo: 99,
-        barCodigo: 1,
-        perfil: 'cliente',
-      } as unknown as MembroBarbearia);
+      membroService.findOrCreateCliente.mockResolvedValue(clienteMembroMock);
       prisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
       prisma.agendamento.create.mockResolvedValue(agendamentoMock);
 
@@ -161,31 +148,26 @@ describe('ApiPublicaService', () => {
           data: expect.objectContaining({
             barbeiroId: dto.barbeiroId,
             barCodigo,
+            clienteId: 99,
           }),
         }),
       );
     });
 
-    it('cria cliente provisório quando não existe', async () => {
-      prisma.membroBarbearia.findFirst.mockResolvedValue(membroBarb);
+    it('delega criação de cliente para MembroBarbeariaService.findOrCreateCliente', async () => {
+      membroService.isBarbeiroDaBarbearia.mockResolvedValue(true);
       prisma.servico.findFirst.mockResolvedValue(servicoMock);
-      // cliente não existe
-      prisma.usuario.findUnique.mockResolvedValue(null);
-      prisma.usuario.create.mockResolvedValue(clienteMock);
+      membroService.findOrCreateCliente.mockResolvedValue(clienteMembroMock);
       prisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
       prisma.agendamento.create.mockResolvedValue(agendamentoMock);
 
-      const result = await service.criarAgendamento(barCodigo, dto);
+      await service.criarAgendamento(barCodigo, dto);
 
-      expect(result).toEqual(agendamentoMock);
-      expect(prisma.usuario.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            email: dto.clienteEmail,
-            nome: dto.clienteNome,
-          }),
-        }),
-      );
+      expect(membroService.findOrCreateCliente).toHaveBeenCalledTimes(1);
+      const [[calledBar, calledDto]] =
+        membroService.findOrCreateCliente.mock.calls;
+      expect(calledBar).toBe(barCodigo);
+      expect(calledDto).toEqual({ nome: dto.clienteNome, email: dto.clienteEmail });
     });
   });
 });

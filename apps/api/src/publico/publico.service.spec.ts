@@ -19,6 +19,7 @@ const mockPrisma = createPrismaMock();
 
 const mockMembro = {
   findOrCreateCliente: jest.fn(),
+  isBarbeiroDaBarbearia: jest.fn(),
 };
 const mockServico = {
   findAll: jest.fn(),
@@ -307,10 +308,7 @@ describe('PublicoService', () => {
         usrCodigo: 99,
         usuario: { codigo: 99, nome: 'João', email: 'joao@x.com' },
       });
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
-        usrCodigo: 10,
-        perfil: 'barbeiro',
-      } as unknown as MembroBarbearia);
+      mockMembro.isBarbeiroDaBarbearia.mockResolvedValue(true);
     });
 
     it('cria cliente e delega para AgendamentoService.create', async () => {
@@ -379,7 +377,7 @@ describe('PublicoService', () => {
     });
 
     it('lança 400 quando barbeiroId não pertence à barbearia', async () => {
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
+      mockMembro.isBarbeiroDaBarbearia.mockResolvedValue(false);
 
       await expect(service.criarAgendamento('urban', dto)).rejects.toThrow(
         BadRequestException,

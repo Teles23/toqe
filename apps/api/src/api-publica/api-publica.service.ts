@@ -6,6 +6,7 @@ import {
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { ServicoService } from '../servico/servico.service';
+import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
 import { TenantContextService } from '../tenant/tenant-context/tenant-context.service';
 import { CriarAgendamentoPublicoDto } from './dto/criar-agendamento-publico.dto';
 
@@ -14,6 +15,7 @@ export class ApiPublicaService {
   constructor(
     private prisma: PrismaService,
     private servicoService: ServicoService,
+    private membroService: MembroBarbeariaService,
     private tenantContext: TenantContextService,
   ) {}
 
@@ -40,15 +42,15 @@ export class ApiPublicaService {
   }
 
   async criarAgendamento(barCodigo: number, dto: CriarAgendamentoPublicoDto) {
-    // Fix 1: Validar que o barbeiroId pertence à barbearia (IDOR guard)
-    const membroBarb = await this.prisma.membroBarbearia.findFirst({
-      where: { barCodigo, usrCodigo: dto.barbeiroId },
-    });
-    if (!membroBarb) {
+    if (
+      !(await this.membroService.isBarbeiroDaBarbearia(
+        barCodigo,
+        dto.barbeiroId,
+      ))
+    ) {
       throw new BadRequestException('Barbeiro não pertence a esta barbearia');
     }
 
-    // Buscar serviço fora da transação (read-only, sem lock necessário)
     const servico = await this.prisma.servico.findFirst({
       where: { codigo: dto.servicoCodigo, barCodigo, ativo: true },
       include: {
@@ -70,41 +72,13 @@ export class ApiPublicaService {
     const inicioDate = new Date(dto.inicio);
     const fimDate = addMinutes(inicioDate, duracaoMin);
 
-    // Fix 2: Usar tenantContext.run() para ativar RLS (set_config app.current_tenant)
     return this.tenantContext.run(barCodigo, async (tx) => {
-      // Verificar ou criar cliente dentro da transação para atomicidade
-      let cliente = await tx.usuario.findUnique({
-        where: { email: dto.clienteEmail },
-      });
+      const membroCliente = await this.membroService.findOrCreateCliente(
+        barCodigo,
+        { nome: dto.clienteNome, email: dto.clienteEmail },
+        tx,
+      );
 
-      if (!cliente) {
-        // Criar cliente provisório sem senha local (conta placeholder)
-        cliente = await tx.usuario.create({
-          data: {
-            nome: dto.clienteNome,
-            email: dto.clienteEmail,
-            senhaHash: null,
-            membros: {
-              create: {
-                barCodigo,
-                perfil: 'cliente',
-              },
-            },
-          },
-        });
-      } else {
-        // Garantir que é membro da barbearia
-        const membro = await tx.membroBarbearia.findFirst({
-          where: { usrCodigo: cliente.codigo, barCodigo },
-        });
-        if (!membro) {
-          await tx.membroBarbearia.create({
-            data: { barCodigo, usrCodigo: cliente.codigo, perfil: 'cliente' },
-          });
-        }
-      }
-
-      // Verificar conflito de horário dentro da transação
       const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
         SELECT COUNT(1) as count
         FROM "TQE_AGENDAMENTO"
@@ -123,7 +97,7 @@ export class ApiPublicaService {
       return tx.agendamento.create({
         data: {
           barbeiroId: dto.barbeiroId,
-          clienteId: cliente.codigo,
+          clienteId: membroCliente.usrCodigo,
           barCodigo,
           inicio: inicioDate,
           fim: fimDate,

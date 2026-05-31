@@ -172,17 +172,14 @@ export class PublicoService {
             dto.inicio,
           );
 
-    if (dto.barbeiroId > 0) {
-      const isMembro = await this.prisma.membroBarbearia.findFirst({
-        where: {
-          barCodigo: barbearia.codigo,
-          usrCodigo: barbeiroId,
-          perfil: 'barbeiro',
-        },
-      });
-      if (!isMembro) {
-        throw new BadRequestException('Barbeiro não pertence a esta barbearia');
-      }
+    if (
+      dto.barbeiroId > 0 &&
+      !(await this.membroService.isBarbeiroDaBarbearia(
+        barbearia.codigo,
+        barbeiroId,
+      ))
+    ) {
+      throw new BadRequestException('Barbeiro não pertence a esta barbearia');
     }
 
     const agendamento = await this.agendamentoService.create(
