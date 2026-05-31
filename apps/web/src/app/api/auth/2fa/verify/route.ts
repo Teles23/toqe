@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
+import { INTERNAL_API } from "../../../_lib/internal-api";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 

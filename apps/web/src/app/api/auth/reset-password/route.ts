@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { INTERNAL_API } from "../../_lib/internal-api";
 
 /**
  * BFF — POST /api/auth/reset-password
@@ -6,11 +7,6 @@ import { NextRequest, NextResponse } from "next/server";
  * Proxy simples para NestJS POST /auth/reset-password.
  * Retorna erro 401 da API quando o token for inválido ou expirado.
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));

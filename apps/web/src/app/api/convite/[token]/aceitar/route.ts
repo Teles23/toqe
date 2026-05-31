@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { INTERNAL_API } from "../../../_lib/internal-api";
 
 /**
  * BFF — POST /api/convite/:token/aceitar
@@ -15,11 +16,6 @@ import { NextRequest, NextResponse } from "next/server";
  * Erros propagados do backend: 404 (expirado/inexistente), 409 (já utilizado),
  * 401 (senha incorreta), 400 (senha < 8 chars).
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { INTERNAL_API } from "../../_lib/internal-api";
 
 /**
  * BFF — convite de barbeiro (endpoints PÚBLICOS, sem auth).
@@ -9,11 +10,6 @@ import { NextRequest, NextResponse } from "next/server";
  * O aceite (POST) vive em `aceitar/route.ts` porque precisa setar cookies de
  * sessão (auto-login), igual ao BFF de login.
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 export async function GET(
   _req: NextRequest,

@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
+import { INTERNAL_API } from "../../../_lib/internal-api";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { INTERNAL_API } from "../../_lib/internal-api";
 
 /**
  * BFF — POST /api/auth/forgot-password
@@ -7,11 +8,6 @@ import { NextRequest, NextResponse } from "next/server";
  * Sempre retorna 200 mesmo se o e-mail não existir (anti-enumeration).
  * Se a API retornar outro erro (ex: 400 de validação), repassa o status real.
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
