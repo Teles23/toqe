@@ -40,6 +40,8 @@ interface AuthActions {
     accessToken: string,
     refreshToken: string,
   ): Promise<Perfil | null>;
+  /** Recarrega /usuarios/me e atualiza o estado global (ex: após upload de avatar). */
+  reloadUser(): Promise<void>;
   logout(): Promise<void>;
   switchBarbearia(codigo: number): void;
 }
@@ -223,6 +225,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const reloadUser = useCallback(async (): Promise<void> => {
+    await loadMe();
+  }, [loadMe]);
+
   const switchBarbearia = useCallback((codigo: number) => {
     setState((prev) => {
       const barbearia =
@@ -240,6 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     loginWithGoogle,
     establishSession,
+    reloadUser,
     logout,
     switchBarbearia,
   };

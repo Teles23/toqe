@@ -59,6 +59,7 @@ describe("useAgendaSocket", () => {
       loginWithGoogle: jest.fn(),
       establishSession: jest.fn(),
       logout: jest.fn(),
+      reloadUser: jest.fn(),
       switchBarbearia: jest.fn(),
     });
 
@@ -92,6 +93,7 @@ describe("useAgendaSocket", () => {
       loginWithGoogle: jest.fn(),
       establishSession: jest.fn(),
       logout: jest.fn(),
+      reloadUser: jest.fn(),
       switchBarbearia: jest.fn(),
     });
 
@@ -128,6 +130,7 @@ describe("useAgendaSocket", () => {
       loginWithGoogle: jest.fn(),
       establishSession: jest.fn(),
       logout: jest.fn(),
+      reloadUser: jest.fn(),
       switchBarbearia: jest.fn(),
     });
 
@@ -169,6 +172,7 @@ describe("useAgendaSocket", () => {
       loginWithGoogle: jest.fn(),
       establishSession: jest.fn(),
       logout: jest.fn(),
+      reloadUser: jest.fn(),
       switchBarbearia: jest.fn(),
     });
 
@@ -216,6 +220,7 @@ describe("useAgendaSocket", () => {
       loginWithGoogle: jest.fn(),
       establishSession: jest.fn(),
       logout: jest.fn(),
+      reloadUser: jest.fn(),
       switchBarbearia: jest.fn(),
     });
 
@@ -263,6 +268,7 @@ describe("useAgendaSocket", () => {
       loginWithGoogle: jest.fn(),
       establishSession: jest.fn(),
       logout: jest.fn(),
+      reloadUser: jest.fn(),
       switchBarbearia: jest.fn(),
     });
 
