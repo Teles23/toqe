@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useEditarPerfil } from "@/src/shared/hooks/perfil/use-editar-perfil";
+import { useUploadAvatar } from "@/src/shared/hooks/perfil/use-upload-avatar";
 import { maskTelefone } from "@/src/shared/utils/masks";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 import { useToast } from "@/src/shared/hooks/use-toast";
@@ -49,8 +51,24 @@ export default function PerfilEditarScreen() {
     },
   });
 
+  const uploadAvatar = useUploadAvatar();
+
   const initial = (user?.nome ?? "?").trim()[0]?.toUpperCase() ?? "?";
+  const avatarUrl = (user as { avatarUrl?: string | null })?.avatarUrl;
   const email = (user as { email?: string })?.email ?? "";
+
+  const handleEditarFoto = async () => {
+    try {
+      await uploadAvatar.mutateAsync();
+      showToast("Foto de perfil atualizada!", "success");
+    } catch (e) {
+      if (e instanceof Error && e.message === "CANCELLED") return;
+      showToast(
+        e instanceof Error ? e.message : "Não foi possível atualizar a foto.",
+        "error",
+      );
+    }
+  };
 
   const onSubmit = async (data: UpdateUsuarioInput) => {
     try {
@@ -89,16 +107,33 @@ export default function PerfilEditarScreen() {
         {/* Avatar */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrapper}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarLetter}>{initial}</Text>
-            </View>
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarCircle}
+                accessibilityLabel="Foto de perfil"
+              />
+            ) : (
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarLetter}>{initial}</Text>
+              </View>
+            )}
             <Pressable
-              style={styles.avatarEditBtn}
-              onPress={() => showToast("Upload de foto em breve", "info")}
+              testID="btn-editar-foto"
+              style={[
+                styles.avatarEditBtn,
+                uploadAvatar.isPending && styles.avatarEditBtnLoading,
+              ]}
+              onPress={handleEditarFoto}
+              disabled={uploadAvatar.isPending}
               accessibilityRole="button"
               accessibilityLabel="Editar foto"
             >
-              <Text style={styles.avatarEditIcon}>✏</Text>
+              {uploadAvatar.isPending ? (
+                <ActivityIndicator size={12} color="#0d0d0d" />
+              ) : (
+                <Text style={styles.avatarEditIcon}>✏</Text>
+              )}
             </Pressable>
           </View>
         </View>
@@ -187,7 +222,9 @@ export default function PerfilEditarScreen() {
             )}
           />
           {errors.dataNascimento?.message ? (
-            <Text style={styles.fieldError}>{errors.dataNascimento.message}</Text>
+            <Text style={styles.fieldError}>
+              {errors.dataNascimento.message}
+            </Text>
           ) : null}
         </View>
 
@@ -271,6 +308,9 @@ const styles = StyleSheet.create({
     backgroundColor: AMBER,
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarEditBtnLoading: {
+    opacity: 0.7,
   },
   avatarEditIcon: {
     fontSize: 12,

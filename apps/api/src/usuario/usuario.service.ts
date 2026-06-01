@@ -77,6 +77,14 @@ export class UsuarioService {
     };
   }
 
+  async updateAvatar(usrCodigo: number, avatarUrl: string) {
+    return this.prisma.usuario.update({
+      where: { codigo: usrCodigo },
+      data: { avatarUrl },
+      select: SELECT_PERFIL,
+    });
+  }
+
   async update(usrCodigo: number, dto: UpdateUsuarioDto) {
     await this.me(usrCodigo);
     const { dataNascimento, ...rest } = dto;

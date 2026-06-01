@@ -54,6 +54,32 @@ const config: ExpoConfig = {
     "expo-secure-store",
     "expo-updates",
     [
+      "expo-notifications",
+      {
+        icon: "./assets/images/android-icon-monochrome.png",
+        color: "#F4B400",
+        sounds: [],
+      },
+    ],
+    [
+      "expo-camera",
+      {
+        cameraPermission:
+          "O Toqe precisa acessar a câmera para escanear QR codes de barbearias e tirar fotos de perfil.",
+        microphonePermission: false,
+        recordAudioAndroid: false,
+      },
+    ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "O Toqe acessa sua galeria para você escolher uma foto de perfil.",
+        cameraPermission:
+          "O Toqe acessa a câmera para tirar sua foto de perfil.",
+      },
+    ],
+    [
       "@react-native-google-signin/google-signin",
       {
         // REVERSED do Web Client ID — placeholder para satisfazer validação do
