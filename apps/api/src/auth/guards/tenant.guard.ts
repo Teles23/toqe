@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { TenantRequest } from '../../common/types/jwt-request';
+import { TenantStore } from '../../tenant/tenant-store';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -32,12 +33,17 @@ export class TenantGuard implements CanActivate {
       throw new ForbiddenException('Tenant inválido');
     }
 
-    const membro = await this.prisma.membroBarbearia.findFirst({
-      where: {
-        usrCodigo: user.sub,
-        barCodigo: Number(barCodigo),
-      },
-    });
+    // TenantInterceptor roda DEPOIS dos guards — o ALS context ainda não foi
+    // setado. Precisamos setar aqui para que TQE_MEMBRO_BARBEARIA (FORCE RLS)
+    // não filtre a query de membership check.
+    const membro = await TenantStore.run(barCodigoNum, () =>
+      this.prisma.membroBarbearia.findFirst({
+        where: {
+          usrCodigo: user.sub,
+          barCodigo: barCodigoNum,
+        },
+      }),
+    );
 
     if (!membro) {
       throw new ForbiddenException(

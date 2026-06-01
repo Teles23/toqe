@@ -596,26 +596,29 @@ export class AgendamentoService {
       : new Date(novoInicio.getTime() + duracaoMs);
 
     const atualizado = await this.prisma.$transaction(async (tx) => {
-      const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
-        SELECT COUNT(1) as count
-        FROM "TQE_AGENDAMENTO"
-        WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
-          AND "TQE_AGD_CODIGO" != ${codigo}
-          AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
-          AND "TQE_AGD_INICIO" < ${novoFim}
-          AND "TQE_AGD_FIM" > ${novoInicio}
-      `;
+      await tx.$executeRaw`SELECT set_config('app.current_tenant', ${String(barCodigo)}, true)`;
+      return TenantStore.runInTx(barCodigo, async () => {
+        const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
+          SELECT COUNT(1) as count
+          FROM "TQE_AGENDAMENTO"
+          WHERE "TQE_AGD_BARBEIRO_ID" = ${ag.barbeiroId}
+            AND "TQE_AGD_CODIGO" != ${codigo}
+            AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
+            AND "TQE_AGD_INICIO" < ${novoFim}
+            AND "TQE_AGD_FIM" > ${novoInicio}
+        `;
 
-      if (Number(conflitos[0].count) > 0) {
-        throw new ConflictException(
-          'O barbeiro já tem um agendamento neste horário',
-        );
-      }
+        if (Number(conflitos[0].count) > 0) {
+          throw new ConflictException(
+            'O barbeiro já tem um agendamento neste horário',
+          );
+        }
 
-      return tx.agendamento.update({
-        where: { codigo, barCodigo },
-        data: { inicio: novoInicio, fim: novoFim },
-        include: INCLUDE_COMPLETO,
+        return tx.agendamento.update({
+          where: { codigo, barCodigo },
+          data: { inicio: novoInicio, fim: novoFim },
+          include: INCLUDE_COMPLETO,
+        });
       });
     });
 
@@ -654,26 +657,29 @@ export class AgendamentoService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
-        SELECT COUNT(1) as count
-        FROM "TQE_AGENDAMENTO"
-        WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.novoBarbeiroId}
-          AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
-          AND "TQE_AGD_CODIGO" <> ${codigo}
-          AND "TQE_AGD_INICIO" < ${agendamento.fim}
-          AND "TQE_AGD_FIM"   > ${agendamento.inicio}
-      `;
+      await tx.$executeRaw`SELECT set_config('app.current_tenant', ${String(barCodigo)}, true)`;
+      return TenantStore.runInTx(barCodigo, async () => {
+        const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
+          SELECT COUNT(1) as count
+          FROM "TQE_AGENDAMENTO"
+          WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.novoBarbeiroId}
+            AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
+            AND "TQE_AGD_CODIGO" <> ${codigo}
+            AND "TQE_AGD_INICIO" < ${agendamento.fim}
+            AND "TQE_AGD_FIM"   > ${agendamento.inicio}
+        `;
 
-      if (Number(conflitos[0].count) > 0) {
-        throw new BadRequestException(
-          'Conflito de horário: o barbeiro selecionado já possui um agendamento neste período',
-        );
-      }
+        if (Number(conflitos[0].count) > 0) {
+          throw new BadRequestException(
+            'Conflito de horário: o barbeiro selecionado já possui um agendamento neste período',
+          );
+        }
 
-      return tx.agendamento.update({
-        where: { codigo, barCodigo },
-        data: { barbeiroId: dto.novoBarbeiroId },
-        include: INCLUDE_COMPLETO,
+        return tx.agendamento.update({
+          where: { codigo, barCodigo },
+          data: { barbeiroId: dto.novoBarbeiroId },
+          include: INCLUDE_COMPLETO,
+        });
       });
     });
   }
