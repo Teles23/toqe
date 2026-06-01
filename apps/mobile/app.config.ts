@@ -1,10 +1,26 @@
+import fs from "fs";
+import path from "path";
 import { ExpoConfig } from "expo/config";
 
-// EAS project ID — público (não é secret), versionado no repo.
-// Liga o app à conta @thiagoteles/toqe-mobile em expo.dev.
-// Hardcoded (em vez de process.env) porque EAS exige config estática para
-// gerenciar o link do projeto via `eas init` / `eas credentials`.
 const projectId = "d9c90eca-f4b9-4a14-a740-523935615a09";
+
+const firebaseAndroidJson = process.env.GOOGLE_SERVICES_JSON;
+const androidGoogleServicesPath = path.resolve(
+  __dirname,
+  "google-services.json",
+);
+
+if (firebaseAndroidJson) {
+  try {
+    JSON.parse(firebaseAndroidJson);
+    fs.writeFileSync(androidGoogleServicesPath, firebaseAndroidJson, "utf8");
+  } catch (error) {
+    console.warn(
+      "GOOGLE_SERVICES_JSON is set but invalid JSON. google-services.json will not be written.",
+      error,
+    );
+  }
+}
 
 // URL da API resolvida por ambiente:
 //  - dev (expo start): vem de EXPO_PUBLIC_API_URL (definido em .env.local →
