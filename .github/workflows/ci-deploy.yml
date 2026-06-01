@@ -126,6 +126,9 @@ jobs:
           script_stop: true
           script: |
             set -e
+            # Falha explícita se o secret não estiver configurado — não escrever
+            # CORS_ORIGINS= vazio (criaria array [''] truthy que silencia CORS).
+            [ -n "$CORS_ORIGINS" ] || { echo "ERRO: secret CORS_ORIGINS não configurado"; exit 1; }
             cd /opt/projetos/toqe
             touch .env
             grep -v '^CORS_ORIGINS=' .env > .env.tmp || true
