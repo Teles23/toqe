@@ -61,4 +61,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 # ATENÇÃO: seed-runner.js NÃO deve rodar em produção — contém usuários e barbearia
 # fictícios de demonstração (thiago@email.com/senha123) que são um backdoor de segurança.
 # Para popular dados de demo em ambiente de desenvolvimento, execute seed-runner.js manualmente.
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --config ./prisma.config.js && node prisma/seed-estrutural.js && node dist/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate resolve --rolled-back 20260530000001_exclude_agendamento_overlap --config ./prisma.config.js 2>/dev/null || true && node_modules/.bin/prisma migrate deploy --config ./prisma.config.js && node prisma/seed-estrutural.js && node dist/main.js"]
