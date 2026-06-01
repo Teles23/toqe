@@ -139,7 +139,16 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
               -u "${{ github.repository_owner }}" --password-stdin
 
-            docker compose -f docker-compose.prod.yml pull
+            echo "Pulling images (até 3 tentativas)..."
+            for attempt in 1 2 3; do
+              docker compose -f docker-compose.prod.yml pull && break
+              if [ "$attempt" -eq 3 ]; then
+                echo "✗ Pull falhou após 3 tentativas"
+                exit 1
+              fi
+              echo "Tentativa $attempt falhou — aguardando $((attempt * 15))s antes de tentar novamente..."
+              sleep $((attempt * 15))
+            done
 
             docker compose -f docker-compose.prod.yml up -d postgres redis
             echo "Aguardando Postgres ficar healthy..."
