@@ -8,7 +8,7 @@ export type SecaoId =
   | "api-keys";
 
 export interface HorarioDia {
-  dia: string;
+  diaSemana: number; // 0=Dom, 1=Seg, ..., 6=Sáb
   aberto: boolean;
   abertura: string;
   fechamento: string;
@@ -27,9 +27,9 @@ export interface NotificacaoConfig {
 
 export interface BarbeariaConfig {
   nome: string;
-  telefone: string;
-  email: string;
-  endereco: string;
+  telefone?: string | null;
+  email?: string | null;
+  endereco?: string | null;
   logoUrl?: string | null;
   /** Permissões concedidas aos barbeiros (definidas pelo dono). */
   barbeiroCriaServico?: boolean;

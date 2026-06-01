@@ -40,7 +40,8 @@ export class BarbeariaService {
       include: { tema: true },
     });
     if (!barbearia) throw new NotFoundException('Barbearia não encontrada');
-    return barbearia;
+    const { tema, ...rest } = barbearia;
+    return { ...rest, logoUrl: tema?.logoUrl ?? null };
   }
 
   findPublico(q?: string) {

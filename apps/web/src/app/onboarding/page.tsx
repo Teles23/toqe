@@ -25,6 +25,7 @@ import {
 } from "@toqe/contracts";
 import { api, tenantApi } from "@/shared/api/api-client";
 import { checkEmailExists } from "@/features/auth/services/auth.service";
+import { useAuth } from "@/shared/hooks/use-auth";
 import { getInitial } from "@/shared/lib/utils";
 import { maskTelefone, maskSlug } from "@/shared/utils/masks";
 
@@ -1443,6 +1444,7 @@ function Passo6({
 
 export default function Onboarding(): React.JSX.Element {
   const router = useRouter();
+  const { establishSession } = useAuth();
   const [step, setStep] = useState(1);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
@@ -1753,6 +1755,7 @@ export default function Onboarding(): React.JSX.Element {
           ),
       );
 
+      await establishSession();
       router.push("/dashboard");
     } catch (err) {
       setPublishError(

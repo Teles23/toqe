@@ -95,6 +95,9 @@ model Barbearia {
   asaasSubscriptionId String? @map("TQE_BAR_ASAAS_SUBSCRIPTION_ID") @db.VarChar(50)
   bloqueadaEm DateTime? @map("TQE_BAR_BLOQUEADA_EM") @db.Timestamptz
   ativo       Boolean  @default(true) @map("TQE_BAR_ATIVO")
+  telefone    String?  @map("TQE_BAR_TELEFONE") @db.VarChar(30)
+  email       String?  @map("TQE_BAR_EMAIL") @db.VarChar(100)
+  endereco    String?  @map("TQE_BAR_ENDERECO") @db.VarChar(200)
   // Permissões que o dono concede aos barbeiros sobre serviços
   barbeiroCriaServico Boolean @default(false) @map("TQE_BAR_BARBEIRO_CRIA_SERVICO")
   barbeiroAlteraPreco Boolean @default(false) @map("TQE_BAR_BARBEIRO_ALTERA_PRECO")

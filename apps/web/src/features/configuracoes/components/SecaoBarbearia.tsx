@@ -28,10 +28,10 @@ export function SecaoBarbearia({ barCodigo }: Props) {
 
   useEffect(() => {
     if (data) {
-      setNome(data.nome);
-      setTel(data.telefone);
-      setEmail(data.email);
-      setEnd(data.endereco);
+      setNome(data.nome ?? "");
+      setTel(data.telefone ?? "");
+      setEmail(data.email ?? "");
+      setEnd(data.endereco ?? "");
       setCriaServico(data.barbeiroCriaServico ?? false);
       setAlteraPreco(data.barbeiroAlteraPreco ?? false);
     }

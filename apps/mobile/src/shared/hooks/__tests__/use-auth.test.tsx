@@ -27,6 +27,7 @@ const mockAuthValue = {
   login: jest.fn(),
   loginWithGoogle: jest.fn(),
   establishSession: jest.fn(),
+  reloadUser: jest.fn(),
   logout: jest.fn(),
   switchBarbearia: jest.fn(),
 };

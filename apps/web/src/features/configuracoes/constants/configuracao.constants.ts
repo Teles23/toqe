@@ -25,8 +25,8 @@ export const SECOES: { id: SecaoId; label: string; icon: typeof Store }[] = [
 ];
 
 export const HORARIOS_DEFAULT: HorarioDia[] = DIAS_SEMANA_LONGO.map(
-  (dia, i) => ({
-    dia,
+  (_dia, i) => ({
+    diaSemana: i,
     aberto: i < 6,
     abertura: i < 5 ? "08:00" : "09:00",
     fechamento: i < 6 ? "18:00" : "16:00",
