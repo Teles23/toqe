@@ -16,10 +16,12 @@ export class TenantInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<TenantRequest>();
-    // Tenant only from URL params or header — never from body (prevents parameter tampering)
+    // Tenant only from URL params or header — never from body (prevents parameter tampering).
+    // Falls back to apiKeyBarCodigo set by ApiKeyGuard for api-publica routes.
     const barCodigo =
       req.params?.['barCodigo'] ??
-      (req.headers?.['x-tenant-id'] as string | undefined);
+      (req.headers?.['x-tenant-id'] as string | undefined) ??
+      req.apiKeyBarCodigo?.toString();
 
     if (!barCodigo) return next.handle();
 

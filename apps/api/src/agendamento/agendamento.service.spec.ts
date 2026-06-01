@@ -119,6 +119,7 @@ describe('AgendamentoService', () => {
               count: jest.fn().mockResolvedValue(0),
               create: jest.fn().mockResolvedValue(mockAgendamento),
             },
+            $executeRaw: jest.fn().mockResolvedValue(1),
             $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
           };
           return fn(tx as unknown as typeof mockPrisma);
@@ -175,6 +176,7 @@ describe('AgendamentoService', () => {
                 },
               ),
             },
+            $executeRaw: jest.fn().mockResolvedValue(1),
             $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
           };
           return fn(tx as unknown as typeof mockPrisma);
@@ -230,6 +232,7 @@ describe('AgendamentoService', () => {
               count: jest.fn().mockResolvedValue(0),
               create: jest.fn(),
             },
+            $executeRaw: jest.fn().mockResolvedValue(1),
             $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(1) }]),
           };
           return fn(tx as unknown as typeof mockPrisma);
@@ -238,6 +241,54 @@ describe('AgendamentoService', () => {
 
       await expect(service.create(dto, barCodigo)).rejects.toThrow(
         ConflictException,
+      );
+    });
+
+    it('injeta set_config no início da transação para FORCE RLS', async () => {
+      const dto: CreateAgendamentoDto = {
+        barbeiroId: 10,
+        clienteId: 20,
+        servicosIds: [1],
+        inicio: '2024-06-01T09:00:00Z',
+      };
+      mockPrisma.servico.findMany.mockResolvedValue([
+        {
+          codigo: 1,
+          barCodigo,
+          nome: 'Corte',
+          duracaoBase: 30,
+          precoBase: new Prisma.Decimal(25),
+          ativo: true,
+          exclusivoBarbeiroId: null,
+          barbeiros: [],
+        },
+      ] as unknown as Awaited<ReturnType<typeof mockPrisma.servico.findMany>>);
+
+      let capturedExecuteRaw: jest.Mock | undefined;
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
+          const tx = {
+            $executeRaw: jest.fn().mockResolvedValue(1),
+            barbearia: {
+              findUniqueOrThrow: jest.fn().mockResolvedValue({ plano: 'free' }),
+            },
+            planoLimite: { findUnique: jest.fn().mockResolvedValue(null) },
+            agendamento: {
+              count: jest.fn().mockResolvedValue(0),
+              create: jest.fn().mockResolvedValue(mockAgendamento),
+            },
+            $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
+          };
+          capturedExecuteRaw = tx.$executeRaw;
+          return fn(tx as unknown as typeof mockPrisma);
+        },
+      );
+
+      await service.create(dto, barCodigo);
+
+      expect(capturedExecuteRaw).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.stringContaining('set_config')]),
+        String(barCodigo),
       );
     });
   });
@@ -260,6 +311,7 @@ describe('AgendamentoService', () => {
       mockPrisma.$transaction.mockImplementation(
         (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
+            $executeRaw: jest.fn().mockResolvedValue(1),
             agendamento: {
               create: jest.fn().mockResolvedValue({
                 ...mockAgendamento,
@@ -290,6 +342,7 @@ describe('AgendamentoService', () => {
       mockPrisma.$transaction.mockImplementation(
         (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
+            $executeRaw: jest.fn().mockResolvedValue(1),
             contato: {
               findFirst: jest.fn().mockResolvedValue(null),
               create: jest.fn().mockResolvedValue({

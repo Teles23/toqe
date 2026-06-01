@@ -118,4 +118,30 @@ describe('TenantInterceptor', () => {
 
     expect(capturedBc).toBeUndefined();
   });
+
+  it('injeta runInTenant quando barCodigo vem de apiKeyBarCodigo', () => {
+    const req = { params: {}, body: {}, headers: {}, apiKeyBarCodigo: 11 };
+    interceptor.intercept(makeContext(req), mockNext);
+
+    expect(req).toHaveProperty('runInTenant');
+  });
+
+  it('propaga barCodigo via apiKeyBarCodigo no TenantStore', async () => {
+    const req = { params: {}, body: {}, headers: {}, apiKeyBarCodigo: 11 };
+    let capturedBc: number | undefined;
+
+    const capturingNext: CallHandler = {
+      handle: () =>
+        new Observable((sub) => {
+          capturedBc = TenantStore.get()?.barCodigo;
+          sub.next(null);
+          sub.complete();
+        }),
+    };
+
+    const obs = interceptor.intercept(makeContext(req), capturingNext);
+    await firstValueFrom(obs);
+
+    expect(capturedBc).toBe(11);
+  });
 });
