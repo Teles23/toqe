@@ -15,6 +15,7 @@ export interface TenantRequest {
   params: Record<string, string | undefined>;
   body: Record<string, unknown>;
   headers: Record<string, string | string[] | undefined>;
+  apiKeyBarCodigo?: number;
   runInTenant?: <T>(
     fn: (tx: Prisma.TransactionClient) => Promise<T>,
   ) => Promise<T>;

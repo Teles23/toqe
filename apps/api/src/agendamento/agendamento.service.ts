@@ -27,6 +27,7 @@ import {
   STATUSES_ENCERRADOS,
 } from '../common/constants/agendamento-status';
 import { FidelidadeService } from '../fidelidade/fidelidade.service';
+import { TenantStore } from '../tenant/tenant-store';
 
 const INCLUDE_COMPLETO = {
   itens: { include: { servico: true } },
@@ -81,43 +82,50 @@ export class AgendamentoService {
     const isWalkIn = tipo === 'WALK_IN';
 
     const agendamento = await this.prisma
-      .$transaction(async (tx) => {
-        // Enforcement: checar limite de agendamentos do mês
-        const bar = await tx.barbearia.findUniqueOrThrow({
-          where: { codigo: barCodigo },
-          select: { plano: true },
-        });
-        const limite = await tx.planoLimite.findUnique({
-          where: { plano: bar.plano },
-          select: { maxAgdMes: true },
-        });
-        if (limite?.maxAgdMes != null) {
-          const agora = new Date();
-          const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
-          const fimMes = new Date(
-            agora.getFullYear(),
-            agora.getMonth() + 1,
-            0,
-            23,
-            59,
-            59,
-            999,
-          );
-          const qtd = await tx.agendamento.count({
-            where: { barCodigo, inicio: { gte: inicioMes, lte: fimMes } },
-          });
-          if (qtd >= limite.maxAgdMes) {
-            throw new ForbiddenException(
-              `Limite de ${limite.maxAgdMes} agendamento(s) por mês atingido`,
-            );
-          }
-        }
+      .$transaction(
+        async (tx) => {
+          await tx.$executeRaw`SELECT set_config('app.current_tenant', ${String(barCodigo)}, true)`;
+          return TenantStore.runInTx(barCodigo, async () => {
+            // Enforcement: checar limite de agendamentos do mês
+            const bar = await tx.barbearia.findUniqueOrThrow({
+              where: { codigo: barCodigo },
+              select: { plano: true },
+            });
+            const limite = await tx.planoLimite.findUnique({
+              where: { plano: bar.plano },
+              select: { maxAgdMes: true },
+            });
+            if (limite?.maxAgdMes != null) {
+              const agora = new Date();
+              const inicioMes = new Date(
+                agora.getFullYear(),
+                agora.getMonth(),
+                1,
+              );
+              const fimMes = new Date(
+                agora.getFullYear(),
+                agora.getMonth() + 1,
+                0,
+                23,
+                59,
+                59,
+                999,
+              );
+              const qtd = await tx.agendamento.count({
+                where: { barCodigo, inicio: { gte: inicioMes, lte: fimMes } },
+              });
+              if (qtd >= limite.maxAgdMes) {
+                throw new ForbiddenException(
+                  `Limite de ${limite.maxAgdMes} agendamento(s) por mês atingido`,
+                );
+              }
+            }
 
-        // Walk-ins coexistem com agendamentos do mesmo horário por design —
-        // são fila paralela ao calendário; o barbeiro decide ordem manualmente.
-        // Conflict check só vale para agendamentos com horário marcado (AGENDADO/ENCAIXE).
-        if (!isWalkIn) {
-          const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
+            // Walk-ins coexistem com agendamentos do mesmo horário por design —
+            // são fila paralela ao calendário; o barbeiro decide ordem manualmente.
+            // Conflict check só vale para agendamentos com horário marcado (AGENDADO/ENCAIXE).
+            if (!isWalkIn) {
+              const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
           SELECT COUNT(1) as count
           FROM "TQE_AGENDAMENTO"
           WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.barbeiroId}
@@ -126,29 +134,32 @@ export class AgendamentoService {
             AND "TQE_AGD_FIM"   > ${inicioDate}
         `;
 
-          if (Number(conflitos[0].count) > 0) {
-            throw new ConflictException(
-              'Horário indisponível: já existe um agendamento neste período para este barbeiro',
-            );
-          }
-        }
+              if (Number(conflitos[0].count) > 0) {
+                throw new ConflictException(
+                  'Horário indisponível: já existe um agendamento neste período para este barbeiro',
+                );
+              }
+            }
 
-        return tx.agendamento.create({
-          data: {
-            barbeiroId: dto.barbeiroId,
-            clienteId: dto.clienteId,
-            barCodigo,
-            inicio: inicioDate,
-            fim: fimDate,
-            status: isWalkIn
-              ? StatusAgendamento.PENDENTE
-              : StatusAgendamento.CONFIRMADO,
-            tipo,
-            itens: { create: itensData },
-          },
-          include: INCLUDE_COMPLETO,
-        });
-      })
+            return tx.agendamento.create({
+              data: {
+                barbeiroId: dto.barbeiroId,
+                clienteId: dto.clienteId,
+                barCodigo,
+                inicio: inicioDate,
+                fim: fimDate,
+                status: isWalkIn
+                  ? StatusAgendamento.PENDENTE
+                  : StatusAgendamento.CONFIRMADO,
+                tipo,
+                itens: { create: itensData },
+              },
+              include: INCLUDE_COMPLETO,
+            });
+          });
+        },
+        { timeout: 15_000, maxWait: 5_000 },
+      )
       .catch((e: unknown) => {
         // The application-level $queryRaw check guards most conflicts; this catch
         // handles the rare race where two concurrent requests both pass that check
@@ -205,31 +216,34 @@ export class AgendamentoService {
     const fimDate = addMinutes(inicioDate, totalDuration);
 
     const agendamento = await this.prisma.$transaction(async (tx) => {
-      const clienteId: number | null = dto.clienteId ?? null;
-      let contatoId: number | null = dto.contatoId ?? null;
+      await tx.$executeRaw`SELECT set_config('app.current_tenant', ${String(barCodigo)}, true)`;
+      return TenantStore.runInTx(barCodigo, async () => {
+        const clienteId: number | null = dto.clienteId ?? null;
+        let contatoId: number | null = dto.contatoId ?? null;
 
-      if (dto.contato) {
-        const contato = await this.contatoService.findOrCreate(
-          barCodigo,
-          dto.contato,
-          tx,
-        );
-        contatoId = contato.codigo;
-      }
+        if (dto.contato) {
+          const contato = await this.contatoService.findOrCreate(
+            barCodigo,
+            dto.contato,
+            tx,
+          );
+          contatoId = contato.codigo;
+        }
 
-      return tx.agendamento.create({
-        data: {
-          barbeiroId: dto.barbeiroId,
-          clienteId,
-          contatoId,
-          barCodigo,
-          inicio: inicioDate,
-          fim: fimDate,
-          status: StatusAgendamento.PENDENTE,
-          tipo: 'WALK_IN',
-          itens: { create: itensData },
-        },
-        include: INCLUDE_COMPLETO,
+        return tx.agendamento.create({
+          data: {
+            barbeiroId: dto.barbeiroId,
+            clienteId,
+            contatoId,
+            barCodigo,
+            inicio: inicioDate,
+            fim: fimDate,
+            status: StatusAgendamento.PENDENTE,
+            tipo: 'WALK_IN',
+            itens: { create: itensData },
+          },
+          include: INCLUDE_COMPLETO,
+        });
       });
     });
 

@@ -14,6 +14,7 @@ import { PushNotificationService } from '../push-token/push-notification.service
 import { NotificacaoService } from '../notificacao/notificacao.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import { Agendamento, Barbearia, Usuario } from '../generated/prisma';
+import { TenantStore } from '../tenant/tenant-store';
 
 const mockPrisma = createPrismaMock();
 
@@ -29,6 +30,7 @@ const mockNotificacaoService = {
 function makeAgendamento(overrides: Record<string, unknown> = {}) {
   return {
     codigo: 1,
+    barCodigo: 7,
     inicio: new Date('2026-05-25T10:00:00Z'),
     status: 'confirmado',
     lembrete24hEnviado: false,
@@ -199,6 +201,7 @@ describe('LembreteService', () => {
     function makeNoShowAgendamento(overrides: Record<string, unknown> = {}) {
       return {
         codigo: 42,
+        barCodigo: 3,
         fim: new Date('2026-05-24T09:00:00Z'),
         status: 'confirmado',
         barbeiro: { codigo: 5, nome: 'Pedro' },
@@ -409,6 +412,85 @@ describe('LembreteService', () => {
       await service.enviarEmailsCobranca();
 
       expect(mockNotificacaoService.enviarEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isolamento de tenant via TenantStore', () => {
+    it('enviarLembretes usa runAdmin para leituras cross-tenant', async () => {
+      const spy = jest
+        .spyOn(TenantStore, 'runAdmin')
+        .mockImplementation((fn) => fn());
+      mockPrisma.agendamento.findMany.mockResolvedValue([]);
+
+      await service.enviarLembretes();
+
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('detectarNoShows usa runAdmin para leitura e run(barCodigo) para escrita', async () => {
+      const runAdminSpy = jest
+        .spyOn(TenantStore, 'runAdmin')
+        .mockImplementation((fn) => fn());
+      const runSpy = jest
+        .spyOn(TenantStore, 'run')
+        .mockImplementation((_bc, fn) => fn());
+
+      const ag = {
+        codigo: 42,
+        barCodigo: 3,
+        fim: new Date('2026-05-24T09:00:00Z'),
+        status: 'confirmado',
+        barbeiro: { codigo: 5, nome: 'Pedro' },
+        barbearia: { nome: 'BarberShop' },
+        cliente: { nome: 'João' },
+        contato: null,
+      } as unknown as Agendamento;
+      mockPrisma.agendamento.findMany.mockResolvedValue([ag]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...ag,
+        status: 'no_show',
+      } as unknown as Agendamento);
+
+      await service.detectarNoShows();
+
+      expect(runAdminSpy).toHaveBeenCalled();
+      expect(runSpy).toHaveBeenCalledWith(3, expect.any(Function));
+      runAdminSpy.mockRestore();
+      runSpy.mockRestore();
+    });
+
+    it('expirarTrials usa runAdmin para leitura e run(barCodigo) para escrita', async () => {
+      const runAdminSpy = jest
+        .spyOn(TenantStore, 'runAdmin')
+        .mockImplementation((fn) => fn());
+      const runSpy = jest
+        .spyOn(TenantStore, 'run')
+        .mockImplementation((_bc, fn) => fn());
+
+      mockPrisma.barbearia.findMany.mockResolvedValue([
+        { codigo: 11, nome: 'Bar A' },
+      ] as unknown as Barbearia[]);
+      mockPrisma.barbearia.update.mockResolvedValue({} as unknown as Barbearia);
+
+      await service.expirarTrials();
+
+      expect(runAdminSpy).toHaveBeenCalled();
+      expect(runSpy).toHaveBeenCalledWith(11, expect.any(Function));
+      runAdminSpy.mockRestore();
+      runSpy.mockRestore();
+    });
+
+    it('enviarEmailsCobranca usa runAdmin para todas as leituras', async () => {
+      const runAdminSpy = jest
+        .spyOn(TenantStore, 'runAdmin')
+        .mockImplementation((fn) => fn());
+      mockPrisma.barbearia.findMany.mockResolvedValue([]);
+
+      await service.enviarEmailsCobranca();
+
+      expect(runAdminSpy).toHaveBeenCalledTimes(3);
+      runAdminSpy.mockRestore();
     });
   });
 
