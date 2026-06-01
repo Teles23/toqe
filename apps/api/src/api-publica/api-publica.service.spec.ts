@@ -167,7 +167,10 @@ describe('ApiPublicaService', () => {
       const [[calledBar, calledDto]] =
         membroService.findOrCreateCliente.mock.calls;
       expect(calledBar).toBe(barCodigo);
-      expect(calledDto).toEqual({ nome: dto.clienteNome, email: dto.clienteEmail });
+      expect(calledDto).toEqual({
+        nome: dto.clienteNome,
+        email: dto.clienteEmail,
+      });
     });
   });
 });

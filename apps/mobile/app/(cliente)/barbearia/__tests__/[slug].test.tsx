@@ -15,6 +15,15 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
 }));
 
+jest.mock("@react-native-google-signin/google-signin", () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+    hasPlayServices: jest.fn(),
+  },
+}));
+
 jest.mock("@/src/shared/hooks/use-barbearia-publica", () => ({
   useBarbeariaPublica: jest.fn(),
 }));
@@ -139,5 +148,16 @@ describe("BarbeariaPublicaScreen", () => {
     });
     render(<BarbeariaPublicaScreen />);
     expect(screen.queryByText("· avaliações")).toBeNull();
+  });
+
+  it("9. renderiza quando a API não envia barbeiros", () => {
+    const { barbeiros: _barbeiros, ...dataSemBarbeiros } = barbeariaFixture;
+    mockUseBarbeariaPublica.mockReturnValue({
+      data: dataSemBarbeiros,
+      isLoading: false,
+    });
+    render(<BarbeariaPublicaScreen />);
+    expect(screen.getByText("Urban Flow Barber")).toBeTruthy();
+    expect(screen.queryByText("PROFISSIONAIS")).toBeNull();
   });
 });

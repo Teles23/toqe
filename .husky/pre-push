@@ -1,3 +1,5 @@
+node scripts/quality/validate-affected.js
+node scripts/quality/security-scan.js
 pnpm check-types
 pnpm --filter api test -- --onlyChanged
 pnpm --filter web test -- --changed HEAD~1

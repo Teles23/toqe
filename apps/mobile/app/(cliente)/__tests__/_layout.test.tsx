@@ -22,6 +22,10 @@ jest.mock("expo-constants", () => ({
 }));
 
 const mockRedirectHref = jest.fn();
+const mockTabsScreens: {
+  name: string;
+  options?: { href?: unknown; title?: string };
+}[] = [];
 jest.mock("expo-router", () => {
   function Redirect({ href }: { href: string }) {
     mockRedirectHref(href);
@@ -30,7 +34,11 @@ jest.mock("expo-router", () => {
   function Tabs({ children }: { children?: React.ReactNode }) {
     return children as React.ReactElement;
   }
-  function TabsScreen() {
+  function TabsScreen(props: {
+    name: string;
+    options?: { href?: unknown; title?: string };
+  }) {
+    mockTabsScreens.push(props);
     return null;
   }
   Tabs.Screen = TabsScreen;
@@ -79,6 +87,7 @@ describe("ClienteLayout — guards de acesso", () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockRedirectHref.mockReset();
+    mockTabsScreens.length = 0;
   });
 
   it("mostra ActivityIndicator enquanto loading=true", () => {
@@ -125,5 +134,40 @@ describe("ClienteLayout — guards de acesso", () => {
     );
     render(<ClienteLayout />);
     expect(mockRedirectHref).not.toHaveBeenCalled();
+  });
+
+  it("exibe somente as tabs principais do cliente", () => {
+    mockUseAuth.mockReturnValue(
+      makeAuth({ user: { codigo: 1 } as never, perfil: Perfil.CLIENTE }),
+    );
+    render(<ClienteLayout />);
+
+    const visibleTabs = mockTabsScreens.filter(
+      (screen) => screen.options?.href !== null,
+    );
+
+    expect(visibleTabs.map((screen) => screen.name)).toEqual([
+      "home",
+      "buscar",
+      "agendamentos/index",
+      "perfil",
+    ]);
+    expect(visibleTabs.map((screen) => screen.options?.title)).toEqual([
+      "Início",
+      "Buscar",
+      "Agendamentos",
+      "Perfil",
+    ]);
+    expect(
+      mockTabsScreens
+        .filter((screen) => screen.options?.href === null)
+        .map((screen) => screen.name),
+    ).toEqual([
+      "agendar/index",
+      "barbearia/[slug]",
+      "buscar/qr",
+      "agendamentos/[codigo]",
+      "agendamentos/reagendar",
+    ]);
   });
 });

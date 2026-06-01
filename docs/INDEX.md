@@ -12,6 +12,7 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 
 - [../ARCHITECTURE.md](../ARCHITECTURE.md) — visão geral da arquitetura do monorepo (stack, módulos, fluxo de dados, decisões)
 - [checklist-desenvolvimento.md](checklist-desenvolvimento.md) — checklist obrigatório antes de cada commit e PR (lint, tipos, testes, segurança, Prisma, sync API↔web)
+- [codex-operacional.md](codex-operacional.md) — workflows operacionais para agentes Codex, validação inteligente, subagents e automações recomendadas
 - [cowork-agent.md](cowork-agent.md) — instruções do ambiente para agentes Claude operando no projeto
 - [toqe-doc-completo.md](toqe-doc-completo.md) — documento de referência completo do produto (regras de negócio, contratos, fluxos)
 - [toqe_plano_estrategico.md](toqe_plano_estrategico.md) — plano estratégico inicial do SaaS (fases A1–E4)
