@@ -1,7 +1,8 @@
 import { ExecutionContext, CallHandler } from '@nestjs/common';
-import { of } from 'rxjs';
+import { Observable, of, firstValueFrom } from 'rxjs';
 import { TenantInterceptor } from './tenant.interceptor';
 import { TenantContextService } from '../tenant-context/tenant-context.service';
+import { TenantStore } from '../tenant-store';
 
 const mockTenantCtx = {
   run: jest.fn(),
@@ -78,5 +79,43 @@ describe('TenantInterceptor', () => {
       },
     });
     expect(mockNext.handle).toHaveBeenCalled();
+  });
+
+  it('propaga barCodigo no TenantStore durante a execucao do observable', async () => {
+    const req = { params: { barCodigo: '42' }, body: {}, headers: {} };
+    let capturedBc: number | undefined;
+
+    const capturingNext: CallHandler = {
+      handle: () =>
+        new Observable((sub) => {
+          capturedBc = TenantStore.get()?.barCodigo;
+          sub.next(null);
+          sub.complete();
+        }),
+    };
+
+    const obs = interceptor.intercept(makeContext(req), capturingNext);
+    await firstValueFrom(obs);
+
+    expect(capturedBc).toBe(42);
+  });
+
+  it('nao seta TenantStore quando nao ha barCodigo', async () => {
+    const req = { params: {}, body: {}, headers: {} };
+    let capturedBc: number | undefined;
+
+    const capturingNext: CallHandler = {
+      handle: () =>
+        new Observable((sub) => {
+          capturedBc = TenantStore.get()?.barCodigo;
+          sub.next(null);
+          sub.complete();
+        }),
+    };
+
+    const obs = interceptor.intercept(makeContext(req), capturingNext);
+    await firstValueFrom(obs);
+
+    expect(capturedBc).toBeUndefined();
   });
 });
