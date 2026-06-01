@@ -81,6 +81,11 @@ export default function ClienteLayout() {
           tabBarIcon: tabBarIcon("user"),
         }}
       />
+      <Tabs.Screen name="agendar/index" options={{ href: null }} />
+      <Tabs.Screen name="barbearia/[slug]" options={{ href: null }} />
+      <Tabs.Screen name="buscar/qr" options={{ href: null }} />
+      <Tabs.Screen name="agendamentos/[codigo]" options={{ href: null }} />
+      <Tabs.Screen name="agendamentos/reagendar" options={{ href: null }} />
     </Tabs>
   );
 }

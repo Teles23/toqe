@@ -92,6 +92,7 @@ export default function BarbeariaPublicaScreen() {
 
   const initial = data.nome.charAt(0).toUpperCase();
   const temRating = data.ratingMedio != null && data.ratingMedio > 0;
+  const barbeiros = data.barbeiros ?? [];
 
   return (
     <View
@@ -218,7 +219,7 @@ export default function BarbeariaPublicaScreen() {
           ) : null}
 
           {/* Profissionais */}
-          {data.barbeiros.length > 0 ? (
+          {barbeiros.length > 0 ? (
             <View style={styles.section}>
               <Text style={[styles.sectionLabel, { color: palette.textMuted }]}>
                 PROFISSIONAIS
@@ -228,7 +229,7 @@ export default function BarbeariaPublicaScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.profScroll}
               >
-                {data.barbeiros.map((b) => {
+                {barbeiros.map((b) => {
                   const bInitial = b.nome.charAt(0).toUpperCase();
                   return (
                     <View

@@ -1,22 +1,44 @@
-import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import Constants from "expo-constants";
+import type * as ExpoNotifications from "expo-notifications";
 
 import { api } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    // expo-notifications 0.32+ substituiu `shouldShowAlert` por banner + list.
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+type NotificationsModule = typeof ExpoNotifications;
 
-async function registerForPushNotificationsAsync(): Promise<string | null> {
+let notificationsModule: NotificationsModule | null | undefined;
+
+function loadNotifications(): NotificationsModule | null {
+  if (notificationsModule !== undefined) {
+    return notificationsModule;
+  }
+
+  try {
+    // Lazy require: em Expo Go/dev-client antigo o módulo nativo pode não estar
+    // linkado. Nesse caso push vira best-effort em vez de quebrar o app no boot.
+    const Notifications = require("expo-notifications") as NotificationsModule;
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        // expo-notifications 0.32+ substituiu `shouldShowAlert` por banner + list.
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+    notificationsModule = Notifications;
+  } catch {
+    notificationsModule = null;
+  }
+
+  return notificationsModule;
+}
+
+async function registerForPushNotificationsAsync(
+  Notifications: NotificationsModule,
+): Promise<string | null> {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
 
@@ -41,17 +63,21 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
 export function usePushNotifications() {
   const { user } = useAuth();
-  const notificationListener = useRef<Notifications.EventSubscription | null>(
+  const notificationListener =
+    useRef<ExpoNotifications.EventSubscription | null>(null);
+  const responseListener = useRef<ExpoNotifications.EventSubscription | null>(
     null,
   );
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
     let mounted = true;
 
-    void registerForPushNotificationsAsync()
+    const Notifications = loadNotifications();
+    if (!Notifications || !mounted) return;
+
+    void registerForPushNotificationsAsync(Notifications)
       .then(async (token) => {
         if (!token || !mounted) return;
         try {
@@ -73,12 +99,11 @@ export function usePushNotifications() {
         // rejection (que estoura o LogBox/red-box e degrada a UI no dev).
       });
 
-    notificationListener.current =
+    const notificationSubscription =
       Notifications.addNotificationReceivedListener((_notification) => {
         // Foreground notification received — no action needed, OS handles display
       });
-
-    responseListener.current =
+    const responseSubscription =
       Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data as Record<
           string,
@@ -91,6 +116,9 @@ export function usePushNotifications() {
           router.push(`/(barbeiro)/agenda${dateParam}` as never);
         }
       });
+
+    notificationListener.current = notificationSubscription;
+    responseListener.current = responseSubscription;
 
     return () => {
       mounted = false;

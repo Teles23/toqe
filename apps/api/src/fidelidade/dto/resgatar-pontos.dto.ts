@@ -1,10 +1,9 @@
-import { IsInt, Min } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class ResgatarPontosDto {
-  @IsInt()
-  clienteCodigo!: number;
-
-  @IsInt()
-  @Min(10)
-  pontos!: number;
-}
+export class ResgatarPontosDto extends createZodDto(
+  z.object({
+    clienteCodigo: z.number().int().positive('clienteCodigo inválido'),
+    pontos: z.number().int().min(10, 'Mínimo de 10 pontos por resgate'),
+  }),
+) {}
