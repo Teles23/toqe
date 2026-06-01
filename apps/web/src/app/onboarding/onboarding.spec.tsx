@@ -12,6 +12,21 @@ vi.mock("@react-oauth/google", () => ({
   GoogleLogin: () => null,
 }));
 
+vi.mock("@/shared/hooks/use-auth", () => ({
+  useAuth: () => ({
+    establishSession: vi.fn().mockResolvedValue(undefined),
+    user: null,
+    barbearia: null,
+    barbearias: [],
+    perfil: null,
+    loading: false,
+    login: vi.fn(),
+    verifyTwoFa: vi.fn(),
+    logout: vi.fn(),
+    switchBarbearia: vi.fn(),
+  }),
+}));
+
 // Importar o componente padrão (default export)
 import OnboardingPage from "./page";
 

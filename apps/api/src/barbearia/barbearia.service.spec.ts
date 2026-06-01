@@ -54,14 +54,34 @@ describe('BarbeariaService', () => {
   });
 
   describe('findOne', () => {
-    it('retorna barbearia quando encontrada', async () => {
+    it('retorna barbearia achatando logoUrl do tema', async () => {
+      const barbearia = {
+        codigo: 1,
+        nome: 'BS',
+        slug: 'bs',
+        tema: { logoUrl: 'https://cdn.example.com/logo.png' },
+      };
+      mockPrisma.barbearia.findUnique.mockResolvedValue(
+        barbearia as unknown as Barbearia,
+      );
+
+      const result = await service.findOne(1);
+      expect(result).toMatchObject({
+        codigo: 1,
+        nome: 'BS',
+        logoUrl: 'https://cdn.example.com/logo.png',
+      });
+      expect(result).not.toHaveProperty('tema');
+    });
+
+    it('retorna logoUrl null quando sem tema', async () => {
       const barbearia = { codigo: 1, nome: 'BS', slug: 'bs', tema: null };
       mockPrisma.barbearia.findUnique.mockResolvedValue(
         barbearia as unknown as Barbearia,
       );
 
       const result = await service.findOne(1);
-      expect(result).toEqual(barbearia);
+      expect(result.logoUrl).toBeNull();
     });
 
     it('lança NotFoundException quando não encontrada', async () => {
