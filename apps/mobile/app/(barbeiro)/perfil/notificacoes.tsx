@@ -88,6 +88,7 @@ function buildGranularFromFlat(flat: {
 }
 
 export default function PerfilNotificacoesScreen() {
+  "use no memo";
   const { data, isLoading, isError } = useNotificacaoPreferencias();
   const atualizar = useAtualizarPreferenciasNotificacao();
 

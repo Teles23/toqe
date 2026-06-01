@@ -26,6 +26,7 @@ import {
 import { loginSchema, type LoginInput } from "@toqe/contracts";
 
 export default function LoginScreen() {
+  "use no memo";
   const { login, loginWithGoogle } = useAuth();
   const { palette, spacing, typography } = useTheme();
   const [emailSent, setEmailSent] = useState(false);
