@@ -4,14 +4,14 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { validate } from 'class-validator';
 import { AsaasController } from './asaas.controller';
 import { AsaasService } from './asaas.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
 import type { AsaasWebhookPayload } from './asaas-webhook.dto';
 import type { Barbearia } from '../generated/prisma';
-import { CheckoutDto } from './dto/checkout.dto';
+import type { CheckoutDto } from './dto/checkout.dto';
+import { checkoutSchema } from './dto/checkout.dto';
 
 const mockAsaasService = {
   createCustomer: jest.fn(),
@@ -20,28 +20,20 @@ const mockAsaasService = {
   cancelSubscription: jest.fn(),
 };
 
-function makeCheckoutDto(plano: string): CheckoutDto {
-  const dto = new CheckoutDto();
-  (dto as unknown as Record<string, string>).plano = plano;
-  return dto;
-}
-
 describe('CheckoutDto — validação de plano', () => {
   it.each(['basic', 'pro', 'enterprise'])(
     'aceita plano válido "%s"',
-    async (plano) => {
-      const errors = await validate(makeCheckoutDto(plano));
-      expect(errors).toHaveLength(0);
+    (plano) => {
+      const result = checkoutSchema.safeParse({ plano });
+      expect(result.success).toBe(true);
     },
   );
 
   it.each(['free', 'trial', 'god_mode', 'unlimited', '', 'BASIC', 'PRO'])(
     'rejeita plano inválido "%s"',
-    async (plano) => {
-      const errors = await validate(makeCheckoutDto(plano));
-      expect(errors.length).toBeGreaterThan(0);
-      const constraints = errors[0].constraints ?? {};
-      expect(Object.keys(constraints)).toContain('isIn');
+    (plano) => {
+      const result = checkoutSchema.safeParse({ plano });
+      expect(result.success).toBe(false);
     },
   );
 });

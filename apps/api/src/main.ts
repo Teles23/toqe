@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { patchNestJsSwagger } from 'nestjs-zod';
@@ -27,17 +26,8 @@ async function bootstrap() {
     exclude: ['health/*path'],
   });
 
-  // ZodValidationPipe registrado via APP_PIPE no AppModule para funcionar também
-  // nos testes de integração (que não passam pelo main.ts).
-  // ValidationPipe (class-validator) trata DTOs legados ainda não migrados.
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      forbidUnknownValues: true,
-      transform: true,
-    }),
-  );
+  // ZodValidationPipe registrado via APP_PIPE no AppModule — valida todos os DTOs
+  // tanto em runtime quanto nos testes de integração (que não passam por main.ts).
 
   // Segurança HTTP: headers de proteção (XSS, Clickjacking, MIME sniffing…)
   app.use(helmet());

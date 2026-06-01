@@ -1,12 +1,5 @@
-import {
-  IsEnum,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  MaxLength,
-  ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
 export enum AsaasEvent {
   PAYMENT_RECEIVED = 'PAYMENT_RECEIVED',
@@ -16,38 +9,21 @@ export enum AsaasEvent {
   SUBSCRIPTION_RENEWED = 'SUBSCRIPTION_RENEWED',
 }
 
-class AsaasPaymentDto {
-  @IsString()
-  @MaxLength(100)
-  subscription: string;
+const asaasWebhookSchema = z.object({
+  event: z.nativeEnum(AsaasEvent),
+  payment: z
+    .object({
+      subscription: z.string().max(100),
+      dueDate: z.string(),
+    })
+    .optional(),
+  subscription: z
+    .object({
+      id: z.string().max(100),
+      status: z.string(),
+      nextDueDate: z.string(),
+    })
+    .optional(),
+});
 
-  @IsISO8601()
-  dueDate: string;
-}
-
-class AsaasSubscriptionDto {
-  @IsString()
-  @MaxLength(100)
-  id: string;
-
-  @IsString()
-  status: string;
-
-  @IsISO8601()
-  nextDueDate: string;
-}
-
-export class AsaasWebhookPayload {
-  @IsEnum(AsaasEvent)
-  event: AsaasEvent;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => AsaasPaymentDto)
-  payment?: AsaasPaymentDto;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => AsaasSubscriptionDto)
-  subscription?: AsaasSubscriptionDto;
-}
+export class AsaasWebhookPayload extends createZodDto(asaasWebhookSchema) {}
