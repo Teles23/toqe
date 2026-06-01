@@ -5,6 +5,9 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "moduleNameMapper": {
+    "^expo-server-sdk$": "<rootDir>/test/__mocks__/expo-server-sdk.js"
+  },
   "collectCoverageFrom": ["src/**/*.(t|j)s"],
   "coverageDirectory": "coverage-integration",
   "testEnvironment": "node",
