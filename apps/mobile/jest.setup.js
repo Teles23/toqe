@@ -1,4 +1,4 @@
-// Setup global de testes do app mobile.
+// Setup global de testes do app mobile — Expo SDK 56 / React Native 0.85.3.
 //
 // react-native-gesture-handler: mock nativo oficial para os GestureDetector
 // (ex.: arrastar o bottom sheet) renderizarem nos specs sem o módulo nativo.
