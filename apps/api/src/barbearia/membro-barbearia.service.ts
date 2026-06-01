@@ -39,7 +39,11 @@ export class MembroBarbeariaService {
     barbeiroId: number,
   ): Promise<boolean> {
     const membro = await this.prisma.membroBarbearia.findFirst({
-      where: { barCodigo, usrCodigo: barbeiroId, perfil: 'barbeiro' },
+      where: {
+        barCodigo,
+        usrCodigo: barbeiroId,
+        perfil: { in: ['barbeiro', 'dono', 'gerente'] },
+      },
       select: { usrCodigo: true },
     });
     return membro !== null;

@@ -5,6 +5,9 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "moduleNameMapper": {
+    "^expo-server-sdk$": "<rootDir>/test/__mocks__/expo-server-sdk.js"
+  },
   "testEnvironment": "node",
   "globalSetup": "<rootDir>/test/integration/setup.ts",
   "globalTeardown": "<rootDir>/test/integration/teardown.ts",

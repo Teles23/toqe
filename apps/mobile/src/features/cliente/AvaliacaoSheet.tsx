@@ -47,6 +47,7 @@ export function AvaliacaoSheet({
   onSuccess,
   minutosAtras,
 }: AvaliacaoSheetProps) {
+  "use no memo";
   const { palette, spacing, typography, radius } = useTheme();
   const [nota, setNota] = useState(0);
   const [comentario, setComentario] = useState("");

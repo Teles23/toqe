@@ -1,6 +1,11 @@
-// Mock minimal de react-native — só o useColorScheme. Evita carregar TurboModule
-// (DevMenu) que quebra fora do native runtime.
+// Mock minimal de react-native — inclui Platform (expo-modules-core@56 acessa
+// Platform.select eagerly) e só o useColorScheme para controle do tema.
+// Evita carregar TurboModules (DevMenu etc.) que quebram fora do runtime nativo.
 jest.mock("react-native", () => ({
+  Platform: {
+    OS: "ios",
+    select: (spec: Record<string, unknown>) => spec["ios"] ?? spec["default"],
+  },
   useColorScheme: jest.fn(),
 }));
 
@@ -33,8 +38,8 @@ describe("useTheme", () => {
     expect(result.current.isDark).toBe(true);
   });
 
-  it("default (null) usa light", () => {
-    mockedUseColorScheme.mockReturnValue(null);
+  it("default (unspecified) usa light", () => {
+    mockedUseColorScheme.mockReturnValue("unspecified");
     const { result } = renderHook(() => useTheme());
     expect(result.current.palette).toBe(palette.light);
     expect(result.current.isDark).toBe(false);

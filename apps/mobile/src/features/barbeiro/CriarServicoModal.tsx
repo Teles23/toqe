@@ -223,7 +223,7 @@ export function CriarServicoModal({
 
 const styles = StyleSheet.create({
   flex: { flex: 1, justifyContent: "flex-end" },
-  backdrop: { ...StyleSheet.absoluteFillObject },
+  backdrop: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
   sheet: {
     maxHeight: "92%",
     backgroundColor: "#161616",

@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service';
+import { TenantStore } from '../tenant/tenant-store';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 
 @WebSocketGateway({
@@ -69,12 +70,12 @@ export class AgendaGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('error', { message: 'Não autenticado' });
       return;
     }
-    const membro = await this.prisma.membroBarbearia.findFirst({
-      where: {
-        barCodigo: Number(barCodigo),
-        usrCodigo: user.sub,
-      },
-    });
+    const bc = Number(barCodigo);
+    const membro = await TenantStore.run(bc, () =>
+      this.prisma.membroBarbearia.findFirst({
+        where: { barCodigo: bc, usrCodigo: user.sub },
+      }),
+    );
 
     if (!membro) {
       client.emit('error', { message: 'Acesso negado' });

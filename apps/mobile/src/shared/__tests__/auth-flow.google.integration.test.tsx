@@ -46,6 +46,7 @@ function jsonRes(status: number, body: unknown): Response {
 let externalAuth: ReturnType<typeof useAuth> | null = null;
 
 function AuthSpy() {
+  "use no memo";
   const auth = useAuth();
   externalAuth = auth;
   return (

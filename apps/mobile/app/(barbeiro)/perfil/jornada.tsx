@@ -115,6 +115,7 @@ const timeFieldStyles = StyleSheet.create({
  * inteira numa transação (PUT) ao salvar.
  */
 export default function JornadaScreen() {
+  "use no memo";
   const { palette, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { data: jornadaSalva, isLoading, isError, refetch } = useJornada();
