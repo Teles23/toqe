@@ -66,6 +66,7 @@ function minutosAguardando(criadoEm: string): number {
 // ─── Pulsing dot vermelho ────────────────────────────────────────────────────
 
 function RedPulsingDot() {
+  "use no memo";
   const anim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -104,6 +105,7 @@ function RedPulsingDot() {
  * iniciar o atendimento o item vira `em_andamento` e sai da fila.
  */
 export function FilaSection() {
+  "use no memo";
   const { user } = useAuth();
   // Fila filtrada por compatibilidade do barbeiro logado: só encaixes cujos
   // serviços ele realiza (o backend exclui os que ele desativou).

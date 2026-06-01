@@ -2,6 +2,14 @@ import fs from "fs";
 import path from "path";
 import { ExpoConfig } from "expo/config";
 
+// Algumas propriedades do SDK 56 ainda não estão em @expo/config-types@56.0.5.
+type AppConfig = ExpoConfig & {
+  newArchEnabled?: boolean;
+  android?: NonNullable<ExpoConfig["android"]> & {
+    edgeToEdgeEnabled?: boolean;
+  };
+};
+
 const projectId = "d9c90eca-f4b9-4a14-a740-523935615a09";
 
 const firebaseAndroidJson = process.env.GOOGLE_SERVICES_JSON;
@@ -31,7 +39,7 @@ if (firebaseAndroidJson) {
 const API_URL_PROD = "https://toqe.duckdns.org/api/v1";
 const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? API_URL_PROD;
 
-const config: ExpoConfig = {
+const config: AppConfig = {
   name: "Toqe",
   slug: "toqe-mobile",
   version: "1.0.0",

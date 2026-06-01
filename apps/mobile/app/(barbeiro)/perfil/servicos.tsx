@@ -48,6 +48,7 @@ function isAtivoDefault(item: ServicoBarbeiroResponse): boolean {
  * cadastra serviços exclusivos.
  */
 export default function ServicosScreen() {
+  "use no memo";
   const { palette, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { data: servicos, isLoading } = useServicosBarbeiro();

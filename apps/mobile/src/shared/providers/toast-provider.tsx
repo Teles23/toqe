@@ -31,6 +31,7 @@ const FADE_IN = 250;
 const FADE_OUT = 200;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  "use no memo";
   const [current, setCurrent] = useState<{
     message: string;
     tone: ToastTone;

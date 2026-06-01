@@ -51,6 +51,7 @@ interface Props {
 }
 
 export function AdicionarClienteModal({ visible, onClose, onSuccess }: Props) {
+  "use no memo";
   const { palette, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
@@ -274,12 +275,16 @@ export function AdicionarClienteModal({ visible, onClose, onSuccess }: Props) {
 
 const styles = StyleSheet.create({
   overlayRoot: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     zIndex: 20,
     elevation: 20,
   },
   flex: { flex: 1, justifyContent: "flex-end" },
-  backdrop: { ...StyleSheet.absoluteFillObject },
+  backdrop: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
   sheet: {
     maxHeight: "92%",
     backgroundColor: "#161616",

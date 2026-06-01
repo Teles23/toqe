@@ -68,6 +68,7 @@ export function BaseButton({
   accessibilityState,
   ...rest
 }: BaseButtonProps) {
+  "use no memo";
   const { radius } = useTheme();
   const scale = useSharedValue(1);
 

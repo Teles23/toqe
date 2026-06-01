@@ -56,6 +56,7 @@ export function AdicionarWalkInModal({
   prefillNome,
   prefillServicoId,
 }: Props) {
+  "use no memo";
   const { palette, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
@@ -352,12 +353,16 @@ const styles = StyleSheet.create({
   // Overlay in-screen (não Modal): cobre só a área de conteúdo, deixando a
   // tab bar do Expo Router visível abaixo. zIndex/elevation acima do FAB (10).
   overlayRoot: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     zIndex: 20,
     elevation: 20,
   },
   flex: { flex: 1, justifyContent: "flex-end" },
-  backdrop: { ...StyleSheet.absoluteFillObject },
+  backdrop: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0 },
   sheet: {
     maxHeight: "92%",
     backgroundColor: "#161616",
