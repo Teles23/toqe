@@ -4,7 +4,6 @@ import { api } from "@/src/shared/api/api-client";
 
 export interface TwoFaSetupResponse {
   qrCode: string; // data URL (base64 PNG)
-  secret: string; // chave TOTP bruta (para fallback manual)
 }
 
 /**

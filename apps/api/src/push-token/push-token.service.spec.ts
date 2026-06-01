@@ -22,7 +22,13 @@ describe('PushTokenService', () => {
 
   describe('upsertToken', () => {
     it('faz upsert do token no banco', () => {
-      mockPrisma.pushToken.upsert.mockResolvedValue({ codigo: 1 });
+      mockPrisma.pushToken.upsert.mockResolvedValue({
+        codigo: 1,
+        usrCodigo: 1,
+        token: 'ExponentPushToken[xxx]',
+        plataforma: 'ios',
+        criadoEm: new Date(),
+      });
       void service.upsertToken(1, 'ExponentPushToken[xxx]', 'ios');
       expect(mockPrisma.pushToken.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -38,9 +44,22 @@ describe('PushTokenService', () => {
 
   describe('findByUser', () => {
     it('retorna lista de tokens do usuário', async () => {
+      const now = new Date();
       mockPrisma.pushToken.findMany.mockResolvedValue([
-        { token: 'ExponentPushToken[aaa]' },
-        { token: 'ExponentPushToken[bbb]' },
+        {
+          codigo: 1,
+          usrCodigo: 1,
+          token: 'ExponentPushToken[aaa]',
+          plataforma: 'ios',
+          criadoEm: now,
+        },
+        {
+          codigo: 2,
+          usrCodigo: 1,
+          token: 'ExponentPushToken[bbb]',
+          plataforma: 'android',
+          criadoEm: now,
+        },
       ]);
       const result = await service.findByUser(1);
       expect(result).toEqual([

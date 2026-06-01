@@ -4,6 +4,7 @@ import { UsuarioService } from './usuario.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import type { Usuario } from '../generated/prisma';
 
 const mockPrisma = createPrismaMock();
 
@@ -29,7 +30,7 @@ describe('UsuarioService', () => {
         codigo: 1,
         nome: 'Ana',
         email: 'ana@test.com',
-      });
+      } as unknown as Usuario);
 
       const result = await service.create({
         nome: 'Ana',
@@ -40,7 +41,9 @@ describe('UsuarioService', () => {
     });
 
     it('lança ConflictException se email já cadastrado', async () => {
-      mockPrisma.usuario.findUnique.mockResolvedValue({ codigo: 1 });
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 1,
+      } as unknown as Usuario);
       await expect(
         service.create({ nome: 'Ana', email: 'ana@test.com', senha: 'abc123' }),
       ).rejects.toThrow(ConflictException);
@@ -49,7 +52,7 @@ describe('UsuarioService', () => {
 
   describe('findByEmail', () => {
     it('retorna usuário pelo email', async () => {
-      const user = { codigo: 1, email: 'a@a.com' };
+      const user = { codigo: 1, email: 'a@a.com' } as unknown as Usuario;
       mockPrisma.usuario.findUnique.mockResolvedValue(user);
       const result = await service.findByEmail('a@a.com');
       expect(result).toEqual(user);
@@ -58,7 +61,7 @@ describe('UsuarioService', () => {
 
   describe('findById', () => {
     it('retorna usuário pelo código', async () => {
-      const user = { codigo: 5, nome: 'Pedro' };
+      const user = { codigo: 5, nome: 'Pedro' } as unknown as Usuario;
       mockPrisma.usuario.findUnique.mockResolvedValue(user);
       const result = await service.findById(5);
       expect(result).toEqual(user);
@@ -76,7 +79,7 @@ describe('UsuarioService', () => {
             barbearia: { codigo: 1, nome: 'Bar', slug: 'bar' },
           },
         ],
-      };
+      } as unknown as Usuario;
       mockPrisma.usuario.findUnique.mockResolvedValue(user);
       const result = await service.me(1);
       expect(result).toHaveProperty('barbearias');
@@ -98,11 +101,11 @@ describe('UsuarioService', () => {
         codigo: 1,
         nome: 'Ana',
         membros: [],
-      });
+      } as unknown as Usuario);
       mockPrisma.usuario.update.mockResolvedValue({
         codigo: 1,
         nome: 'Ana Nova',
-      });
+      } as unknown as Usuario);
 
       const updateDto: UpdateUsuarioDto = { nome: 'Ana Nova' };
       const result = await service.update(1, updateDto);

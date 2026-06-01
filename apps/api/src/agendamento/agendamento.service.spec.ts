@@ -20,6 +20,7 @@ import {
   PatchStatusAgendamentoDto,
   StatusAgendamento,
 } from './dto/patch-status-agendamento.dto';
+import { Agendamento, Prisma } from '../generated/prisma';
 import { rangeDoDia } from '../common/utils/date.utils';
 
 const mockPrisma = createPrismaMock();
@@ -70,16 +71,22 @@ describe('AgendamentoService', () => {
   const mockAgendamento = {
     codigo: 1,
     barbeiroId: 10,
-    clienteId: 20,
+    clienteId: 20 as number | null,
+    contatoId: null as number | null,
     barCodigo,
     inicio: new Date('2024-06-01T09:00:00Z'),
     fim: new Date('2024-06-01T09:30:00Z'),
     status: 'confirmado',
+    tipo: 'AGENDADO',
+    observacao: null as string | null,
+    criadoEm: new Date('2024-06-01T08:00:00Z'),
+    lembrete24hEnviado: false,
+    lembrete2hEnviado: false,
     itens: [],
     cliente: { codigo: 20, nome: 'Cliente', email: 'c@c.com' },
     barbeiro: { codigo: 10, nome: 'Barbeiro' },
     barbearia: { codigo: 1, nome: 'BarberShop' },
-  };
+  } as unknown as Agendamento;
 
   describe('create', () => {
     it('cria agendamento com sucesso', async () => {
@@ -92,14 +99,17 @@ describe('AgendamentoService', () => {
       mockPrisma.servico.findMany.mockResolvedValue([
         {
           codigo: 1,
+          barCodigo,
           nome: 'Corte',
           duracaoBase: 30,
-          precoBase: 25,
+          precoBase: new Prisma.Decimal(25),
+          ativo: true,
+          exclusivoBarbeiroId: null,
           barbeiros: [],
         },
-      ]);
+      ] as unknown as Awaited<ReturnType<typeof mockPrisma.servico.findMany>>);
       mockPrisma.$transaction.mockImplementation(
-        (fn: (tx: unknown) => unknown) => {
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
             barbearia: {
               findUniqueOrThrow: jest.fn().mockResolvedValue({ plano: 'free' }),
@@ -111,7 +121,7 @@ describe('AgendamentoService', () => {
             },
             $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
           };
-          return fn(tx);
+          return fn(tx as unknown as typeof mockPrisma);
         },
       );
 
@@ -132,16 +142,19 @@ describe('AgendamentoService', () => {
       mockPrisma.servico.findMany.mockResolvedValue([
         {
           codigo: 1,
+          barCodigo,
           nome: 'Corte',
           duracaoBase: 30,
-          precoBase: 25,
+          precoBase: new Prisma.Decimal(25),
+          ativo: true,
+          exclusivoBarbeiroId: null,
           barbeiros: [{ precoProprio: 99, duracaoMin: 50 }],
         },
-      ]);
+      ] as unknown as Awaited<ReturnType<typeof mockPrisma.servico.findMany>>);
 
       let capturados: { preco: number; duracaoMin: number }[] | undefined;
       mockPrisma.$transaction.mockImplementation(
-        (fn: (tx: unknown) => unknown) => {
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
             barbearia: {
               findUniqueOrThrow: jest.fn().mockResolvedValue({ plano: 'free' }),
@@ -164,7 +177,7 @@ describe('AgendamentoService', () => {
             },
             $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(0) }]),
           };
-          return fn(tx);
+          return fn(tx as unknown as typeof mockPrisma);
         },
       );
 
@@ -197,14 +210,17 @@ describe('AgendamentoService', () => {
       mockPrisma.servico.findMany.mockResolvedValue([
         {
           codigo: 1,
+          barCodigo,
           nome: 'Corte',
           duracaoBase: 30,
-          precoBase: 25,
+          precoBase: new Prisma.Decimal(25),
+          ativo: true,
+          exclusivoBarbeiroId: null,
           barbeiros: [],
         },
-      ]);
+      ] as unknown as Awaited<ReturnType<typeof mockPrisma.servico.findMany>>);
       mockPrisma.$transaction.mockImplementation(
-        (fn: (tx: unknown) => unknown) => {
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
             barbearia: {
               findUniqueOrThrow: jest.fn().mockResolvedValue({ plano: 'free' }),
@@ -216,7 +232,7 @@ describe('AgendamentoService', () => {
             },
             $queryRaw: jest.fn().mockResolvedValue([{ count: BigInt(1) }]),
           };
-          return fn(tx);
+          return fn(tx as unknown as typeof mockPrisma);
         },
       );
 
@@ -229,15 +245,20 @@ describe('AgendamentoService', () => {
   describe('createWalkIn', () => {
     const servicoMock = {
       codigo: 1,
+      barCodigo,
       nome: 'Corte',
       duracaoBase: 30,
-      precoBase: 25,
+      precoBase: new Prisma.Decimal(25),
+      ativo: true,
+      exclusivoBarbeiroId: null,
       barbeiros: [],
-    };
+    } as unknown as Awaited<
+      ReturnType<typeof mockPrisma.servico.findMany>
+    >[number];
 
     function mockWalkInTx() {
       mockPrisma.$transaction.mockImplementation(
-        (fn: (tx: unknown) => unknown) => {
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
             agendamento: {
               create: jest.fn().mockResolvedValue({
@@ -247,7 +268,7 @@ describe('AgendamentoService', () => {
               }),
             },
           };
-          return fn(tx);
+          return fn(tx as unknown as typeof mockPrisma);
         },
       );
     }
@@ -267,7 +288,7 @@ describe('AgendamentoService', () => {
 
       let capturedContatoId: number | undefined;
       mockPrisma.$transaction.mockImplementation(
-        (fn: (tx: unknown) => unknown) => {
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => {
           const tx = {
             contato: {
               findFirst: jest.fn().mockResolvedValue(null),
@@ -292,7 +313,7 @@ describe('AgendamentoService', () => {
               }),
             },
           };
-          return fn(tx);
+          return fn(tx as unknown as typeof mockPrisma);
         },
       );
 
@@ -413,8 +434,24 @@ describe('AgendamentoService', () => {
 
     it('barbeiroCompativel: exclui encaixes com serviço desativado (ativo=false) do barbeiro', async () => {
       mockPrisma.barbeiroServico.findMany.mockResolvedValue([
-        { srvCodigo: 5 },
-        { srvCodigo: 9 },
+        {
+          codigo: 1,
+          barCodigo,
+          barbeiroId: 77,
+          srvCodigo: 5,
+          duracaoMin: 30,
+          precoProprio: null,
+          ativo: false,
+        },
+        {
+          codigo: 2,
+          barCodigo,
+          barbeiroId: 77,
+          srvCodigo: 9,
+          duracaoMin: 30,
+          precoProprio: null,
+          ativo: false,
+        },
       ]);
       mockPrisma.agendamento.findMany.mockResolvedValue([]);
 
@@ -576,9 +613,11 @@ describe('AgendamentoService', () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue(walkIn);
       mockPrisma.barbeiroServico.findFirst.mockResolvedValue({
         codigo: 1,
+        barCodigo,
         barbeiroId: 77,
         srvCodigo: 5,
-        barCodigo,
+        duracaoMin: 30,
+        precoProprio: null,
         ativo: false,
       });
 
@@ -598,7 +637,7 @@ describe('AgendamentoService', () => {
         ...mockAgendamento,
         tipo: 'AGENDADO',
         itens: [{ srvCodigo: 5 }],
-      });
+      } as unknown as Agendamento);
       mockPrisma.agendamento.update.mockResolvedValue({
         ...mockAgendamento,
         status: 'em_andamento',
@@ -711,7 +750,13 @@ describe('AgendamentoService', () => {
     it('cria avaliação com sucesso', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue(concluido);
       mockPrisma.avaliacaoAgendamento.findUnique.mockResolvedValue(null);
-      mockPrisma.avaliacaoAgendamento.create.mockResolvedValue({});
+      mockPrisma.avaliacaoAgendamento.create.mockResolvedValue({
+        codigo: 1,
+        agendamentoCodigo: 1,
+        nota: 5,
+        comentario: null,
+        criadoEm: new Date(),
+      });
 
       const result = await service.avaliarAgendamento(1, barCodigo, 20, {
         nota: 5,
@@ -730,7 +775,7 @@ describe('AgendamentoService', () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...concluido,
         cliente: { codigo: 999 }, // outro cliente
-      });
+      } as unknown as Agendamento);
 
       await expect(
         service.avaliarAgendamento(1, barCodigo, 20, { nota: 4 }),
@@ -752,6 +797,10 @@ describe('AgendamentoService', () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue(concluido);
       mockPrisma.avaliacaoAgendamento.findUnique.mockResolvedValue({
         codigo: 1,
+        agendamentoCodigo: 1,
+        nota: 5,
+        comentario: null,
+        criadoEm: new Date(),
       });
 
       await expect(
@@ -775,7 +824,7 @@ describe('AgendamentoService', () => {
 
   describe('meusAtendimentos', () => {
     it('retorna agendamentos concluídos do barbeiro', async () => {
-      const concluido = { ...mockAgendamento, status: 'CONCLUIDO' };
+      const concluido = { ...mockAgendamento, status: 'concluido' };
       mockPrisma.agendamento.findMany.mockResolvedValue([concluido]);
 
       const result = await service.meusAtendimentos(10, barCodigo);
@@ -817,7 +866,14 @@ describe('AgendamentoService', () => {
       Date.now() + 86_400_000 + 30 * 60_000,
     ).toISOString();
 
+    function mockReagendar$Transaction() {
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
+      );
+    }
+
     it('reagenda com sucesso para o cliente owner', async () => {
+      mockReagendar$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
       mockPrisma.agendamento.update.mockResolvedValue({
@@ -838,7 +894,7 @@ describe('AgendamentoService', () => {
       expect(result.inicio).toEqual(new Date(futuro));
     });
 
-    it('lança ForbiddenException se requester não é cliente nem barbeiro', async () => {
+    it('lança ForbiddenException se requester não é cliente nem barbeiro nem gestão', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
 
       await expect(
@@ -846,10 +902,25 @@ describe('AgendamentoService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
+    it('permite reagendar para dono mesmo não sendo cliente/barbeiro', async () => {
+      mockReagendar$Transaction();
+      mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
+      mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
+      mockPrisma.agendamento.update.mockResolvedValue({
+        ...mockAgendamento,
+        inicio: new Date(futuro),
+        fim: new Date(futuroPlusMeia),
+      });
+
+      await expect(
+        service.reagendar(1, { inicio: futuro }, 999, barCodigo, 'dono'),
+      ).resolves.toBeDefined();
+    });
+
     it('lança BadRequestException se status é CONCLUIDO', async () => {
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...mockAgendamento,
-        status: 'CONCLUIDO',
+        status: 'concluido',
       });
 
       await expect(
@@ -867,6 +938,7 @@ describe('AgendamentoService', () => {
     });
 
     it('lança ConflictException se há conflito de horário', async () => {
+      mockReagendar$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(mockAgendamento);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(1) }]);
 
@@ -876,6 +948,7 @@ describe('AgendamentoService', () => {
     });
 
     it('calcula fim automaticamente quando não fornecido', async () => {
+      mockReagendar$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...mockAgendamento,
         inicio: new Date('2024-06-01T09:00:00Z'),
@@ -912,28 +985,42 @@ describe('AgendamentoService', () => {
     const codigo = 10;
     const novoBarbeiroId = 5;
 
+    function mockTransferir$Transaction() {
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
+      );
+    }
+
     const agendamentoBase = {
       codigo,
       barCodigo,
       barbeiroId: 2,
-      clienteId: 3,
+      clienteId: 3 as number | null,
+      contatoId: null as number | null,
       inicio: new Date('2026-05-25T10:00:00Z'),
       fim: new Date('2026-05-25T11:00:00Z'),
       status: 'pendente',
+      tipo: 'AGENDADO',
+      observacao: null as string | null,
+      criadoEm: new Date('2026-05-25T09:00:00Z'),
+      lembrete24hEnviado: false,
+      lembrete2hEnviado: false,
       itens: [],
       cliente: { codigo: 3, nome: 'Cliente Teste', email: 'cliente@teste.com' },
       barbeiro: { codigo: 2, nome: 'Barbeiro Antigo' },
       barbearia: { codigo: 1, nome: 'Barbearia Teste' },
-    };
+    } as unknown as Agendamento;
 
     const membroBarbeiro = {
       codigo: 7,
       barCodigo,
       usrCodigo: novoBarbeiroId,
       perfil: 'barbeiro',
+      criadoEm: new Date('2026-05-25T09:00:00Z'),
     };
 
     it('sucesso: transfere o agendamento para o novo barbeiro sem conflito', async () => {
+      mockTransferir$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(membroBarbeiro);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(0) }]);
@@ -951,13 +1038,14 @@ describe('AgendamentoService', () => {
       expect(resultado.barbeiroId).toBe(novoBarbeiroId);
       expect(mockPrisma.agendamento.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { codigo },
+          where: { codigo, barCodigo },
           data: { barbeiroId: novoBarbeiroId },
         }),
       );
     });
 
     it('sucesso: transfere agendamento com status confirmado', async () => {
+      mockTransferir$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue({
         ...agendamentoBase,
         status: 'confirmado',
@@ -1010,6 +1098,7 @@ describe('AgendamentoService', () => {
     });
 
     it('erro: lança BadRequestException quando há conflito de horário', async () => {
+      mockTransferir$Transaction();
       mockPrisma.agendamento.findFirst.mockResolvedValue(agendamentoBase);
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(membroBarbeiro);
       mockPrisma.$queryRaw.mockResolvedValue([{ count: BigInt(1) }]);

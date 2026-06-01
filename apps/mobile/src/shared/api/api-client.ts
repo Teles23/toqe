@@ -135,6 +135,45 @@ async function request<T>(
   return handleResponse<T>(res);
 }
 
+async function requestFormData<T>(
+  path: string,
+  formData: FormData,
+  opts: RequestOptions = {},
+): Promise<T> {
+  const token = await TokenStorage.getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (opts.tenantId !== undefined)
+    headers["x-tenant-id"] = String(opts.tenantId);
+
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (res.status === 401 && !opts.skipRefresh) {
+    const refreshed = await refreshTokens();
+    if (refreshed) {
+      const retryToken = await TokenStorage.getAccessToken();
+      const retryHeaders: Record<string, string> = {};
+      if (retryToken) retryHeaders["Authorization"] = `Bearer ${retryToken}`;
+      const retryRes = await fetch(`${BASE_URL}${path}`, {
+        method: "POST",
+        headers: retryHeaders,
+        body: formData,
+      });
+      return handleResponse<T>(retryRes);
+    } else {
+      await TokenStorage.clearTokens();
+      router.replace("/(auth)/login");
+      throw new ApiError(401, "Sessão expirada. Faça login novamente.");
+    }
+  }
+
+  return handleResponse<T>(res);
+}
+
 export const api = {
   get<T>(path: string, opts?: RequestOptions): Promise<T> {
     return request<T>("GET", path, undefined, opts);
@@ -154,6 +193,14 @@ export const api = {
 
   delete<T>(path: string, opts?: RequestOptions): Promise<T> {
     return request<T>("DELETE", path, undefined, opts);
+  },
+
+  postFormData<T>(
+    path: string,
+    formData: FormData,
+    opts?: RequestOptions,
+  ): Promise<T> {
+    return requestFormData<T>(path, formData, opts);
   },
 };
 

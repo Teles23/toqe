@@ -11,6 +11,7 @@ import {
   GOOGLE_TOKEN_VERIFIER,
   type GoogleTokenVerifier,
 } from './google-token-verifier';
+import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
 
 const mockUsuario = {
   codigo: 1,
@@ -25,6 +26,7 @@ const mockUsuario = {
   superAdmin: false,
   dataNascimento: null,
   pontosAcumulados: 0,
+  tokenVersion: 1,
   criadoEm: new Date('2024-01-01'),
 };
 
@@ -40,29 +42,11 @@ describe('AuthService', () => {
   let service: AuthService;
   let usuarioService: jest.Mocked<UsuarioService>;
   let _jwtService: jest.Mocked<JwtService>;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: PrismaMock;
   let notificacaoService: jest.Mocked<NotificacaoService>;
 
   beforeEach(async () => {
-    const mockPrisma = {
-      refreshToken: {
-        create: jest.fn(),
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn(),
-      },
-      passwordResetToken: {
-        updateMany: jest.fn(),
-        create: jest.fn(),
-        findUnique: jest.fn(),
-        update: jest.fn(),
-      },
-      usuario: {
-        update: jest.fn(),
-      },
-      $transaction: jest.fn(),
-    };
+    prisma = createPrismaMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -79,7 +63,7 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: { sign: jest.fn().mockReturnValue('access_token_mock') },
         },
-        { provide: PrismaService, useValue: mockPrisma },
+        { provide: PrismaService, useValue: prisma },
         {
           provide: NotificacaoService,
           useValue: {
@@ -98,8 +82,10 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     usuarioService = module.get(UsuarioService);
     _jwtService = module.get(JwtService);
-    prisma = module.get(PrismaService);
     notificacaoService = module.get(NotificacaoService);
+
+    // generateTokens busca tokenVersion do DB — mock padrão para todos os testes
+    (prisma.usuario.findUnique as jest.Mock).mockResolvedValue(mockUsuario);
   });
 
   describe('register', () => {
@@ -172,7 +158,7 @@ describe('AuthService', () => {
       const hash = await bcrypt.hash(rawToken, await bcrypt.genSalt());
       const token = { ...mockRefreshToken, hash };
 
-      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([token]);
+      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(token);
       (prisma.refreshToken.update as jest.Mock).mockResolvedValue({});
       usuarioService.findById.mockResolvedValue(mockUsuario);
       (prisma.refreshToken.create as jest.Mock).mockResolvedValue({});
@@ -186,32 +172,36 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('refresh_token');
     });
 
-    it('lança UnauthorizedException quando token não corresponde a nenhum hash', async () => {
-      const hash = await bcrypt.hash('outro_token', await bcrypt.genSalt());
-      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([
-        { ...mockRefreshToken, hash },
-      ]);
+    it('lança UnauthorizedException quando token não encontrado (tokenHash não existe)', async () => {
+      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.refresh({ refreshToken: 'token_invalido' }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('lança UnauthorizedException quando lista de tokens está vazia', async () => {
-      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([]);
+    it('lança UnauthorizedException quando token está revogado', async () => {
+      const rawToken = 'raw_token';
+      const hash = await bcrypt.hash(rawToken, await bcrypt.genSalt());
+      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue({
+        ...mockRefreshToken,
+        hash,
+        revogado: true,
+      });
 
-      await expect(
-        service.refresh({ refreshToken: 'qualquer' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh({ refreshToken: rawToken })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('lança UnauthorizedException quando usuário vinculado ao token não existe', async () => {
       const rawToken = 'raw_token';
       const hash = await bcrypt.hash(rawToken, await bcrypt.genSalt());
 
-      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([
-        { ...mockRefreshToken, hash },
-      ]);
+      (prisma.refreshToken.findUnique as jest.Mock).mockResolvedValue({
+        ...mockRefreshToken,
+        hash,
+      });
       (prisma.refreshToken.update as jest.Mock).mockResolvedValue({});
       usuarioService.findById.mockResolvedValue(null);
 
@@ -224,10 +214,9 @@ describe('AuthService', () => {
   describe('logout', () => {
     it('revoga o token e retorna mensagem de sucesso', async () => {
       const rawToken = 'raw_token';
-      const hash = await bcrypt.hash(rawToken, await bcrypt.genSalt());
-      const token = { ...mockRefreshToken, hash };
+      const token = { ...mockRefreshToken };
 
-      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([token]);
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue(token);
       (prisma.refreshToken.update as jest.Mock).mockResolvedValue({});
 
       const result = await service.logout(1, { refreshToken: rawToken });
@@ -238,11 +227,8 @@ describe('AuthService', () => {
       expect(result).toEqual({ message: 'Logout realizado com sucesso' });
     });
 
-    it('lança UnauthorizedException quando token não pertence ao usuário', async () => {
-      const hash = await bcrypt.hash('outro_token', await bcrypt.genSalt());
-      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([
-        { ...mockRefreshToken, hash },
-      ]);
+    it('lança UnauthorizedException quando token não encontrado', async () => {
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue(null);
 
       await expect(
         service.logout(1, { refreshToken: 'token_invalido' }),
@@ -460,15 +446,16 @@ describe('AuthService', () => {
       const senhaAtual = 'senha123';
       const hash = await bcrypt.hash(senhaAtual, await bcrypt.genSalt());
       const tokenAtual = 'rt-atual-em-uso';
-      const hashAtual = await bcrypt.hash(tokenAtual, await bcrypt.genSalt());
       usuarioService.findById.mockResolvedValue({
         ...mockUsuario,
         senhaHash: hash,
       });
-      (prisma.refreshToken.findMany as jest.Mock).mockResolvedValue([
-        { codigo: 7, usrCodigo: 1, hash: hashAtual, revogado: false },
-        { codigo: 8, usrCodigo: 1, hash: 'outro-hash', revogado: false },
-      ]);
+      // findFirst is used with tokenHash to find the current session
+      (prisma.refreshToken.findFirst as jest.Mock).mockResolvedValue({
+        codigo: 7,
+        usrCodigo: 1,
+        revogado: false,
+      });
       (prisma.$transaction as jest.Mock).mockImplementation((ops: unknown[]) =>
         Promise.resolve(ops),
       );

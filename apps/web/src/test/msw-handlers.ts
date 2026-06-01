@@ -1,5 +1,13 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import type {
+  AgendamentoAPI,
+  BarbeiroAPI,
+  ClienteAPI,
+  ServicoAPI,
+} from "@toqe/contracts";
+import type { BarbeariaResponse, UsuarioMe } from "@toqe/shared";
+import { Perfil } from "@toqe/shared";
 
 const BASE = "http://localhost:3000/api/v1";
 
@@ -19,6 +27,7 @@ export const handlers = [
       user: { codigo: 1, nome: "Test", email: "test@test.com" },
     }),
   ),
+  http.get("/api/auth/token", () => HttpResponse.json({ token: "mock-token" })),
   http.post("/api/auth/logout", () => HttpResponse.json({ ok: true })),
   http.post("/api/auth/forgot-password", () =>
     HttpResponse.json({
@@ -76,10 +85,7 @@ export const handlers = [
 
   // ── 2FA ──────────────────────────────────────────────────────────────────
   http.post("/api/auth/2fa/setup", () =>
-    HttpResponse.json({
-      qrCode: "data:image/png;base64,mock",
-      secret: "MOCK2FASECRET",
-    }),
+    HttpResponse.json({ qrCode: "data:image/png;base64,mock" }),
   ),
   http.post("/api/auth/2fa/enable", () => HttpResponse.json({ ok: true })),
   http.post("/api/auth/2fa/disable", () => HttpResponse.json({ ok: true })),
@@ -100,9 +106,14 @@ export const handlers = [
       avatarUrl: null,
       twoFaEnabled: false,
       barbearias: [
-        { codigo: 1, nome: "BarberShop", slug: "barbershop", perfil: "dono" },
+        {
+          codigo: 1,
+          nome: "BarberShop",
+          slug: "barbershop",
+          perfil: Perfil.DONO,
+        },
       ],
-    }),
+    } satisfies UsuarioMe),
   ),
 
   // ── Barbearia ────────────────────────────────────────────────────────────
@@ -118,8 +129,10 @@ export const handlers = [
       timezone: "America/Sao_Paulo",
       plano: "basic",
       ativo: true,
+      barbeiroCriaServico: false,
+      barbeiroAlteraPreco: false,
       criadoEm: new Date().toISOString(),
-    }),
+    } satisfies BarbeariaResponse),
   ),
 
   // ── Barbeiros ────────────────────────────────────────────────────────────
@@ -137,7 +150,7 @@ export const handlers = [
         faturamentoMes: 2000,
         ticketMedio: 50,
       },
-    ]),
+    ] satisfies BarbeiroAPI[]),
   ),
 
   http.post(`${BASE}/barbearias/:barCodigo/membros`, async ({ request }) => {
@@ -166,7 +179,7 @@ export const handlers = [
         ultimaVisita: new Date().toISOString(),
         servicoFav: "Corte",
       },
-    ]),
+    ] satisfies ClienteAPI[]),
   ),
 
   http.post(`${BASE}/barbearias/:barCodigo/clientes`, async ({ request }) => {
@@ -188,7 +201,7 @@ export const handlers = [
         duracaoBase: 30,
         ativo: true,
       },
-    ]),
+    ] satisfies ServicoAPI[]),
   ),
   // handler legado (relativo) mantido para setup.spec.ts
   http.get("/servicos", () =>
@@ -229,9 +242,13 @@ export const handlers = [
   ),
 
   // ── Agendamentos ─────────────────────────────────────────────────────────
-  http.get(`${BASE}/agendamentos`, () => HttpResponse.json([])),
+  http.get(`${BASE}/agendamentos`, () =>
+    HttpResponse.json([] satisfies AgendamentoAPI[]),
+  ),
   // handler legado (relativo) mantido para setup.spec.ts
-  http.get("/agendamentos", () => HttpResponse.json([])),
+  http.get("/agendamentos", () =>
+    HttpResponse.json([] satisfies AgendamentoAPI[]),
+  ),
 
   http.post(`${BASE}/agendamentos`, async ({ request }) => {
     const body = await request.json();
@@ -389,8 +406,15 @@ export const handlers = [
         codigo: 999,
         inicio: "2026-05-20T09:00:00.000Z",
         fim: "2026-05-20T09:30:00.000Z",
-        barbeiro: { codigo: 10, nome: "Carlos" },
-        cliente: { codigo: 50, nome: "João", email: "joao@x.com" },
+        status: "pendente",
+        barbeiro: { codigo: 10, nome: "Carlos", avatarUrl: null },
+        cliente: {
+          codigo: 50,
+          nome: "João",
+          telefone: null,
+          tipo: "usuario",
+        },
+        itens: [],
         barbearia: { codigo: 1, nome: "Barbearia Mock" },
       },
       { status: 201 },

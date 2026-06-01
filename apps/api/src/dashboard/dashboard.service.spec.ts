@@ -1,6 +1,11 @@
 import { DashboardService } from './dashboard.service';
-import { createPrismaMock } from '../test/prisma-mock.factory';
-import { Prisma } from '../generated/prisma';
+import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
+import {
+  Prisma,
+  Agendamento,
+  AgendamentoItem,
+  MembroBarbearia,
+} from '../generated/prisma';
 
 function d(value: number) {
   return new Prisma.Decimal(value);
@@ -8,7 +13,7 @@ function d(value: number) {
 
 describe('DashboardService', () => {
   let service: DashboardService;
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: PrismaMock;
 
   beforeEach(() => {
     prisma = createPrismaMock();
@@ -33,10 +38,19 @@ describe('DashboardService', () => {
       // 10: getServicosPopulares — kick-off síncrono após getFaturamentoDias await
       // 11-14: getFaturamentoSemanas (4 semanas) — sequential após semana resolve
       prisma.agendamentoItem.findMany
-        .mockResolvedValueOnce([{ preco: d(100) }]) // #1 itensConcluidos hoje
-        .mockResolvedValueOnce([{ preco: d(100) }]) // #2 itensMes
-        .mockResolvedValueOnce([{ preco: d(100) }]) // #3 semana dia 1
-        .mockResolvedValueOnce([{ preco: d(50) }, { preco: d(50) }]) // #4 semana dia 2
+        .mockResolvedValueOnce([
+          { preco: d(100) } as unknown as AgendamentoItem,
+        ]) // #1 itensConcluidos hoje
+        .mockResolvedValueOnce([
+          { preco: d(100) } as unknown as AgendamentoItem,
+        ]) // #2 itensMes
+        .mockResolvedValueOnce([
+          { preco: d(100) } as unknown as AgendamentoItem,
+        ]) // #3 semana dia 1
+        .mockResolvedValueOnce([
+          { preco: d(50) },
+          { preco: d(50) },
+        ] as unknown as AgendamentoItem[]) // #4 semana dia 2
         .mockResolvedValueOnce([]) // #5
         .mockResolvedValueOnce([]) // #6
         .mockResolvedValueOnce([]) // #7
@@ -47,8 +61,10 @@ describe('DashboardService', () => {
           { preco: d(100), servico: { nome: 'Corte' } },
           { preco: d(50), servico: { nome: 'Barba' } },
           { preco: d(50), servico: { nome: 'Corte' } },
-        ])
-        .mockResolvedValueOnce([{ preco: d(200) }]) // #11 mês sem 1
+        ] as unknown as AgendamentoItem[])
+        .mockResolvedValueOnce([
+          { preco: d(200) } as unknown as AgendamentoItem,
+        ]) // #11 mês sem 1
         .mockResolvedValueOnce([]) // #12 mês sem 2
         .mockResolvedValueOnce([]) // #13 mês sem 3
         .mockResolvedValueOnce([]); // #14 mês sem 4
@@ -58,7 +74,7 @@ describe('DashboardService', () => {
           // agendamentosHoje (kpis)
           { status: 'concluido' },
           { status: 'confirmado' },
-        ])
+        ] as unknown as Agendamento[])
         .mockResolvedValueOnce([]) // duracoes (liveMetrics)
         // atividade
         .mockResolvedValueOnce([
@@ -67,7 +83,7 @@ describe('DashboardService', () => {
             inicio: new Date(),
             cliente: { nome: 'João' },
           },
-        ]);
+        ] as unknown as Agendamento[]);
 
       prisma.agendamento.count
         .mockResolvedValueOnce(1) // barbeiros ativos (liveMetrics)
@@ -80,7 +96,7 @@ describe('DashboardService', () => {
           usrCodigo: 10,
           usuario: { codigo: 10, nome: 'Pedro', avatarUrl: null },
         },
-      ]);
+      ] as unknown as MembroBarbearia[]);
 
       // agendamento atual do barbeiro Pedro
       prisma.agendamento.findFirst.mockResolvedValueOnce(null);
@@ -133,7 +149,7 @@ describe('DashboardService', () => {
           usrCodigo: 10,
           usuario: { codigo: 10, nome: 'Carlos', avatarUrl: null },
         },
-      ]);
+      ] as unknown as MembroBarbearia[]);
 
       const inicio = new Date(Date.now() - 15 * 60_000);
       const fim = new Date(Date.now() + 15 * 60_000);
@@ -147,7 +163,7 @@ describe('DashboardService', () => {
           fim,
           cliente: { nome: 'João' },
           itens: [{ servico: { nome: 'Corte' } }],
-        });
+        } as unknown as Agendamento);
 
       const result = await service.getOverview(1);
 
@@ -177,21 +193,31 @@ describe('DashboardService', () => {
       prisma.membroBarbearia.findMany.mockResolvedValueOnce([
         { barCodigo: 1, barbearia: { nome: 'Barber A' } },
         { barCodigo: 2, barbearia: { nome: 'Barber B' } },
-      ]);
+      ] as unknown as MembroBarbearia[]);
 
       const d = (v: number) => new Prisma.Decimal(v);
       prisma.agendamentoItem.findMany
-        .mockResolvedValueOnce([{ preco: d(100) }]) // bar 1 hoje
-        .mockResolvedValueOnce([{ preco: d(500) }]) // bar 1 mês
-        .mockResolvedValueOnce([{ preco: d(200) }]) // bar 2 hoje
-        .mockResolvedValueOnce([{ preco: d(800) }]); // bar 2 mês
+        .mockResolvedValueOnce([
+          { preco: d(100) } as unknown as AgendamentoItem,
+        ]) // bar 1 hoje
+        .mockResolvedValueOnce([
+          { preco: d(500) } as unknown as AgendamentoItem,
+        ]) // bar 1 mês
+        .mockResolvedValueOnce([
+          { preco: d(200) } as unknown as AgendamentoItem,
+        ]) // bar 2 hoje
+        .mockResolvedValueOnce([
+          { preco: d(800) } as unknown as AgendamentoItem,
+        ]); // bar 2 mês
 
       prisma.agendamento.findMany
         .mockResolvedValueOnce([
           { status: 'concluido' },
           { status: 'pendente' },
-        ])
-        .mockResolvedValueOnce([{ status: 'concluido' }]);
+        ] as unknown as Agendamento[])
+        .mockResolvedValueOnce([
+          { status: 'concluido' },
+        ] as unknown as Agendamento[]);
 
       const result = await service.getRedeOverview(99);
 

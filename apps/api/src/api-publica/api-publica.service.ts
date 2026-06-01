@@ -6,6 +6,8 @@ import {
 import { addMinutes, startOfDay, endOfDay } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { ServicoService } from '../servico/servico.service';
+import { MembroBarbeariaService } from '../barbearia/membro-barbearia.service';
+import { TenantContextService } from '../tenant/tenant-context/tenant-context.service';
 import { CriarAgendamentoPublicoDto } from './dto/criar-agendamento-publico.dto';
 
 @Injectable()
@@ -13,6 +15,8 @@ export class ApiPublicaService {
   constructor(
     private prisma: PrismaService,
     private servicoService: ServicoService,
+    private membroService: MembroBarbeariaService,
+    private tenantContext: TenantContextService,
   ) {}
 
   async listarAgendamentos(barCodigo: number, data?: string) {
@@ -38,39 +42,15 @@ export class ApiPublicaService {
   }
 
   async criarAgendamento(barCodigo: number, dto: CriarAgendamentoPublicoDto) {
-    // Verificar ou criar cliente pelo email
-    let cliente = await this.prisma.usuario.findUnique({
-      where: { email: dto.clienteEmail },
-    });
-
-    if (!cliente) {
-      // Criar cliente provisório sem senha
-      cliente = await this.prisma.usuario.create({
-        data: {
-          nome: dto.clienteNome,
-          email: dto.clienteEmail,
-          senhaHash: '',
-          membros: {
-            create: {
-              barCodigo,
-              perfil: 'cliente',
-            },
-          },
-        },
-      });
-    } else {
-      // Garantir que é membro da barbearia
-      const membro = await this.prisma.membroBarbearia.findFirst({
-        where: { usrCodigo: cliente.codigo, barCodigo },
-      });
-      if (!membro) {
-        await this.prisma.membroBarbearia.create({
-          data: { barCodigo, usrCodigo: cliente.codigo, perfil: 'cliente' },
-        });
-      }
+    if (
+      !(await this.membroService.isBarbeiroDaBarbearia(
+        barCodigo,
+        dto.barbeiroId,
+      ))
+    ) {
+      throw new BadRequestException('Barbeiro não pertence a esta barbearia');
     }
 
-    // Buscar serviço
     const servico = await this.prisma.servico.findFirst({
       where: { codigo: dto.servicoCodigo, barCodigo, ativo: true },
       include: {
@@ -92,46 +72,53 @@ export class ApiPublicaService {
     const inicioDate = new Date(dto.inicio);
     const fimDate = addMinutes(inicioDate, duracaoMin);
 
-    // Verificar conflito de horário
-    const conflitos = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(1) as count
-      FROM "TQE_AGENDAMENTO"
-      WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.barbeiroId}
-        AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
-        AND "TQE_AGD_INICIO" < ${fimDate}
-        AND "TQE_AGD_FIM"   > ${inicioDate}
-    `;
-
-    if (Number(conflitos[0].count) > 0) {
-      throw new ConflictException(
-        'Horário indisponível: já existe um agendamento neste período para este barbeiro',
-      );
-    }
-
-    return this.prisma.agendamento.create({
-      data: {
-        barbeiroId: dto.barbeiroId,
-        clienteId: cliente.codigo,
+    return this.tenantContext.run(barCodigo, async (tx) => {
+      const membroCliente = await this.membroService.findOrCreateCliente(
         barCodigo,
-        inicio: inicioDate,
-        fim: fimDate,
-        status: 'confirmado',
-        itens: {
-          create: [
-            {
-              srvCodigo: servico.codigo,
-              duracaoMin,
-              preco,
-              barCodigo,
-            },
-          ],
+        { nome: dto.clienteNome, email: dto.clienteEmail },
+        tx,
+      );
+
+      const conflitos = await tx.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(1) as count
+        FROM "TQE_AGENDAMENTO"
+        WHERE "TQE_AGD_BARBEIRO_ID" = ${dto.barbeiroId}
+          AND "TQE_AGD_STATUS" NOT IN ('cancelado', 'no_show')
+          AND "TQE_AGD_INICIO" < ${fimDate}
+          AND "TQE_AGD_FIM"   > ${inicioDate}
+      `;
+
+      if (Number(conflitos[0].count) > 0) {
+        throw new ConflictException(
+          'Horário indisponível: já existe um agendamento neste período para este barbeiro',
+        );
+      }
+
+      return tx.agendamento.create({
+        data: {
+          barbeiroId: dto.barbeiroId,
+          clienteId: membroCliente.usrCodigo,
+          barCodigo,
+          inicio: inicioDate,
+          fim: fimDate,
+          status: 'confirmado',
+          itens: {
+            create: [
+              {
+                srvCodigo: servico.codigo,
+                duracaoMin,
+                preco,
+                barCodigo,
+              },
+            ],
+          },
         },
-      },
-      include: {
-        itens: { include: { servico: true } },
-        cliente: { select: { codigo: true, nome: true, email: true } },
-        barbeiro: { select: { codigo: true, nome: true } },
-      },
+        include: {
+          itens: { include: { servico: true } },
+          cliente: { select: { codigo: true, nome: true } },
+          barbeiro: { select: { codigo: true, nome: true } },
+        },
+      });
     });
   }
 

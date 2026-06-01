@@ -1,3 +1,5 @@
+import type { Prisma } from '../../generated/prisma';
+
 export interface JwtRequest {
   user: { sub: number };
 }
@@ -13,5 +15,7 @@ export interface TenantRequest {
   params: Record<string, string | undefined>;
   body: Record<string, unknown>;
   headers: Record<string, string | string[] | undefined>;
-  runInTenant?: <T>(fn: (tx: unknown) => Promise<T>) => Promise<T>;
+  runInTenant?: <T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+  ) => Promise<T>;
 }

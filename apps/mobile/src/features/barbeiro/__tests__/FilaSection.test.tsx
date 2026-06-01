@@ -103,14 +103,13 @@ function makeAg(over: Partial<AgendamentoResponse> = {}): AgendamentoResponse {
       nome: "João",
       telefone: null,
       tipo: "usuario" as const,
-      email: null,
     },
     itens: [
       {
         codigo: 1,
         servico: { codigo: 1, nome: "Corte", precoBase: 40, duracaoBase: 30 },
         preco: 40,
-        duracao: 30,
+        duracaoMin: 30,
       },
     ],
     criadoEm: "2026-05-15T12:50:00.000Z",
@@ -142,7 +141,6 @@ describe("FilaSection", () => {
           nome: "João",
           telefone: null,
           tipo: "usuario" as const,
-          email: null,
         },
       }),
       makeAg({
@@ -152,7 +150,6 @@ describe("FilaSection", () => {
           nome: "Maria",
           telefone: null,
           tipo: "usuario" as const,
-          email: null,
         },
       }),
     ]);
@@ -172,7 +169,6 @@ describe("FilaSection", () => {
           nome: "João",
           telefone: null,
           tipo: "usuario" as const,
-          email: null,
         },
       }),
       makeAg({
@@ -182,7 +178,6 @@ describe("FilaSection", () => {
           nome: "Maria",
           telefone: null,
           tipo: "usuario" as const,
-          email: null,
         },
       }),
     ]);
@@ -213,7 +208,6 @@ describe("FilaSection", () => {
           nome: "João",
           telefone: null,
           tipo: "usuario" as const,
-          email: null,
         },
       }),
       makeAg({
@@ -224,7 +218,6 @@ describe("FilaSection", () => {
           nome: "Maria",
           telefone: null,
           tipo: "usuario" as const,
-          email: null,
         },
       }),
     ]);

@@ -1,4 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 /**
  * BFF — POST /api/auth/refresh
@@ -6,11 +7,6 @@
  * Le refresh_token do cookie httpOnly, chama a API para rotar os tokens
  * e atualiza ambos os cookies com os novos valores.
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -23,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/refresh`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -58,7 +54,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true });
 
   res.cookies.set("access_token", access_token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict",
     maxAge: 900,

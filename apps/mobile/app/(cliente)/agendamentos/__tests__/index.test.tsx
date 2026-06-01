@@ -97,14 +97,13 @@ function makeProximo(
       nome: "Cliente X",
       telefone: null,
       tipo: "usuario" as const,
-      email: "cliente@x.com",
     },
     itens: [
       {
         codigo: 1,
         servico: { codigo: 1, nome: "Corte", precoBase: 50, duracaoBase: 30 },
         preco: 50,
-        duracao: 30,
+        duracaoMin: 30,
       },
     ],
     criadoEm: new Date().toISOString(),
@@ -127,14 +126,13 @@ function makeHistorico(
       nome: "Cliente X",
       telefone: null,
       tipo: "usuario" as const,
-      email: "cliente@x.com",
     },
     itens: [
       {
         codigo: 2,
         servico: { codigo: 1, nome: "Barba", precoBase: 30, duracaoBase: 20 },
         preco: 30,
-        duracao: 20,
+        duracaoMin: 20,
       },
     ],
     criadoEm: new Date().toISOString(),

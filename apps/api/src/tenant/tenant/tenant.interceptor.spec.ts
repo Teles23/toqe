@@ -33,11 +33,11 @@ describe('TenantInterceptor', () => {
     );
   });
 
-  it('injeta runInTenant quando barCodigo esta em body', () => {
+  it('nao injeta runInTenant via body (evita parameter tampering)', () => {
     const req = { params: {}, body: { barCodigo: '5' }, headers: {} };
     interceptor.intercept(makeContext(req), mockNext);
 
-    expect(req).toHaveProperty('runInTenant');
+    expect(req).not.toHaveProperty('runInTenant');
   });
 
   it('injeta runInTenant quando barCodigo esta nos headers', () => {

@@ -1,7 +1,12 @@
 import { RelatorioService } from './relatorio.service';
-import { createPrismaMock } from '../test/prisma-mock.factory';
+import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
 import type { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '../generated/prisma';
+import {
+  Prisma,
+  Agendamento,
+  AgendamentoItem,
+  MembroBarbearia,
+} from '../generated/prisma';
 
 function d(value: number) {
   return new Prisma.Decimal(value);
@@ -9,7 +14,7 @@ function d(value: number) {
 
 describe('RelatorioService', () => {
   let service: RelatorioService;
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: PrismaMock;
 
   beforeEach(() => {
     prisma = createPrismaMock();
@@ -24,7 +29,7 @@ describe('RelatorioService', () => {
         { preco: d(100), agendamento: { inicio: d2 } },
         { preco: d(50), agendamento: { inicio: d1 } },
         { preco: d(75), agendamento: { inicio: d1 } },
-      ]);
+      ] as unknown as AgendamentoItem[]);
 
       const result = await service.faturamento(1, '30d');
 
@@ -48,7 +53,7 @@ describe('RelatorioService', () => {
         { inicio: d1, status: 'concluido' },
         { inicio: d1, status: 'cancelado' },
         { inicio: d1, status: 'concluido' },
-      ]);
+      ] as unknown as Agendamento[]);
 
       const result = await service.agendamentos(1, '30d');
 
@@ -71,7 +76,7 @@ describe('RelatorioService', () => {
         { preco: d(50), servico: { nome: 'Barba' } },
         { preco: d(100), servico: { nome: 'Corte' } },
         { preco: d(100), servico: { nome: 'Corte' } },
-      ]);
+      ] as unknown as AgendamentoItem[]);
 
       const result = await service.servicos(1, '30d');
 
@@ -98,16 +103,16 @@ describe('RelatorioService', () => {
           usrCodigo: 11,
           usuario: { codigo: 11, nome: 'João', avatarUrl: null },
         },
-      ]);
+      ] as unknown as MembroBarbearia[]);
 
       prisma.agendamento.findMany
         .mockResolvedValueOnce([
           { itens: [{ preco: d(100) }, { preco: d(50) }] },
-        ]) // Pedro: faturamento=150
+        ] as unknown as Agendamento[]) // Pedro: faturamento=150
         .mockResolvedValueOnce([
           { itens: [{ preco: d(200) }] },
           { itens: [{ preco: d(100) }] },
-        ]); // João: faturamento=300
+        ] as unknown as Agendamento[]); // João: faturamento=300
 
       const result = await service.barbeiros(1, '30d');
 
@@ -131,7 +136,7 @@ describe('RelatorioService', () => {
         { inicio: d10 },
         { inicio: d10 },
         { inicio: d14 },
-      ]);
+      ] as unknown as Agendamento[]);
 
       const result = await service.horariosPico(1, '30d');
 

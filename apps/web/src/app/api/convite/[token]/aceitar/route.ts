@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getInternalApiUrl } from "../../../_lib/internal-api";
 
 /**
  * BFF — POST /api/convite/:token/aceitar
@@ -7,17 +8,14 @@ import { NextRequest, NextResponse } from "next/server";
  * É um **auto-login**: a posse do link prova a identidade. O backend retorna
  * access/refresh tokens e o BFF os transforma em cookies — exatamente como o
  * BFF de login:
- *  - access_token  : não-httpOnly (lido pelo api-client via document.cookie), 15 min
+ *  - access_token  : httpOnly (nunca exposto ao JS), 15 min
  *  - refresh_token : httpOnly (nunca exposto ao JS), 30 dias, restrito a /api/auth
+ *
+ * O api-client.ts obtém o access_token via GET /api/auth/token (BFF server-side).
  *
  * Erros propagados do backend: 404 (expirado/inexistente), 409 (já utilizado),
  * 401 (senha incorreta), 400 (senha < 8 chars).
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -30,7 +28,7 @@ export async function POST(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/convite/${token}/aceitar`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/convite/${token}/aceitar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(reqBody),
@@ -71,7 +69,7 @@ export async function POST(
   );
 
   res.cookies.set("access_token", access_token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict",
     maxAge: 900,

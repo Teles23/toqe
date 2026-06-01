@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
-import { AgendamentoConfirmadoJob, ConviteEmailJob } from './notificacao.types';
+import {
+  AgendamentoConfirmadoData,
+  ConviteEmailJob,
+} from './notificacao.types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -27,7 +30,7 @@ export class NotificacaoService {
     }
   }
 
-  async enviarConfirmacaoAgendamento(data: AgendamentoConfirmadoJob) {
+  async enviarConfirmacaoAgendamento(data: AgendamentoConfirmadoData) {
     const inicioFormatado = format(
       new Date(data.inicio),
       "dd 'de' MMMM 'de' yyyy 'às' HH:mm",
@@ -36,7 +39,7 @@ export class NotificacaoService {
 
     if (!this.resend) {
       this.logger.warn(
-        `E-mail para ${data.clienteEmail} ignorado: RESEND_API_KEY não configurada`,
+        `E-mail de confirmação para agendamento #${data.agendamentoCodigo} ignorado: RESEND_API_KEY não configurada`,
       );
       return;
     }
@@ -54,12 +57,12 @@ export class NotificacaoService {
       });
 
       this.logger.log(
-        `E-mail de confirmação enviado para ${data.clienteEmail} (id: ${result.data?.id})`,
+        `E-mail de confirmação enviado (agendamento #${data.agendamentoCodigo}, id: ${result.data?.id})`,
       );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Falha ao enviar e-mail para ${data.clienteEmail}: ${msg}`,
+        `Falha ao enviar e-mail de confirmação para agendamento #${data.agendamentoCodigo}: ${msg}`,
       );
       throw error; // Permite que o BullMQ tente novamente (retry)
     }
@@ -76,7 +79,7 @@ export class NotificacaoService {
   }): Promise<void> {
     if (!this.resend) {
       this.logger.warn(
-        `Lembrete para ${data.clienteEmail} ignorado: RESEND_API_KEY não configurada`,
+        `Lembrete ${data.tipo} para ${data.clienteNome} ignorado: RESEND_API_KEY não configurada`,
       );
       return;
     }
@@ -99,11 +102,13 @@ export class NotificacaoService {
 <p>Data: <strong>${inicioFormatado}</strong></p>
 <p>Serviços: ${data.servicos.join(', ')}</p>`,
       });
-      this.logger.log(`Lembrete enviado para ${data.clienteEmail}`);
+      this.logger.log(
+        `Lembrete ${data.tipo} enviado para ${data.barbeariaNome}`,
+      );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Falha ao enviar e-mail para ${data.clienteEmail}: ${msg}`,
+        `Falha ao enviar lembrete ${data.tipo} para ${data.barbeariaNome}: ${msg}`,
       );
       throw error;
     }
@@ -115,9 +120,7 @@ export class NotificacaoService {
     html: string;
   }): Promise<void> {
     if (!this.resend) {
-      this.logger.warn(
-        `E-mail para ${data.to} ignorado: RESEND_API_KEY não configurada`,
-      );
+      this.logger.warn(`E-mail ignorado: RESEND_API_KEY não configurada`);
       return;
     }
     try {
@@ -127,12 +130,10 @@ export class NotificacaoService {
         subject: data.subject,
         html: data.html,
       });
-      this.logger.log(
-        `E-mail enviado para ${data.to} (id: ${result.data?.id})`,
-      );
+      this.logger.log(`E-mail enviado (id: ${result.data?.id})`);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Falha ao enviar e-mail para ${data.to}: ${msg}`);
+      this.logger.error(`Falha ao enviar e-mail: ${msg}`);
       throw error;
     }
   }
@@ -144,7 +145,7 @@ export class NotificacaoService {
   ): Promise<void> {
     if (!this.resend) {
       this.logger.warn(
-        `E-mail de recuperação para ${email} ignorado: RESEND_API_KEY não configurada`,
+        `E-mail de recuperação de senha ignorado: RESEND_API_KEY não configurada`,
       );
       return;
     }
@@ -155,11 +156,11 @@ export class NotificacaoService {
         subject: '🔑 Recuperação de senha — Toqe',
         html: this.buildRecuperacaoHtml({ nome, resetLink }),
       });
-      this.logger.log(`E-mail de recuperação enviado para ${email}`);
+      this.logger.log(`E-mail de recuperação de senha enviado`);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Falha ao enviar e-mail de recuperação para ${email}: ${msg}`,
+        `Falha ao enviar e-mail de recuperação de senha: ${msg}`,
       );
       throw error;
     }
@@ -168,7 +169,7 @@ export class NotificacaoService {
   async enviarConviteEmail(data: ConviteEmailJob): Promise<void> {
     if (!this.resend) {
       this.logger.warn(
-        `Convite para ${data.email} ignorado: RESEND_API_KEY não configurada`,
+        `E-mail de convite para ${data.barbeariaNome} ignorado: RESEND_API_KEY não configurada`,
       );
       return;
     }
@@ -179,11 +180,11 @@ export class NotificacaoService {
         subject: `✂️ Você foi convidado para ${data.barbeariaNome} — Toqe`,
         html: this.buildConviteHtml(data),
       });
-      this.logger.log(`E-mail de convite enviado para ${data.email}`);
+      this.logger.log(`E-mail de convite para ${data.barbeariaNome} enviado`);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Falha ao enviar e-mail de convite para ${data.email}: ${msg}`,
+        `Falha ao enviar e-mail de convite para ${data.barbeariaNome}: ${msg}`,
       );
       throw error; // Permite que o BullMQ tente novamente (retry)
     }

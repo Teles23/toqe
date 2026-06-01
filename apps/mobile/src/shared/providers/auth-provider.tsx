@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import React, { createContext, useCallback, useEffect, useState } from "react";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 
 import { api, ApiError } from "@/src/shared/api/api-client";
 import { TokenStorage } from "@/src/shared/lib/secure-storage";
@@ -39,6 +40,8 @@ interface AuthActions {
     accessToken: string,
     refreshToken: string,
   ): Promise<Perfil | null>;
+  /** Recarrega /usuarios/me e atualiza o estado global (ex: após upload de avatar). */
+  reloadUser(): Promise<void>;
   logout(): Promise<void>;
   switchBarbearia(codigo: number): void;
 }
@@ -205,6 +208,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignora erros de rede no logout — limpa tokens de qualquer forma
       if (!(err instanceof ApiError)) throw err;
     } finally {
+      try {
+        await GoogleSignin.signOut();
+      } catch {
+        // Ignora — usuário pode não ter entrado via Google
+      }
       await TokenStorage.clearTokens();
       setState({
         user: null,
@@ -216,6 +224,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.replace("/(auth)/login");
     }
   }, []);
+
+  const reloadUser = useCallback(async (): Promise<void> => {
+    await loadMe();
+  }, [loadMe]);
 
   const switchBarbearia = useCallback((codigo: number) => {
     setState((prev) => {
@@ -234,6 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     loginWithGoogle,
     establishSession,
+    reloadUser,
     logout,
     switchBarbearia,
   };

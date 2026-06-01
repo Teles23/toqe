@@ -4,7 +4,6 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RefreshToken } from '../generated/prisma';
 import { JwtService } from '@nestjs/jwt';
 import { UsuarioService } from '../usuario/usuario.service';
 import { LoginDto } from './dto/login.dto';
@@ -108,34 +107,42 @@ export class AuthService {
   }
 
   async refresh(dto: RefreshTokenDto) {
-    // 1. Busca tokens válidos no banco
-    // Nota: Em produção, o ideal é usar Redis para tokens por performance
-    const tokens = await this.prisma.refreshToken.findMany({
-      where: { revogado: false, expiraEm: { gt: new Date() } },
+    // O(1) lookup via SHA-256 hash (deterministic, no bcrypt scan needed).
+    // Tokens issued before the tokenHash migration won't be found and will
+    // result in 401 — acceptable: users log in once after the migration.
+    const tokenHash = createHash('sha256')
+      .update(dto.refreshToken)
+      .digest('hex');
+
+    const foundToken = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
     });
 
-    let foundToken: RefreshToken | null = null;
-    for (const t of tokens) {
-      const match = await bcrypt.compare(dto.refreshToken, t.hash);
-      if (match) {
-        foundToken = t;
-        break;
-      }
-    }
-
-    if (!foundToken) {
+    if (
+      !foundToken ||
+      foundToken.revogado ||
+      foundToken.expiraEm <= new Date()
+    ) {
       throw new UnauthorizedException(
         'Token de atualização inválido ou expirado',
       );
     }
 
-    // 2. Revoga o token atual (rotação)
+    // Belt-and-suspenders: verify bcrypt hash to guard against SHA-256 preimage
+    // attacks in case the tokenHash index is somehow bypassed.
+    const match = await bcrypt.compare(dto.refreshToken, foundToken.hash);
+    if (!match) {
+      throw new UnauthorizedException(
+        'Token de atualização inválido ou expirado',
+      );
+    }
+
+    // Revoga o token atual (rotação)
     await this.prisma.refreshToken.update({
       where: { codigo: foundToken.codigo },
       data: { revogado: true },
     });
 
-    // 3. Gera novos tokens
     const user = await this.usuarioService.findById(foundToken.usrCodigo);
     if (!user) {
       throw new UnauthorizedException('Usuário não encontrado');
@@ -144,22 +151,23 @@ export class AuthService {
   }
 
   async logout(usrCodigo: number, dto: LogoutDto) {
-    const tokens = await this.prisma.refreshToken.findMany({
-      where: { usrCodigo, revogado: false, expiraEm: { gt: new Date() } },
+    const tokenHash = createHash('sha256')
+      .update(dto.refreshToken)
+      .digest('hex');
+
+    const token = await this.prisma.refreshToken.findFirst({
+      where: { tokenHash, usrCodigo, revogado: false },
     });
 
-    for (const t of tokens) {
-      const match = await bcrypt.compare(dto.refreshToken, t.hash);
-      if (match) {
-        await this.prisma.refreshToken.update({
-          where: { codigo: t.codigo },
-          data: { revogado: true },
-        });
-        return { message: 'Logout realizado com sucesso' };
-      }
+    if (!token) {
+      throw new UnauthorizedException('Refresh token inválido ou já revogado');
     }
 
-    throw new UnauthorizedException('Refresh token inválido ou já revogado');
+    await this.prisma.refreshToken.update({
+      where: { codigo: token.codigo },
+      data: { revogado: true },
+    });
+    return { message: 'Logout realizado com sucesso' };
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -218,7 +226,7 @@ export class AuthService {
       }),
       this.prisma.usuario.update({
         where: { codigo: resetToken.usrCodigo },
-        data: { senhaHash },
+        data: { senhaHash, tokenVersion: { increment: 1 } },
       }),
       // Revogar todos os refresh tokens do usuário (segurança)
       this.prisma.refreshToken.updateMany({
@@ -252,21 +260,21 @@ export class AuthService {
     // trocar a senha revoga apenas as OUTRAS sessões (outros dispositivos).
     let manterCodigo: number | null = null;
     if (refreshTokenAtual) {
-      const ativos = await this.prisma.refreshToken.findMany({
-        where: { usrCodigo, revogado: false, expiraEm: { gt: new Date() } },
+      const currentTokenHash = createHash('sha256')
+        .update(refreshTokenAtual)
+        .digest('hex');
+      const current = await this.prisma.refreshToken.findFirst({
+        where: { tokenHash: currentTokenHash, usrCodigo, revogado: false },
       });
-      for (const t of ativos) {
-        if (await bcrypt.compare(refreshTokenAtual, t.hash)) {
-          manterCodigo = t.codigo;
-          break;
-        }
+      if (current) {
+        manterCodigo = current.codigo;
       }
     }
 
     await this.prisma.$transaction([
       this.prisma.usuario.update({
         where: { codigo: usrCodigo },
-        data: { senhaHash },
+        data: { senhaHash, tokenVersion: { increment: 1 } },
       }),
       this.prisma.refreshToken.updateMany({
         where: {
@@ -310,9 +318,7 @@ export class AuthService {
     });
   }
 
-  async setup2Fa(
-    usrCodigo: number,
-  ): Promise<{ qrCode: string; secret: string }> {
+  async setup2Fa(usrCodigo: number): Promise<{ qrCode: string }> {
     const user = await this.usuarioService.findById(usrCodigo);
     if (!user) throw new UnauthorizedException('Usuário não encontrado');
     const secret = generateSecret();
@@ -327,7 +333,7 @@ export class AuthService {
       where: { codigo: usrCodigo },
       data: { twoFaSecret: secret },
     });
-    return { qrCode: qrCodeDataUrl, secret };
+    return { qrCode: qrCodeDataUrl };
   }
 
   async enable2Fa(usrCodigo: number, code: string): Promise<void> {
@@ -402,18 +408,27 @@ export class AuthService {
   }
 
   private async generateTokens(codigo: number, nome: string, email: string) {
-    const payload = { sub: codigo, jti: randomUUID() };
+    const user = await this.prisma.usuario.findUnique({
+      where: { codigo },
+      select: { tokenVersion: true },
+    });
+    const payload = {
+      sub: codigo,
+      jti: randomUUID(),
+      tokenVersion: user?.tokenVersion ?? 1,
+    };
     const accessToken = this.jwtService.sign(payload);
-    const refreshToken =
-      Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const refreshToken = randomBytes(32).toString('hex');
 
     const salt = await bcrypt.genSalt();
     const hashedRT = await bcrypt.hash(refreshToken, salt);
+    const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
 
     await this.prisma.refreshToken.create({
       data: {
         usrCodigo: codigo,
         hash: hashedRT,
+        tokenHash,
         expiraEm: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 dias
       },
     });

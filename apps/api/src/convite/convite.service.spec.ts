@@ -11,6 +11,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import {
+  Barbearia,
+  ConviteBarbearia,
+  MembroBarbearia,
+  Usuario,
+} from '../generated/prisma';
 
 jest.mock('bcrypt', () => ({
   genSalt: jest.fn().mockResolvedValue('salt'),
@@ -36,16 +42,17 @@ const mockNotificacaoProducer = {
   enviarConvite: jest.fn().mockResolvedValue(undefined),
 };
 
-const makeConvite = (overrides: Record<string, unknown> = {}) => ({
-  token: 'tok123',
-  barCodigo: 1,
-  email: 'joao@x.com',
-  perfil: 'barbeiro',
-  expiresAt: new Date(Date.now() + 86_400_000), // +1 dia
-  usadoEm: null,
-  barbearia: { nome: 'Urban Flow', slug: 'urban-flow' },
-  ...overrides,
-});
+const makeConvite = (overrides: Record<string, unknown> = {}) =>
+  ({
+    token: 'tok123',
+    barCodigo: 1,
+    email: 'joao@x.com',
+    perfil: 'barbeiro',
+    expiresAt: new Date(Date.now() + 86_400_000), // +1 dia
+    usadoEm: null,
+    barbearia: { nome: 'Urban Flow', slug: 'urban-flow' },
+    ...overrides,
+  }) as unknown as ConviteBarbearia;
 
 describe('ConviteService', () => {
   let service: ConviteService;
@@ -62,8 +69,8 @@ describe('ConviteService', () => {
     service = module.get(ConviteService);
 
     // $transaction executa o callback com o próprio mock (tx === mockPrisma).
-    mockPrisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
-      fn(mockPrisma),
+    mockPrisma.$transaction.mockImplementation(
+      (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
     );
     mockAuthService.issueTokens.mockResolvedValue({
       access_token: 'acc',
@@ -91,7 +98,9 @@ describe('ConviteService', () => {
 
     it('retorna isNew=false quando usuário já existe', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
-      mockPrisma.usuario.findUnique.mockResolvedValue({ codigo: 99 });
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 99,
+      } as unknown as Usuario);
 
       const result = await service.obterConvite('tok123');
 
@@ -127,10 +136,12 @@ describe('ConviteService', () => {
         codigo: 50,
         nome: 'João',
         email: 'joao@x.com',
-      });
+      } as unknown as Usuario);
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
-      mockPrisma.membroBarbearia.create.mockResolvedValue({});
-      mockPrisma.conviteBarbearia.update.mockResolvedValue({});
+      mockPrisma.membroBarbearia.create.mockResolvedValue(
+        {} as unknown as MembroBarbearia,
+      );
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.aceitarConvite('tok123', {
         nome: 'João',
@@ -157,11 +168,13 @@ describe('ConviteService', () => {
         nome: 'Maria',
         email: 'joao@x.com',
         senhaHash: 'hash',
-      });
+      } as unknown as Usuario);
       mockedCompare.mockResolvedValue(true as never);
       mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
-      mockPrisma.membroBarbearia.create.mockResolvedValue({});
-      mockPrisma.conviteBarbearia.update.mockResolvedValue({});
+      mockPrisma.membroBarbearia.create.mockResolvedValue(
+        {} as unknown as MembroBarbearia,
+      );
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.aceitarConvite('tok123', {
         senha: 'senha1234',
@@ -183,7 +196,7 @@ describe('ConviteService', () => {
         nome: 'Maria',
         email: 'joao@x.com',
         senhaHash: 'hash',
-      });
+      } as unknown as Usuario);
       mockedCompare.mockResolvedValue(false as never);
 
       await expect(
@@ -199,7 +212,7 @@ describe('ConviteService', () => {
         nome: 'Maria',
         email: 'joao@x.com',
         senhaHash: 'hash',
-      });
+      } as unknown as Usuario);
 
       await expect(service.aceitarConvite('tok123', {})).rejects.toThrow(
         BadRequestException,
@@ -213,10 +226,12 @@ describe('ConviteService', () => {
         nome: 'Maria',
         email: 'joao@x.com',
         senhaHash: 'hash',
-      });
+      } as unknown as Usuario);
       mockedCompare.mockResolvedValue(true as never);
-      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({ codigo: 1 });
-      mockPrisma.conviteBarbearia.update.mockResolvedValue({});
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 1,
+      } as unknown as MembroBarbearia);
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
 
       await service.aceitarConvite('tok123', { senha: 'senha1234' });
 
@@ -289,7 +304,9 @@ describe('ConviteService', () => {
 
     it('cria convite novo, dispara o producer e retorna metadata (reaproveitado=false)', async () => {
       process.env.FRONTEND_URL = 'https://app.toqe.com.br';
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        nome: 'Urban Flow',
+      } as unknown as Barbearia);
       mockPrisma.conviteBarbearia.findFirst.mockResolvedValue(null);
       mockPrisma.conviteBarbearia.create.mockImplementation(
         ({ data }: { data: Record<string, unknown> }) =>
@@ -299,7 +316,9 @@ describe('ConviteService', () => {
             perfil: data.perfil,
             expiresAt: data.expiresAt,
             token: data.token,
-          }),
+          }) as unknown as ReturnType<
+            typeof mockPrisma.conviteBarbearia.create
+          >,
       );
 
       const result = await service.gerarConvite(1, {
@@ -344,7 +363,9 @@ describe('ConviteService', () => {
     });
 
     it('normaliza o e-mail (lowercase/trim) antes de persistir', async () => {
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        nome: 'Urban Flow',
+      } as unknown as Barbearia);
       mockPrisma.conviteBarbearia.findFirst.mockResolvedValue(null);
       mockPrisma.conviteBarbearia.create.mockImplementation(
         ({ data }: { data: Record<string, unknown> }) =>
@@ -354,7 +375,9 @@ describe('ConviteService', () => {
             perfil: data.perfil,
             expiresAt: data.expiresAt,
             token: data.token,
-          }),
+          }) as unknown as ReturnType<
+            typeof mockPrisma.conviteBarbearia.create
+          >,
       );
 
       await service.gerarConvite(1, {
@@ -372,8 +395,12 @@ describe('ConviteService', () => {
     });
 
     it('renova convite ativo existente em vez de duplicar (reaproveitado=true)', async () => {
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
-      mockPrisma.conviteBarbearia.findFirst.mockResolvedValue({ codigo: 42 });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        nome: 'Urban Flow',
+      } as unknown as Barbearia);
+      mockPrisma.conviteBarbearia.findFirst.mockResolvedValue({
+        codigo: 42,
+      } as unknown as ConviteBarbearia);
       mockPrisma.conviteBarbearia.update.mockImplementation(
         ({
           data,
@@ -388,7 +415,9 @@ describe('ConviteService', () => {
             perfil: data.perfil,
             expiresAt: data.expiresAt,
             token: data.token,
-          }),
+          }) as unknown as ReturnType<
+            typeof mockPrisma.conviteBarbearia.update
+          >,
       );
 
       const result = await service.gerarConvite(1, {
@@ -406,7 +435,9 @@ describe('ConviteService', () => {
 
     it('usa fallback de URL quando FRONTEND_URL ausente', async () => {
       delete process.env.FRONTEND_URL;
-      mockPrisma.barbearia.findUnique.mockResolvedValue({ nome: 'Urban Flow' });
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        nome: 'Urban Flow',
+      } as unknown as Barbearia);
       mockPrisma.conviteBarbearia.findFirst.mockResolvedValue(null);
       mockPrisma.conviteBarbearia.create.mockImplementation(
         ({ data }: { data: Record<string, unknown> }) =>
@@ -416,7 +447,9 @@ describe('ConviteService', () => {
             perfil: data.perfil,
             expiresAt: data.expiresAt,
             token: data.token,
-          }),
+          }) as unknown as ReturnType<
+            typeof mockPrisma.conviteBarbearia.create
+          >,
       );
 
       await service.gerarConvite(1, { email: 'a@x.com', perfil: 'barbeiro' });

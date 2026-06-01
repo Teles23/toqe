@@ -26,15 +26,25 @@ function makeAgendamento(
     fim: "2024-06-01T09:30:00.000Z",
     status: "confirmado",
     cliente: {
-      codigo: 5,
+      usrCodigo: 5,
       nome: "João Silva",
+      telefone: null,
       tipo: "usuario",
-      email: "j@test.com",
     },
-    barbeiro: { codigo: 1, nome: "Carlos" },
+    barbeiro: { usrCodigo: 1, nome: "Carlos", avatarUrl: null },
     itens: [
-      { servico: { nome: "Corte" }, duracaoMin: 30 },
-      { servico: { nome: "Barba" }, duracaoMin: 15 },
+      {
+        codigo: 1,
+        servico: { codigo: 10, nome: "Corte", precoBase: 50, duracaoBase: 30 },
+        preco: 50,
+        duracaoMin: 30,
+      },
+      {
+        codigo: 2,
+        servico: { codigo: 11, nome: "Barba", precoBase: 30, duracaoBase: 15 },
+        preco: 30,
+        duracaoMin: 15,
+      },
     ],
     ...overrides,
   };
@@ -141,7 +151,7 @@ describe("toBarbeiro", () => {
 
   it("conta apenas agendamentos do barbeiro correto", () => {
     const outroAgendamento = makeAgendamento({
-      barbeiro: { codigo: 99, nome: "Outro" },
+      barbeiro: { usrCodigo: 99, nome: "Outro", avatarUrl: null },
     });
     const result = toBarbeiro(barbeiro, [outroAgendamento]);
     expect(result.agendamentos).toBe(0);

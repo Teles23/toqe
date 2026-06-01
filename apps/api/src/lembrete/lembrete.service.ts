@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PushNotificationService } from '../push-token/push-notification.service';
 import { NotificacaoService } from '../notificacao/notificacao.service';
 import { Prisma } from '../generated/prisma';
+import { StatusAgendamento } from '../common/constants/agendamento-status';
 
 const LEMBRETE_INCLUDE = {
   cliente: { select: { codigo: true, nome: true, email: true } },
@@ -48,7 +49,9 @@ export class LembreteService {
     const [para24h, para2h] = await Promise.all([
       this.prisma.agendamento.findMany({
         where: {
-          status: { in: ['CONFIRMADO', 'PENDENTE'] },
+          status: {
+            in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+          },
           lembrete24hEnviado: false,
           inicio: { gte: janela24hInicio, lte: janela24hFim },
         },
@@ -56,7 +59,9 @@ export class LembreteService {
       }),
       this.prisma.agendamento.findMany({
         where: {
-          status: { in: ['CONFIRMADO', 'PENDENTE'] },
+          status: {
+            in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+          },
           lembrete2hEnviado: false,
           inicio: { gte: janela2hInicio, lte: janela2hFim },
         },
@@ -80,7 +85,9 @@ export class LembreteService {
     const candidatos = await this.prisma.agendamento.findMany({
       where: {
         fim: { lt: agora },
-        status: { in: ['PENDENTE', 'CONFIRMADO'] },
+        status: {
+          in: [StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO],
+        },
       },
       include: NO_SHOW_INCLUDE,
     });
@@ -89,7 +96,7 @@ export class LembreteService {
       try {
         await this.prisma.agendamento.update({
           where: { codigo: ag.codigo },
-          data: { status: 'NO_SHOW' },
+          data: { status: StatusAgendamento.NO_SHOW },
         });
 
         const clienteNome = ag.cliente?.nome ?? ag.contato?.nome ?? 'Cliente';
@@ -120,6 +127,23 @@ export class LembreteService {
     ag: Prisma.AgendamentoGetPayload<{ include: typeof LEMBRETE_INCLUDE }>,
     tipo: '24h' | '2h',
   ): Promise<void> {
+    const updateField =
+      tipo === '24h'
+        ? { lembrete24hEnviado: true }
+        : { lembrete2hEnviado: true };
+    const whereField =
+      tipo === '24h'
+        ? { lembrete24hEnviado: false }
+        : { lembrete2hEnviado: false };
+
+    // Atomic claim: only proceed if this process is the first to claim this row.
+    // Prevents duplicate sends when two cron ticks overlap.
+    const claimed = await this.prisma.agendamento.updateMany({
+      where: { codigo: ag.codigo, ...whereField },
+      data: updateField,
+    });
+    if (claimed.count === 0) return;
+
     const clienteNome = ag.cliente?.nome ?? ag.contato?.nome ?? 'Cliente';
     const servicos = ag.itens.map((i) => i.servico.nome).join(', ');
     const horario = ag.inicio.toLocaleString('pt-BR', {
@@ -152,14 +176,6 @@ export class LembreteService {
         });
       }
 
-      const updateField =
-        tipo === '24h'
-          ? { lembrete24hEnviado: true }
-          : { lembrete2hEnviado: true };
-      await this.prisma.agendamento.update({
-        where: { codigo: ag.codigo },
-        data: updateField,
-      });
       this.logger.log(
         `Lembrete ${tipo} enviado para agendamento #${ag.codigo}`,
       );

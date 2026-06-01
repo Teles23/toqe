@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BullModule } from '@nestjs/bull';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -34,6 +34,7 @@ import { PlanoAtivoGuard } from './auth/guards/plano-ativo.guard';
 import { FidelidadeModule } from './fidelidade/fidelidade.module';
 import { ApiKeyModule } from './api-key/api-key.module';
 import { ApiPublicaModule } from './api-publica/api-publica.module';
+import { TenantInterceptor } from './tenant/tenant/tenant.interceptor';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { ApiPublicaModule } from './api-publica/api-publica.module';
   controllers: [AppController],
   providers: [
     AppService, // usa PrismaService (global) para bootstrap do super_admin
+    { provide: APP_INTERCEPTOR, useClass: TenantInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: PlanoAtivoGuard },
     { provide: APP_PIPE, useClass: ZodValidationPipe },

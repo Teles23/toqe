@@ -18,6 +18,15 @@ jest.mock("react-native-safe-area-context", () => {
   };
 });
 
+jest.mock("@react-native-google-signin/google-signin", () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(),
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+  },
+}));
+
 // Timeout de utilitários async (findBy*/waitFor): o default de 1000ms é apertado
 // quando os ~92 suites rodam em paralelo e a máquina fica sob carga — causava
 // flakes intermitentes em telas que carregam dados via React Query. 5000ms dá

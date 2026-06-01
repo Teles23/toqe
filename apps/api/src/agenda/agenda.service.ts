@@ -24,6 +24,7 @@ export class AgendaService {
     const existing = await this.prisma.jornadaTrabalho.findFirst({
       where: {
         barbeiroId,
+        barCodigo,
         diaSemana: dto.diaSemana,
       },
     });
@@ -176,7 +177,7 @@ export class AgendaService {
     const interval = barbearia.slotInterval;
 
     const jornada = await this.prisma.jornadaTrabalho.findFirst({
-      where: { barbeiroId, diaSemana: dayOfWeek },
+      where: { barbeiroId, barCodigo, diaSemana: dayOfWeek },
     });
 
     if (!jornada) return [];
@@ -192,6 +193,7 @@ export class AgendaService {
     const appointments = await this.prisma.agendamento.findMany({
       where: {
         barbeiroId,
+        barCodigo,
         inicio: { gte: inicioDia },
         fim: { lte: fimDia },
         status: {
@@ -203,6 +205,7 @@ export class AgendaService {
     const blocks = await this.prisma.bloqueioAgenda.findMany({
       where: {
         barbeiroId,
+        barCodigo,
         inicio: { gte: inicioDia },
         fim: { lte: fimDia },
       },

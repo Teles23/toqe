@@ -261,7 +261,7 @@ export default function BarbeiroAgendaScreen() {
           codigo: selectedApt.cliente?.usrCodigo ?? 0,
           nome: selectedApt.cliente?.nome ?? "",
           tipo: selectedApt.cliente?.tipo ?? "usuario",
-          email: selectedApt.cliente?.email ?? null,
+          email: null,
           telefone: selectedApt.cliente?.telefone ?? null,
           avatarUrl: null,
           totalVisitas: 0,

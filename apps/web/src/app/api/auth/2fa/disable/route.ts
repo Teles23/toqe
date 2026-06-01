@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
+import { getInternalApiUrl } from "../../../_lib/internal-api";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -13,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/2fa/disable`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/2fa/disable`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

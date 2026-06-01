@@ -1,6 +1,6 @@
 # Índice de Documentação — toqe
 
-> Atualizado em: 2026-05-27
+> Atualizado em: 2026-05-29
 
 ## Como navegar
 
@@ -12,6 +12,7 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 
 - [../ARCHITECTURE.md](../ARCHITECTURE.md) — visão geral da arquitetura do monorepo (stack, módulos, fluxo de dados, decisões)
 - [checklist-desenvolvimento.md](checklist-desenvolvimento.md) — checklist obrigatório antes de cada commit e PR (lint, tipos, testes, segurança, Prisma, sync API↔web)
+- [codex-operacional.md](codex-operacional.md) — workflows operacionais para agentes Codex, validação inteligente, subagents e automações recomendadas
 - [cowork-agent.md](cowork-agent.md) — instruções do ambiente para agentes Claude operando no projeto
 - [toqe-doc-completo.md](toqe-doc-completo.md) — documento de referência completo do produto (regras de negócio, contratos, fluxos)
 - [toqe_plano_estrategico.md](toqe_plano_estrategico.md) — plano estratégico inicial do SaaS (fases A1–E4)
@@ -136,6 +137,13 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 - [66-testes-codigo-real-lote-3-4.md](66-testes-codigo-real-lote-3-4.md) — Lotes 3 e 4: cobertura de edge cases e isolamento de tenant
 - [67-testes-codigo-real-lote-5.md](67-testes-codigo-real-lote-5.md) — Lote 5: finalização da campanha de testes reais
 - [81-e2e-playwright-correcoes.md](81-e2e-playwright-correcoes.md) — correções nos specs E2E Playwright (seletores alinhados com app real)
+
+---
+
+## Segurança
+
+- [82-auditoria-seguranca.md](82-auditoria-seguranca.md) — auditoria sistêmica de segurança: type safety (Partes 1–7), 2 vulns HIGH corrigidas (webhook fail-open, IDOR fidelidade), hardening WebSocket, fix TenantInterceptor crash em GET (PR #106)
+- [83-auditoria-seguranca-rounds-2-3.md](83-auditoria-seguranca-rounds-2-3.md) — Rounds 2 e 3: tokenHash, PII em Redis, JWT tokenVersion, 2FA secret, cross-tenant slots, $executeRaw, ValidationPipe, INTERNAL_API obrigatória, /admin privada (PR #111)
 
 ---
 

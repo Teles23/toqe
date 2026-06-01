@@ -1,14 +1,21 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
+  Headers,
+  InternalServerErrorException,
   Param,
   Post,
+  UnauthorizedException,
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { createHash, timingSafeEqual } from 'crypto';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AsaasService } from './asaas.service';
-import type { AsaasWebhookPayload } from './asaas-webhook.dto';
+import { AsaasEvent, AsaasWebhookPayload } from './asaas-webhook.dto';
+import { CheckoutDto } from './dto/checkout.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { SkipPlanoCheck } from '../auth/decorators/skip-plano-check.decorator';
@@ -22,13 +29,26 @@ export class AsaasController {
 
   /** Gera link de checkout para o plano solicitado. Cria customer se necessário. */
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('checkout/:barCodigo')
   async checkout(
     @Param('barCodigo') barCodigoStr: string,
-    @Body() body: { plano: string },
+    @Body() body: CheckoutDto,
     @Request() req: JwtRequest,
   ) {
     const barCodigo = Number(barCodigoStr);
+    const membro = await this.prisma.membroBarbearia.findFirst({
+      where: {
+        barCodigo,
+        usrCodigo: req.user.sub,
+        perfil: { in: ['dono', 'gerente'] },
+      },
+    });
+    if (!membro) {
+      throw new ForbiddenException(
+        'Você não tem permissão para fazer checkout para esta barbearia',
+      );
+    }
     const barbearia = await this.prisma.barbearia.findUniqueOrThrow({
       where: { codigo: barCodigo },
     });
@@ -65,7 +85,8 @@ export class AsaasController {
       data: {
         asaasSubscriptionId: subscription.id,
         plano: body.plano,
-        planoStatus: 'ativo',
+        // Status stays 'pendente' until PAYMENT_RECEIVED webhook confirms payment.
+        // Setting 'ativo' here would grant access before money is received.
         planoValidoAte: new Date(subscription.nextDueDate),
       },
     });
@@ -77,7 +98,25 @@ export class AsaasController {
   /** Webhook do Asaas — sem autenticação, verificado pelo token de assinatura */
   @SkipPlanoCheck()
   @Post('webhook')
-  async webhook(@Body() payload: AsaasWebhookPayload) {
+  async webhook(
+    @Body() payload: AsaasWebhookPayload,
+    @Headers() headers: Record<string, string>,
+  ) {
+    const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
+    if (!webhookToken) {
+      throw new InternalServerErrorException(
+        'ASAAS_WEBHOOK_TOKEN não configurado',
+      );
+    }
+    const receivedToken = headers['asaas-access-token'] ?? '';
+    // Hash both to a fixed-length digest so timingSafeEqual never leaks
+    // information about whether the token lengths differ.
+    const expected = createHash('sha256').update(webhookToken).digest();
+    const received = createHash('sha256').update(receivedToken).digest();
+    const valid = timingSafeEqual(expected, received);
+    if (!valid) {
+      throw new UnauthorizedException('Token de webhook inválido');
+    }
     const subId = payload.payment?.subscription ?? payload.subscription?.id;
     if (!subId) return { ok: true };
 
@@ -87,8 +126,8 @@ export class AsaasController {
     if (!barbearia) return { ok: true };
 
     switch (payload.event) {
-      case 'PAYMENT_RECEIVED':
-      case 'SUBSCRIPTION_RENEWED': {
+      case AsaasEvent.PAYMENT_RECEIVED:
+      case AsaasEvent.SUBSCRIPTION_RENEWED: {
         const nextDue =
           payload.payment?.dueDate ?? payload.subscription?.nextDueDate;
         await this.prisma.barbearia.update({
@@ -101,14 +140,14 @@ export class AsaasController {
         });
         break;
       }
-      case 'PAYMENT_OVERDUE': {
+      case AsaasEvent.PAYMENT_OVERDUE: {
         await this.prisma.barbearia.update({
           where: { codigo: barbearia.codigo },
           data: { planoStatus: 'inadimplente', bloqueadaEm: new Date() },
         });
         break;
       }
-      case 'SUBSCRIPTION_INACTIVATED': {
+      case AsaasEvent.SUBSCRIPTION_INACTIVATED: {
         await this.prisma.barbearia.update({
           where: { codigo: barbearia.codigo },
           data: { planoStatus: 'cancelado', bloqueadaEm: new Date() },

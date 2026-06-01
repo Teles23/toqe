@@ -1,12 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsPositive } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
-export class TransferirAgendamentoDto {
-  @ApiProperty({
-    example: 3,
-    description: 'Código do novo barbeiro (membro da mesma barbearia)',
-  })
-  @IsInt()
-  @IsPositive()
-  novoBarbeiroId: number;
-}
+export class TransferirAgendamentoDto extends createZodDto(
+  z.object({
+    novoBarbeiroId: z
+      .number({
+        invalid_type_error: 'novoBarbeiroId deve ser um número inteiro',
+      })
+      .int()
+      .positive('novoBarbeiroId deve ser positivo'),
+  }),
+) {}

@@ -3,6 +3,7 @@ import { MeService } from './me.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
 import { Prisma } from '../generated/prisma';
+import type { Agendamento } from '../generated/prisma';
 
 const mockPrisma = createPrismaMock();
 
@@ -27,7 +28,7 @@ describe('MeService', () => {
       const concluido = {
         status: 'concluido',
         itens: [{ preco: toDecimal(40) }, { preco: toDecimal(8) }],
-      };
+      } as unknown as Agendamento;
       mockPrisma.agendamento.findMany.mockResolvedValue([concluido, concluido]);
 
       const result = await service.getStats(userId, 'mes');
@@ -45,8 +46,8 @@ describe('MeService', () => {
       const concluido = {
         status: 'concluido',
         itens: [{ preco: toDecimal(50) }],
-      };
-      const noShow = { status: 'no_show', itens: [] };
+      } as unknown as Agendamento;
+      const noShow = { status: 'no_show', itens: [] } as unknown as Agendamento;
       mockPrisma.agendamento.findMany.mockResolvedValue([
         concluido,
         concluido,

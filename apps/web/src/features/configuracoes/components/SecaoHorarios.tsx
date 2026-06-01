@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Toggle } from "@/shared/components/toggle";
+import { DIAS_SEMANA_CURTO } from "@/shared/lib/constants";
 import { useConfiguracaoHorarios } from "../hooks/use-configuracao";
 import type { HorarioDia } from "../types/configuracao.types";
 
@@ -56,7 +57,7 @@ export function SecaoHorarios({ barCodigo }: Props) {
       >
         {horarios.map((h, i) => (
           <div
-            key={h.dia}
+            key={h.diaSemana}
             className="flex items-center gap-4 px-4 py-3"
             style={{
               borderBottom:
@@ -74,7 +75,7 @@ export function SecaoHorarios({ barCodigo }: Props) {
               className="text-[13px] font-medium flex-shrink-0"
               style={{ width: 80, color: "var(--text-primary)" }}
             >
-              {h.dia}
+              {DIAS_SEMANA_CURTO[h.diaSemana]}
             </span>
 
             {h.aberto ? (

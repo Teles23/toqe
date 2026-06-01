@@ -18,17 +18,25 @@ const DONO_GERENTE = ['dono', 'gerente'];
 export class ServicoService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateServicoDto, barCodigo: number) {
-    return this.prisma.servico.create({
+  async create(dto: CreateServicoDto, barCodigo: number) {
+    const s = await this.prisma.servico.create({
       data: { ...dto, barCodigo },
     });
+    return {
+      ...s,
+      precoBase: s.precoBase != null ? Number(s.precoBase) : null,
+    };
   }
 
-  findAll(barCodigo: number) {
-    return this.prisma.servico.findMany({
+  async findAll(barCodigo: number) {
+    const rows = await this.prisma.servico.findMany({
       where: { barCodigo, ativo: true },
       orderBy: { nome: 'asc' },
     });
+    return rows.map((s) => ({
+      ...s,
+      precoBase: s.precoBase != null ? Number(s.precoBase) : null,
+    }));
   }
 
   async getMetricas(barCodigo: number) {
@@ -66,25 +74,36 @@ export class ServicoService {
       where: { codigo, barCodigo },
     });
     if (!servico) throw new NotFoundException('Serviço não encontrado');
-    return servico;
+    return {
+      ...servico,
+      precoBase: servico.precoBase != null ? Number(servico.precoBase) : null,
+    };
   }
 
   async update(codigo: number, dto: UpdateServicoDto, barCodigo: number) {
     await this.findOne(codigo, barCodigo);
     // barCodigo no where garante isolamento de tenant (TOCTOU)
-    return this.prisma.servico.update({
+    const s = await this.prisma.servico.update({
       where: { codigo, barCodigo },
       data: dto,
     });
+    return {
+      ...s,
+      precoBase: s.precoBase != null ? Number(s.precoBase) : null,
+    };
   }
 
   async remove(codigo: number, barCodigo: number) {
     await this.findOne(codigo, barCodigo);
     // barCodigo no where garante isolamento de tenant (TOCTOU)
-    return this.prisma.servico.update({
+    const s = await this.prisma.servico.update({
       where: { codigo, barCodigo },
       data: { ativo: false },
     });
+    return {
+      ...s,
+      precoBase: s.precoBase != null ? Number(s.precoBase) : null,
+    };
   }
 
   // ─── Serviços do barbeiro (TQE_BARBEIRO_SERVICO) ────────────────────────────

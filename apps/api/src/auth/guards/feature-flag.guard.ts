@@ -37,7 +37,8 @@ export class FeatureFlagGuard implements CanActivate {
 
     if (!barbearia) throw new NotFoundException('Barbearia não encontrada');
 
-    if (barbearia.planoStatus !== 'ativo') {
+    const statusesPermitidos = ['ativo', 'trial'];
+    if (!statusesPermitidos.includes(barbearia.planoStatus)) {
       throw new ForbiddenException(
         `Barbearia com plano ${barbearia.planoStatus}. Regularize para acessar esta funcionalidade.`,
       );

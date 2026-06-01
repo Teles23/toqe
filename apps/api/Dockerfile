@@ -55,6 +55,10 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 
 # Sequência de boot:
 # 1. migrate deploy — aplica migrations pendentes (idempotente, seguro a cada startup)
-# 2. seed-runner.js — upsert dos planos (idempotente)
+# 2. seed-estrutural.js — upsert apenas dos planos (dados obrigatórios, sem dados demo)
 # 3. node dist/main.js — inicia a API
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --config ./prisma.config.js && node prisma/seed-runner.js && node dist/main.js"]
+#
+# ATENÇÃO: seed-runner.js NÃO deve rodar em produção — contém usuários e barbearia
+# fictícios de demonstração (thiago@email.com/senha123) que são um backdoor de segurança.
+# Para popular dados de demo em ambiente de desenvolvimento, execute seed-runner.js manualmente.
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --config ./prisma.config.js && node prisma/seed-estrutural.js && node dist/main.js"]

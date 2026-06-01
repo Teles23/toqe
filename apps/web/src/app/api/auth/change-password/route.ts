@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("access_token")?.value ?? "";
-  const body = await req.json().catch(() => ({}));
+  const refreshToken = cookieStore.get("refresh_token")?.value;
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/change-password`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/change-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(body),
+      // Passa o refresh token para que o backend preserve a sessão atual
+      // e revogue apenas as outras sessões (outros dispositivos).
+      body: JSON.stringify({ ...body, refreshTokenAtual: refreshToken }),
     });
   } catch {
     return NextResponse.json(

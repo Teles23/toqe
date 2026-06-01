@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 /**
  * BFF — convite de barbeiro (endpoints PÚBLICOS, sem auth).
@@ -10,11 +11,6 @@ import { NextRequest, NextResponse } from "next/server";
  * sessão (auto-login), igual ao BFF de login.
  */
 
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
-
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
@@ -23,7 +19,7 @@ export async function GET(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/convite/${token}`);
+    apiRes = await fetch(`${getInternalApiUrl()}/convite/${token}`);
   } catch {
     return NextResponse.json(
       { message: "Serviço indisponível. Tente novamente em instantes." },
@@ -55,7 +51,7 @@ export async function DELETE(
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/convite/${token}`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/convite/${token}`, {
       method: "DELETE",
     });
   } catch {

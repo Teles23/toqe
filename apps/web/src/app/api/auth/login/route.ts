@@ -1,17 +1,15 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 /**
  * BFF — POST /api/auth/login
  *
  * Faz proxy para NestJS POST /auth/login e seta cookies:
- *  - access_token  : nao-httpOnly (lido pelo api-client.ts via document.cookie), 15 min
+ *  - access_token  : httpOnly (nunca exposto ao JS), 15 min
  *  - refresh_token : httpOnly (nunca exposto ao JS), 30 dias, restrito a /api/auth
+ *
+ * O api-client.ts obtém o access_token via GET /api/auth/token (BFF server-side).
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -20,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   let apiRes: Response;
   try {
-    apiRes = await fetch(`${INTERNAL_API}/auth/login`, {
+    apiRes = await fetch(`${getInternalApiUrl()}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(reqBody),
@@ -68,7 +66,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ user }, { status: 200 });
 
   res.cookies.set("access_token", access_token, {
-    httpOnly: false,
+    httpOnly: true,
     secure: IS_PROD,
     sameSite: "strict",
     maxAge: 900,

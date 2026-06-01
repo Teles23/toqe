@@ -13,6 +13,22 @@ module.exports = defineConfig([
   {
     rules: {
       "import/no-unresolved": "off",
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["*/apps/api/*", "**/apps/api/**"],
+              message:
+                "Mobile não pode importar da API. Use @toqe/shared ou @toqe/contracts.",
+            },
+            {
+              group: ["*/apps/web/*", "**/apps/web/**"],
+              message: "Mobile não pode importar do web.",
+            },
+          ],
+        },
+      ],
     },
   },
   // Em arquivos de teste:

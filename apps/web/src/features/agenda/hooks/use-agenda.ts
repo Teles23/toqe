@@ -54,7 +54,7 @@ export function toBarbeiro(
   agendamentos: AgendamentoAPI[],
 ): Barbeiro {
   const agendamentosBarbeiro = agendamentos.filter(
-    (a) => a.barbeiro?.codigo === b.codigo,
+    (a) => a.barbeiro?.usrCodigo === b.codigo,
   );
 
   // Barbeiro fica "active" se tiver agendamento confirmado no momento

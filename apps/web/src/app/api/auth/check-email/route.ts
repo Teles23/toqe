@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -18,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const res = await fetch(
-      `${INTERNAL_API}/auth/check-email?email=${encodeURIComponent(email)}`,
+      `${getInternalApiUrl()}/auth/check-email?email=${encodeURIComponent(email)}`,
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },

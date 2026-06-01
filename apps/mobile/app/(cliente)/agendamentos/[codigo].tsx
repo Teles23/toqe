@@ -170,7 +170,7 @@ export default function AgendamentoDetalheScreen() {
         : `${data.itens[0]!.servico.nome} +${data.itens.length - 1}`;
 
   const duracaoTotal = data.itens.reduce(
-    (sum, item) => sum + (item.duracao ?? 0),
+    (sum, item) => sum + (item.duracaoMin ?? 0),
     0,
   );
 

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHmac } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ApiKey } from '../generated/prisma';
 
@@ -23,7 +23,14 @@ export class ApiKeyService {
     const secret = randomBytes(16).toString('hex');
     const key = `toqe_${prefix}_${secret}`;
 
-    const keyHash = createHash('sha256').update(key).digest('hex');
+    const hmacSecret =
+      process.env.API_KEY_HMAC_SECRET ?? process.env.JWT_SECRET;
+    if (!hmacSecret) {
+      throw new Error(
+        'API_KEY_HMAC_SECRET (ou JWT_SECRET como fallback) deve estar configurado',
+      );
+    }
+    const keyHash = createHmac('sha256', hmacSecret).update(key).digest('hex');
     const keyPrefix = key.slice(0, 15);
 
     const apiKey = await this.prisma.apiKey.create({

@@ -35,11 +35,12 @@ jest.mock("@/src/shared/api/api-client", () => ({
   tenantApi: jest.fn(),
 }));
 
-import { renderHook } from "@testing-library/react-native";
+import { renderHook, waitFor } from "@testing-library/react-native";
 import { usePushNotifications } from "../use-push-notifications";
 
 describe("usePushNotifications", () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     mockUseAuth.mockReset();
   });
 
@@ -50,17 +51,19 @@ describe("usePushNotifications", () => {
     expect(true).toBe(true); // hook runs without error
   });
 
-  it("configura listeners quando usuário está logado", () => {
+  it("configura listeners quando usuário está logado", async () => {
     mockUseAuth.mockReturnValue({ user: { codigo: 1 } });
     const Notifications = jest.requireMock("expo-notifications") as {
       addNotificationReceivedListener: jest.Mock;
       addNotificationResponseReceivedListener: jest.Mock;
     };
     renderHook(() => usePushNotifications());
-    expect(Notifications.addNotificationReceivedListener).toHaveBeenCalled();
-    expect(
-      Notifications.addNotificationResponseReceivedListener,
-    ).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(Notifications.addNotificationReceivedListener).toHaveBeenCalled();
+      expect(
+        Notifications.addNotificationResponseReceivedListener,
+      ).toHaveBeenCalled();
+    });
   });
 
   it("não gera unhandled rejection quando o registro de push falha (ex.: Expo 503)", async () => {
@@ -95,7 +98,7 @@ describe("usePushNotifications", () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 
-  it("remove listeners ao desmontar", () => {
+  it("remove listeners ao desmontar", async () => {
     mockUseAuth.mockReturnValue({ user: { codigo: 1 } });
     const removeMock = jest.fn();
     const Notifications = jest.requireMock("expo-notifications") as {
@@ -110,6 +113,13 @@ describe("usePushNotifications", () => {
     });
 
     const { unmount } = renderHook(() => usePushNotifications());
+    await waitFor(() => {
+      expect(Notifications.addNotificationReceivedListener).toHaveBeenCalled();
+      expect(
+        Notifications.addNotificationResponseReceivedListener,
+      ).toHaveBeenCalled();
+    });
+
     unmount();
     expect(removeMock).toHaveBeenCalledTimes(2);
   });

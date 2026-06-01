@@ -54,7 +54,7 @@ export default function ReagendarScreen() {
     novoInicio.setHours(h, m, 0, 0);
 
     const durMin = agendamento.itens.reduce(
-      (s: number, i: AgendamentoItemResponse) => s + i.duracao,
+      (s: number, i: AgendamentoItemResponse) => s + i.duracaoMin,
       0,
     );
     const novoFim = addMinutes(novoInicio, durMin || 30);
@@ -122,7 +122,7 @@ export default function ReagendarScreen() {
           Barbeiro
         </Text>
         <Text style={[styles.value, { color: palette.text }]}>
-          {agendamento.barbeiro.nome}
+          {agendamento.barbeiro?.nome}
         </Text>
         {servicosNomes ? (
           <>

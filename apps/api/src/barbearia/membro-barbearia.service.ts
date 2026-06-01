@@ -34,6 +34,17 @@ type ClienteRapidoInput = {
 export class MembroBarbeariaService {
   constructor(private prisma: PrismaService) {}
 
+  async isBarbeiroDaBarbearia(
+    barCodigo: number,
+    barbeiroId: number,
+  ): Promise<boolean> {
+    const membro = await this.prisma.membroBarbearia.findFirst({
+      where: { barCodigo, usrCodigo: barbeiroId, perfil: 'barbeiro' },
+      select: { usrCodigo: true },
+    });
+    return membro !== null;
+  }
+
   async findBarbeiros(barCodigo: number) {
     const hoje = startOfDay(new Date());
     const fimHoje = endOfDay(hoje);
@@ -103,6 +114,7 @@ export class MembroBarbeariaService {
             },
           },
           orderBy: { inicio: 'desc' },
+          take: 50,
         });
 
         const totalGasto = somarAgendamentos(agendamentos);

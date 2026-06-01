@@ -1,4 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
+import { getInternalApiUrl } from "../../_lib/internal-api";
 
 /**
  * BFF — POST /api/auth/logout
@@ -6,11 +7,6 @@
  * Le refresh_token e access_token dos cookies, revoga o token na API
  * e limpa ambos os cookies do browser.
  */
-
-const INTERNAL_API =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000/api/v1";
 
 const IS_PROD = process.env.NODE_ENV === "production";
 
@@ -20,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   if (refreshToken && accessToken) {
     try {
-      await fetch(`${INTERNAL_API}/auth/logout`, {
+      await fetch(`${getInternalApiUrl()}/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -35,20 +31,19 @@ export async function POST(req: NextRequest) {
 
   const res = NextResponse.json({ ok: true });
 
-  const cookieOpts = {
-    httpOnly: false,
+  res.cookies.set("access_token", "", {
+    httpOnly: true,
     secure: IS_PROD,
-    sameSite: "strict" as const,
+    sameSite: "strict",
     maxAge: 0,
     path: "/",
-  };
-
-  res.cookies.set("access_token", "", { ...cookieOpts, maxAge: 0 });
+  });
   res.cookies.set("refresh_token", "", {
-    ...cookieOpts,
     httpOnly: true,
-    path: "/api/auth",
+    secure: IS_PROD,
+    sameSite: "strict",
     maxAge: 0,
+    path: "/api/auth",
   });
 
   return res;

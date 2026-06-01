@@ -48,7 +48,10 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
   @Get('check-email')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Verifica se um e-mail já está cadastrado' })
   @ApiResponse({ status: 200, description: 'Retorna se o e-mail existe.' })
   async checkEmail(@Query('email') email: string) {

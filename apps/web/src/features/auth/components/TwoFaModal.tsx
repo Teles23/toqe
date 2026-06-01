@@ -6,17 +6,11 @@ import { useTwoFaEnable } from "@/features/auth/hooks/use-two-fa";
 
 interface TwoFaModalProps {
   qrCode: string;
-  secret: string;
   onVerified: () => void;
   onClose: () => void;
 }
 
-export function TwoFaModal({
-  qrCode,
-  secret,
-  onVerified,
-  onClose,
-}: TwoFaModalProps) {
+export function TwoFaModal({ qrCode, onVerified, onClose }: TwoFaModalProps) {
   const [code, setCode] = useState("");
   const enable = useTwoFaEnable();
 
@@ -65,12 +59,6 @@ export function TwoFaModal({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrCode} alt="QR Code 2FA" className="w-48 h-48" />
         </div>
-        <p
-          className="text-[11px] text-center break-all font-mono"
-          style={{ color: "var(--text-muted)" }}
-        >
-          {secret}
-        </p>
         <div>
           <label className="tqe-label">Código de verificação</label>
           <input
