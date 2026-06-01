@@ -5,6 +5,9 @@ jest.mock('../generated/prisma', () => ({
     constructor(_opts?: unknown) {}
     $connect = jest.fn().mockResolvedValue(undefined);
     $disconnect = jest.fn().mockResolvedValue(undefined);
+    // Retorna o próprio cliente — o Proxy do PrismaService usa o resultado
+    // de $extends para os model delegates.
+    $extends = jest.fn().mockReturnThis();
   },
 }));
 jest.mock('@prisma/adapter-pg', () => ({

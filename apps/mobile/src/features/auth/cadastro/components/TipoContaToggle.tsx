@@ -10,6 +10,55 @@ export interface TipoContaToggleProps {
   testID?: string;
 }
 
+interface OptionProps {
+  option: TipoConta;
+  label: string;
+  testIDSuffix: string;
+  selected: boolean;
+  testIDPrefix: string;
+  onPress: () => void;
+}
+
+function Option({
+  option: _option,
+  label,
+  testIDSuffix,
+  selected,
+  testIDPrefix,
+  onPress,
+}: OptionProps) {
+  const { palette, radius, typography } = useTheme();
+  return (
+    <Pressable
+      testID={`${testIDPrefix}-${testIDSuffix}`}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.option,
+        {
+          backgroundColor: selected ? palette.primary : "transparent",
+          borderRadius: radius.sm,
+          opacity: pressed ? 0.85 : 1,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          typography.bodyBold,
+          {
+            color: selected ? palette.primaryOn : palette.textMuted,
+            fontFamily: selected ? "Sora_600SemiBold" : "Inter_500Medium",
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 /**
  * Toggle binário entre "Cliente" e "Barbeiro" — usado no step 3 do cadastro.
  *
@@ -21,61 +70,18 @@ export interface TipoContaToggleProps {
  * - Container com borda `borderStrong` e radius md.
  * - Opção selecionada: fundo `palette.primary`, texto `primaryOn`.
  * - Opção não selecionada: fundo transparente, texto `textMuted`.
- *
- * O slide animado fica como refino futuro (Reanimated). Por ora a transição
- * instantânea é aceitável — o toque já dá feedback haptic via parent.
  */
 export function TipoContaToggle({
   value,
   onChange,
   testID,
 }: TipoContaToggleProps) {
-  const { palette, radius, typography } = useTheme();
-
-  function Option({
-    option,
-    label,
-    testIDSuffix,
-  }: {
-    option: TipoConta;
-    label: string;
-    testIDSuffix: string;
-  }) {
-    const selected = value === option;
-    return (
-      <Pressable
-        testID={`${testID ?? "tipo-conta-toggle"}-${testIDSuffix}`}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ selected }}
-        onPress={() => onChange(option)}
-        style={({ pressed }) => [
-          styles.option,
-          {
-            backgroundColor: selected ? palette.primary : "transparent",
-            borderRadius: radius.sm,
-            opacity: pressed ? 0.85 : 1,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            typography.bodyBold,
-            {
-              color: selected ? palette.primaryOn : palette.textMuted,
-              fontFamily: selected ? "Sora_600SemiBold" : "Inter_500Medium",
-            },
-          ]}
-        >
-          {label}
-        </Text>
-      </Pressable>
-    );
-  }
+  const { palette, radius } = useTheme();
+  const prefix = testID ?? "tipo-conta-toggle";
 
   return (
     <View
-      testID={testID ?? "tipo-conta-toggle"}
+      testID={prefix}
       accessibilityRole="radiogroup"
       style={[
         styles.container,
@@ -85,8 +91,22 @@ export function TipoContaToggle({
         },
       ]}
     >
-      <Option option="cliente" label="Cliente" testIDSuffix="cliente" />
-      <Option option="barbeiro" label="Barbeiro" testIDSuffix="barbeiro" />
+      <Option
+        option="cliente"
+        label="Cliente"
+        testIDSuffix="cliente"
+        selected={value === "cliente"}
+        testIDPrefix={prefix}
+        onPress={() => onChange("cliente")}
+      />
+      <Option
+        option="barbeiro"
+        label="Barbeiro"
+        testIDSuffix="barbeiro"
+        selected={value === "barbeiro"}
+        testIDPrefix={prefix}
+        onPress={() => onChange("barbeiro")}
+      />
     </View>
   );
 }

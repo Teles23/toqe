@@ -62,6 +62,7 @@ export function ClienteDetalhe({
   onClose,
   proximoAgendamento,
 }: ClienteDetalheProps) {
+  "use no memo";
   const { palette, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const [editingNote, setEditingNote] = useState(false);

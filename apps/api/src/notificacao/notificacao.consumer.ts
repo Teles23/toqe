@@ -10,6 +10,7 @@ import {
 import { AgendamentoConfirmadoJob, ConviteEmailJob } from './notificacao.types';
 import { PushNotificationService } from '../push-token/push-notification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TenantStore } from '../tenant/tenant-store';
 
 @Processor(NOTIFICACAO_QUEUE)
 export class NotificacaoConsumer {
@@ -28,16 +29,20 @@ export class NotificacaoConsumer {
     );
 
     // Busca dados do DB em vez de ler PII da fila Redis
-    const ag = await this.prisma.agendamento.findUnique({
-      where: { codigo: job.data.agendamentoCodigo },
-      include: {
-        cliente: { select: { nome: true, email: true } },
-        contato: { select: { nome: true } },
-        barbeiro: { select: { nome: true } },
-        barbearia: { select: { nome: true } },
-        itens: { include: { servico: { select: { nome: true } } } },
-      },
-    });
+    const lookup = () =>
+      this.prisma.agendamento.findUnique({
+        where: { codigo: job.data.agendamentoCodigo },
+        include: {
+          cliente: { select: { nome: true, email: true } },
+          contato: { select: { nome: true } },
+          barbeiro: { select: { nome: true } },
+          barbearia: { select: { nome: true } },
+          itens: { include: { servico: { select: { nome: true } } } },
+        },
+      });
+    const ag = await (job.data.barCodigo != null
+      ? TenantStore.run(job.data.barCodigo, lookup)
+      : lookup());
 
     if (!ag) {
       this.logger.warn(

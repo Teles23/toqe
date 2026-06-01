@@ -1,5 +1,4 @@
 import { Feather } from "@expo/vector-icons";
-import type { BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 
 import type { Theme } from "@/src/shared/theme";
 
@@ -19,7 +18,7 @@ import type { Theme } from "@/src/shared/theme";
  * O builder NÃO inclui `tabBarIcon` porque cada tab tem seu ícone — o
  * caller passa o nome do ícone Feather e recebe a função renderer.
  */
-export function buildTabBarOptions(theme: Theme): BottomTabNavigationOptions {
+export function buildTabBarOptions(theme: Theme) {
   const { palette } = theme;
   return {
     headerShown: false,
@@ -46,7 +45,13 @@ export function buildTabBarOptions(theme: Theme): BottomTabNavigationOptions {
  * compatível com `tabBarIcon` do Expo Router.
  */
 export function tabBarIcon(name: keyof typeof Feather.glyphMap) {
-  function IconRenderer({ color, size }: { color: string; size: number }) {
+  function IconRenderer({
+    color,
+    size,
+  }: {
+    color: string | import("react-native").ColorValue;
+    size: number;
+  }) {
     return <Feather name={name} size={size} color={color} />;
   }
   return IconRenderer;

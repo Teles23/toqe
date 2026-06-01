@@ -12,6 +12,7 @@ import { PushNotificationService } from '../push-token/push-notification.service
 import { PrismaService } from '../prisma/prisma.service';
 import { AgendamentoConfirmadoJob, ConviteEmailJob } from './notificacao.types';
 import type { Job } from 'bull';
+import { TenantStore } from '../tenant/tenant-store';
 
 const mockNotificacaoService = {
   enviarConfirmacaoAgendamento: jest.fn().mockResolvedValue(undefined),
@@ -160,6 +161,18 @@ describe('NotificacaoConsumer', () => {
       mockNotificacaoService.enviarConfirmacaoAgendamento,
     ).not.toHaveBeenCalled();
     expect(mockPushService.send).not.toHaveBeenCalled();
+  });
+
+  it('usa TenantStore.run(barCodigo) para buscar agendamento do DB', async () => {
+    const spy = jest
+      .spyOn(TenantStore, 'run')
+      .mockImplementation((_bc, fn) => fn());
+    const job = makeJob({ barCodigo: 5 });
+
+    await consumer.handleAgendamentoConfirmado(job);
+
+    expect(spy).toHaveBeenCalledWith(5, expect.any(Function));
+    spy.mockRestore();
   });
 
   it('não envia email se cliente não tem email (walk-in sem conta)', async () => {

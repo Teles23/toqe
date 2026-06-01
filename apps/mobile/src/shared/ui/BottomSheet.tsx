@@ -64,6 +64,7 @@ export function BottomSheet({
   height = 0.4,
   testID,
 }: BottomSheetProps) {
+  "use no memo";
   const { palette, radius, spacing, isDark } = useTheme();
   const { height: screenHeight } = useWindowDimensions();
   const translateY = useSharedValue(screenHeight);
@@ -215,7 +216,11 @@ export function BottomSheet({
 
 const styles = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     justifyContent: "flex-end",
     zIndex: 20,
     elevation: 20,

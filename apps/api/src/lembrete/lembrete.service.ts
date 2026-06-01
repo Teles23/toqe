@@ -5,6 +5,7 @@ import { PushNotificationService } from '../push-token/push-notification.service
 import { NotificacaoService } from '../notificacao/notificacao.service';
 import { Prisma } from '../generated/prisma';
 import { StatusAgendamento } from '../common/constants/agendamento-status';
+import { TenantStore } from '../tenant/tenant-store';
 
 const LEMBRETE_INCLUDE = {
   cliente: { select: { codigo: true, nome: true, email: true } },
@@ -46,28 +47,30 @@ export class LembreteService {
     const janela2hInicio = new Date(em2h.getTime() - 30 * 60 * 1000);
     const janela2hFim = new Date(em2h.getTime() + 30 * 60 * 1000);
 
-    const [para24h, para2h] = await Promise.all([
-      this.prisma.agendamento.findMany({
-        where: {
-          status: {
-            in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+    const [para24h, para2h] = await TenantStore.runAdmin(() =>
+      Promise.all([
+        this.prisma.agendamento.findMany({
+          where: {
+            status: {
+              in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+            },
+            lembrete24hEnviado: false,
+            inicio: { gte: janela24hInicio, lte: janela24hFim },
           },
-          lembrete24hEnviado: false,
-          inicio: { gte: janela24hInicio, lte: janela24hFim },
-        },
-        include: LEMBRETE_INCLUDE,
-      }),
-      this.prisma.agendamento.findMany({
-        where: {
-          status: {
-            in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+          include: LEMBRETE_INCLUDE,
+        }),
+        this.prisma.agendamento.findMany({
+          where: {
+            status: {
+              in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE],
+            },
+            lembrete2hEnviado: false,
+            inicio: { gte: janela2hInicio, lte: janela2hFim },
           },
-          lembrete2hEnviado: false,
-          inicio: { gte: janela2hInicio, lte: janela2hFim },
-        },
-        include: LEMBRETE_INCLUDE,
-      }),
-    ]);
+          include: LEMBRETE_INCLUDE,
+        }),
+      ]),
+    );
 
     this.logger.log(`Lembretes 24h: ${para24h.length}, 2h: ${para2h.length}`);
 
@@ -82,22 +85,26 @@ export class LembreteService {
     this.logger.log('No-shows: iniciando varredura');
     const agora = new Date();
 
-    const candidatos = await this.prisma.agendamento.findMany({
-      where: {
-        fim: { lt: agora },
-        status: {
-          in: [StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO],
+    const candidatos = await TenantStore.runAdmin(() =>
+      this.prisma.agendamento.findMany({
+        where: {
+          fim: { lt: agora },
+          status: {
+            in: [StatusAgendamento.PENDENTE, StatusAgendamento.CONFIRMADO],
+          },
         },
-      },
-      include: NO_SHOW_INCLUDE,
-    });
+        include: NO_SHOW_INCLUDE,
+      }),
+    );
 
     for (const ag of candidatos) {
       try {
-        await this.prisma.agendamento.update({
-          where: { codigo: ag.codigo },
-          data: { status: StatusAgendamento.NO_SHOW },
-        });
+        await TenantStore.run(ag.barCodigo, () =>
+          this.prisma.agendamento.update({
+            where: { codigo: ag.codigo },
+            data: { status: StatusAgendamento.NO_SHOW },
+          }),
+        );
 
         const clienteNome = ag.cliente?.nome ?? ag.contato?.nome ?? 'Cliente';
         const horario = ag.fim.toLocaleString('pt-BR', {
@@ -138,10 +145,12 @@ export class LembreteService {
 
     // Atomic claim: only proceed if this process is the first to claim this row.
     // Prevents duplicate sends when two cron ticks overlap.
-    const claimed = await this.prisma.agendamento.updateMany({
-      where: { codigo: ag.codigo, ...whereField },
-      data: updateField,
-    });
+    const claimed = await TenantStore.run(ag.barCodigo, () =>
+      this.prisma.agendamento.updateMany({
+        where: { codigo: ag.codigo, ...whereField },
+        data: updateField,
+      }),
+    );
     if (claimed.count === 0) return;
 
     const clienteNome = ag.cliente?.nome ?? ag.contato?.nome ?? 'Cliente';
@@ -189,17 +198,21 @@ export class LembreteService {
   @Cron('0 5 0 * * *')
   async expirarTrials(): Promise<void> {
     const agora = new Date();
-    const candidatos = await this.prisma.barbearia.findMany({
-      where: { planoStatus: 'trial', trialFim: { lt: agora } },
-      select: { codigo: true, nome: true },
-    });
+    const candidatos = await TenantStore.runAdmin(() =>
+      this.prisma.barbearia.findMany({
+        where: { planoStatus: 'trial', trialFim: { lt: agora } },
+        select: { codigo: true, nome: true },
+      }),
+    );
 
     for (const bar of candidatos) {
       try {
-        await this.prisma.barbearia.update({
-          where: { codigo: bar.codigo },
-          data: { planoStatus: 'inadimplente', bloqueadaEm: agora },
-        });
+        await TenantStore.run(bar.codigo, () =>
+          this.prisma.barbearia.update({
+            where: { codigo: bar.codigo },
+            data: { planoStatus: 'inadimplente', bloqueadaEm: agora },
+          }),
+        );
         // TODO: enviar push para o dono quando tivermos o sistema de push por barbearia
       } catch (err) {
         this.logger.error(
@@ -217,31 +230,33 @@ export class LembreteService {
     const em5Dias = new Date(agora);
     em5Dias.setDate(em5Dias.getDate() + 5);
 
-    const vencendoEm5 = await this.prisma.barbearia.findMany({
-      where: {
-        planoStatus: 'ativo',
-        planoValidoAte: {
-          gte: new Date(
-            em5Dias.getFullYear(),
-            em5Dias.getMonth(),
-            em5Dias.getDate(),
-          ),
-          lt: new Date(
-            em5Dias.getFullYear(),
-            em5Dias.getMonth(),
-            em5Dias.getDate() + 1,
-          ),
+    const vencendoEm5 = await TenantStore.runAdmin(() =>
+      this.prisma.barbearia.findMany({
+        where: {
+          planoStatus: 'ativo',
+          planoValidoAte: {
+            gte: new Date(
+              em5Dias.getFullYear(),
+              em5Dias.getMonth(),
+              em5Dias.getDate(),
+            ),
+            lt: new Date(
+              em5Dias.getFullYear(),
+              em5Dias.getMonth(),
+              em5Dias.getDate() + 1,
+            ),
+          },
         },
-      },
-      select: {
-        codigo: true,
-        nome: true,
-        membros: {
-          where: { perfil: 'dono' },
-          select: { usuario: { select: { email: true, nome: true } } },
+        select: {
+          codigo: true,
+          nome: true,
+          membros: {
+            where: { perfil: 'dono' },
+            select: { usuario: { select: { email: true, nome: true } } },
+          },
         },
-      },
-    });
+      }),
+    );
 
     for (const bar of vencendoEm5) {
       const dono = bar.membros[0]?.usuario;
@@ -268,20 +283,22 @@ export class LembreteService {
     const amanha = new Date(hoje);
     amanha.setDate(amanha.getDate() + 1);
 
-    const vencendoHoje = await this.prisma.barbearia.findMany({
-      where: {
-        planoStatus: 'ativo',
-        planoValidoAte: { gte: hoje, lt: amanha },
-      },
-      select: {
-        codigo: true,
-        nome: true,
-        membros: {
-          where: { perfil: 'dono' },
-          select: { usuario: { select: { email: true, nome: true } } },
+    const vencendoHoje = await TenantStore.runAdmin(() =>
+      this.prisma.barbearia.findMany({
+        where: {
+          planoStatus: 'ativo',
+          planoValidoAte: { gte: hoje, lt: amanha },
         },
-      },
-    });
+        select: {
+          codigo: true,
+          nome: true,
+          membros: {
+            where: { perfil: 'dono' },
+            select: { usuario: { select: { email: true, nome: true } } },
+          },
+        },
+      }),
+    );
 
     for (const bar of vencendoHoje) {
       const dono = bar.membros[0]?.usuario;
@@ -303,31 +320,33 @@ export class LembreteService {
     const ha3Dias = new Date(agora);
     ha3Dias.setDate(ha3Dias.getDate() - 3);
 
-    const inadimplentesHa3Dias = await this.prisma.barbearia.findMany({
-      where: {
-        planoStatus: 'inadimplente',
-        bloqueadaEm: {
-          gte: new Date(
-            ha3Dias.getFullYear(),
-            ha3Dias.getMonth(),
-            ha3Dias.getDate(),
-          ),
-          lt: new Date(
-            ha3Dias.getFullYear(),
-            ha3Dias.getMonth(),
-            ha3Dias.getDate() + 1,
-          ),
+    const inadimplentesHa3Dias = await TenantStore.runAdmin(() =>
+      this.prisma.barbearia.findMany({
+        where: {
+          planoStatus: 'inadimplente',
+          bloqueadaEm: {
+            gte: new Date(
+              ha3Dias.getFullYear(),
+              ha3Dias.getMonth(),
+              ha3Dias.getDate(),
+            ),
+            lt: new Date(
+              ha3Dias.getFullYear(),
+              ha3Dias.getMonth(),
+              ha3Dias.getDate() + 1,
+            ),
+          },
         },
-      },
-      select: {
-        codigo: true,
-        nome: true,
-        membros: {
-          where: { perfil: 'dono' },
-          select: { usuario: { select: { email: true, nome: true } } },
+        select: {
+          codigo: true,
+          nome: true,
+          membros: {
+            where: { perfil: 'dono' },
+            select: { usuario: { select: { email: true, nome: true } } },
+          },
         },
-      },
-    });
+      }),
+    );
 
     for (const bar of inadimplentesHa3Dias) {
       const dono = bar.membros[0]?.usuario;
