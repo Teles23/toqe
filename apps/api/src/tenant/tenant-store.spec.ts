@@ -22,6 +22,14 @@ describe('TenantStore', () => {
     expect(captured).toEqual({ barCodigo: 9, inTx: true });
   });
 
+  it('runAdmin() expoe isAdmin=true sem barCodigo', () => {
+    let captured: ReturnType<typeof TenantStore.get> | undefined;
+    TenantStore.runAdmin(() => {
+      captured = TenantStore.get();
+    });
+    expect(captured).toEqual({ isAdmin: true });
+  });
+
   it('contextos aninhados sao isolados (inner nao vaza para outer)', () => {
     let outerMid: ReturnType<typeof TenantStore.get> | undefined;
     let innerCtx: ReturnType<typeof TenantStore.get> | undefined;

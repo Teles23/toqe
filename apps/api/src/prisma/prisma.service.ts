@@ -50,7 +50,19 @@ export class PrismaService
             query: (a: unknown) => Promise<unknown>;
           }) {
             const ctx = TenantStore.get();
-            if (!ctx?.barCodigo || ctx.inTx) return query(args);
+            if (!ctx) return query(args);
+
+            // Processos cross-tenant (cron) usam runAdmin() — injeta bypass_rls.
+            if (ctx.isAdmin) {
+              const ops = [
+                base.$executeRaw`SELECT set_config('app.bypass_rls', 'true', true)`,
+                query(args),
+              ] as const;
+              const results = await base.$transaction(ops as never);
+              return (results as [number, unknown])[1];
+            }
+
+            if (!ctx.barCodigo || ctx.inTx) return query(args);
 
             const bc = String(ctx.barCodigo);
             // Array $transaction: Prisma executa as duas PrismaPromises na mesma
