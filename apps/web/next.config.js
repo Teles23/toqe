@@ -58,7 +58,7 @@ const securityHeaders = [
       `script-src-elem 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       `style-src 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       // Avatares Google do usuário logado.
-      "img-src 'self' data: blob: https://*.googleusercontent.com https://accounts.google.com https://api.qrserver.com",
+      `img-src 'self' data: blob: ${apiOrigin} https://*.googleusercontent.com https://accounts.google.com https://api.qrserver.com`,
       "font-src 'self'",
       // apiOrigin cobre a URL da API (dev: localhost:3000, prod: domínio real)
       // ws://* wss://* necessários para o HMR do Next.js em dev
