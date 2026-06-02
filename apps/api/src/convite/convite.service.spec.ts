@@ -2,10 +2,12 @@ import { Test } from '@nestjs/testing';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { Prisma } from '../generated/prisma';
 import { ConviteService } from './convite.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
@@ -15,6 +17,7 @@ import {
   Barbearia,
   ConviteBarbearia,
   MembroBarbearia,
+  PlanoLimite,
   Usuario,
 } from '../generated/prisma';
 
@@ -69,8 +72,11 @@ describe('ConviteService', () => {
     service = module.get(ConviteService);
 
     // $transaction executa o callback com o próprio mock (tx === mockPrisma).
+    // O segundo argumento (options: isolationLevel) é ignorado nos testes unitários —
+    // o isolamento Serializable é validado nos testes de integração com DB real.
     mockPrisma.$transaction.mockImplementation(
-      (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
+      (fn: (tx: typeof mockPrisma) => Promise<unknown>, _opts?: unknown) =>
+        fn(mockPrisma),
     );
     mockAuthService.issueTokens.mockResolvedValue({
       access_token: 'acc',
@@ -129,6 +135,15 @@ describe('ConviteService', () => {
   // ─── aceitarConvite ────────────────────────────────────────────────────────
 
   describe('aceitarConvite', () => {
+    beforeEach(() => {
+      // Padrão sem restrição de plano — testes específicos sobrescrevem.
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        plano: 'free',
+      } as unknown as Barbearia);
+      mockPrisma.planoLimite.findUnique.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.count.mockResolvedValue(0);
+    });
+
     it('cria novo usuário, vincula membro e faz auto-login (isNew=true)', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
       mockPrisma.usuario.findUnique.mockResolvedValue(null);
@@ -263,6 +278,52 @@ describe('ConviteService', () => {
       await expect(service.aceitarConvite('tok123', {})).rejects.toThrow(
         ConflictException,
       );
+    });
+
+    it('lança ForbiddenException quando limite de plano é atingido dentro da transação', async () => {
+      mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
+      mockPrisma.usuario.findUnique.mockResolvedValue(null);
+      // Plano com limite de 1 barbeiro
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        plano: 'free',
+      } as unknown as Barbearia);
+      mockPrisma.planoLimite.findUnique.mockResolvedValue({
+        maxBarbeiros: 1,
+      } as unknown as PlanoLimite);
+      // Já existe 1 barbeiro — limite atingido
+      mockPrisma.membroBarbearia.count.mockResolvedValue(1);
+
+      await expect(
+        service.aceitarConvite('tok123', { nome: 'João', senha: 'senha1234' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.membroBarbearia.create).not.toHaveBeenCalled();
+    });
+
+    it('converte P2034 (serialization failure) em ConflictException', async () => {
+      mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
+      mockPrisma.usuario.findUnique.mockResolvedValue(null);
+      // Simula falha de serialização do PostgreSQL
+      const p2034 = new Prisma.PrismaClientKnownRequestError(
+        'Transaction failed due to a write conflict or a deadlock',
+        { code: 'P2034', clientVersion: '0.0.0' },
+      );
+      mockPrisma.$transaction.mockRejectedValueOnce(p2034);
+
+      await expect(
+        service.aceitarConvite('tok123', { nome: 'João', senha: 'senha1234' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('relança erros desconhecidos sem converter', async () => {
+      mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
+      mockPrisma.usuario.findUnique.mockResolvedValue(null);
+      mockPrisma.$transaction.mockRejectedValueOnce(
+        new Error('Falha genérica no banco'),
+      );
+
+      await expect(
+        service.aceitarConvite('tok123', { nome: 'João', senha: 'senha1234' }),
+      ).rejects.toThrow('Falha genérica no banco');
     });
   });
 
