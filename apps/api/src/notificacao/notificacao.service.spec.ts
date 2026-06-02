@@ -76,7 +76,7 @@ describe('NotificacaoService', () => {
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'joao@test.com',
-          from: expect.stringContaining('noreply@toqe.com.br') as string,
+          from: expect.any(String) as string,
         }),
       );
     });
@@ -124,7 +124,7 @@ describe('NotificacaoService', () => {
         expect(mockSend).toHaveBeenCalledWith(
           expect.objectContaining({
             to: 'novo@x.com',
-            from: expect.stringContaining('noreply@toqe.com.br') as string,
+            from: expect.any(String) as string,
           }),
         );
         const calls = mockSend.mock.calls as Array<

@@ -8,7 +8,7 @@ export const barbeiroService = {
   },
 
   convidar(barCodigo: number, data: ConvidarMembroInput): Promise<void> {
-    return barbeariaApi(barCodigo).post<void>("/membros", data);
+    return barbeariaApi(barCodigo).post<void>("/convite", data);
   },
 
   remover(barCodigo: number, usrCodigo: number): Promise<void> {
