@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { X, Scissors, DollarSign, Clock, Edit2, Trash2 } from "lucide-react";
 import { getCategoria } from "../constants/servico.constants";
 import type { ServicoAPI } from "../types/servico.types";
@@ -19,8 +20,14 @@ export function ServicoDetalhe({
   onEdit,
   onDelete,
 }: ServicoDetalheProps) {
+  const [confirmando, setConfirmando] = useState(false);
   const categoria = (s as unknown as { categoria?: string }).categoria;
   const cfg = getCategoria(categoria);
+
+  const handleConfirmarExclusao = () => {
+    setConfirmando(false);
+    onDelete();
+  };
 
   return (
     <motion.div
@@ -123,6 +130,39 @@ export function ServicoDetalhe({
         </div>
       </div>
 
+      <AnimatePresence>
+        {confirmando && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="px-4 py-3 border-t border-[var(--border-subtle)]"
+            style={{ background: "rgba(255,77,79,0.06)" }}
+          >
+            <p className="text-[12px] font-semibold text-[var(--status-error)] mb-1">
+              Excluir "{s.nome}"?
+            </p>
+            <p className="text-[11px] text-[var(--text-muted)] mb-3">
+              Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmando(false)}
+                className="flex-1 py-1.5 rounded-lg text-[12px] font-semibold bg-[var(--bg-elevated)] text-[var(--text-secondary)]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmarExclusao}
+                className="flex-1 py-1.5 rounded-lg text-[12px] font-semibold bg-[var(--status-error)] text-white"
+              >
+                Excluir
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex gap-2 px-4 py-3 flex-shrink-0 border-t border-[var(--border-subtle)]">
         <button
           onClick={onEdit}
@@ -132,7 +172,8 @@ export function ServicoDetalhe({
         </button>
         <button
           type="button"
-          onClick={onDelete}
+          aria-label="Excluir serviço"
+          onClick={() => setConfirmando(true)}
           className="px-3 flex items-center justify-center rounded-lg bg-[rgba(255,77,79,0.08)] border border-[rgba(255,77,79,0.2)] text-[var(--status-error)]"
         >
           <Trash2 size={14} />

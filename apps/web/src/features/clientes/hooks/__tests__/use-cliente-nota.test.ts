@@ -32,7 +32,7 @@ describe("useClienteNota", () => {
   it("retorna conteúdo da nota quando GET retorna dados", async () => {
     server.use(
       http.get(
-        `${BASE}/barbearias/:barCodigo/clientes/:clienteCodigo/nota`,
+        `${BASE}/clientes/:clienteCodigo/nota`,
         () => {
           return HttpResponse.json({
             conteudo: "Nota de teste",
@@ -54,7 +54,7 @@ describe("useClienteNota", () => {
     let putCalled = false;
     server.use(
       http.put(
-        `${BASE}/barbearias/:barCodigo/clientes/:clienteCodigo/nota`,
+        `${BASE}/clientes/:clienteCodigo/nota`,
         async ({ request }) => {
           const body = (await request.json()) as { conteudo: string };
           putCalled = true;

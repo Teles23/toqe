@@ -8,6 +8,9 @@ import { OverviewView } from "./OverviewView";
 const BASE = "http://localhost:3000/api/v1";
 
 const server = setupServer(
+  http.get("/api/auth/token", () =>
+    HttpResponse.json({ token: "mock-admin-token", canRefresh: false }),
+  ),
   http.get(`${BASE}/admin/metrics`, () =>
     HttpResponse.json({
       mrr: 1246,
