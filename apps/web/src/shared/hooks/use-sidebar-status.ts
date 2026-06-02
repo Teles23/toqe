@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Perfil } from "@toqe/shared";
 import { QUERY_KEYS, STALE_TIME } from "@/shared/lib/constants";
 import { fetchDashboardOverview } from "@/features/dashboard/services/dashboard.service";
 import { configuracaoService } from "@/features/configuracoes/services/configuracao.service";
@@ -43,16 +44,23 @@ export interface SidebarStatus {
 /**
  * Hook para exibir o status ao vivo da barbearia na sidebar.
  *
- * Reutiliza as mesmas query keys do dashboard e das configurações,
- * portanto compartilha o cache sem disparar chamadas duplicadas.
+ * O endpoint de dashboard requer perfil dono — barbeiros/recepcionistas
+ * recebem 403 se a query for disparada. Por isso a query de métricas ao
+ * vivo só roda quando `perfil === Perfil.DONO`.
  *
  * @param barCodigo Código da barbearia ativa (null = desabilitado).
+ * @param perfil Perfil do usuário na barbearia atual.
  */
-export function useSidebarStatus(barCodigo: number | null): SidebarStatus {
+export function useSidebarStatus(
+  barCodigo: number | null,
+  perfil: Perfil | null,
+): SidebarStatus {
+  const isDono = perfil === Perfil.DONO;
+
   const dashboardQuery = useQuery({
     queryKey: QUERY_KEYS.dashboard(barCodigo ?? 0),
     queryFn: () => fetchDashboardOverview(barCodigo!),
-    enabled: !!barCodigo,
+    enabled: !!barCodigo && isDono,
     staleTime: STALE_TIME.REALTIME,
     refetchInterval: 60_000,
   });

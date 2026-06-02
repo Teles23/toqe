@@ -210,10 +210,13 @@ jobs:
             set -e
             cd /opt/projetos/toqe
             touch .env
-            grep -v '^EMAIL_FROM=' .env > .env.tmp || true
-            # EMAIL_FROM tem fallback (onboarding@resend.dev), então não falha se vazio
-            [ -n "$EMAIL_FROM" ] && printf 'EMAIL_FROM=%s\n' "$EMAIL_FROM" >> .env.tmp || true
-            mv .env.tmp .env
+            # Só reescreve EMAIL_FROM se o secret estiver preenchido.
+            # Sem isso, um secret vazio apagaria o valor já configurado na VPS.
+            if [ -n "$EMAIL_FROM" ]; then
+              grep -v '^EMAIL_FROM=' .env > .env.tmp || true
+              printf 'EMAIL_FROM=%s\n' "$EMAIL_FROM" >> .env.tmp
+              mv .env.tmp .env
+            fi
 
       - name: Sincronizar docker-compose.prod.yml para a VPS
         uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1.0.0

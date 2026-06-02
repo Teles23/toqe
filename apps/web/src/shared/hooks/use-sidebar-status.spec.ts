@@ -1,5 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { Perfil } from "@toqe/shared";
 import {
   useSidebarStatus,
   calcularAberta,
@@ -109,7 +110,7 @@ describe("useSidebarStatus", () => {
 
   it("fica inativo quando barCodigo é null", () => {
     const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => useSidebarStatus(null), {
+    const { result } = renderHook(() => useSidebarStatus(null, null), {
       wrapper: Wrapper,
     });
     expect(result.current.isLoading).toBe(false);
@@ -123,7 +124,7 @@ describe("useSidebarStatus", () => {
     mockFetchDashboard.mockReturnValue(new Promise(() => {}));
     mockGetHorarios.mockReturnValue(new Promise(() => {}));
     const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => useSidebarStatus(1), {
+    const { result } = renderHook(() => useSidebarStatus(1, Perfil.DONO), {
       wrapper: Wrapper,
     });
     expect(result.current.isLoading).toBe(true);
@@ -155,7 +156,7 @@ describe("useSidebarStatus", () => {
     ]);
 
     const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => useSidebarStatus(1), {
+    const { result } = renderHook(() => useSidebarStatus(1, Perfil.DONO), {
       wrapper: Wrapper,
     });
 
@@ -187,7 +188,7 @@ describe("useSidebarStatus", () => {
     ]);
 
     const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => useSidebarStatus(1), {
+    const { result } = renderHook(() => useSidebarStatus(1, Perfil.DONO), {
       wrapper: Wrapper,
     });
 
@@ -207,7 +208,7 @@ describe("useSidebarStatus", () => {
     mockGetHorarios.mockResolvedValueOnce([]);
 
     const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => useSidebarStatus(1), {
+    const { result } = renderHook(() => useSidebarStatus(1, Perfil.DONO), {
       wrapper: Wrapper,
     });
 
@@ -227,9 +228,17 @@ describe("useSidebarStatus", () => {
     mockGetHorarios.mockResolvedValueOnce([]);
 
     const { Wrapper } = createWrapper();
-    renderHook(() => useSidebarStatus(42), { wrapper: Wrapper });
+    renderHook(() => useSidebarStatus(42, Perfil.DONO), { wrapper: Wrapper });
 
     await waitFor(() => expect(mockFetchDashboard).toHaveBeenCalledWith(42));
     expect(mockGetHorarios).toHaveBeenCalledWith(42);
+  });
+
+  it("não chama dashboard quando perfil é barbeiro (endpoint é owner-only)", () => {
+    const { Wrapper } = createWrapper();
+    renderHook(() => useSidebarStatus(1, Perfil.BARBEIRO), {
+      wrapper: Wrapper,
+    });
+    expect(mockFetchDashboard).not.toHaveBeenCalled();
   });
 });

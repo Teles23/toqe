@@ -59,10 +59,10 @@ export default function LoginPage(): React.JSX.Element {
   const [tempToken, setTempToken] = useState<string | null>(null);
   const { eyebrow, heading, sub } = MODE_COPY[mode];
 
-  // Redireciona para o dashboard se já estiver autenticado
+  // Redireciona para o dashboard (ou /admin para super admins) se já autenticado
   useEffect(() => {
     if (!loading && user !== null) {
-      router.replace(ROUTES.DASHBOARD);
+      router.replace(user.superAdmin ? "/admin" : ROUTES.DASHBOARD);
     }
   }, [loading, user, router]);
 

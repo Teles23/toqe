@@ -68,9 +68,10 @@ export default function Sidebar({
 }: SidebarProps): React.JSX.Element {
   const pathname = usePathname();
   const router = useRouter();
-  const { barbearia } = useAuth();
+  const { barbearia, perfil } = useAuth();
   const { aberta, barbeirosAtivos, isLoading } = useSidebarStatus(
     barbearia?.codigo ?? null,
+    perfil,
   );
 
   const isActive = (href: string) => pathname === href;
