@@ -93,10 +93,15 @@ novo deploy via CI (push para main dispara rebuild automático).
 ### Trocar URL no mobile sem novo build
 
 ```bash
-# Edita EXPO_PUBLIC_API_URL em eas.json, depois:
-eas update --branch production --message "nova URL da API"
+# Opção 1: via EAS Environment Variables (expo.dev → projeto → Environment Variables)
+eas update --environment production --message "nova URL da API"
+
+# Opção 2: inline (sem configurar no painel)
+EXPO_PUBLIC_API_URL=https://api.toqe-barber.com.br/api/v1 \
+  eas update --branch production --message "nova URL da API"
 ```
 
+`eas update --branch` não lê o bloco `env` do `eas.json` (exclusivo de `eas build`).
 OTA Update empurra novo bundle JS para todos os dispositivos (~2 min).
 Não precisa de submissão para App Store/Play Store.
 Só exige novo build quando muda código nativo (plugins, permissões, SDK).

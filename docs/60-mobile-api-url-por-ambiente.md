@@ -30,10 +30,23 @@ resolve isso de `process.env.EXPO_PUBLIC_API_URL`, com **fallback para produçã
 
 ### Trocar URL sem novo build (OTA Update)
 
+`eas update` não lê as variáveis do bloco `env` do `eas.json` (que são exclusivas de
+`eas build`). Para que o bundle OTA receba o valor correto, configure a variável no
+painel do EAS e use `--environment`:
+
+**1. No painel expo.dev:**
+- Acesse o projeto → **Environment Variables**
+- Adicione `EXPO_PUBLIC_API_URL` com o valor de produção no environment `production`
+
+**2. Publique o OTA:**
 ```bash
-# 1. Edita EXPO_PUBLIC_API_URL em eas.json
-# 2. Empurra novo bundle JS para todos os dispositivos (~2 min):
-eas update --branch production --message "nova URL da API"
+eas update --environment production --message "nova URL da API"
+```
+
+Alternativamente, passe a variável inline (sem precisar do painel):
+```bash
+EXPO_PUBLIC_API_URL=https://api.toqe-barber.com.br/api/v1 \
+  eas update --branch production --message "nova URL da API"
 ```
 
 Não precisa de submissão para App Store/Play Store. Ver [87-producao-dominio-cloudflare.md](87-producao-dominio-cloudflare.md).
