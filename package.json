@@ -24,7 +24,7 @@
     "prettier": "^3.7.4",
     "sharp": "^0.34.5",
     "turbo": "^2.9.9",
-    "typescript": "5.9.2"
+    "typescript": "6.0.3"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
