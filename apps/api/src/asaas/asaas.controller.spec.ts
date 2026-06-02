@@ -10,7 +10,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock, PrismaMock } from '../test/prisma-mock.factory';
 import type { AsaasWebhookPayload } from './asaas-webhook.dto';
 import type { Barbearia } from '../generated/prisma';
-import type { CheckoutDto } from './dto/checkout.dto';
 import { checkoutSchema } from './dto/checkout.dto';
 
 const mockAsaasService = {

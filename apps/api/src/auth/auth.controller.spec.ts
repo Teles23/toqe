@@ -1,7 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import type { JwtRequest } from '../common/types/jwt-request';
 import { CreateUserDto } from '../usuario/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
