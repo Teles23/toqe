@@ -207,6 +207,7 @@ model Servico {
   codigo     Int      @id @default(autoincrement()) @map("TQE_SRV_CODIGO")
   barCodigo  Int      @map("TQE_SRV_BAR_CODIGO")
   nome       String   @map("TQE_SRV_NOME") @db.VarChar(100)
+  descricao  String?  @map("TQE_SRV_DESCRICAO") @db.VarChar(500)
   precoBase  Decimal? @map("TQE_SRV_PRECO_BASE") @db.Decimal(10, 2)
   duracaoBase Int?    @map("TQE_SRV_DURACAO_BASE") // em minutos
   ativo      Boolean  @default(true) @map("TQE_SRV_ATIVO")

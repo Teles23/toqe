@@ -27,7 +27,9 @@ export const handlers = [
       user: { codigo: 1, nome: "Test", email: "test@test.com" },
     }),
   ),
-  http.get("/api/auth/token", () => HttpResponse.json({ token: "mock-token" })),
+  http.get("/api/auth/token", () =>
+    HttpResponse.json({ token: "mock-token", canRefresh: true }),
+  ),
   http.post("/api/auth/logout", () => HttpResponse.json({ ok: true })),
   http.post("/api/auth/forgot-password", () =>
     HttpResponse.json({
@@ -197,6 +199,7 @@ export const handlers = [
         codigo: 1,
         barCodigo: 1,
         nome: "Corte",
+        descricao: null,
         precoBase: 25,
         duracaoBase: 30,
         ativo: true,
@@ -531,15 +534,32 @@ export const handlers = [
   ),
 
   // ── Notas privadas de clientes ────────────────────────────────────────────
-  http.get(`${BASE}/barbearias/:barCodigo/clientes/:clienteCodigo/nota`, () => {
+  http.get(`${BASE}/clientes/:clienteCodigo/nota`, () => {
     return HttpResponse.json({ conteudo: "", atualizadoEm: null });
   }),
-  http.put(`${BASE}/barbearias/:barCodigo/clientes/:clienteCodigo/nota`, () => {
+  http.put(`${BASE}/clientes/:clienteCodigo/nota`, () => {
     return HttpResponse.json({
       conteudo: "",
       atualizadoEm: new Date().toISOString(),
     });
   }),
+
+  // ── Dashboard da barbearia ───────────────────────────────────────────────
+  http.get(`${BASE}/barbearias/:barCodigo/dashboard`, () =>
+    HttpResponse.json({
+      kpis: [],
+      liveMetrics: [
+        { label: "Barbeiros ativos", value: "2", color: "var(--status-success)" },
+        { label: "Próximo horário", value: "10:00", color: "var(--text-primary)" },
+        { label: "Aguardando", value: "1", color: "var(--status-warning)" },
+        { label: "Tempo médio", value: "30min", color: "var(--status-info)" },
+      ],
+      barbeiros: [],
+      faturamento: { semana: [], mes: [] },
+      servicos: [],
+      atividade: [],
+    }),
+  ),
 
   // ── Dashboard da rede (multi-unidade) ────────────────────────────────────
   http.get(`${BASE}/barbearias/rede`, () =>

@@ -35,7 +35,12 @@ export class UsuarioService {
     const senhaHash = await bcrypt.hash(dto.senha, await bcrypt.genSalt());
 
     return this.prisma.usuario.create({
-      data: { nome: dto.nome, email: dto.email, senhaHash },
+      data: {
+        nome: dto.nome,
+        email: dto.email,
+        senhaHash,
+        telefone: dto.telefone ?? null,
+      },
       select: SELECT_PERFIL,
     });
   }

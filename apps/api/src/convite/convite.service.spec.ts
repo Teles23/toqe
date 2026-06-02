@@ -129,6 +129,15 @@ describe('ConviteService', () => {
   // ─── aceitarConvite ────────────────────────────────────────────────────────
 
   describe('aceitarConvite', () => {
+    beforeEach(() => {
+      // Mock da verificação de limite de plano adicionada ao aceitarConvite.
+      // Retorna plano 'free' sem maxBarbeiros → sem restrição de vagas.
+      mockPrisma.barbearia.findUnique.mockResolvedValue({
+        plano: 'free',
+      } as unknown as Barbearia);
+      mockPrisma.planoLimite.findUnique.mockResolvedValue(null);
+    });
+
     it('cria novo usuário, vincula membro e faz auto-login (isNew=true)', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
       mockPrisma.usuario.findUnique.mockResolvedValue(null);

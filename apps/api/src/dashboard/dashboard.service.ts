@@ -192,7 +192,9 @@ export class DashboardService {
       this.prisma.agendamento.count({
         where: {
           barCodigo,
-          status: StatusAgendamento.CONFIRMADO,
+          status: {
+            in: [StatusAgendamento.CONFIRMADO, StatusAgendamento.EM_ANDAMENTO],
+          },
           inicio: { lte: agora },
           fim: { gte: agora },
         },
@@ -280,7 +282,12 @@ export class DashboardService {
           where: {
             barCodigo,
             barbeiroId: m.usrCodigo,
-            status: StatusAgendamento.CONFIRMADO,
+            status: {
+              in: [
+                StatusAgendamento.CONFIRMADO,
+                StatusAgendamento.EM_ANDAMENTO,
+              ],
+            },
             inicio: { lte: agora },
             fim: { gte: agora },
           },

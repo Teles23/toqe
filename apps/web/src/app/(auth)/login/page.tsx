@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Scissors } from "lucide-react";
@@ -9,6 +9,7 @@ import { AuthBrandingPanel } from "@/features/auth/components/AuthBrandingPanel"
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { ForgotPasswordForm } from "@/features/auth/components/ForgotPasswordForm";
 import { TwoFaVerifyForm } from "@/features/auth/components/TwoFaVerifyForm";
+import { useAuth } from "@/shared/hooks/use-auth";
 
 type Mode = "login" | "forgot" | "twofa";
 
@@ -53,9 +54,22 @@ const MODE_COPY: Record<Mode, ModeCopy> = {
  */
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [tempToken, setTempToken] = useState<string | null>(null);
   const { eyebrow, heading, sub } = MODE_COPY[mode];
+
+  // Redireciona para o dashboard (ou /admin para super admins) se já autenticado
+  useEffect(() => {
+    if (!loading && user !== null) {
+      router.replace(user.superAdmin ? "/admin" : ROUTES.DASHBOARD);
+    }
+  }, [loading, user, router]);
+
+  // Enquanto carrega a sessão ou já está logado, não renderiza o formulário
+  if (loading || user !== null) {
+    return <div className="min-h-screen" style={{ background: "var(--bg-base)" }} />;
+  }
 
   function handleTwoFaRequired(token: string) {
     setTempToken(token);

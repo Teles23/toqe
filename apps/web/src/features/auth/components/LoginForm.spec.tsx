@@ -21,6 +21,10 @@ vi.mock("@react-oauth/google", () => ({
   GoogleLogin: () => <div data-testid="google-login-stub" />,
 }));
 
+vi.mock("@/shared/hooks/use-auth", () => ({
+  useAuth: () => ({ establishSession: vi.fn() }),
+}));
+
 import { useLogin } from "@/features/auth/hooks/use-login";
 
 const mockUseLogin = useLogin as unknown as ReturnType<typeof vi.fn>;
