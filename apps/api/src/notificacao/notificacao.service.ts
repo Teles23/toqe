@@ -17,9 +17,13 @@ const PERFIL_LABEL: Record<string, string> = {
 export class NotificacaoService {
   private readonly logger = new Logger(NotificacaoService.name);
   private readonly resend: Resend | null;
+  // Em dev: use "onboarding@resend.dev" para enviar sem verificar domínio.
+  // Em prod: configure EMAIL_FROM=Toqe <noreply@toqe.com.br> após verificar o domínio no Resend.
+  private readonly emailFrom: string;
 
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
+    this.emailFrom = process.env.EMAIL_FROM ?? 'onboarding@resend.dev';
     if (!apiKey) {
       this.logger.warn(
         'RESEND_API_KEY não configurada — envio de e-mails desabilitado',
@@ -46,7 +50,7 @@ export class NotificacaoService {
 
     try {
       const result = await this.resend.emails.send({
-        from: 'Toqe <noreply@toqe.com.br>',
+        from: this.emailFrom,
         to: data.clienteEmail,
         subject: `✂️ Agendamento confirmado — ${data.barbeariaNome}`,
         html: this.buildEmailHtml({
@@ -94,7 +98,7 @@ export class NotificacaoService {
         : `Lembrete: em breve, ${inicioFormatado}`;
     try {
       await this.resend.emails.send({
-        from: 'Toqe <noreply@toqe.com.br>',
+        from: this.emailFrom,
         to: data.clienteEmail,
         subject: `✂️ ${assunto} — ${data.barbeariaNome}`,
         html: `<p>Olá, <strong>${data.clienteNome}</strong>!</p>
@@ -125,7 +129,7 @@ export class NotificacaoService {
     }
     try {
       const result = await this.resend.emails.send({
-        from: 'Toqe <noreply@toqe.com.br>',
+        from: this.emailFrom,
         to: data.to,
         subject: data.subject,
         html: data.html,
@@ -151,7 +155,7 @@ export class NotificacaoService {
     }
     try {
       await this.resend.emails.send({
-        from: 'Toqe <noreply@toqe.com.br>',
+        from: this.emailFrom,
         to: email,
         subject: '🔑 Recuperação de senha — Toqe',
         html: this.buildRecuperacaoHtml({ nome, resetLink }),
@@ -175,7 +179,7 @@ export class NotificacaoService {
     }
     try {
       await this.resend.emails.send({
-        from: 'Toqe <noreply@toqe.com.br>',
+        from: this.emailFrom,
         to: data.email,
         subject: `✂️ Você foi convidado para ${data.barbeariaNome} — Toqe`,
         html: this.buildConviteHtml(data),

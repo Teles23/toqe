@@ -17,6 +17,8 @@ import {
   Network,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import { useAuth } from "@/shared/hooks/use-auth";
+import { useSidebarStatus } from "@/shared/hooks/use-sidebar-status";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -66,6 +68,11 @@ export default function Sidebar({
 }: SidebarProps): React.JSX.Element {
   const pathname = usePathname();
   const router = useRouter();
+  const { barbearia, perfil } = useAuth();
+  const { aberta, barbeirosAtivos, isLoading } = useSidebarStatus(
+    barbearia?.codigo ?? null,
+    perfil,
+  );
 
   const isActive = (href: string) => pathname === href;
 
@@ -162,8 +169,12 @@ export default function Sidebar({
               <div
                 className="flex items-center gap-2 px-3 py-2 rounded-lg"
                 style={{
-                  background: "rgba(29,185,84,0.06)",
-                  border: "1px solid rgba(29,185,84,0.15)",
+                  background: aberta
+                    ? "rgba(29,185,84,0.06)"
+                    : "rgba(100,100,100,0.06)",
+                  border: aberta
+                    ? "1px solid rgba(29,185,84,0.15)"
+                    : "1px solid rgba(100,100,100,0.15)",
                 }}
               >
                 {/* Dot pulsante */}
@@ -172,28 +183,42 @@ export default function Sidebar({
                   style={{
                     width: 6,
                     height: 6,
-                    background: "var(--status-success)",
-                    boxShadow: "0 0 6px var(--status-success)",
-                    animation: "tqe-pulse-green 1.5s ease-in-out infinite",
+                    background: aberta
+                      ? "var(--status-success)"
+                      : "var(--text-muted)",
+                    boxShadow: aberta
+                      ? "0 0 6px var(--status-success)"
+                      : "none",
+                    animation: aberta
+                      ? "tqe-pulse-green 1.5s ease-in-out infinite"
+                      : undefined,
                   }}
                 />
                 <div className="flex flex-col leading-tight min-w-0">
                   <span
                     className="text-[11px] font-semibold truncate"
-                    style={{ color: "var(--status-success)" }}
+                    style={{
+                      color: aberta
+                        ? "var(--status-success)"
+                        : "var(--text-muted)",
+                    }}
                   >
-                    Barbearia aberta
+                    {isLoading
+                      ? "Verificando..."
+                      : aberta
+                        ? "Barbearia aberta"
+                        : "Barbearia fechada"}
                   </span>
                   <span
                     className="text-[10px] truncate"
                     style={{ color: "var(--text-muted)" }}
                   >
-                    3 barbeiros ativos
+                    {isLoading ? "—" : `${barbeirosAtivos} barbeiros ativos`}
                   </span>
                 </div>
                 <Zap
                   size={11}
-                  color="var(--status-success)"
+                  color={aberta ? "var(--status-success)" : "var(--text-muted)"}
                   className="ml-auto flex-shrink-0"
                 />
               </div>
@@ -215,9 +240,13 @@ export default function Sidebar({
                 style={{
                   width: 6,
                   height: 6,
-                  background: "var(--status-success)",
-                  boxShadow: "0 0 8px var(--status-success)",
-                  animation: "tqe-pulse-green 1.5s ease-in-out infinite",
+                  background: aberta
+                    ? "var(--status-success)"
+                    : "var(--text-muted)",
+                  boxShadow: aberta ? "0 0 8px var(--status-success)" : "none",
+                  animation: aberta
+                    ? "tqe-pulse-green 1.5s ease-in-out infinite"
+                    : undefined,
                 }}
               />
             </motion.div>

@@ -2,11 +2,13 @@ import {
   Injectable,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import type { GerarConviteResponse } from '@toqe/contracts';
+import { Prisma } from '../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { NotificacaoProducer } from '../notificacao/notificacao.producer';
@@ -39,13 +41,45 @@ export class ConviteService {
   ): Promise<GerarConviteResponse> {
     const barbearia = await this.prisma.barbearia.findUnique({
       where: { codigo: barCodigo },
-      select: { nome: true },
+      select: { nome: true, plano: true },
     });
     if (!barbearia) {
       throw new NotFoundException('Barbearia não encontrada');
     }
 
     const email = dto.email.toLowerCase().trim();
+
+    // Verifica limite de barbeiros do plano antes de emitir o convite.
+    // Conta membros ativos + convites pendentes (exceto renovação do mesmo e-mail),
+    // evitando que convites em aberto "ocupem vagas silenciosamente".
+    if (dto.perfil === 'barbeiro') {
+      const limite = await this.prisma.planoLimite.findUnique({
+        where: { plano: barbearia.plano },
+        select: { maxBarbeiros: true },
+      });
+      if (limite?.maxBarbeiros != null) {
+        const agora = new Date();
+        const [membros, convitesPendentes] = await Promise.all([
+          this.prisma.membroBarbearia.count({
+            where: { barCodigo, perfil: 'barbeiro' },
+          }),
+          this.prisma.conviteBarbearia.count({
+            where: {
+              barCodigo,
+              perfil: 'barbeiro',
+              usadoEm: null,
+              expiresAt: { gt: agora },
+              email: { not: email }, // renovação do mesmo convite não conta como nova vaga
+            },
+          }),
+        ]);
+        if (membros + convitesPendentes >= limite.maxBarbeiros) {
+          throw new ForbiddenException(
+            `Limite de ${limite.maxBarbeiros} barbeiro(s) atingido para o plano ${barbearia.plano}`,
+          );
+        }
+      }
+    }
 
     // 36 chars em VARCHAR(36) — randomBytes(16).toString('hex') = 32 chars,
     // 128 bits de entropia, cabe na coluna com folga.
@@ -178,49 +212,109 @@ export class ConviteService {
       }
     }
 
-    // Cria usuário (se novo) + vincula como membro + marca convite usado numa
-    // única transação — se qualquer passo falha, nada é persistido.
-    const usuario = await this.prisma.$transaction(async (tx) => {
-      const user = existente
-        ? {
-            codigo: existente.codigo,
-            nome: existente.nome,
-            email: existente.email,
-          }
-        : await tx.usuario.create({
-            data: {
-              nome: dto.nome!,
-              email: convite.email,
-              senhaHash: await bcrypt.hash(dto.senha!, await bcrypt.genSalt()),
-            },
-            select: { codigo: true, nome: true, email: true },
-          });
+    // Pré-hash fora da transação: bcrypt é lento e não deve segurar conexão DB.
+    let senhaHash: string | null = null;
+    if (isNew) {
+      senhaHash = await bcrypt.hash(dto.senha, await bcrypt.genSalt());
+    }
 
-      const membroExistente = await tx.membroBarbearia.findFirst({
-        where: { barCodigo: convite.barCodigo, usrCodigo: user.codigo },
-      });
-      if (!membroExistente) {
-        await tx.membroBarbearia.create({
-          data: {
-            barCodigo: convite.barCodigo,
-            usrCodigo: user.codigo,
-            perfil: convite.perfil,
+    // Transação SERIALIZABLE: garante que a verificação de limite e a inserção
+    // do membro sejam atômicas. Se dois aceites simultâneos chegarem ao último
+    // slot, o PostgreSQL aborta um deles com P2034 (serialization failure).
+    // Tentamos até 3 vezes antes de desistir — P2034 pode ser conflito
+    // transiente, não necessariamente sinal de limite esgotado.
+    let usuario: { codigo: number; nome: string; email: string } | undefined;
+    let lastP2034: Prisma.PrismaClientKnownRequestError | undefined;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        usuario = await this.prisma.$transaction(
+          async (tx) => {
+            const user = existente
+              ? {
+                  codigo: existente.codigo,
+                  nome: existente.nome,
+                  email: existente.email,
+                }
+              : await tx.usuario.create({
+                  data: {
+                    nome: dto.nome!,
+                    email: convite.email,
+                    senhaHash: senhaHash!,
+                  },
+                  select: { codigo: true, nome: true, email: true },
+                });
+
+            // Verifica se o usuário já é membro desta barbearia.
+            // Se for, aceitar o convite não adicionará um novo barbeiro —
+            // o cap só deve ser aplicado quando há uma inserção real.
+            const membroExistente = await tx.membroBarbearia.findFirst({
+              where: { barCodigo: convite.barCodigo, usrCodigo: user.codigo },
+            });
+
+            // Cap de plano — ignorado quando o usuário já é membro.
+            if (convite.perfil === 'barbeiro' && !membroExistente) {
+              const bar = await tx.barbearia.findUnique({
+                where: { codigo: convite.barCodigo },
+                select: { plano: true },
+              });
+              const limite = await tx.planoLimite.findUnique({
+                where: { plano: bar!.plano },
+                select: { maxBarbeiros: true },
+              });
+              if (limite?.maxBarbeiros != null) {
+                const qtd = await tx.membroBarbearia.count({
+                  where: { barCodigo: convite.barCodigo, perfil: 'barbeiro' },
+                });
+                if (qtd >= limite.maxBarbeiros) {
+                  throw new ForbiddenException(
+                    `Limite de ${limite.maxBarbeiros} barbeiro(s) atingido para o plano atual`,
+                  );
+                }
+              }
+            }
+
+            if (!membroExistente) {
+              await tx.membroBarbearia.create({
+                data: {
+                  barCodigo: convite.barCodigo,
+                  usrCodigo: user.codigo,
+                  perfil: convite.perfil,
+                },
+              });
+            }
+
+            // Claim atômico: apenas uma requisição concorrente consegue setar
+            // usadoEm de null → data. Garante idempotência do convite.
+            const marked = await tx.conviteBarbearia.updateMany({
+              where: { token, usadoEm: null },
+              data: { usadoEm: new Date() },
+            });
+            if (marked.count === 0) {
+              throw new ConflictException('Este convite já foi utilizado');
+            }
+
+            return user;
           },
-        });
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
+        lastP2034 = undefined;
+        break;
+      } catch (err) {
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2034'
+        ) {
+          lastP2034 = err;
+          continue;
+        }
+        throw err;
       }
-
-      // Atomic claim: only one concurrent request can set usadoEm from null.
-      // The pre-transaction check (line ~146) is a fast-path UX guard only.
-      const marked = await tx.conviteBarbearia.updateMany({
-        where: { token, usadoEm: null },
-        data: { usadoEm: new Date() },
-      });
-      if (marked.count === 0) {
-        throw new ConflictException('Este convite já foi utilizado');
-      }
-
-      return user;
-    });
+    }
+    if (lastP2034 || !usuario) {
+      throw new ConflictException(
+        'Conflito de acesso simultâneo — tente novamente',
+      );
+    }
 
     // Auto-login: a posse do link (enviado por e-mail) é a prova de identidade.
     const tokens = await this.authService.issueTokens(

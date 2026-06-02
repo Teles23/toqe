@@ -4,8 +4,7 @@ export type SecaoId =
   | "notificacoes"
   | "plano"
   | "seguranca"
-  | "qrcode"
-  | "api-keys";
+  | "qrcode";
 
 export interface HorarioDia {
   diaSemana: number; // 0=Dom, 1=Seg, ..., 6=Sáb

@@ -14,7 +14,6 @@ import {
   MembroBarbearia,
   PlanoLimite,
   Usuario,
-  Contato,
 } from '../generated/prisma';
 import { PerfilMembro } from './dto/convidar-membro.dto';
 

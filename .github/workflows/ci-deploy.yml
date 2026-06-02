@@ -114,7 +114,7 @@ jobs:
             mv .env.tmp .env
 
       - name: Sincronizar CORS_ORIGINS na .env da VPS
-        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         env:
           CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
         with:
@@ -134,6 +134,89 @@ jobs:
             grep -v '^CORS_ORIGINS=' .env > .env.tmp || true
             printf 'CORS_ORIGINS=%s\n' "$CORS_ORIGINS" >> .env.tmp
             mv .env.tmp .env
+
+      - name: Sincronizar RESEND_API_KEY na .env da VPS
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          envs: RESEND_API_KEY
+          script_stop: true
+          script: |
+            set -e
+            [ -n "$RESEND_API_KEY" ] || { echo "ERRO: secret RESEND_API_KEY não configurado — emails não serão enviados"; exit 1; }
+            cd /opt/projetos/toqe
+            touch .env
+            grep -v '^RESEND_API_KEY=' .env > .env.tmp || true
+            printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY" >> .env.tmp
+            mv .env.tmp .env
+
+      - name: Sincronizar API_BASE_URL na .env da VPS
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          envs: API_BASE_URL
+          script_stop: true
+          script: |
+            set -e
+            [ -n "$API_BASE_URL" ] || { echo "ERRO: secret API_BASE_URL não configurado — logos ficarão inacessíveis"; exit 1; }
+            cd /opt/projetos/toqe
+            touch .env
+            grep -v '^API_BASE_URL=' .env > .env.tmp || true
+            printf 'API_BASE_URL=%s\n' "$API_BASE_URL" >> .env.tmp
+            mv .env.tmp .env
+
+      - name: Sincronizar FRONTEND_URL na .env da VPS
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          envs: FRONTEND_URL
+          script_stop: true
+          script: |
+            set -e
+            [ -n "$FRONTEND_URL" ] || { echo "ERRO: secret FRONTEND_URL não configurado — links em e-mails apontarão para localhost"; exit 1; }
+            cd /opt/projetos/toqe
+            touch .env
+            grep -v '^FRONTEND_URL=' .env > .env.tmp || true
+            printf 'FRONTEND_URL=%s\n' "$FRONTEND_URL" >> .env.tmp
+            mv .env.tmp .env
+
+      - name: Sincronizar EMAIL_FROM na .env da VPS
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          envs: EMAIL_FROM
+          script_stop: true
+          script: |
+            set -e
+            cd /opt/projetos/toqe
+            touch .env
+            # Só reescreve EMAIL_FROM se o secret estiver preenchido.
+            # Sem isso, um secret vazio apagaria o valor já configurado na VPS.
+            if [ -n "$EMAIL_FROM" ]; then
+              grep -v '^EMAIL_FROM=' .env > .env.tmp || true
+              printf 'EMAIL_FROM=%s\n' "$EMAIL_FROM" >> .env.tmp
+              mv .env.tmp .env
+            fi
 
       - name: Sincronizar docker-compose.prod.yml para a VPS
         uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1.0.0
