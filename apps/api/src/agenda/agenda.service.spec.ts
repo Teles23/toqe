@@ -404,6 +404,7 @@ describe('AgendaService', () => {
         codigo: 7,
         barCodigo,
         nome: 'Corte',
+        descricao: null,
         duracaoBase: 30,
         precoBase: new Prisma.Decimal(40),
         ativo: true,

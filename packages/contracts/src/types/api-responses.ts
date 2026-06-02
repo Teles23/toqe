@@ -59,6 +59,7 @@ export interface ServicoAPI {
   codigo: number;
   barCodigo: number;
   nome: string;
+  descricao: string | null;
   precoBase: number | null;
   duracaoBase: number | null;
   ativo: boolean;

@@ -50,6 +50,7 @@ describe('ServicoService', () => {
         precoBase: new Prisma.Decimal(dto.precoBase),
         barCodigo,
         ativo: true,
+        descricao: null,
         exclusivoBarbeiroId: null,
       } satisfies Servico;
       mockPrisma.servico.create.mockResolvedValue(created);
@@ -72,6 +73,7 @@ describe('ServicoService', () => {
           ativo: true,
           precoBase: null,
           duracaoBase: null,
+          descricao: null,
           exclusivoBarbeiroId: null,
         } satisfies Servico,
       ]);
@@ -91,6 +93,7 @@ describe('ServicoService', () => {
         ativo: true,
         precoBase: null,
         duracaoBase: null,
+        descricao: null,
         exclusivoBarbeiroId: null,
       } satisfies Servico;
       mockPrisma.servico.findFirst.mockResolvedValue(srv);
@@ -115,6 +118,7 @@ describe('ServicoService', () => {
         ativo: true,
         precoBase: null,
         duracaoBase: null,
+        descricao: null,
         exclusivoBarbeiroId: null,
       } satisfies Servico;
       mockPrisma.servico.findFirst.mockResolvedValue(srv);
@@ -138,6 +142,7 @@ describe('ServicoService', () => {
         nome: 'Corte',
         precoBase: null,
         duracaoBase: null,
+        descricao: null,
         exclusivoBarbeiroId: null,
       } satisfies Servico;
       mockPrisma.servico.findFirst.mockResolvedValue(srv);
@@ -188,6 +193,7 @@ describe('ServicoService', () => {
           nome: 'Corte',
           precoBase: new Prisma.Decimal(40),
           duracaoBase: 30,
+          descricao: null,
           exclusivoBarbeiroId: null,
           barCodigo,
           ativo: true,
@@ -197,6 +203,7 @@ describe('ServicoService', () => {
           nome: 'Selagem',
           precoBase: new Prisma.Decimal(80),
           duracaoBase: 60,
+          descricao: null,
           exclusivoBarbeiroId: 7,
           barCodigo,
           ativo: true,
@@ -243,6 +250,7 @@ describe('ServicoService', () => {
           nome: 'A',
           precoBase: new Prisma.Decimal(10),
           duracaoBase: 20,
+          descricao: null,
           exclusivoBarbeiroId: null,
           barCodigo,
           ativo: true,
@@ -252,6 +260,7 @@ describe('ServicoService', () => {
           nome: 'B',
           precoBase: new Prisma.Decimal(10),
           duracaoBase: 20,
+          descricao: null,
           exclusivoBarbeiroId: null,
           barCodigo,
           ativo: true,
@@ -285,6 +294,7 @@ describe('ServicoService', () => {
         nome: 'Corte',
         ativo: true,
         precoBase: null,
+        descricao: null,
         exclusivoBarbeiroId: null,
       } satisfies Servico);
       mockPrisma.barbeiroServico.upsert.mockResolvedValue({
@@ -337,6 +347,7 @@ describe('ServicoService', () => {
         codigo: 5,
         barCodigo,
         nome: 'Corte',
+        descricao: null,
         ativo: true,
         precoBase: null,
         duracaoBase: null,
@@ -373,6 +384,7 @@ describe('ServicoService', () => {
         codigo: 5,
         barCodigo,
         nome: 'Corte',
+        descricao: null,
         ativo: true,
         precoBase: null,
         duracaoBase: null,
@@ -416,6 +428,7 @@ describe('ServicoService', () => {
         ativo: true,
         precoBase: null,
         duracaoBase: null,
+        descricao: null,
         exclusivoBarbeiroId: null,
       } satisfies Servico);
 
@@ -442,6 +455,7 @@ describe('ServicoService', () => {
         ativo: true,
         precoBase: null,
         duracaoBase: null,
+        descricao: null,
         exclusivoBarbeiroId: 7,
       } satisfies Servico);
 
