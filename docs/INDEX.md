@@ -144,6 +144,8 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 
 - [82-auditoria-seguranca.md](82-auditoria-seguranca.md) — auditoria sistêmica de segurança: type safety (Partes 1–7), 2 vulns HIGH corrigidas (webhook fail-open, IDOR fidelidade), hardening WebSocket, fix TenantInterceptor crash em GET (PR #106)
 - [83-auditoria-seguranca-rounds-2-3.md](83-auditoria-seguranca-rounds-2-3.md) — Rounds 2 e 3: tokenHash, PII em Redis, JWT tokenVersion, 2FA secret, cross-tenant slots, $executeRaw, ValidationPipe, INTERNAL_API obrigatória, /admin privada (PR #111)
+- [84-pendencias-seguranca.md](84-pendencias-seguranca.md) — Gaps pendentes: rate limit no login, cleanup de refresh tokens expirados, Helmet HTTP headers, 2FA obrigatório para donos
+- [85-correcoes-pos-teste-onboarding-auth-dashboard.md](85-correcoes-pos-teste-onboarding-auth-dashboard.md) — 10 bugs corrigidos: onboarding, login Google, refresh token ruidoso, convite barbeiro, nota cliente, descricao serviço, rota /rede, status EM_ANDAMENTO, logo CSP, sidebar ao vivo
 
 ---
 
