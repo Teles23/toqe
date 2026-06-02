@@ -17,9 +17,9 @@ resolve isso de `process.env.EXPO_PUBLIC_API_URL`, com **fallback para produçã
 | Cenário                          | De onde vem `EXPO_PUBLIC_API_URL`     | Resultado            |
 | -------------------------------- | ------------------------------------- | -------------------- |
 | `expo start` (dev client)        | `apps/mobile/.env.local` (gitignored) | API do container dev |
-| `eas build --profile production` | `eas.json` → `production.env`         | API de produção      |
-| `eas build --profile preview`    | `eas.json` → `preview.env`            | API de produção      |
-| Nada definido                    | fallback no `app.config.ts`           | API de produção      |
+| `eas build --profile production` | `eas.json` → `production.env`         | `https://api.toqe-barber.com.br/api/v1` |
+| `eas build --profile preview`    | `eas.json` → `preview.env`            | `https://api.toqe-barber.com.br/api/v1` |
+| Nada definido                    | fallback no `app.config.ts`           | `https://api.toqe-barber.com.br/api/v1` |
 
 | Arquivo                                 | Mudança                                                             |
 | --------------------------------------- | ------------------------------------------------------------------- |
@@ -27,6 +27,16 @@ resolve isso de `process.env.EXPO_PUBLIC_API_URL`, com **fallback para produçã
 | `apps/mobile/eas.json`                  | `preview` e `production` definem `env.EXPO_PUBLIC_API_URL = <prod>` |
 | `apps/mobile/.env.local` _(gitignored)_ | URL do container dev (ex.: `http://192.168.100.55:3000/api/v1`)     |
 | `apps/mobile/.env.local.example`        | template versionado (físico/emulador/simulador)                     |
+
+### Trocar URL sem novo build (OTA Update)
+
+```bash
+# 1. Edita EXPO_PUBLIC_API_URL em eas.json
+# 2. Empurra novo bundle JS para todos os dispositivos (~2 min):
+eas update --branch production --message "nova URL da API"
+```
+
+Não precisa de submissão para App Store/Play Store. Ver [87-producao-dominio-cloudflare.md](87-producao-dominio-cloudflare.md).
 
 ### Dev client — qual URL no `.env.local`
 
