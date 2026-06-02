@@ -283,15 +283,14 @@ describe('ConviteService', () => {
     it('lança ForbiddenException quando limite de plano é atingido dentro da transação', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
       mockPrisma.usuario.findUnique.mockResolvedValue(null);
-      // Plano com limite de 1 barbeiro
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null); // não é membro
       mockPrisma.barbearia.findUnique.mockResolvedValue({
         plano: 'free',
       } as unknown as Barbearia);
       mockPrisma.planoLimite.findUnique.mockResolvedValue({
         maxBarbeiros: 1,
       } as unknown as PlanoLimite);
-      // Já existe 1 barbeiro — limite atingido
-      mockPrisma.membroBarbearia.count.mockResolvedValue(1);
+      mockPrisma.membroBarbearia.count.mockResolvedValue(1); // 1 barbeiro — limite atingido
 
       await expect(
         service.aceitarConvite('tok123', { nome: 'João', senha: 'senha1234' }),
@@ -299,19 +298,84 @@ describe('ConviteService', () => {
       expect(mockPrisma.membroBarbearia.create).not.toHaveBeenCalled();
     });
 
-    it('converte P2034 (serialization failure) em ConflictException', async () => {
+    it('não aplica cap quando usuário já é membro (re-convite não adiciona barbeiro)', async () => {
+      mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
+      mockPrisma.usuario.findUnique.mockResolvedValue({
+        codigo: 99,
+        nome: 'Maria',
+        email: 'joao@x.com',
+        senhaHash: 'hash',
+      } as unknown as Usuario);
+      mockedCompare.mockResolvedValue(true as never);
+      // Usuário já é membro
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue({
+        codigo: 1,
+      } as unknown as MembroBarbearia);
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
+      // Plano com limite já esgotado — não deve importar pois é re-convite
+      mockPrisma.planoLimite.findUnique.mockResolvedValue({
+        maxBarbeiros: 1,
+      } as unknown as PlanoLimite);
+      mockPrisma.membroBarbearia.count.mockResolvedValue(1);
+
+      // Não deve lançar ForbiddenException
+      await expect(
+        service.aceitarConvite('tok123', { senha: 'senha1234' }),
+      ).resolves.toBeDefined();
+      // Cap não foi consultado
+      expect(mockPrisma.barbearia.findUnique).not.toHaveBeenCalled();
+      expect(mockPrisma.membroBarbearia.create).not.toHaveBeenCalled();
+    });
+
+    it('retenta automaticamente até 3x em P2034 e converte em ConflictException', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
       mockPrisma.usuario.findUnique.mockResolvedValue(null);
-      // Simula falha de serialização do PostgreSQL
       const p2034 = new Prisma.PrismaClientKnownRequestError(
         'Transaction failed due to a write conflict or a deadlock',
         { code: 'P2034', clientVersion: '0.0.0' },
       );
-      mockPrisma.$transaction.mockRejectedValueOnce(p2034);
+      // Falha nas 3 tentativas
+      mockPrisma.$transaction
+        .mockRejectedValueOnce(p2034)
+        .mockRejectedValueOnce(p2034)
+        .mockRejectedValueOnce(p2034);
 
       await expect(
         service.aceitarConvite('tok123', { nome: 'João', senha: 'senha1234' }),
       ).rejects.toThrow(ConflictException);
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(3);
+    });
+
+    it('tem sucesso na segunda tentativa após P2034 transiente', async () => {
+      mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(makeConvite());
+      mockPrisma.usuario.findUnique.mockResolvedValue(null);
+      mockPrisma.usuario.create.mockResolvedValue({
+        codigo: 50,
+        nome: 'João',
+        email: 'joao@x.com',
+      } as unknown as Usuario);
+      mockPrisma.membroBarbearia.findFirst.mockResolvedValue(null);
+      mockPrisma.membroBarbearia.create.mockResolvedValue(
+        {} as unknown as MembroBarbearia,
+      );
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
+      const p2034 = new Prisma.PrismaClientKnownRequestError(
+        'Transaction failed due to a write conflict or a deadlock',
+        { code: 'P2034', clientVersion: '0.0.0' },
+      );
+      // Falha na primeira, sucesso na segunda
+      mockPrisma.$transaction
+        .mockRejectedValueOnce(p2034)
+        .mockImplementationOnce(
+          (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
+        );
+
+      const result = await service.aceitarConvite('tok123', {
+        nome: 'João',
+        senha: 'senha1234',
+      });
+      expect(result.isNew).toBe(true);
+      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(2);
     });
 
     it('relança erros desconhecidos sem converter', async () => {
