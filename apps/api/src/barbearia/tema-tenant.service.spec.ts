@@ -2,7 +2,6 @@ import { Test } from '@nestjs/testing';
 import { TemaTenantService } from './tema-tenant.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
-import { TemaTenant } from '../generated/prisma';
 
 const mockPrisma = createPrismaMock();
 
