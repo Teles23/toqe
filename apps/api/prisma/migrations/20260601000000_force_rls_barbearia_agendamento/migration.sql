@@ -6,6 +6,10 @@
 -- As políticas incluem um bypass para processos cross-tenant (cron)
 -- que setam app.bypass_rls=true via TenantStore.runAdmin().
 
+-- Remove FORCE RLS de TQE_BARBEARIA: fluxos cross-tenant (create, lista pública,
+-- webhook Asaas) não têm tenant context. ENABLE RLS permanece — o owner bypassa.
+ALTER TABLE "TQE_BARBEARIA" NO FORCE ROW LEVEL SECURITY;
+
 -- Barbearia: apenas atualiza a política para incluir bypass (sem FORCE RLS)
 DROP POLICY IF EXISTS tenant_isolation_policy ON "TQE_BARBEARIA";
 CREATE POLICY tenant_isolation_policy ON "TQE_BARBEARIA" USING (
