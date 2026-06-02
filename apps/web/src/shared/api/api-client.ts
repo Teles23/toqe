@@ -43,21 +43,27 @@ interface RequestOptions {
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
+interface TokenCheck {
+  token: string | null;
+  /** true quando o cookie refresh_token existe — indica que vale tentar refresh */
+  canRefresh: boolean;
+}
+
 /**
  * Obtém o access_token via BFF server-side (GET /api/auth/token).
  * O cookie access_token é httpOnly — inacessível via document.cookie —
  * portanto precisamos de um round-trip ao BFF para lê-lo com segurança.
- * Retorna null quando não há sessão ativa.
+ * Retorna `{ token: null, canRefresh: false }` quando não há sessão alguma.
  */
-async function getAccessToken(): Promise<string | null> {
-  if (typeof window === "undefined") return null;
+async function getAccessToken(): Promise<TokenCheck> {
+  if (typeof window === "undefined") return { token: null, canRefresh: false };
   try {
     const res = await fetch("/api/auth/token");
-    if (!res.ok) return null;
-    const data = (await res.json()) as { token: string | null };
-    return data.token ?? null;
+    if (!res.ok) return { token: null, canRefresh: false };
+    const data = (await res.json()) as { token: string | null; canRefresh?: boolean };
+    return { token: data.token ?? null, canRefresh: data.canRefresh ?? false };
   } catch {
-    return null;
+    return { token: null, canRefresh: false };
   }
 }
 
@@ -119,14 +125,35 @@ async function request<T>(
       signal,
     });
 
-  let token = await getAccessToken();
+  const { canRefresh: hasRefreshToken, token: initialToken } = await getAccessToken();
+  let token = initialToken;
+
+  // Sem access token: só tenta refresh se o cookie refresh_token existe.
+  // Quando canRefresh=false não há sessão alguma — evita o POST /api/auth/refresh
+  // ruidoso no console em páginas públicas (landing, login, onboarding).
+  if (!token && auth) {
+    if (hasRefreshToken) {
+      const refreshed = await refreshTokens();
+      if (refreshed) {
+        ({ token } = await getAccessToken());
+      }
+    }
+    if (!token) {
+      if (redirectOn401 && typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+      throw new ApiError(401, null, "Sessão expirada");
+    }
+  }
+
   let res = await execute(token);
 
-  // 401 → tenta refresh e retry uma vez
+  // Token existia mas a request retornou 401 (expirado em race condition)
+  // → tenta refresh e retry uma vez
   if (res.status === 401 && auth) {
     const refreshed = await refreshTokens();
     if (refreshed) {
-      token = await getAccessToken();
+      ({ token } = await getAccessToken());
       res = await execute(token);
     }
   }

@@ -23,6 +23,7 @@ import {
 } from "@/features/auth/services/auth.service";
 import { AuthErrorBanner } from "./AuthErrorBanner";
 import { api } from "@/shared/api/api-client";
+import { useAuth } from "@/shared/hooks/use-auth";
 import type { UsuarioMe } from "@toqe/shared";
 import { Kbd } from "@/shared/ui/kbd";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
@@ -52,6 +53,7 @@ export function LoginForm({
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const login = useLogin();
   const router = useRouter();
+  const { establishSession } = useAuth();
 
   const {
     register,
@@ -250,7 +252,13 @@ export function LoginForm({
                   setLoadingGoogle(true);
                   try {
                     await requestGoogleLogin(credentialResponse.credential);
-                    const me = await api.get<UsuarioMe>("/usuarios/me");
+                    // Busca dados do usuário e popula o AuthProvider em paralelo.
+                    // Sem establishSession(), o contexto fica com user/perfil null
+                    // e o RequireRole redireciona em loop até o F5.
+                    const [me] = await Promise.all([
+                      api.get<UsuarioMe>("/usuarios/me"),
+                      establishSession(),
+                    ]);
                     if (me.barbearias && me.barbearias.length === 0) {
                       router.push("/onboarding");
                     } else {
@@ -267,7 +275,6 @@ export function LoginForm({
                 type="standard"
                 size="large"
                 logo_alignment="center"
-                width="100%"
               />
             </div>
             {loadingGoogle && (
