@@ -1687,6 +1687,13 @@ export default function Onboarding(): React.JSX.Element {
         slug: barbearia.slug,
       });
 
+      if (barbearia.telefone || barbearia.cidade) {
+        await api.put(`/barbearias/${bar.codigo}`, {
+          ...(barbearia.telefone ? { telefone: barbearia.telefone } : {}),
+          ...(barbearia.cidade ? { endereco: barbearia.cidade } : {}),
+        });
+      }
+
       const t = tenantApi(bar.codigo);
 
       await api.put(`/barbearias/${bar.codigo}/tema`, {

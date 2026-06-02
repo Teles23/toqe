@@ -41,13 +41,45 @@ export class ConviteService {
   ): Promise<GerarConviteResponse> {
     const barbearia = await this.prisma.barbearia.findUnique({
       where: { codigo: barCodigo },
-      select: { nome: true },
+      select: { nome: true, plano: true },
     });
     if (!barbearia) {
       throw new NotFoundException('Barbearia não encontrada');
     }
 
     const email = dto.email.toLowerCase().trim();
+
+    // Verifica limite de barbeiros do plano antes de emitir o convite.
+    // Conta membros ativos + convites pendentes (exceto renovação do mesmo e-mail),
+    // evitando que convites em aberto "ocupem vagas silenciosamente".
+    if (dto.perfil === 'barbeiro') {
+      const limite = await this.prisma.planoLimite.findUnique({
+        where: { plano: barbearia.plano },
+        select: { maxBarbeiros: true },
+      });
+      if (limite?.maxBarbeiros != null) {
+        const agora = new Date();
+        const [membros, convitesPendentes] = await Promise.all([
+          this.prisma.membroBarbearia.count({
+            where: { barCodigo, perfil: 'barbeiro' },
+          }),
+          this.prisma.conviteBarbearia.count({
+            where: {
+              barCodigo,
+              perfil: 'barbeiro',
+              usadoEm: null,
+              expiresAt: { gt: agora },
+              email: { not: email }, // renovação do mesmo convite não conta como nova vaga
+            },
+          }),
+        ]);
+        if (membros + convitesPendentes >= limite.maxBarbeiros) {
+          throw new ForbiddenException(
+            `Limite de ${limite.maxBarbeiros} barbeiro(s) atingido para o plano ${barbearia.plano}`,
+          );
+        }
+      }
+    }
 
     // 36 chars em VARCHAR(36) — randomBytes(16).toString('hex') = 32 chars,
     // 128 bits de entropia, cabe na coluna com folga.

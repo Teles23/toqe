@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { barbeariaApi } from "@/shared/api/api-client";
+import { tenantApi } from "@/shared/api/api-client";
 
 interface NotaResponse {
   conteudo: string;
@@ -18,7 +18,7 @@ export function useClienteNota(
   const query = useQuery<NotaResponse>({
     queryKey: key,
     queryFn: () =>
-      barbeariaApi(barCodigo!).get<NotaResponse>(
+      tenantApi(barCodigo!).get<NotaResponse>(
         `/clientes/${clienteCodigo}/nota`,
       ),
     enabled: !!barCodigo,
@@ -27,7 +27,7 @@ export function useClienteNota(
 
   const mutation = useMutation({
     mutationFn: (conteudo: string) =>
-      barbeariaApi(barCodigo!).put<NotaResponse>(
+      tenantApi(barCodigo!).put<NotaResponse>(
         `/clientes/${clienteCodigo}/nota`,
         { conteudo },
       ),

@@ -11,7 +11,6 @@ import { SecaoNotificacoes } from "./SecaoNotificacoes";
 import { SecaoPlano } from "./SecaoPlano";
 import { SecaoQrCode } from "./SecaoQrCode";
 import { SecaoSeguranca } from "./SecaoSeguranca";
-import { SecaoApiKeys } from "./SecaoApiKeys";
 
 interface Props {
   barCodigo: number | null;
@@ -35,7 +34,6 @@ export function ConfiguracoesView({ barCodigo, slug }: Props) {
     ),
     plano: <SecaoPlano barCodigo={barCodigo} />,
     seguranca: <SecaoSeguranca />,
-    "api-keys": <SecaoApiKeys barCodigo={barCodigo} />,
   };
 
   const secaoLabel = SECOES.find((s) => s.id === secaoAtiva)?.label ?? "";

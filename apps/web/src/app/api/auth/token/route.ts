@@ -13,5 +13,6 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export function GET(req: NextRequest): NextResponse {
   const token = req.cookies.get("access_token")?.value ?? null;
-  return NextResponse.json({ token });
+  const canRefresh = !!req.cookies.get("refresh_token")?.value;
+  return NextResponse.json({ token, canRefresh });
 }

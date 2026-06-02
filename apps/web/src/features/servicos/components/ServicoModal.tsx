@@ -34,7 +34,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
       nome: servico?.nome ?? "",
       precoBase: Number(servico?.precoBase ?? 30),
       duracaoBase: servico?.duracaoBase ?? 30,
-      descricao: "",
+      descricao: servico?.descricao ?? "",
     },
   });
 
@@ -43,7 +43,7 @@ export function ServicoModal({ servico, onClose }: ServicoModalProps) {
       nome: servico?.nome ?? "",
       precoBase: Number(servico?.precoBase ?? 30),
       duracaoBase: servico?.duracaoBase ?? 30,
-      descricao: "",
+      descricao: servico?.descricao ?? "",
     });
   }, [servico, reset]);
 

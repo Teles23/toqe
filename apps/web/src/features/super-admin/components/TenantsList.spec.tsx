@@ -48,6 +48,9 @@ const MOCK_TENANTS = [
 ];
 
 const server = setupServer(
+  http.get("/api/auth/token", () =>
+    HttpResponse.json({ token: "mock-admin-token", canRefresh: false }),
+  ),
   http.get(`${BASE}/admin/barbearias`, () => HttpResponse.json(MOCK_TENANTS)),
   http.patch(`${BASE}/admin/barbearias/:id/plano`, () =>
     HttpResponse.json({ ok: true }),
