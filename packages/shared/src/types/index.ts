@@ -30,7 +30,7 @@ export interface UsuarioMe {
   dataNascimento?: string | null;
   twoFaEnabled?: boolean;
   superAdmin?: boolean;
-  /** Link público compartilhável do barbeiro (ex.: "toqe.app/u/carlos-mendes"). */
+  /** Link público compartilhável do barbeiro (ex.: "https://app.toqe-barber.com.br/u/carlos-mendes"). */
   linkPublico?: string;
   barbearias: BarbeariaResumo[];
 }

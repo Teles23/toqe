@@ -17,6 +17,9 @@ export function slugify(text: string): string {
  * Derivado do nome; resolução da página pública é feature futura.
  */
 export function linkPublicoBarbeiro(nome: string): string {
+  const rawBase =
+    process.env.PUBLIC_BOOKING_DOMAIN ?? 'https://app.toqe-barber.com.br';
+  const base = rawBase.startsWith('http') ? rawBase : `https://${rawBase}`;
   const slug = slugify(nome) || 'barbeiro';
-  return `toqe.app/u/${slug}`;
+  return `${base.replace(/\/$/, '')}/u/${slug}`;
 }

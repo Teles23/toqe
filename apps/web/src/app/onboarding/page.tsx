@@ -29,6 +29,9 @@ import { useAuth } from "@/shared/hooks/use-auth";
 import { getInitial } from "@/shared/lib/utils";
 import { maskTelefone, maskSlug } from "@/shared/utils/masks";
 
+const BOOKING_DOMAIN =
+  process.env.NEXT_PUBLIC_BOOKING_DOMAIN ?? "app.toqe-barber.com.br";
+
 interface AccountData {
   nome: string;
   email: string;
@@ -593,7 +596,7 @@ function Passo1({
         <div className="ob-field">
           <label>Seu link de agendamento</label>
           <div className="with-prefix">
-            <span className="prefix">toqe.app/</span>
+            <span className="prefix">{BOOKING_DOMAIN}/</span>
             <input
               type="text"
               value={data.slug}
@@ -625,7 +628,7 @@ function Passo1({
                 className="text-[var(--accent)]"
                 style={{ fontFamily: "JetBrains Mono" }}
               >
-                toqe.app/{data.slug || "sua-barbearia"}
+                {BOOKING_DOMAIN}/{data.slug || "sua-barbearia"}
               </span>
             </div>
           )}
@@ -759,7 +762,7 @@ function Passo2({
                 {barbearia.nome || "Sua Barbearia"}
               </div>
               <div className="brand-preview-slug">
-                toqe.app/<span>{barbearia.slug || "sua-barbearia"}</span>
+                {BOOKING_DOMAIN}/<span>{barbearia.slug || "sua-barbearia"}</span>
               </div>
             </div>
           </div>
@@ -982,7 +985,7 @@ function AcceptancePreview({
           <span style={{ background: "#ffd43b" }} />
           <span style={{ background: "#51cf66" }} />
         </div>
-        <span className="ob-browser-url">toqe.app/convite?token=abc123</span>
+        <span className="ob-browser-url">{BOOKING_DOMAIN}/convite?token=abc123</span>
         <span
           className="ob-badge ob-badge-current"
           style={{ marginLeft: "auto" }}
@@ -1256,7 +1259,7 @@ function Passo5({
                   Clique para aceitar e configurar seu acesso:
                 </div>
                 <span className="ob-wapp-link">
-                  → toqe.app/convite?token=abc123
+                  → {BOOKING_DOMAIN}/convite?token=abc123
                 </span>
                 <div className="ob-wapp-meta">Toqe · agora ✓✓</div>
               </div>
@@ -1267,7 +1270,7 @@ function Passo5({
               <div className="ob-invite-card-label">Via E-mail</div>
               <div className="ob-email-preview">
                 <div className="ob-email-meta">
-                  De: noreply@toqe.app · Para: {previewBarbeiro.email}
+                  De: noreply@{BOOKING_DOMAIN} · Para: {previewBarbeiro.email}
                 </div>
                 <div className="ob-email-subject">
                   Você foi convidado para a equipe
@@ -1373,7 +1376,7 @@ function Passo6({
           </div>
           <div className="summary-line">
             <span className="k">Link</span>
-            <span className="v">toqe.app/{barbearia.slug || "—"}</span>
+            <span className="v">{BOOKING_DOMAIN}/{barbearia.slug || "—"}</span>
           </div>
         </div>
 
@@ -1433,7 +1436,7 @@ function Passo6({
           <h4>Tudo certo pra ir ao ar</h4>
           <p>
             Ao publicar, seu link{" "}
-            <span>toqe.app/{barbearia.slug || "sua-barbearia"}</span> fica
+            <span>{BOOKING_DOMAIN}/{barbearia.slug || "sua-barbearia"}</span> fica
             acessível e seus clientes já podem agendar.
           </p>
         </div>
@@ -1448,6 +1451,7 @@ export default function Onboarding(): React.JSX.Element {
   const [step, setStep] = useState(1);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
+  const [publishDone, setPublishDone] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [googleAuthed, setGoogleAuthed] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -1609,9 +1613,30 @@ export default function Onboarding(): React.JSX.Element {
       }
     }
 
+    if (step === 4) {
+      if (!horarios.some((h) => h.aberto)) {
+        setFieldErrors({
+          horarios: "Ative ao menos um dia de funcionamento antes de continuar.",
+        });
+        return;
+      }
+    }
+
     if (step === 5) {
+      const servicosValidos = servicos.filter(
+        (s) => s.nome.trim().length > 0 && s.preco > 0 && s.duracao > 0,
+      );
+      if (servicosValidos.length === 0) {
+        setFieldErrors({
+          servicos_required:
+            "Adicione ao menos um serviço com nome, preço e duração antes de continuar.",
+        });
+        return;
+      }
+
       const erros: Record<string, string> = {};
       servicos.forEach((s, idx) => {
+        if (!s.nome.trim()) return;
         const r = createServicoSchema.safeParse({
           nome: s.nome,
           precoBase: s.preco,
@@ -1631,6 +1656,7 @@ export default function Onboarding(): React.JSX.Element {
 
     if (step === 6) {
       const erros: Record<string, string> = {};
+
       barbeiros.forEach((b, idx) => {
         if (!b.email) return;
         const r = convidarMembroSchema.safeParse({
@@ -1643,6 +1669,7 @@ export default function Onboarding(): React.JSX.Element {
               `Barbeiro ${idx + 1}: ${i.message}`;
           });
       });
+
       if (Object.keys(erros).length > 0) {
         setFieldErrors(erros);
         return;
@@ -1655,6 +1682,14 @@ export default function Onboarding(): React.JSX.Element {
     }
 
     // Step 7 — Publicar
+    if (!horarios.some((h) => h.aberto)) {
+      setFieldErrors({
+        horarios: "Ative ao menos um dia de funcionamento antes de publicar.",
+      });
+      go(4);
+      return;
+    }
+
     setPublishing(true);
     try {
       if (!googleAuthed) {
@@ -1751,25 +1786,44 @@ export default function Onboarding(): React.JSX.Element {
           ),
       );
 
-      await Promise.allSettled(
-        barbeiros
-          .filter((b) => b.email.trim().length > 0)
-          .map((b) =>
-            api.post(`/barbearias/${bar.codigo}/membros`, {
-              email: b.email,
-              perfil: "barbeiro",
-            }),
-          ),
+      const barbeirosFiltrados = barbeiros.filter(
+        (b) => b.email.trim().length > 0,
       );
+      const conviteResults = await Promise.allSettled(
+        barbeirosFiltrados.map((b) =>
+          api.post(`/barbearias/${bar.codigo}/convite`, {
+            email: b.email,
+            perfil: "barbeiro",
+          }),
+        ),
+      );
+      const convitesFalhados = conviteResults
+        .map((r, i) =>
+          r.status === "rejected" ? (barbeirosFiltrados[i]?.email ?? null) : null,
+        )
+        .filter((e): e is string => e !== null);
 
       await establishSession();
+
+      if (convitesFalhados.length > 0) {
+        setPublishDone(true);
+        setPublishError(
+          `Barbearia criada! Porém ${convitesFalhados.length === 1 ? "o convite para" : "os convites para"} ${convitesFalhados.join(", ")} não ${convitesFalhados.length === 1 ? "foi enviado" : "foram enviados"}. Reenvie pelo painel depois.`,
+        );
+        return;
+      }
+
       router.push("/dashboard");
     } catch (err) {
-      setPublishError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao publicar. Tente novamente.",
-      );
+      const msg =
+        err instanceof Error ? err.message : "Erro ao publicar. Tente novamente.";
+      if (msg.includes("Slug já está em uso")) {
+        setFieldErrors({ slug: "Este endereço já está em uso. Escolha outro." });
+        go(2);
+        setPublishing(false);
+        return;
+      }
+      setPublishError(msg);
     } finally {
       setPublishing(false);
     }
@@ -1955,12 +2009,19 @@ export default function Onboarding(): React.JSX.Element {
           <div className="ob-nav-right">
             {/* Erro de publicação */}
             {publishError && (
-              <div className="text-[var(--status-error)] text-[12px] max-w-[300px] text-right">
+              <div
+                className="text-[12px] max-w-[300px] text-right"
+                style={{
+                  color: publishDone
+                    ? "var(--status-warning, #F4B400)"
+                    : "var(--status-error)",
+                }}
+              >
                 {publishError}
               </div>
             )}
             {/* Erros genéricos por campo (serviços/barbeiros) */}
-            {Object.values(fieldErrors).some(Boolean) && step >= 5 && (
+            {Object.values(fieldErrors).some(Boolean) && step >= 4 && (
               <div className="text-[var(--status-error)] text-[12px] max-w-[300px] text-right">
                 {Object.values(fieldErrors)
                   .filter(Boolean)
@@ -1974,26 +2035,36 @@ export default function Onboarding(): React.JSX.Element {
                 <span>●</span> Salvo automaticamente
               </span>
             )}
-            <button
-              type="button"
-              className="tqe-ob-btn tqe-ob-btn-primary"
-              onClick={handleNext}
-              disabled={publishing}
-              style={{
-                opacity: publishing ? 0.7 : 1,
-                cursor: publishing ? "not-allowed" : "pointer",
-              }}
-            >
-              {publishing ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" /> Publicando...
-                </>
-              ) : step === STEPS.length ? (
-                "Publicar barbearia"
-              ) : (
-                "Continuar →"
-              )}
-            </button>
+            {publishDone ? (
+              <button
+                type="button"
+                className="tqe-ob-btn tqe-ob-btn-primary"
+                onClick={() => router.push("/dashboard")}
+              >
+                Ir para o painel →
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="tqe-ob-btn tqe-ob-btn-primary"
+                onClick={handleNext}
+                disabled={publishing}
+                style={{
+                  opacity: publishing ? 0.7 : 1,
+                  cursor: publishing ? "not-allowed" : "pointer",
+                }}
+              >
+                {publishing ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Publicando...
+                  </>
+                ) : step === STEPS.length ? (
+                  "Publicar barbearia"
+                ) : (
+                  "Continuar →"
+                )}
+              </button>
+            )}
           </div>
         </div>
       </main>

@@ -7,7 +7,7 @@
 ## Contexto
 
 Slides 05 e 14: o barbeiro tem um link público compartilhável
-(`toqe.app/u/{slug}`) — para a bio do Instagram etc. — com "1-tap copiar".
+(`https://app.toqe-barber.com.br/u/{slug}`) — para a bio do Instagram etc. — com "1-tap copiar".
 Esta entrega adiciona o link e a ação de compartilhar. **Fecha o pendente do
 empty state da agenda (Fase 1).**
 
@@ -22,7 +22,7 @@ barbeiro) é **feature futura**: hoje o booking público é por barbearia
 
 | Arquivo                                                          | Mudança                                                                       |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `apps/api/src/common/utils/slug.utils.ts` _(novo)_               | `slugify()` (sem acentos) + `linkPublicoBarbeiro(nome)` → `toqe.app/u/{slug}` |
+| `apps/api/src/common/utils/slug.utils.ts` _(novo)_               | `slugify()` (sem acentos) + `linkPublicoBarbeiro(nome)` → `https://app.toqe-barber.com.br/u/{slug}` |
 | `packages/shared/src/types/index.ts`                             | `UsuarioMe.linkPublico?: string`                                              |
 | `apps/api/src/usuario/usuario.service.ts`                        | `me()` retorna `linkPublico` derivado do nome                                 |
 | `apps/mobile/src/shared/providers/auth-provider.tsx`             | `AuthUser.linkPublico`; `buildUser` propaga `me.linkPublico`                  |

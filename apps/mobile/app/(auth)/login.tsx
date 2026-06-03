@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { Link } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -16,6 +16,7 @@ import {
 
 import { ApiError } from "@/src/shared/api/api-client";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { normalizeReturnTo } from "@/src/shared/navigation/return-to";
 import { useTheme } from "@/src/shared/theme";
 import {
   AmberButton,
@@ -28,6 +29,8 @@ import { loginSchema, type LoginInput } from "@toqe/contracts";
 export default function LoginScreen() {
   "use no memo";
   const { login, loginWithGoogle } = useAuth();
+  const params = useLocalSearchParams<{ returnTo?: string }>();
+  const returnTo = normalizeReturnTo(params.returnTo);
   const { palette, spacing, typography } = useTheme();
   const [emailSent, setEmailSent] = useState(false);
   const [sentEmail, setSentEmail] = useState("");
@@ -64,7 +67,7 @@ export default function LoginScreen() {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      await login(data.email, data.senha);
+      await login(data.email, data.senha, returnTo);
       // login() redireciona internamente em caso de sucesso com tokens.
       // Se chegarmos aqui sem redirect (ex: magic link futuro), exibimos sent state.
       setSentEmail(data.email);
@@ -93,7 +96,7 @@ export default function LoginScreen() {
         setError("root", { message: "Falha ao obter token Google." });
         return;
       }
-      await loginWithGoogle(idToken);
+      await loginWithGoogle(idToken, returnTo);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("root", { message: "Conta Google não autorizada." });
@@ -285,7 +288,17 @@ export default function LoginScreen() {
           <Text style={[typography.label, { color: palette.textMuted }]}>
             Novo por aqui?{" "}
           </Text>
-          <Link href="/(auth)/cadastro" asChild>
+          <Link
+            href={
+              returnTo
+                ? {
+                    pathname: "/(auth)/cadastro",
+                    params: { returnTo },
+                  }
+                : "/(auth)/cadastro"
+            }
+            asChild
+          >
             <Pressable accessibilityRole="link">
               <Text
                 style={[

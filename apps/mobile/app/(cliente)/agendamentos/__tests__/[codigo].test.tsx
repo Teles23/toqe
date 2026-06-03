@@ -65,10 +65,23 @@ function setupFetch(opts: { ag?: unknown; agStatus?: number }) {
   }) as unknown as typeof fetch;
 }
 
+const queryClients: QueryClient[] = [];
+const releasePendingRequests: (() => void)[] = [];
+
+function makePendingResponse() {
+  return new Promise<Response>((_resolve, reject) => {
+    releasePendingRequests.push(() => reject(new Error("test cleanup")));
+  });
+}
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false, gcTime: 0 },
+    },
   });
+  queryClients.push(client);
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 function renderScreen() {
@@ -106,14 +119,19 @@ describe("AgendamentoDetalheScreen", () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    while (releasePendingRequests.length > 0) {
+      releasePendingRequests.pop()?.();
+    }
+    queryClients.splice(0).forEach((client) => client.clear());
+  });
+
   afterAll(() => {
     global.fetch = originalFetch;
   });
 
   it("mostra loading enquanto a query real está pendente", () => {
-    global.fetch = jest.fn(
-      () => new Promise<never>(() => {}),
-    ) as unknown as typeof fetch;
+    global.fetch = jest.fn(() => makePendingResponse()) as unknown as typeof fetch;
     renderScreen();
     expect(screen.getByTestId("agendamento-loading")).toBeTruthy();
   });

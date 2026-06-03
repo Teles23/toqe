@@ -13,6 +13,8 @@ const PLAN_COLORS: Record<string, string> = {
   free: "#4A4A4A",
 };
 
+const BOOKING_DOMAIN = process.env.NEXT_PUBLIC_BOOKING_DOMAIN ?? 'app.toqe-barber.com.br';
+
 const STATUS_COLORS: Record<string, string> = {
   ativo: "#1DB954",
   inativo: "#FF4D4F",
@@ -77,7 +79,7 @@ export function TenantDrawer({ tenant, onClose }: TenantDrawerProps) {
             <div>
               <div className="tqe-sa-drawer-tenant-name">{tenant.nome}</div>
               <div className="tqe-sa-drawer-tenant-slug">
-                toqe.app/{tenant.slug}
+                {BOOKING_DOMAIN}/{tenant.slug}
               </div>
             </div>
           </div>

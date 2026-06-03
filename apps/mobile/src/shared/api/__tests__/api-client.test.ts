@@ -137,6 +137,28 @@ describe("api-client", () => {
       });
     });
 
+    it("usa a mensagem enviada pela API quando existir", async () => {
+      mockFetch.mockResolvedValueOnce(
+        makeResponse(400, { message: "Mensagem real do servidor" }),
+      );
+
+      await expect(api.get("/erro-validacao")).rejects.toMatchObject({
+        name: "ApiError",
+        status: 400,
+        message: "Mensagem real do servidor",
+      });
+    });
+
+    it("concatena mensagens de validação quando message é lista", async () => {
+      mockFetch.mockResolvedValueOnce(
+        makeResponse(400, { message: ["Nome obrigatório", "Senha curta"] }),
+      );
+
+      await expect(api.post("/erro-validacao")).rejects.toMatchObject({
+        message: "Nome obrigatório\nSenha curta",
+      });
+    });
+
     it("lança ApiError em 500", async () => {
       mockFetch.mockResolvedValueOnce(
         makeResponse(500, { message: "Server error" }),

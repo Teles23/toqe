@@ -53,6 +53,7 @@ const makeConvite = (overrides: Record<string, unknown> = {}) =>
     perfil: 'barbeiro',
     expiresAt: new Date(Date.now() + 86_400_000), // +1 dia
     usadoEm: null,
+    rejeitadoEm: null,
     barbearia: { nome: 'Urban Flow', slug: 'urban-flow' },
     ...overrides,
   }) as unknown as ConviteBarbearia;
@@ -124,6 +125,16 @@ describe('ConviteService', () => {
     it('lança NotFoundException para convite expirado', async () => {
       mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(
         makeConvite({ expiresAt: new Date(Date.now() - 1000) }),
+      );
+
+      await expect(service.obterConvite('tok123')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('lança NotFoundException para convite rejeitado', async () => {
+      mockPrisma.conviteBarbearia.findUnique.mockResolvedValue(
+        makeConvite({ rejeitadoEm: new Date() }),
       );
 
       await expect(service.obterConvite('tok123')).rejects.toThrow(
@@ -394,23 +405,43 @@ describe('ConviteService', () => {
   // ─── rejeitarConvite ──────────────────────────────────────────────────────
 
   describe('rejeitarConvite', () => {
-    it('remove o convite e retorna sucesso', async () => {
-      mockPrisma.conviteBarbearia.deleteMany.mockResolvedValue({ count: 1 });
+    it('marca rejeitadoEm em vez de deletar — mantém auditoria', async () => {
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.rejeitarConvite('tok123');
 
       expect(result).toEqual({ sucesso: true });
-      expect(mockPrisma.conviteBarbearia.deleteMany).toHaveBeenCalledWith({
-        where: { token: 'tok123' },
-      });
+      expect(mockPrisma.conviteBarbearia.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            token: 'tok123',
+            rejeitadoEm: null,
+            usadoEm: null,
+          }),
+          data: expect.objectContaining({ rejeitadoEm: expect.any(Date) }),
+        }),
+      );
+      expect(mockPrisma.conviteBarbearia.deleteMany).not.toHaveBeenCalled();
     });
 
-    it('é idempotente quando o token não existe', async () => {
-      mockPrisma.conviteBarbearia.deleteMany.mockResolvedValue({ count: 0 });
+    it('é idempotente: token já rejeitado ou inexistente retorna sucesso sem erro', async () => {
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 0 });
 
       const result = await service.rejeitarConvite('inexistente');
 
       expect(result).toEqual({ sucesso: true });
+    });
+
+    it('não afeta convite já aceito (usadoEm preenchido)', async () => {
+      mockPrisma.conviteBarbearia.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.rejeitarConvite('tok-aceito');
+
+      expect(mockPrisma.conviteBarbearia.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ usadoEm: null }),
+        }),
+      );
     });
   });
 

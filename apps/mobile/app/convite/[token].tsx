@@ -62,12 +62,21 @@ export default function ConviteTokenScreen() {
 
   const handleAccept = () => {
     setErroConvite(null);
+
+    if (data?.isNew && nome.trim().length < 2) {
+      setErroConvite("Nome deve ter ao menos 2 caracteres.");
+      return;
+    }
+    if (senha.length < 8) {
+      setErroConvite("Senha de ao menos 8 caracteres.");
+      return;
+    }
+
     setView("accepting");
     aceitarConvite(
-      { token: token!, nome: nome || undefined, senha: senha || undefined },
+      { token: token!, nome: nome.trim() || undefined, senha: senha || undefined },
       {
         onSuccess: async (result) => {
-          // Auto-login: estabelece a sessão a partir dos tokens retornados.
           setWelcomeNome(result.user.nome);
           await establishSession(result.access_token, result.refresh_token);
           setView("welcome");
@@ -81,10 +90,7 @@ export default function ConviteTokenScreen() {
                 ? "Convite expirado ou não encontrado."
                 : status === 401
                   ? "Senha incorreta."
-                  : status === 400
-                    ? "Senha de ao menos 8 caracteres."
-                    : (e.message ??
-                      "Erro ao aceitar convite. Tente novamente.");
+                  : (e.message ?? "Erro ao aceitar convite. Tente novamente.");
           setErroConvite(msg);
           setView("form");
         },

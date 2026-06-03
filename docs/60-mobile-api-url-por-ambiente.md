@@ -21,10 +21,14 @@ resolve isso de `process.env.EXPO_PUBLIC_API_URL`, com **fallback para produçã
 | `eas build --profile preview`    | `eas.json` → `preview.env`            | `https://api.toqe-barber.com.br/api/v1` |
 | Nada definido                    | fallback no `app.config.ts`           | `https://api.toqe-barber.com.br/api/v1` |
 
+`EXPO_PUBLIC_APP_LINK_DOMAIN` segue a mesma lógica para Universal Links/App Links:
+preview e production usam `app.toqe-barber.com.br` via `eas.json`, com fallback
+para o mesmo domínio no `app.config.ts`.
+
 | Arquivo                                 | Mudança                                                             |
 | --------------------------------------- | ------------------------------------------------------------------- |
 | `apps/mobile/app.config.ts`             | `extra.apiUrl = process.env.EXPO_PUBLIC_API_URL ?? <prod>`          |
-| `apps/mobile/eas.json`                  | `preview` e `production` definem `env.EXPO_PUBLIC_API_URL = <prod>` |
+| `apps/mobile/eas.json`                  | `preview` e `production` definem `env.EXPO_PUBLIC_API_URL = <prod>` e `EXPO_PUBLIC_APP_LINK_DOMAIN = app.toqe-barber.com.br` |
 | `apps/mobile/.env.local` _(gitignored)_ | URL do container dev (ex.: `http://192.168.100.55:3000/api/v1`)     |
 | `apps/mobile/.env.local.example`        | template versionado (físico/emulador/simulador)                     |
 

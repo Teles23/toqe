@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -21,6 +21,7 @@ import {
 import { api, ApiError } from "@/src/shared/api/api-client";
 import { maskTelefone } from "@/src/shared/utils/masks";
 import { useAuth } from "@/src/shared/hooks/use-auth";
+import { normalizeReturnTo } from "@/src/shared/navigation/return-to";
 import { useTheme } from "@/src/shared/theme";
 import {
   AmberButton,
@@ -52,6 +53,8 @@ type Step = 1 | 2 | 3;
 
 export default function CadastroScreen() {
   const { login } = useAuth();
+  const params = useLocalSearchParams<{ returnTo?: string }>();
+  const returnTo = normalizeReturnTo(params.returnTo);
   const { palette, spacing, typography, radius } = useTheme();
   const [step, setStep] = useState<Step>(1);
   const [tipoConta, setTipoConta] = useState<TipoConta>("cliente");
@@ -96,7 +99,7 @@ export default function CadastroScreen() {
         telefone: data.telefone || undefined,
       });
       // Login automático após cadastro
-      await login(data.email, data.senha);
+      await login(data.email, data.senha, returnTo);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError("email", { message: "Este e-mail já está cadastrado." });
@@ -373,7 +376,17 @@ export default function CadastroScreen() {
           <Text style={[typography.label, { color: palette.textMuted }]}>
             Já tem uma conta?{" "}
           </Text>
-          <Link href="/(auth)/login" asChild>
+          <Link
+            href={
+              returnTo
+                ? {
+                    pathname: "/(auth)/login",
+                    params: { returnTo },
+                  }
+                : "/(auth)/login"
+            }
+            asChild
+          >
             <Pressable accessibilityRole="link">
               <Text
                 style={[

@@ -29,8 +29,8 @@ interface AuthState {
 }
 
 interface AuthActions {
-  login(email: string, senha: string): Promise<void>;
-  loginWithGoogle(idToken: string): Promise<void>;
+  login(email: string, senha: string, returnTo?: string | null): Promise<void>;
+  loginWithGoogle(idToken: string, returnTo?: string | null): Promise<void>;
   /**
    * Estabelece a sessão a partir de tokens já emitidos (ex.: auto-login após
    * aceitar convite). Salva os tokens, carrega o usuário e atualiza o estado —
@@ -163,7 +163,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const login = useCallback(
-    async (email: string, senha: string): Promise<void> => {
+    async (
+      email: string,
+      senha: string,
+      returnTo?: string | null,
+    ): Promise<void> => {
       const data = await api.post<{
         access_token: string;
         refresh_token: string;
@@ -174,13 +178,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data.refresh_token,
       );
 
-      router.replace(getRedirectForPerfil(perfil) as never);
+      router.replace((returnTo ?? getRedirectForPerfil(perfil)) as never);
     },
     [establishSession],
   );
 
   const loginWithGoogle = useCallback(
-    async (idToken: string): Promise<void> => {
+    async (idToken: string, returnTo?: string | null): Promise<void> => {
       // Endpoint /auth/google: backend verifica o idToken via google-auth-library
       // (DI: ver apps/api/src/auth/google-token-verifier.ts) e emite tokens reais.
       const data = await api.post<{
@@ -193,7 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data.refresh_token,
       );
 
-      router.replace(getRedirectForPerfil(perfil) as never);
+      router.replace((returnTo ?? getRedirectForPerfil(perfil)) as never);
     },
     [establishSession],
   );

@@ -73,7 +73,7 @@ describe("TenantDrawer", () => {
     });
 
     expect(screen.getByText("Barbearia Alpha")).toBeInTheDocument();
-    expect(screen.getByText("toqe.app/alpha")).toBeInTheDocument();
+    expect(screen.getByText("app.toqe-barber.com.br/alpha")).toBeInTheDocument();
     // Meta grid
     expect(screen.getByText("Barbeiros ativos")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();

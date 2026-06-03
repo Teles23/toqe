@@ -9,7 +9,8 @@ interface Props {
 }
 
 export function SecaoQrCode({ slug }: Props) {
-  const url = `https://toqe.app/b/${slug}`;
+  const domain = process.env.NEXT_PUBLIC_BOOKING_DOMAIN ?? 'app.toqe-barber.com.br';
+  const url = `https://${domain}/b/${slug}`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&margin=10&color=0D0D0D&bgcolor=ffffff`;
   const [copiado, setCopiado] = useState(false);
 
