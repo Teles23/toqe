@@ -86,7 +86,10 @@ describe('UsuarioService', () => {
       expect(result.barbearias).toHaveLength(1);
       expect(result.barbearias[0]).toHaveProperty('perfil', 'dono');
       // Link público derivado do nome (Fase 4)
-      expect(result).toHaveProperty('linkPublico', 'toqe.app/u/ana');
+      expect(result).toHaveProperty(
+        'linkPublico',
+        'https://app.toqe-barber.com.br/u/ana',
+      );
     });
 
     it('lança NotFoundException se usuário não existe', async () => {
