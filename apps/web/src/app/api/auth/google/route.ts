@@ -33,7 +33,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { access_token, refresh_token, user } = data as {
+  const body = data as {
+    requiresTwoFa?: boolean;
+    tempToken?: string;
+    access_token?: string;
+    refresh_token?: string;
+    user?: { codigo: number; nome: string; email: string };
+  };
+
+  if (body.requiresTwoFa) {
+    return NextResponse.json(
+      { requiresTwoFa: true, tempToken: body.tempToken },
+      { status: 200 },
+    );
+  }
+
+  const { access_token, refresh_token, user } = body as {
     access_token: string;
     refresh_token: string;
     user: { codigo: number; nome: string; email: string };

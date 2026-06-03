@@ -39,6 +39,7 @@ const mockRefreshToken = {
 };
 
 describe('AuthService', () => {
+  let module: TestingModule;
   let service: AuthService;
   let usuarioService: jest.Mocked<UsuarioService>;
   let _jwtService: jest.Mocked<JwtService>;
@@ -48,7 +49,7 @@ describe('AuthService', () => {
   beforeEach(async () => {
     prisma = createPrismaMock();
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         AuthService,
         {
@@ -149,6 +150,21 @@ describe('AuthService', () => {
       await expect(
         service.login({ email: mockUsuario.email, senha: 'senha_errada' }),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('retorna requiresTwoFa quando twoFaEnabled é true', async () => {
+      const senha = 'senha123';
+      const hash = await bcrypt.hash(senha, await bcrypt.genSalt());
+      usuarioService.findByEmail.mockResolvedValue({
+        ...mockUsuario,
+        senhaHash: hash,
+        twoFaEnabled: true,
+      });
+
+      const result = await service.login({ email: mockUsuario.email, senha });
+
+      expect(result).toHaveProperty('requiresTwoFa', true);
+      expect(result).toHaveProperty('tempToken');
     });
   });
 
@@ -524,6 +540,42 @@ describe('AuthService', () => {
           data: { revogado: true },
         }),
       );
+    });
+  });
+
+  describe('googleAuth', () => {
+    let googleVerifier: jest.Mocked<GoogleTokenVerifier>;
+
+    beforeEach(() => {
+      googleVerifier = module.get<GoogleTokenVerifier>(
+        GOOGLE_TOKEN_VERIFIER,
+      ) as jest.Mocked<GoogleTokenVerifier>;
+      googleVerifier.verify.mockResolvedValue({
+        email: mockUsuario.email,
+        nome: mockUsuario.nome,
+        avatarUrl: null,
+      });
+    });
+
+    it('retorna tokens para usuário Google sem 2FA', async () => {
+      (prisma.usuario.findUnique as jest.Mock)
+        .mockResolvedValueOnce({ ...mockUsuario, twoFaEnabled: false })
+        .mockResolvedValue(mockUsuario);
+      (prisma.refreshToken.create as jest.Mock).mockResolvedValue({});
+
+      const result = await service.googleAuth({ idToken: 'google-id-token' });
+      expect(result).toHaveProperty('access_token');
+    });
+
+    it('retorna requiresTwoFa quando usuário Google tem 2FA habilitado', async () => {
+      (prisma.usuario.findUnique as jest.Mock).mockResolvedValueOnce({
+        ...mockUsuario,
+        twoFaEnabled: true,
+      });
+
+      const result = await service.googleAuth({ idToken: 'google-id-token' });
+      expect(result).toHaveProperty('requiresTwoFa', true);
+      expect(result).toHaveProperty('tempToken');
     });
   });
 

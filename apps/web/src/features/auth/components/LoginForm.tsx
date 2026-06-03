@@ -251,7 +251,11 @@ export function LoginForm({
                   if (!credentialResponse.credential) return;
                   setLoadingGoogle(true);
                   try {
-                    await requestGoogleLogin(credentialResponse.credential);
+                    const result = await requestGoogleLogin(credentialResponse.credential);
+                    if (result?.requiresTwoFa) {
+                      onTwoFaRequired(result.tempToken);
+                      return;
+                    }
                     // Busca dados do usuário e popula o AuthProvider em paralelo.
                     // Sem establishSession(), o contexto fica com user/perfil null
                     // e o RequireRole redireciona em loop até o F5.
