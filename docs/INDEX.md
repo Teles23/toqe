@@ -77,7 +77,7 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 ## Mobile
 
 - [mobile-setup.md](mobile-setup.md) — setup e desenvolvimento local do app mobile (pré-requisitos, variáveis, EAS)
-- [mobile-navegacao.md](mobile-navegacao.md) — estrutura de navegação Expo Router (tabs, grupos de rota, deep links)
+- [mobile-navegacao.md](mobile-navegacao.md) — estrutura de navegação Expo Router (tabs, grupos de rota, deep links, Universal/App Links)
 - [mobile-branding.md](mobile-branding.md) — branding: ícones, splash screen, geração de assets
 - [mobile-design-system.md](mobile-design-system.md) — design system do mobile: tokens, paleta, spacing, componentes UI compartilhados
 - [mobile-diagnostico.md](mobile-diagnostico.md) — diagnóstico de problemas comuns no desenvolvimento mobile

@@ -109,6 +109,53 @@ Exibir banner de alerta na web enquanto não é obrigatório.
 
 ---
 
+### 5. IDs sequenciais expostos nas rotas e respostas da API
+
+**Risco:** 🟠 Médio
+**Identificado em:** 2026-06-02
+**Arquivos afetados:** todos os controllers — `barbearia.controller.ts`, `usuario.controller.ts`, routes web/mobile
+
+IDs numéricos auto-increment (ex: `codigo: 132`) aparecem nas URLs das requisições e nos corpos de resposta visíveis pelo DevTools. Isso expõe:
+
+1. **Enumeração de recursos** — atacante testa `/barbearias/1`, `/2`, ... `/132` para mapear todos os tenants
+2. **Business intelligence** — concorrentes inferem volume de clientes pelo ID
+3. **Amplificação de IDOR** — se qualquer guard falhar, IDs previsíveis facilitam acesso a dados alheios
+
+**Solução:** Adicionar campo `publicId String @unique @default(cuid())` nas tabelas expostas externamente e usar esse campo nas rotas:
+
+```prisma
+// schema.prisma
+model Barbearia {
+  codigo   Int    @id @default(autoincrement())
+  publicId String @unique @default(cuid()) @map("TQE_BAR_PUBLIC_ID") @db.VarChar(36)
+  // ...
+}
+
+model Usuario {
+  codigo   Int    @id @default(autoincrement())
+  publicId String @unique @default(cuid()) @map("TQE_USR_PUBLIC_ID") @db.VarChar(36)
+  // ...
+}
+```
+
+```typescript
+// barbearia.controller.ts — rota usa publicId, não codigo
+@Get(':publicId')
+findOne(@Param('publicId') publicId: string) {
+  return this.barbeariaService.findByPublicId(publicId);
+}
+```
+
+**Escopo do trabalho:**
+- Migração Prisma para `Barbearia` e `Usuario` (prioridade)
+- Atualizar todos os controllers, services e contratos
+- Atualizar web (URLs, hooks, MSW handlers) e mobile (api-client, hooks)
+- Manter `codigo` como PK interna — só a interface externa muda
+
+**Nota:** o risco é BAIXO se a autorização estiver correta (TenantGuard + JWT). A exposição do ID numérico amplifica, mas não cria sozinha, uma vulnerabilidade IDOR.
+
+---
+
 ## Prioridade de implementação
 
 | # | Gap | Esforço | Impacto |
@@ -117,6 +164,7 @@ Exibir banner de alerta na web enquanto não é obrigatório.
 | 3 | Helmet HTTP headers | Baixo (30min) | Médio |
 | 2 | Cleanup de refresh tokens | Médio (2h) | Operacional |
 | 4 | 2FA obrigatório para donos | Alto (requer UX + período de aviso) | Médio |
+| 5 | IDs públicos (CUID) nas rotas | Alto (refactor api + web + mobile) | Médio |
 
 ---
 
