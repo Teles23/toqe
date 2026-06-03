@@ -52,17 +52,17 @@ const securityHeaders = [
       "default-src 'self'",
       // unsafe-* necessário para Next.js. Google Identity Services adiciona
       // accounts.google.com (script gsi/client + fallback script-src-elem).
-      `script-src 'self' 'unsafe-eval' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
+      `script-src 'self' 'unsafe-eval' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")} https://static.cloudflareinsights.com`,
       // script-src-elem explícito — alguns browsers exigem para o <script>
       // injetado dinamicamente pelo @react-oauth/google.
-      `script-src-elem 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
+      `script-src-elem 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")} https://static.cloudflareinsights.com`,
       `style-src 'self' 'unsafe-inline' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       // Avatares Google do usuário logado.
       `img-src 'self' data: blob: ${apiOrigin} https://*.googleusercontent.com https://accounts.google.com https://api.qrserver.com`,
       "font-src 'self'",
       // apiOrigin cobre a URL da API (dev: localhost:3000, prod: domínio real)
       // ws://* wss://* necessários para o HMR do Next.js em dev
-      `connect-src 'self' ${apiOrigin} https://toqe.duckdns.org ws: wss: https://*.sentry.io https://nominatim.openstreetmap.org ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
+      `connect-src 'self' ${apiOrigin} https://toqe.duckdns.org ws: wss: https://*.sentry.io https://nominatim.openstreetmap.org ${GOOGLE_AUTH_ORIGINS.join(" ")} https://cloudflareinsights.com`,
       // O botão GIS é renderizado num iframe servido por accounts.google.com
       `frame-src 'self' ${GOOGLE_AUTH_ORIGINS.join(" ")}`,
       "frame-ancestors 'none'",
