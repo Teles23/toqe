@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { AnimatePresence } from "framer-motion";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/shared/hooks/use-auth";
+import { Perfil } from "@/shared/config/roles";
 import { LoadingSpinner } from "@/shared/components/loading-spinner";
 import { DateSelector } from "./DateSelector";
 import { AgendaMetrics } from "./AgendaMetrics";
@@ -16,7 +17,8 @@ import { useAgenda } from "../hooks/use-agenda";
 import { useAgendaSocket } from "../hooks/use-agenda-socket";
 
 export function AgendaView() {
-  const { barbearia } = useAuth();
+  const { barbearia, user, perfil } = useAuth();
+  const isBarbeiro = perfil === Perfil.BARBEIRO;
   const [selectedOffset, setSelectedOffset] = useState(0);
   const [filterBarbeiro, setFilterBarbeiro] = useState("Todos");
   const [filterStatus, setFilterStatus] = useState("Todos");
@@ -36,7 +38,9 @@ export function AgendaView() {
   useAgendaSocket(barbearia?.codigo ?? null, dateStr);
 
   const filtered = slots.filter((s) => {
-    if (filterBarbeiro !== "Todos" && s.barbeiro !== filterBarbeiro)
+    // Barbeiro vê apenas os próprios agendamentos
+    if (isBarbeiro && s.barbeiroUsrCodigo !== user?.codigo) return false;
+    if (!isBarbeiro && filterBarbeiro !== "Todos" && s.barbeiro !== filterBarbeiro)
       return false;
     if (filterStatus !== "Todos" && s.status !== filterStatus.toLowerCase())
       return false;
@@ -73,7 +77,7 @@ export function AgendaView() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-5">
         <div className="space-y-3">
           <AgendaFilters
-            barbeiros={barbeiros}
+            barbeiros={isBarbeiro ? [] : barbeiros}
             filterBarbeiro={filterBarbeiro}
             filterStatus={filterStatus}
             searchQuery={searchQuery}

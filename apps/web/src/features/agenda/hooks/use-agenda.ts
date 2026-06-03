@@ -42,6 +42,7 @@ export function toSlot(a: AgendamentoAPI, now: Date): Slot {
     service: servicoNome,
     barbeiro: barbeiroNome,
     barbeiroInitial: getInitial(barbeiroNome),
+    barbeiroUsrCodigo: a.barbeiro?.usrCodigo ?? null,
     duration: duracao,
     status,
     startedAt: status === "active" ? format(inicio, "HH:mm") : undefined,
