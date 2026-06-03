@@ -23,14 +23,14 @@ describe("SecaoQrCode", () => {
     render(<SecaoQrCode slug="minha-barber" />);
     const img = screen.getByTestId("qr-image");
     expect(img.getAttribute("src")).toContain(
-      encodeURIComponent("https://toqe.app/b/minha-barber"),
+      encodeURIComponent("https://app.toqe-barber.com.br/b/minha-barber"),
     );
   });
 
   it("mostra a URL legível abaixo do QR code", () => {
     render(<SecaoQrCode slug="minha-barber" />);
     expect(screen.getByTestId("qr-url")).toHaveTextContent(
-      "https://toqe.app/b/minha-barber",
+      "https://app.toqe-barber.com.br/b/minha-barber",
     );
   });
 
@@ -44,7 +44,9 @@ describe("SecaoQrCode", () => {
     const btn = screen.getByTestId("btn-copiar");
     fireEvent.click(btn);
     await vi.waitFor(() =>
-      expect(mockWriteText).toHaveBeenCalledWith("https://toqe.app/b/urban"),
+      expect(mockWriteText).toHaveBeenCalledWith(
+        "https://app.toqe-barber.com.br/b/urban",
+      ),
     );
   });
 
