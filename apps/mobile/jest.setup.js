@@ -74,10 +74,59 @@ jest.mock("expo-haptics", () => ({
   },
 }));
 
+// expo-notifications depende de módulos nativos e é importado no top-level pelo
+// hook de push. O mock global evita warnings/crashes em specs que não exercitam
+// notificações diretamente; specs específicos ainda podem sobrescrever retornos.
+jest.mock("expo-notifications", () => ({
+  setNotificationHandler: jest.fn(),
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: "denied" }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: "denied" }),
+  getExpoPushTokenAsync: jest
+    .fn()
+    .mockResolvedValue({ data: "ExponentPushToken[test]" }),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({
+    remove: jest.fn(),
+  })),
+}));
+
 // expo-blur@56 usa um módulo nativo (NativeBlurModule) indisponível em Jest.
 jest.mock("expo-blur", () => ({
   BlurView: "BlurView",
 }));
+
+// @expo/vector-icons carrega fontes de forma assíncrona e pode disparar setState
+// fora de act() em testes de tela. Um componente textual estável cobre os specs
+// sem depender do loader de fontes.
+jest.mock("@expo/vector-icons", () => {
+  const React = require("react");
+  const { Text } = require("react-native");
+
+  function Icon({ name, color, size, ...props }) {
+    return React.createElement(
+      Text,
+      {
+        ...props,
+        style: [{ color, fontSize: size }, props.style],
+      },
+      name ?? "icon",
+    );
+  }
+
+  Icon.glyphMap = new Proxy(
+    {},
+    {
+      get: (_target, prop) => prop,
+    },
+  );
+
+  return {
+    Feather: Icon,
+    Ionicons: Icon,
+    MaterialIcons: Icon,
+    MaterialCommunityIcons: Icon,
+  };
+});
 
 jest.mock("@react-native-google-signin/google-signin", () => ({
   GoogleSignin: {
@@ -89,8 +138,33 @@ jest.mock("@react-native-google-signin/google-signin", () => ({
 }));
 
 // Timeout de utilitários async (findBy*/waitFor): o default de 1000ms é apertado
-// quando os ~92 suites rodam em paralelo e a máquina fica sob carga — causava
-// flakes intermitentes em telas que carregam dados via React Query. 5000ms dá
-// folga sem mascarar travas reais (o timeout do Jest por teste continua maior).
+// quando os ~92 suites rodam e a máquina fica sob carga. 5000ms dá folga para
+// React Query sem mascarar travas reais; o timeout por teste também precisa ser
+// maior que isso porque alguns specs carregam múltiplas queries sequenciais.
 const { configure } = require("@testing-library/react-native");
 configure({ asyncUtilTimeout: 5000 });
+jest.setTimeout(15000);
+
+// React Query agenda notificações assíncronas fora da pilha do evento que o
+// teste dispara. Em Jest/RNTL isso aparece como warning de act() apesar de a UI
+// já estar sincronizada via findBy*/waitFor.
+const { act } = require("@testing-library/react-native");
+const { timeoutManager } = require("@tanstack/query-core");
+const { notifyManager } = require("@tanstack/react-query");
+
+timeoutManager.setTimeoutProvider({
+  setTimeout: (callback, delay) => {
+    const timeoutId = setTimeout(callback, delay);
+    timeoutId?.unref?.();
+    return timeoutId;
+  },
+  clearTimeout: (timeoutId) => clearTimeout(timeoutId),
+  setInterval: (callback, delay) => {
+    const intervalId = setInterval(callback, delay);
+    intervalId?.unref?.();
+    return intervalId;
+  },
+  clearInterval: (intervalId) => clearInterval(intervalId),
+});
+
+notifyManager.setNotifyFunction((callback) => act(callback));

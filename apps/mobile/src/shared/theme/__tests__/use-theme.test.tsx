@@ -38,8 +38,8 @@ describe("useTheme", () => {
     expect(result.current.isDark).toBe(true);
   });
 
-  it("default (unspecified) usa light", () => {
-    mockedUseColorScheme.mockReturnValue("unspecified");
+  it("default (sem preferência) usa light", () => {
+    mockedUseColorScheme.mockReturnValue(null);
     const { result } = renderHook(() => useTheme());
     expect(result.current.palette).toBe(palette.light);
     expect(result.current.isDark).toBe(false);
