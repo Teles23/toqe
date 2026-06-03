@@ -66,6 +66,14 @@ function makeRes(body: unknown, status = 200) {
   };
 }
 
+const releasePendingRequests: (() => void)[] = [];
+
+function makePendingResponse() {
+  return new Promise<Response>((_resolve, reject) => {
+    releasePendingRequests.push(() => reject(new Error("test cleanup")));
+  });
+}
+
 /** Roteia GET/POST/DELETE em /convite/:token. `convite` é o GET; `aceitar`
  *  controla o POST (`"ok"` resolve, `"hang"` fica pendente). */
 function setupFetch(opts: {
@@ -78,7 +86,7 @@ function setupFetch(opts: {
     const u = String(url);
     const m = (init?.method ?? "GET").toUpperCase();
     if (m === "POST" && u.includes("/aceitar")) {
-      if (aceitar === "hang") return new Promise<never>(() => {});
+      if (aceitar === "hang") return makePendingResponse();
       return makeRes(aceitarOk);
     }
     if (m === "DELETE") return makeRes({ sucesso: true });
@@ -89,10 +97,16 @@ function setupFetch(opts: {
   }) as unknown as typeof fetch;
 }
 
+const queryClients: QueryClient[] = [];
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false, gcTime: 0 },
+    },
   });
+  queryClients.push(client);
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 function renderScreen() {
@@ -104,14 +118,21 @@ describe("ConviteTokenScreen", () => {
     jest.clearAllMocks();
     mockEstablishSession.mockResolvedValue(null);
   });
+  afterEach(async () => {
+    await act(async () => {
+      while (releasePendingRequests.length > 0) {
+        releasePendingRequests.pop()?.();
+      }
+      await Promise.resolve();
+    });
+    queryClients.splice(0).forEach((client) => client.clear());
+  });
   afterAll(() => {
     global.fetch = originalFetch;
   });
 
   it("1. mostra loading enquanto a query do convite está pendente", () => {
-    global.fetch = jest.fn(
-      () => new Promise<never>(() => {}),
-    ) as unknown as typeof fetch;
+    global.fetch = jest.fn(() => makePendingResponse()) as unknown as typeof fetch;
     renderScreen();
     expect(screen.queryByTestId("convite-expirado")).toBeNull();
     expect(screen.queryByTestId("convite-landing")).toBeNull();
@@ -170,6 +191,9 @@ describe("ConviteTokenScreen", () => {
     setupFetch({ aceitar: "hang" });
     renderScreen();
     fireEvent.press(await screen.findByText("Aceitar convite"));
+    // isNew=true exige nome e senha válidos (validação client-side)
+    fireEvent.changeText(screen.getByTestId("input-nome"), "Carlos Lima");
+    fireEvent.changeText(screen.getByTestId("input-senha"), "senha12345");
     fireEvent.press(screen.getByTestId("btn-aceitar"));
     expect(await screen.findByTestId("convite-accepting")).toBeTruthy();
   });
@@ -178,6 +202,8 @@ describe("ConviteTokenScreen", () => {
     setupFetch({ aceitar: "ok" });
     renderScreen();
     fireEvent.press(await screen.findByText("Aceitar convite"));
+    fireEvent.changeText(screen.getByTestId("input-nome"), "Carlos Lima");
+    fireEvent.changeText(screen.getByTestId("input-senha"), "senha12345");
     await act(async () => {
       fireEvent.press(screen.getByTestId("btn-aceitar"));
     });
@@ -193,6 +219,8 @@ describe("ConviteTokenScreen", () => {
     setupFetch({ aceitar: "ok" });
     renderScreen();
     fireEvent.press(await screen.findByText("Aceitar convite"));
+    fireEvent.changeText(screen.getByTestId("input-nome"), "Carlos Lima");
+    fireEvent.changeText(screen.getByTestId("input-senha"), "senha12345");
     await act(async () => {
       fireEvent.press(screen.getByTestId("btn-aceitar"));
     });
@@ -220,5 +248,70 @@ describe("ConviteTokenScreen", () => {
       );
       expect(del).toBeTruthy();
     });
+  });
+
+  // ── Validação client-side ──────────────────────────────────────────────────
+
+  it("14. bloqueia submit com nome vazio (isNew) sem chamar a API", async () => {
+    setupFetch({});
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
+
+    // Nome vazio, senha válida (>= 8)
+    fireEvent.changeText(screen.getByTestId("input-senha"), "senha12345");
+    fireEvent.press(screen.getByTestId("btn-aceitar"));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Nome deve ter ao menos 2 caracteres."),
+      ).toBeTruthy(),
+    );
+    // API não foi chamada
+    const postCalls = (global.fetch as jest.Mock).mock.calls.filter(
+      ([, init]) => (init as { method?: string })?.method === "POST",
+    );
+    expect(postCalls).toHaveLength(0);
+  });
+
+  it("15. bloqueia submit com senha < 8 chars sem chamar a API", async () => {
+    setupFetch({ convite: { ...validConvite, isNew: false } });
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
+
+    fireEvent.changeText(screen.getByTestId("input-senha"), "abc");
+    fireEvent.press(screen.getByTestId("btn-aceitar"));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Senha de ao menos 8 caracteres."),
+      ).toBeTruthy(),
+    );
+    const postCalls = (global.fetch as jest.Mock).mock.calls.filter(
+      ([, init]) => (init as { method?: string })?.method === "POST",
+    );
+    expect(postCalls).toHaveLength(0);
+  });
+
+  it("16. erro 400 da API exibe a mensagem real (não hardcoded)", async () => {
+    global.fetch = jest.fn(async (url: unknown, init?: { method?: string }) => {
+      const u = String(url);
+      const m = (init?.method ?? "GET").toUpperCase();
+      if (m === "POST" && u.includes("/aceitar")) {
+        return makeRes({ message: "Mensagem real do servidor" }, 400);
+      }
+      if (m === "GET") {
+        return makeRes({ ...validConvite, isNew: false });
+      }
+      return makeRes(null);
+    }) as unknown as typeof fetch;
+
+    renderScreen();
+    fireEvent.press(await screen.findByText("Aceitar convite"));
+    fireEvent.changeText(screen.getByTestId("input-senha"), "senha12345");
+    fireEvent.press(screen.getByTestId("btn-aceitar"));
+
+    await waitFor(() =>
+      expect(screen.getByText("Mensagem real do servidor")).toBeTruthy(),
+    );
   });
 });

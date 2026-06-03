@@ -66,9 +66,19 @@ export function ConviteForm({ token }: ConviteFormProps): React.JSX.Element {
 
   function handleAccept() {
     setErro(null);
+
+    if (data?.isNew && nome.trim().length < 2) {
+      setErro("Nome deve ter ao menos 2 caracteres.");
+      return;
+    }
+    if (senha.length < 8) {
+      setErro("Senha de ao menos 8 caracteres.");
+      return;
+    }
+
     setView("accepting");
     aceitar.mutate(
-      { token, nome: nome || undefined, senha: senha || undefined },
+      { token, nome: nome.trim() || undefined, senha: senha || undefined },
       {
         onSuccess: (result) => {
           setWelcomeNome(result.user.nome);
@@ -83,10 +93,7 @@ export function ConviteForm({ token }: ConviteFormProps): React.JSX.Element {
                 ? "Convite expirado ou não encontrado."
                 : status === 401
                   ? "Senha incorreta."
-                  : status === 400
-                    ? "Senha de ao menos 8 caracteres."
-                    : (e.message ??
-                      "Erro ao aceitar convite. Tente novamente.");
+                  : (e.message ?? "Erro ao aceitar convite. Tente novamente.");
           setErro(msg);
           setView("form");
         },
@@ -95,9 +102,9 @@ export function ConviteForm({ token }: ConviteFormProps): React.JSX.Element {
   }
 
   function handleReject() {
-    // Remove o token no backend (não cria conta/vínculo) e volta ao login.
-    rejeitar.mutate(token);
-    router.push("/login");
+    rejeitar.mutate(token, {
+      onSettled: () => router.push("/login"),
+    });
   }
 
   // ── Loading ──────────────────────────────────────────────────────────────

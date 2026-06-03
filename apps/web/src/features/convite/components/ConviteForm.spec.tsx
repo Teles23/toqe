@@ -330,8 +330,8 @@ describe("ConviteForm — jornada de aceite", () => {
 
     fireEvent.click(screen.getByTestId("btn-rejeitar"));
 
-    expect(mockPush).toHaveBeenCalledWith("/login");
     await waitFor(() => expect(deleted).toBe(true));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/login"));
   });
 
   it("'Voltar' no form retorna para a landing", async () => {
@@ -346,5 +346,94 @@ describe("ConviteForm — jornada de aceite", () => {
 
     fireEvent.click(screen.getByText("← Voltar"));
     expect(screen.getByTestId("convite-landing")).toBeInTheDocument();
+  });
+
+  // ── Validação client-side ─────────────────────────────────────────────────
+
+  it("bloqueia submit com nome vazio (isNew) sem chamar a API", async () => {
+    mockConvite({ isNew: true });
+    let apiCalled = false;
+    server.use(
+      http.post("/api/convite/:token/aceitar", () => {
+        apiCalled = true;
+        return HttpResponse.json({});
+      }),
+    );
+    renderForm();
+    await waitFor(() =>
+      expect(screen.getByTestId("convite-landing")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("btn-aceitar-convite"));
+    // Nome vazio, senha válida
+    fireEvent.change(screen.getByPlaceholderText("Mínimo 8 caracteres"), {
+      target: { value: "senha12345" },
+    });
+    fireEvent.click(screen.getByTestId("btn-aceitar"));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Nome deve ter ao menos 2 caracteres."),
+      ).toBeInTheDocument(),
+    );
+    expect(apiCalled).toBe(false);
+  });
+
+  it("bloqueia submit com senha < 8 chars sem chamar a API", async () => {
+    mockConvite({ isNew: false });
+    let apiCalled = false;
+    server.use(
+      http.post("/api/convite/:token/aceitar", () => {
+        apiCalled = true;
+        return HttpResponse.json({});
+      }),
+    );
+    renderForm();
+    await waitFor(() =>
+      expect(screen.getByTestId("convite-landing")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("btn-aceitar-convite"));
+    fireEvent.change(screen.getByPlaceholderText("Mínimo 8 caracteres"), {
+      target: { value: "abc" },
+    });
+    fireEvent.click(screen.getByTestId("btn-aceitar"));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Senha de ao menos 8 caracteres."),
+      ).toBeInTheDocument(),
+    );
+    expect(apiCalled).toBe(false);
+  });
+
+  it("erro 400 da API exibe a mensagem real (não hardcoded)", async () => {
+    mockConvite({ isNew: false });
+    server.use(
+      http.post(
+        "/api/convite/:token/aceitar",
+        () =>
+          new HttpResponse(
+            JSON.stringify({ message: "Erro específico do servidor" }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          ),
+      ),
+    );
+    renderForm();
+    await waitFor(() =>
+      expect(screen.getByTestId("convite-landing")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByTestId("btn-aceitar-convite"));
+    fireEvent.change(screen.getByPlaceholderText("Mínimo 8 caracteres"), {
+      target: { value: "senha12345" },
+    });
+    fireEvent.click(screen.getByTestId("btn-aceitar"));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Erro específico do servidor"),
+      ).toBeInTheDocument(),
+    );
   });
 });
