@@ -38,6 +38,11 @@ if (firebaseAndroidJson) {
 //  - fallback (nada definido): produção, para nunca vazar dev num build.
 const API_URL_PROD = "https://api.toqe-barber.com.br/api/v1";
 const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? API_URL_PROD;
+const APP_LINK_DOMAIN_PROD = "app.toqe-barber.com.br";
+const appLinkDomain =
+  process.env.EXPO_PUBLIC_APP_LINK_DOMAIN ??
+  process.env.APP_LINK_DOMAIN ??
+  APP_LINK_DOMAIN_PROD;
 
 const config: AppConfig = {
   name: "Toqe",
@@ -52,6 +57,7 @@ const config: AppConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.teles23.toqe",
+    associatedDomains: [`applinks:${appLinkDomain}`],
   },
 
   android: {
@@ -66,6 +72,30 @@ const config: AppConfig = {
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: [
+          {
+            scheme: "https",
+            host: appLinkDomain,
+            pathPrefix: "/b",
+          },
+          {
+            scheme: "https",
+            host: appLinkDomain,
+            pathPrefix: "/u",
+          },
+          {
+            scheme: "https",
+            host: appLinkDomain,
+            pathPrefix: "/convite",
+          },
+        ],
+        category: ["BROWSABLE", "DEFAULT"],
+      },
+    ],
   },
 
   web: {
@@ -141,6 +171,7 @@ const config: AppConfig = {
 
   extra: {
     apiUrl,
+    appLinkDomain,
     googleWebClientId:
       "1095847529893-b71gjl8nqpjl5vo0ppd5c5iljfof684m.apps.googleusercontent.com",
     eas: { projectId },
