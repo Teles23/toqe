@@ -52,6 +52,71 @@ jest.mock("@/src/features/barbeiro/ClienteDetalhe", () => {
   };
 });
 
+jest.mock("@/src/shared/ui", () => {
+  const React = jest.requireActual("react");
+  const real = jest.requireActual("@/src/shared/ui");
+  const RN = jest.requireActual("react-native");
+  return {
+    ...real,
+    DataListWrapper: ({
+      data,
+      emptyComponent,
+      emptyMessage,
+      errorMessage,
+      isError,
+      isLoading,
+      ListHeaderComponent,
+      renderItem,
+      testID,
+    }: {
+      data?: unknown[];
+      emptyComponent?: React.ReactElement;
+      emptyMessage?: string;
+      errorMessage?: string;
+      isError: boolean;
+      isLoading: boolean;
+      ListHeaderComponent?: React.ReactElement | (() => React.ReactElement);
+      renderItem: (info: { item: unknown; index: number }) => React.ReactNode;
+      testID?: string;
+    }) => {
+      const header =
+        typeof ListHeaderComponent === "function"
+          ? React.createElement(ListHeaderComponent)
+          : ListHeaderComponent;
+
+      if (isLoading) {
+        return (
+          <RN.View>
+            {header}
+            <RN.View testID={`${testID ?? "data-list"}-loading`} />
+          </RN.View>
+        );
+      }
+
+      if (isError) {
+        return (
+          <RN.View>
+            {header}
+            <RN.Text>{errorMessage ?? "Não foi possível carregar"}</RN.Text>
+          </RN.View>
+        );
+      }
+
+      const items = data ?? [];
+      return (
+        <RN.View testID={testID}>
+          {header}
+          {items.length > 0
+            ? items.map((item, index) => (
+                <RN.View key={index}>{renderItem({ item, index })}</RN.View>
+              ))
+            : (emptyComponent ?? <RN.Text>{emptyMessage}</RN.Text>)}
+        </RN.View>
+      );
+    },
+  };
+});
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import React from "react";
@@ -75,10 +140,23 @@ function respondWith(body: unknown, status = 200) {
     makeRes(body, status),
   ) as unknown as typeof fetch;
 }
+const queryClients: QueryClient[] = [];
+const releasePendingRequests: (() => void)[] = [];
+
+function makePendingResponse() {
+  return new Promise<Response>((_resolve, reject) => {
+    releasePendingRequests.push(() => reject(new Error("test cleanup")));
+  });
+}
+
 function wrapper({ children }: { children: React.ReactNode }) {
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false, gcTime: 0 },
+    },
   });
+  queryClients.push(client);
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 function renderScreen() {
@@ -107,14 +185,18 @@ describe("BarbeiroClientesScreen", () => {
     jest.clearAllMocks();
     respondWith([]);
   });
+  afterEach(() => {
+    while (releasePendingRequests.length > 0) {
+      releasePendingRequests.pop()?.();
+    }
+    queryClients.splice(0).forEach((client) => client.clear());
+  });
   afterAll(() => {
     global.fetch = originalFetch;
   });
 
   it("mostra loading enquanto a query real está pendente", () => {
-    global.fetch = jest.fn(
-      () => new Promise<never>(() => {}),
-    ) as unknown as typeof fetch;
+    global.fetch = jest.fn(() => makePendingResponse()) as unknown as typeof fetch;
     renderScreen();
     expect(screen.getByTestId("lista-clientes-loading")).toBeTruthy();
   });

@@ -77,7 +77,7 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 ## Mobile
 
 - [mobile-setup.md](mobile-setup.md) — setup e desenvolvimento local do app mobile (pré-requisitos, variáveis, EAS)
-- [mobile-navegacao.md](mobile-navegacao.md) — estrutura de navegação Expo Router (tabs, grupos de rota, deep links)
+- [mobile-navegacao.md](mobile-navegacao.md) — estrutura de navegação Expo Router (tabs, grupos de rota, deep links, Universal/App Links)
 - [mobile-branding.md](mobile-branding.md) — branding: ícones, splash screen, geração de assets
 - [mobile-design-system.md](mobile-design-system.md) — design system do mobile: tokens, paleta, spacing, componentes UI compartilhados
 - [mobile-diagnostico.md](mobile-diagnostico.md) — diagnóstico de problemas comuns no desenvolvimento mobile
@@ -148,6 +148,7 @@ Os arquivos com prefixo numérico (`XX-nome.md`) documentam entregas de sprint e
 - [85-correcoes-pos-teste-onboarding-auth-dashboard.md](85-correcoes-pos-teste-onboarding-auth-dashboard.md) — 10 bugs corrigidos: onboarding, login Google, refresh token ruidoso, convite barbeiro, nota cliente, descricao serviço, rota /rede, status EM_ANDAMENTO, logo CSP, sidebar ao vivo
 - [86-convite-limite-plano-atomico.md](86-convite-limite-plano-atomico.md) — Enforce de cap de plano atômico no aceite de convite: transação Serializable, retry P2034, re-invite sem consumir vaga, correção maxBarbeiros free (1→2)
 - [87-producao-dominio-cloudflare.md](87-producao-dominio-cloudflare.md) — Migração para toqe-barber.com.br: Cloudflare Origin Certificate, nginx 3 subdomínios (api/app/redirect), secrets GitHub, OTA update mobile sem novo build
+- [88-auth-redirect-convite-perfil-agenda-onboarding.md](88-auth-redirect-convite-perfil-agenda-onboarding.md) — Auth redirect sem barbearia, soft-delete de convites, validação client-side aceite, regras de perfil no BarbeiroModal, filtro de agenda, validações no onboarding e SecaoHorarios
 
 ---
 

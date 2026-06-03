@@ -31,6 +31,10 @@ jest.mock("expo-constants", () => ({
   },
 }));
 
+jest.mock("expo-font", () => ({
+  useFonts: jest.fn(() => [true, null]),
+}));
+
 jest.mock("expo-secure-store", () => ({
   getItemAsync: jest.fn().mockResolvedValue(null),
   setItemAsync: jest.fn(),

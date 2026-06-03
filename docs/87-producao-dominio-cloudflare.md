@@ -73,9 +73,13 @@ Três server blocks:
 | Secret | Valor |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | `https://api.toqe-barber.com.br/api/v1` |
+| `NEXT_PUBLIC_BOOKING_DOMAIN` | `app.toqe-barber.com.br` |
 | `FRONTEND_URL` | `https://app.toqe-barber.com.br` |
 | `API_BASE_URL` | `https://api.toqe-barber.com.br` |
 | `CORS_ORIGINS` | `https://app.toqe-barber.com.br` |
+| `MOBILE_ANDROID_PACKAGE_NAME` | `com.teles23.toqe` |
+| `MOBILE_ANDROID_SHA256_CERT_FINGERPRINTS` | SHA-256 do certificado Android (preview/prod separados por vírgula) |
+| `MOBILE_IOS_APP_ID` | `TEAMID.com.teles23.toqe` |
 
 `NEXT_PUBLIC_API_URL` é baked no bundle Next.js em build time. Mudança de URL requer
 novo deploy via CI (push para main dispara rebuild automático).
@@ -86,9 +90,34 @@ novo deploy via CI (push para main dispara rebuild automático).
 
 | Arquivo | O que mudou |
 |---|---|
-| `eas.json` | `EXPO_PUBLIC_API_URL` → `https://api.toqe-barber.com.br/api/v1` (preview + production) |
+| `eas.json` | `EXPO_PUBLIC_API_URL` → `https://api.toqe-barber.com.br/api/v1` e `EXPO_PUBLIC_APP_LINK_DOMAIN` → `app.toqe-barber.com.br` (preview + production) |
 | `app.config.ts` | Fallback `API_URL_PROD` atualizado |
 | `.env.example` | Comentário atualizado |
+
+### Universal Links / App Links
+
+O domínio `app.toqe-barber.com.br` também é o domínio de links públicos do mobile.
+Quando o app estiver instalado e o build nativo tiver sido gerado com
+`EXPO_PUBLIC_APP_LINK_DOMAIN=app.toqe-barber.com.br`, os caminhos abaixo podem
+abrir o app:
+
+- `https://app.toqe-barber.com.br/b/:slug`
+- `https://app.toqe-barber.com.br/u/:slug`
+- `https://app.toqe-barber.com.br/convite?token=...`
+
+O Web serve os arquivos de associação em:
+
+- `https://app.toqe-barber.com.br/.well-known/assetlinks.json`
+- `https://app.toqe-barber.com.br/.well-known/apple-app-site-association`
+
+Esses arquivos são parametrizados por variáveis de ambiente. Sem
+`MOBILE_ANDROID_SHA256_CERT_FINGERPRINTS`, o Android não verifica App Links. Sem
+`MOBILE_IOS_APP_ID` ou `MOBILE_APPLE_TEAM_ID`, o iOS não associa Universal Links.
+
+Alterar `EXPO_PUBLIC_APP_LINK_DOMAIN`, `android.intentFilters` ou
+`ios.associatedDomains` exige **novo build nativo EAS**; OTA update não altera
+essa associação.
+
 
 ### Trocar URL no mobile sem novo build
 

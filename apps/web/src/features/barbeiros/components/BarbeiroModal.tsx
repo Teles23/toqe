@@ -387,18 +387,29 @@ function CommissionSection({
 
 /* ── progress bar ────────────────────────────────────────────────────────── */
 
-const PROGRESS_STEPS = ["Dados", "Serviços", "Agenda", "Comissão"];
-
 function ProgressBar({ form }: { form: DrawerForm }) {
-  const done = [
-    form.nome.trim().length > 1,
-    form.servicosSelecionados.size > 0,
-    true, // agenda always has defaults
-    true, // commission always has defaults
-  ];
+  const steps =
+    form.perfil === "recepcionista"
+      ? ["Dados", "Agenda"]
+      : form.perfil === "gerente"
+        ? ["Dados", "Serviços", "Agenda"]
+        : ["Dados", "Serviços", "Agenda", "Comissão"];
+
+  const done =
+    form.perfil === "recepcionista"
+      ? [form.nome.trim().length > 1, true]
+      : form.perfil === "gerente"
+        ? [form.nome.trim().length > 1, true, true]
+        : [
+            form.nome.trim().length > 1,
+            form.servicosSelecionados.size > 0,
+            true,
+            true,
+          ];
+
   return (
     <div className="tqe-ab-progress">
-      {PROGRESS_STEPS.map((lbl, i) => (
+      {steps.map((lbl, i) => (
         <div key={lbl} className="tqe-ab-progress-item">
           <div
             className="tqe-ab-progress-bar"
@@ -523,6 +534,7 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
   const [step, setStep] = useState<DrawerStep>("form");
   const [form, setForm] = useState<DrawerForm>(INITIAL_FORM);
   const [emailError, setEmailError] = useState("");
+  const [servicoError, setServicoError] = useState("");
 
   const set = <K extends keyof DrawerForm>(key: K, value: DrawerForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -553,23 +565,42 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
     }));
   }
 
-  const canSubmit = form.nome.trim().length > 1 && form.email.includes("@");
+  const precisaServico = form.perfil === "barbeiro";
+  const canSubmit =
+    form.nome.trim().length > 1 &&
+    form.email.includes("@") &&
+    (!precisaServico || form.servicosSelecionados.size > 0);
 
   function handleSubmit() {
     setEmailError("");
+    setServicoError("");
+
     if (!form.email.includes("@")) {
       setEmailError("Informe um e-mail válido");
       return;
     }
+    if (precisaServico && form.servicosSelecionados.size === 0) {
+      setServicoError("Selecione ao menos um serviço para o barbeiro");
+      return;
+    }
+
     convidar.mutate(
       { email: form.email, perfil: form.perfil },
-      { onSuccess: () => setStep("success") },
+      {
+        onSuccess: () => setStep("success"),
+        onError: (e) => {
+          const msg =
+            e instanceof Error ? e.message : "Erro ao enviar convite";
+          setEmailError(msg);
+        },
+      },
     );
   }
 
   function handleAddAnother() {
     setForm(INITIAL_FORM);
     setEmailError("");
+    setServicoError("");
     setStep("form");
   }
 
@@ -628,7 +659,13 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                     <X size={15} />
                   </button>
                   <div>
-                    <h2 className="tqe-ab-drawer-title">Adicionar barbeiro</h2>
+                    <h2 className="tqe-ab-drawer-title">
+                      {form.perfil === "recepcionista"
+                        ? "Adicionar recepcionista"
+                        : form.perfil === "gerente"
+                          ? "Adicionar gerente"
+                          : "Adicionar barbeiro"}
+                    </h2>
                     <p className="tqe-ab-drawer-sub font-mono">
                       {form.nome || "preencha o nome para começar"}
                     </p>
@@ -803,53 +840,76 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                 </div>
               </Field>
 
-              {/* 03 — Serviços */}
-              <SectionTitle>03 · Serviços que faz</SectionTitle>
+              {/* 03 — Serviços (barbeiro = obrigatório; gerente = opcional; recepcionista = oculto) */}
+              {form.perfil !== "recepcionista" && (
+                <>
+                  <SectionTitle>
+                    03 · Serviços que faz
+                    {precisaServico && (
+                      <span style={{ color: "var(--status-error)", marginLeft: 4, fontSize: 11 }}>
+                        *obrigatório
+                      </span>
+                    )}
+                  </SectionTitle>
 
-              <Field help="Desmarque o que ele não oferece. Preço customizado por barbeiro você define no perfil dele depois.">
-                {servicos.length > 0 ? (
-                  <>
-                    <div className="tqe-ab-svc-grid">
-                      {servicos.map((s) => {
-                        const sel = form.servicosSelecionados.has(s.codigo);
-                        return (
-                          <button
-                            key={s.codigo}
-                            type="button"
-                            onClick={() => toggleServico(s.codigo)}
-                            className={`tqe-ab-svc-btn${sel ? " sel" : ""}`}
-                          >
-                            <div
-                              className={`tqe-ab-svc-check${sel ? " sel" : ""}`}
-                            >
-                              {sel && <Check size={9} strokeWidth={3} />}
-                            </div>
-                            {s.nome}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="tqe-ab-info-box" style={{ marginTop: 10 }}>
-                      <span
-                        style={{ color: "var(--primary)", fontWeight: 600 }}
-                      >
-                        {form.servicosSelecionados.size} serviço
-                        {form.servicosSelecionados.size !== 1 ? "s" : ""}
-                      </span>
-                      <span style={{ color: "var(--text-secondary)" }}>
-                        {" "}
-                        selecionado
-                        {form.servicosSelecionados.size !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <p className="tqe-ab-help" style={{ fontStyle: "italic" }}>
-                    Nenhum serviço cadastrado ainda — adicione na aba Serviços
-                    primeiro.
-                  </p>
-                )}
-              </Field>
+                  <Field
+                    help={
+                      precisaServico
+                        ? "Obrigatório — selecione ao menos um serviço que o barbeiro realiza."
+                        : "Opcional — marque caso o gerente também atenda na cadeira."
+                    }
+                  >
+                    {servicos.length > 0 ? (
+                      <>
+                        <div className="tqe-ab-svc-grid">
+                          {servicos.map((s) => {
+                            const sel = form.servicosSelecionados.has(s.codigo);
+                            return (
+                              <button
+                                key={s.codigo}
+                                type="button"
+                                onClick={() => {
+                                  toggleServico(s.codigo);
+                                  setServicoError("");
+                                }}
+                                className={`tqe-ab-svc-btn${sel ? " sel" : ""}`}
+                              >
+                                <div
+                                  className={`tqe-ab-svc-check${sel ? " sel" : ""}`}
+                                >
+                                  {sel && <Check size={9} strokeWidth={3} />}
+                                </div>
+                                {s.nome}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {servicoError && (
+                          <p style={{ fontSize: 11, color: "var(--status-error)", marginTop: 6 }}>
+                            {servicoError}
+                          </p>
+                        )}
+                        {form.servicosSelecionados.size > 0 && (
+                          <div className="tqe-ab-info-box" style={{ marginTop: 10 }}>
+                            <span style={{ color: "var(--primary)", fontWeight: 600 }}>
+                              {form.servicosSelecionados.size} serviço
+                              {form.servicosSelecionados.size !== 1 ? "s" : ""}
+                            </span>
+                            <span style={{ color: "var(--text-secondary)" }}>
+                              {" "}selecionado{form.servicosSelecionados.size !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="tqe-ab-help" style={{ fontStyle: "italic" }}>
+                        Nenhum serviço cadastrado ainda — adicione na aba Serviços
+                        primeiro.
+                      </p>
+                    )}
+                  </Field>
+                </>
+              )}
 
               {/* 04 — Quando trabalha */}
               <SectionTitle>04 · Quando trabalha</SectionTitle>
@@ -915,17 +975,20 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                 </AnimatePresence>
               </Field>
 
-              {/* 05 — Comissão */}
-              <SectionTitle>05 · Comissão</SectionTitle>
-
-              <CommissionSection
-                model={form.commissionModel}
-                pct={form.commissionPct}
-                fixed={form.commissionFixed}
-                onModel={(m) => set("commissionModel", m)}
-                onPct={(v) => set("commissionPct", v)}
-                onFixed={(v) => set("commissionFixed", v)}
-              />
+              {/* 05 — Comissão (apenas para barbeiro) */}
+              {form.perfil === "barbeiro" && (
+                <>
+                  <SectionTitle>05 · Comissão</SectionTitle>
+                  <CommissionSection
+                    model={form.commissionModel}
+                    pct={form.commissionPct}
+                    fixed={form.commissionFixed}
+                    onModel={(m) => set("commissionModel", m)}
+                    onPct={(v) => set("commissionPct", v)}
+                    onFixed={(v) => set("commissionFixed", v)}
+                  />
+                </>
+              )}
             </div>
 
             {/* Sticky footer */}
@@ -934,6 +997,18 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                 {canSubmit ? (
                   <span style={{ color: "var(--status-success)" }}>
                     ● pronto pra convidar
+                  </span>
+                ) : !form.nome.trim() || form.nome.trim().length < 2 ? (
+                  <span style={{ color: "var(--text-muted)" }}>
+                    preencha o nome
+                  </span>
+                ) : !form.email.includes("@") ? (
+                  <span style={{ color: "var(--text-muted)" }}>
+                    informe o e-mail
+                  </span>
+                ) : precisaServico && form.servicosSelecionados.size === 0 ? (
+                  <span style={{ color: "var(--status-warning, #F4B400)" }}>
+                    selecione ao menos 1 serviço
                   </span>
                 ) : (
                   <span style={{ color: "var(--text-muted)" }}>
@@ -955,6 +1030,10 @@ export function BarbeiroModal({ onClose }: BarbeiroModalProps) {
                     <Loader2 size={14} className="animate-spin" />
                     Enviando convite…
                   </>
+                ) : form.perfil === "recepcionista" ? (
+                  "Convidar recepcionista →"
+                ) : form.perfil === "gerente" ? (
+                  "Convidar gerente →"
                 ) : (
                   "Convidar barbeiro →"
                 )}

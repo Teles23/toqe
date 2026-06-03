@@ -13,6 +13,7 @@ interface Props {
 export function SecaoHorarios({ barCodigo }: Props) {
   const { data, update } = useConfiguracaoHorarios(barCodigo);
   const [horarios, setHorarios] = useState<HorarioDia[]>(data ?? []);
+  const [erroHorario, setErroHorario] = useState("");
 
   useEffect(() => {
     if (data) setHorarios(data);
@@ -134,8 +135,21 @@ export function SecaoHorarios({ barCodigo }: Props) {
         ))}
       </div>
 
+      {erroHorario && (
+        <p className="text-[12px]" style={{ color: "var(--status-error)" }}>
+          {erroHorario}
+        </p>
+      )}
+
       <button
-        onClick={() => update.mutate(horarios)}
+        onClick={() => {
+          if (!horarios.some((h) => h.aberto)) {
+            setErroHorario("Ative ao menos um dia de funcionamento antes de salvar.");
+            return;
+          }
+          setErroHorario("");
+          update.mutate(horarios);
+        }}
         disabled={update.isPending}
         className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-[13px]"
         style={{

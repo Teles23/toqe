@@ -13,7 +13,8 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.toqe-barber.com.br/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.toqe-barber.com.br/api/v1",
+        "EXPO_PUBLIC_APP_LINK_DOMAIN": "app.toqe-barber.com.br"
       }
     },
     "production": {
@@ -21,7 +22,8 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.toqe-barber.com.br/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.toqe-barber.com.br/api/v1",
+        "EXPO_PUBLIC_APP_LINK_DOMAIN": "app.toqe-barber.com.br"
       }
     }
   },

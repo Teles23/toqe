@@ -4,6 +4,7 @@ jest.mock("expo-router", () => {
   }
   return {
     Link,
+    useLocalSearchParams: jest.fn(() => ({})),
     router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() },
   };
 });
@@ -95,7 +96,7 @@ describe("LoginScreen", () => {
     });
 
     await waitFor(() => {
-      expect(login).toHaveBeenCalledWith("a@b.com", "senha123");
+      expect(login).toHaveBeenCalledWith("a@b.com", "senha123", null);
     });
   });
 
@@ -182,7 +183,10 @@ describe("LoginScreen", () => {
       });
 
       await waitFor(() => {
-        expect(loginWithGoogle).toHaveBeenCalledWith("fake_google_id_token");
+        expect(loginWithGoogle).toHaveBeenCalledWith(
+          "fake_google_id_token",
+          null,
+        );
       });
     });
 
@@ -201,7 +205,7 @@ describe("LoginScreen", () => {
       });
 
       await waitFor(() => {
-        expect(loginWithGoogle).toHaveBeenCalledWith("novo_formato_token");
+        expect(loginWithGoogle).toHaveBeenCalledWith("novo_formato_token", null);
       });
     });
 

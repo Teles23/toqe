@@ -399,6 +399,7 @@ model ConviteBarbearia {
   criadoEm    DateTime  @default(now()) @map("TQE_CVT_CRIADO_EM") @db.Timestamptz
   expiresAt    DateTime  @map("TQE_CVT_EXPIRES_AT") @db.Timestamptz
   usadoEm     DateTime? @map("TQE_CVT_USADO_EM") @db.Timestamptz
+  rejeitadoEm DateTime? @map("TQE_CVT_REJEITADO_EM") @db.Timestamptz
 
   barbearia    Barbearia @relation(fields: [barCodigo], references: [codigo])
 

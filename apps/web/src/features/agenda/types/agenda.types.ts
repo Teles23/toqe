@@ -17,6 +17,7 @@ export interface Slot {
   service: string;
   barbeiro: string;
   barbeiroInitial: string;
+  barbeiroUsrCodigo: number | null;
   duration: number;
   status: SlotStatus;
   progressPct?: number;

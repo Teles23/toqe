@@ -19,6 +19,31 @@ export class ApiError extends Error {
   }
 }
 
+function getErrorMessageFromBody(body: unknown): string | undefined {
+  if (typeof body === "string" && body.trim().length > 0) {
+    return body;
+  }
+
+  if (!body || typeof body !== "object") {
+    return undefined;
+  }
+
+  const maybeBody = body as { message?: unknown; error?: unknown };
+  if (typeof maybeBody.message === "string" && maybeBody.message.length > 0) {
+    return maybeBody.message;
+  }
+
+  if (Array.isArray(maybeBody.message) && maybeBody.message.length > 0) {
+    return maybeBody.message.join("\n");
+  }
+
+  if (typeof maybeBody.error === "string" && maybeBody.error.length > 0) {
+    return maybeBody.error;
+  }
+
+  return undefined;
+}
+
 interface RequestOptions {
   /** Código da barbearia ativa (multi-tenant) */
   tenantId?: number;
@@ -54,7 +79,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
     body = undefined;
   }
 
-  throw new ApiError(res.status, `HTTP ${res.status}: ${res.url}`, body);
+  throw new ApiError(
+    res.status,
+    getErrorMessageFromBody(body) ?? `HTTP ${res.status}: ${res.url}`,
+    body,
+  );
 }
 
 // Dedup de refresh: se múltiplas requests 401 chegarem simultaneamente,

@@ -12,6 +12,8 @@
 app/
 ├── _layout.tsx              ← Root layout: QueryProvider > AuthProvider > ThemeProvider > Stack
 ├── index.tsx                ← Guard de redirecionamento (depende do estado de auth)
+├── b/[slug].tsx             ← Entrada Universal/App Link `/b/:slug` (cadastro/login → barbearia)
+├── convite.tsx              ← Ponte `/convite?token=...` → `/convite/[token]`
 │
 ├── (auth)/
 │   ├── _layout.tsx          ← Stack sem header; bloqueia se já autenticado
@@ -122,6 +124,29 @@ A proteção é feita em dois pontos:
 2. **`api-client.ts`** — interceptor de 401: em qualquer request que retorne 401 após falha de refresh, limpa SecureStore e redireciona para `/(auth)/login` via `router.replace`
 
 O `(auth)/_layout.tsx` redireciona para a home do perfil se o usuário já está autenticado (evita voltar para login após login bem-sucedido).
+
+## Universal Links / App Links
+
+O app captura, via build nativo, URLs HTTPS do domínio configurado em
+`EXPO_PUBLIC_APP_LINK_DOMAIN` (`app.toqe-barber.com.br` em preview/produção).
+O Web continua sendo fallback do mesmo link quando o app não está instalado.
+
+Rotas atuais:
+
+```
+https://app.toqe-barber.com.br/b/:slug
+  → app/b/[slug].tsx
+  → se não autenticado: /(auth)/cadastro?returnTo=/b/:slug
+  → após cadastro/login: /(cliente)/barbearia/:slug
+
+https://app.toqe-barber.com.br/convite?token=abc...
+  → app/convite.tsx
+  → app/convite/[token].tsx
+```
+
+O parâmetro `returnTo` é validado por allowlist e só aceita rotas internas do
+booking público/barbearia. Alterar o domínio ou os caminhos capturados exige novo
+build EAS, pois `android.intentFilters` e `ios.associatedDomains` são nativos.
 
 ---
 
