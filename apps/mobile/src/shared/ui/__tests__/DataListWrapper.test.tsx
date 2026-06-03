@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react-native";
+import { act, render, screen } from "@testing-library/react-native";
 import React from "react";
 import { Text } from "react-native";
 
@@ -90,7 +90,7 @@ describe("DataListWrapper", () => {
     expect(screen.getByText("vazio mesmo")).toBeTruthy();
   });
 
-  it("passa RefreshControl com onRefresh chamando refetch", () => {
+  it("passa RefreshControl com onRefresh chamando refetch", async () => {
     const refetch = jest.fn();
     render(
       <DataListWrapper<Item>
@@ -114,7 +114,9 @@ describe("DataListWrapper", () => {
       refreshControl.props.tintColor,
     ]);
     // Invoca o callback diretamente — equivalente ao pull-to-refresh
-    void refreshControl.props.onRefresh();
+    await act(async () => {
+      await refreshControl.props.onRefresh();
+    });
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
