@@ -172,4 +172,84 @@ describe("Onboarding v2", () => {
     const backBtn = screen.getByRole("button", { name: /← voltar/i });
     expect(backBtn).toBeDisabled();
   });
+
+  // ── Step 4 — horários ──────────────────────────────────────────────────────
+
+  async function goToStep4() {
+    renderOnboarding();
+    // Step 1
+    fireEvent.change(screen.getByPlaceholderText("João Silva"), { target: { value: "João Silva" } });
+    fireEvent.change(screen.getByPlaceholderText("joao@barbearia.com"), { target: { value: "joao@step4.com" } });
+    fireEvent.change(screen.getByPlaceholderText("Mín. 8 caracteres"), { target: { value: "senha123" } });
+    fireEvent.change(screen.getByPlaceholderText("Repita a senha"), { target: { value: "senha123" } });
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    await screen.findByText("Como sua barbearia se chama?");
+    // Step 2
+    fireEvent.change(screen.getByPlaceholderText("Ex: Barba do Zé"), { target: { value: "Barbearia XYZ" } });
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    await screen.findByText("Qual a cara da sua marca?");
+    // Step 3
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    await screen.findByText("Quando vocês abrem?");
+  }
+
+  it("passo 4: bloqueia avanço quando todos os dias estão fechados", async () => {
+    await goToStep4();
+
+    // Fecha todos os dias abertos (6 por padrão — Seg a Sáb)
+    const togglesAbertos = screen.getAllByRole("button", { pressed: true });
+    togglesAbertos.forEach((t) => fireEvent.click(t));
+
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/ative ao menos um dia de funcionamento/i),
+      ).toBeInTheDocument(),
+    );
+    // Permanece no step 4
+    expect(screen.getByText("Quando vocês abrem?")).toBeInTheDocument();
+  });
+
+  it("passo 4: avança normalmente com ao menos 1 dia ativo", async () => {
+    await goToStep4();
+    // Por padrão 6 dias abertos — apenas avança
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    await screen.findByText("O que vocês fazem?");
+  });
+
+  // ── Step 5 — serviços ──────────────────────────────────────────────────────
+
+  async function goToStep5() {
+    await goToStep4();
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    await screen.findByText("O que vocês fazem?");
+  }
+
+  it("passo 5: bloqueia avanço sem serviços válidos", async () => {
+    await goToStep5();
+
+    // Remove serviços um por um — após cada clique o DOM re-renderiza
+    let removeBtns = screen.queryAllByRole("button", { name: /remover serviço/i });
+    while (removeBtns.length > 0) {
+      fireEvent.click(removeBtns[0]!);
+      removeBtns = screen.queryAllByRole("button", { name: /remover serviço/i });
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/adicione ao menos um serviço/i),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByText("O que vocês fazem?")).toBeInTheDocument();
+  });
+
+  it("passo 5: avança com ao menos 1 serviço com nome, preço e duração válidos", async () => {
+    await goToStep5();
+    // Preset basic tem 3 serviços válidos por padrão
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    await screen.findByText("Quem mais corta com você?");
+  });
 });
