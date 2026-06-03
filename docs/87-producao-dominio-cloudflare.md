@@ -118,6 +118,7 @@ Alterar `EXPO_PUBLIC_APP_LINK_DOMAIN`, `android.intentFilters` ou
 `ios.associatedDomains` exige **novo build nativo EAS**; OTA update não altera
 essa associação.
 
+
 ### Trocar URL no mobile sem novo build
 
 ```bash
