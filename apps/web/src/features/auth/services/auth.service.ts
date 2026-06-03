@@ -175,7 +175,7 @@ export async function revokeAllSessions(): Promise<void> {
   }
 }
 
-export async function requestGoogleLogin(idToken: string): Promise<void> {
+export async function requestGoogleLogin(idToken: string): Promise<LoginResult> {
   const res = await fetch("/api/auth/google", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -187,6 +187,13 @@ export async function requestGoogleLogin(idToken: string): Promise<void> {
       data.message ?? "Erro ao autenticar com Google",
       res.status,
     );
+  }
+  const data = (await parseJsonSafe(res)) as {
+    requiresTwoFa?: boolean;
+    tempToken?: string;
+  };
+  if (data.requiresTwoFa) {
+    return { requiresTwoFa: true, tempToken: data.tempToken! };
   }
 }
 

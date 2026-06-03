@@ -71,6 +71,15 @@ export class AuthService {
       });
     }
 
+    // Se o usuário habilitou 2FA, exige verificação mesmo via Google
+    if (user.twoFaEnabled) {
+      const tempToken = this.jwtService.sign(
+        { sub: user.codigo, type: '2fa' },
+        { expiresIn: '5m' },
+      );
+      return { requiresTwoFa: true as const, tempToken };
+    }
+
     return this.generateTokens(user.codigo, user.nome, user.email);
   }
 
