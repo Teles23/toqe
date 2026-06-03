@@ -176,6 +176,28 @@ describe("AuthProvider — login", () => {
     expect(ref.current?.perfil).toBe("dono");
   });
 
+  it("redireciona para /onboarding quando usuário não tem barbearia", async () => {
+    Object.defineProperty(window, "location", {
+      value: { search: "" },
+      writable: true,
+    });
+    const semBarbearia = { ...mockMe, barbearias: [] };
+    mockApi.get
+      .mockRejectedValueOnce(new Error("sem sessão"))
+      .mockResolvedValueOnce(semBarbearia);
+    mockRequestLogin.mockResolvedValueOnce(undefined);
+
+    const ref = captureContext();
+    await waitFor(() => expect(ref.current?.loading).toBe(false));
+
+    await act(async () => {
+      await ref.current?.login("test@test.com", "senha123");
+    });
+
+    expect(mockPush).toHaveBeenCalledWith("/onboarding");
+    expect(ref.current?.barbearia).toBeNull();
+  });
+
   it("propaga erro quando requestLogin falha", async () => {
     mockApi.get.mockRejectedValueOnce(new Error("sem sessão"));
     mockRequestLogin.mockRejectedValueOnce(new Error("Credenciais inválidas"));

@@ -4,6 +4,7 @@ jest.mock("expo-router", () => {
   }
   return {
     Link,
+    useLocalSearchParams: jest.fn(() => ({})),
     router: { replace: jest.fn(), push: jest.fn(), back: jest.fn() },
   };
 });
@@ -272,7 +273,7 @@ describe("CadastroScreen — fluxo de 3 steps", () => {
       });
     });
     await waitFor(() => {
-      expect(login).toHaveBeenCalledWith("novo@toqe.com", "senha123");
+      expect(login).toHaveBeenCalledWith("novo@toqe.com", "senha123", null);
     });
   });
 

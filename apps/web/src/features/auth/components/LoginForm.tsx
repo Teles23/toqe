@@ -259,7 +259,7 @@ export function LoginForm({
                       api.get<UsuarioMe>("/usuarios/me"),
                       establishSession(),
                     ]);
-                    if (me.barbearias && me.barbearias.length === 0) {
+                    if (!me.barbearias?.length) {
                       router.push("/onboarding");
                     } else {
                       router.push("/dashboard");

@@ -136,43 +136,50 @@ export function AuthProvider({
 
   // Recarrega `/usuarios/me` e popula o estado global. `email` é usado como
   // fallback quando a resposta não traz o e-mail (ex: 2FA verify sem e-mail).
-  // Retorna `superAdmin` para que o chamador decida o destino de navegação.
-  const loadMeState = useCallback(async (email: string): Promise<boolean> => {
-    const me: UsuarioMe = await api.get("/usuarios/me");
-    const {
-      codigo,
-      nome,
-      email: meEmail,
-      telefone,
-      avatarUrl,
-      twoFaEnabled,
-      superAdmin,
-      barbearias: bars,
-    } = me;
-    setUser({
-      codigo,
-      nome,
-      email: email || meEmail,
-      telefone,
-      avatarUrl,
-      twoFaEnabled: twoFaEnabled ?? false,
-      superAdmin: superAdmin ?? false,
-    });
-    setBarbearias(bars);
-    if (bars.length > 0) {
-      setBarbearia(bars[0]!);
-      setPerfil(bars[0]!.perfil);
-    }
-    return superAdmin ?? false;
-  }, []);
+  // Retorna { superAdmin, hasBarbearia } para que o chamador decida o destino.
+  const loadMeState = useCallback(
+    async (email: string): Promise<{ superAdmin: boolean; hasBarbearia: boolean }> => {
+      const me: UsuarioMe = await api.get("/usuarios/me");
+      const {
+        codigo,
+        nome,
+        email: meEmail,
+        telefone,
+        avatarUrl,
+        twoFaEnabled,
+        superAdmin,
+        barbearias: bars,
+      } = me;
+      setUser({
+        codigo,
+        nome,
+        email: email || meEmail,
+        telefone,
+        avatarUrl,
+        twoFaEnabled: twoFaEnabled ?? false,
+        superAdmin: superAdmin ?? false,
+      });
+      setBarbearias(bars);
+      if (bars.length > 0) {
+        setBarbearia(bars[0]!);
+        setPerfil(bars[0]!.perfil);
+      }
+      return { superAdmin: superAdmin ?? false, hasBarbearia: bars.length > 0 };
+    },
+    [],
+  );
 
   const loadMe = useCallback(
     async (email: string) => {
-      const superAdmin = await loadMeState(email);
+      const { superAdmin, hasBarbearia } = await loadMeState(email);
 
-      // Super admin vai para o painel interno; usuários normais para o dashboard
       if (superAdmin) {
         router.push("/admin");
+        return;
+      }
+      // Usuário sem barbearia ainda não completou o onboarding
+      if (!hasBarbearia) {
+        router.push("/onboarding");
         return;
       }
       const params = new URLSearchParams(window.location.search);

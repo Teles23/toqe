@@ -48,6 +48,9 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(cliente)" />
         <Stack.Screen name="(barbeiro)" />
+        <Stack.Screen name="b/[slug]" />
+        <Stack.Screen name="convite" />
+        <Stack.Screen name="convite/[token]" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
