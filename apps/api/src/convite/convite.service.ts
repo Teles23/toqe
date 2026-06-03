@@ -68,6 +68,7 @@ export class ConviteService {
               barCodigo,
               perfil: 'barbeiro',
               usadoEm: null,
+              rejeitadoEm: null,
               expiresAt: { gt: agora },
               email: { not: email }, // renovação do mesmo convite não conta como nova vaga
             },
@@ -92,6 +93,7 @@ export class ConviteService {
         barCodigo,
         email,
         usadoEm: null,
+        rejeitadoEm: null,
         expiresAt: { gt: agora },
       },
       select: { codigo: true },
@@ -147,7 +149,7 @@ export class ConviteService {
       },
     });
 
-    if (!convite || convite.expiresAt < new Date()) {
+    if (!convite || convite.expiresAt < new Date() || convite.rejeitadoEm) {
       throw new NotFoundException('Convite não encontrado ou expirado');
     }
 
@@ -331,11 +333,14 @@ export class ConviteService {
   }
 
   /**
-   * Rejeita um convite — remove o registro (não cria conta nem vínculo).
-   * Idempotente: se o token não existe, retorna sucesso assim mesmo.
+   * Rejeita um convite — marca rejeitadoEm (mantém o registro para auditoria).
+   * Idempotente: se o token não existe ou já foi rejeitado, retorna sucesso.
    */
   async rejeitarConvite(token: string) {
-    await this.prisma.conviteBarbearia.deleteMany({ where: { token } });
+    await this.prisma.conviteBarbearia.updateMany({
+      where: { token, rejeitadoEm: null, usadoEm: null },
+      data: { rejeitadoEm: new Date() },
+    });
     return { sucesso: true };
   }
 }
