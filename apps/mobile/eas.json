@@ -13,7 +13,7 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://toqe.duckdns.org/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.toqe-barber.com.br/api/v1"
       }
     },
     "production": {
@@ -21,7 +21,7 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://toqe.duckdns.org/api/v1"
+        "EXPO_PUBLIC_API_URL": "https://api.toqe-barber.com.br/api/v1"
       }
     }
   },

@@ -36,7 +36,7 @@ if (firebaseAndroidJson) {
 //  - build EAS (APK/loja): cada perfil em eas.json define EXPO_PUBLIC_API_URL;
 //    production usa a URL de produção.
 //  - fallback (nada definido): produção, para nunca vazar dev num build.
-const API_URL_PROD = "https://toqe.duckdns.org/api/v1";
+const API_URL_PROD = "https://api.toqe-barber.com.br/api/v1";
 const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? API_URL_PROD;
 
 const config: AppConfig = {
