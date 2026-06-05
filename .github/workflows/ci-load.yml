@@ -9,7 +9,7 @@ on:
       base_url:
         description: "URL base da API (ex: https://api.toqe-barber.com.br/api/v1)"
         required: false
-        default: "http://localhost:3000/api/v1"
+        default: "https://api.toqe-barber.com.br/api/v1"
       scenario:
         description: "Cenário a rodar (auth | agendamento | barbearia | all)"
         required: false

@@ -7,5 +7,9 @@ export function getToken(email, senha) {
     JSON.stringify({ email, senha }),
     { headers: { "Content-Type": "application/json" } },
   );
-  return JSON.parse(res.body).access_token;
+  try {
+    return JSON.parse(res.body).access_token ?? null;
+  } catch {
+    return null;
+  }
 }
