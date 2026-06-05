@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { UsuarioController } from './usuario.controller';
 import { UsuarioService } from './usuario.service';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import type { JwtRequest } from '../common/types/jwt-request';
 
 const mockUsuarioService = { me: jest.fn(), update: jest.fn() };
 

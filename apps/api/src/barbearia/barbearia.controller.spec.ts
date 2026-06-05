@@ -8,6 +8,7 @@ import { ConviteService } from '../convite/convite.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import type { JwtRequest } from '../common/types/jwt-request';
 import { FeatureFlagGuard } from '../auth/guards/feature-flag.guard';
 import { PerfilMembro } from './dto/convidar-membro.dto';
 

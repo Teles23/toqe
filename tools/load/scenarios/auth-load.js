@@ -22,7 +22,13 @@ export default function () {
 
   check(res, {
     "status 200 ou 201": (r) => r.status === 200 || r.status === 201,
-    "tem access_token": (r) => JSON.parse(r.body).access_token !== undefined,
+    "tem access_token": (r) => {
+      try {
+        return JSON.parse(r.body).access_token !== undefined;
+      } catch {
+        return false;
+      }
+    },
   });
 
   sleep(1);

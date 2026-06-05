@@ -8,6 +8,7 @@ import {
 import { MembroBarbeariaService } from './membro-barbearia.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPrismaMock } from '../test/prisma-mock.factory';
+import type { Contato } from '../generated/prisma';
 import {
   Prisma,
   Barbearia,

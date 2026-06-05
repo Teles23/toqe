@@ -4,6 +4,7 @@ import { PreferenciasController } from './preferencias.controller';
 import { PreferenciasService } from './preferencias.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
+import type { JwtRequest } from '../common/types/jwt-request';
 const mockGuard: CanActivate = { canActivate: jest.fn(() => true) };
 
 const mockPreferenciasService = {
