@@ -7,13 +7,21 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: "URL base da API (ex: http://localhost:3000 ou https://api.toqe.com.br)"
+        description: "URL base da API (ex: https://api.toqe-barber.com.br/api/v1)"
         required: false
-        default: "http://localhost:3000"
+        default: "http://localhost:3000/api/v1"
       scenario:
         description: "Cenário a rodar (auth | agendamento | barbearia | all)"
         required: false
         default: "all"
+      vus:
+        description: "Número de usuários virtuais (sobrepõe o script)"
+        required: false
+        default: ""
+      duration:
+        description: "Duração do teste, ex: 30s, 1m (sobrepõe o script)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -38,20 +46,28 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y k6
 
+      - name: Build k6 flags
+        id: flags
+        run: |
+          FLAGS=""
+          [ -n "${{ inputs.vus }}" ]      && FLAGS="$FLAGS --vus ${{ inputs.vus }}"
+          [ -n "${{ inputs.duration }}" ] && FLAGS="$FLAGS --duration ${{ inputs.duration }}"
+          echo "extra=$FLAGS" >> $GITHUB_OUTPUT
+
       - name: Run auth load test
         if: ${{ inputs.scenario == 'auth' || inputs.scenario == 'all' }}
-        run: k6 run tools/load/scenarios/auth-load.js
+        run: k6 run ${{ steps.flags.outputs.extra }} tools/load/scenarios/auth-load.js
         env:
           BASE_URL: ${{ inputs.base_url }}
 
       - name: Run agendamento load test
         if: ${{ inputs.scenario == 'agendamento' || inputs.scenario == 'all' }}
-        run: k6 run tools/load/scenarios/agendamento-load.js
+        run: k6 run ${{ steps.flags.outputs.extra }} tools/load/scenarios/agendamento-load.js
         env:
           BASE_URL: ${{ inputs.base_url }}
 
       - name: Run barbearia load test
         if: ${{ inputs.scenario == 'barbearia' || inputs.scenario == 'all' }}
-        run: k6 run tools/load/scenarios/barbearia-load.js
+        run: k6 run ${{ steps.flags.outputs.extra }} tools/load/scenarios/barbearia-load.js
         env:
           BASE_URL: ${{ inputs.base_url }}
