@@ -7,13 +7,21 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: "URL base da API (ex: http://localhost:3000 ou https://api.toqe.com.br)"
+        description: "URL base da API (ex: https://api.toqe-barber.com.br/api/v1)"
         required: false
-        default: "http://localhost:3000"
+        default: "http://localhost:3000/api/v1"
       scenario:
         description: "Cenário a rodar (auth | agendamento | barbearia | all)"
         required: false
         default: "all"
+      vus:
+        description: "VUs para cenários constant-vus (auth, barbearia). Ignorado em agendamento (ramping-vus)."
+        required: false
+        default: ""
+      duration:
+        description: "Duração para cenários constant-vus, ex: 30s, 1m. Ignorado em agendamento."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -38,9 +46,28 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y k6
 
+      - name: Validate and build k6 flags
+        id: flags
+        env:
+          VUS_INPUT: ${{ inputs.vus }}
+          DURATION_INPUT: ${{ inputs.duration }}
+        run: |
+          if [ -n "$VUS_INPUT" ] && ! echo "$VUS_INPUT" | grep -qE '^[0-9]+$'; then
+            echo "::error::vus deve ser um inteiro positivo (recebido: $VUS_INPUT)"
+            exit 1
+          fi
+          if [ -n "$DURATION_INPUT" ] && ! echo "$DURATION_INPUT" | grep -qE '^[0-9]+[smhd]$'; then
+            echo "::error::duration deve seguir o padrão [0-9]+[smhd], ex: 30s, 2m (recebido: $DURATION_INPUT)"
+            exit 1
+          fi
+          FLAGS=""
+          [ -n "$VUS_INPUT" ]      && FLAGS="$FLAGS --vus $VUS_INPUT"
+          [ -n "$DURATION_INPUT" ] && FLAGS="$FLAGS --duration $DURATION_INPUT"
+          echo "extra=$FLAGS" >> $GITHUB_OUTPUT
+
       - name: Run auth load test
         if: ${{ inputs.scenario == 'auth' || inputs.scenario == 'all' }}
-        run: k6 run tools/load/scenarios/auth-load.js
+        run: k6 run ${{ steps.flags.outputs.extra }} tools/load/scenarios/auth-load.js
         env:
           BASE_URL: ${{ inputs.base_url }}
 
@@ -52,6 +79,6 @@ jobs:
 
       - name: Run barbearia load test
         if: ${{ inputs.scenario == 'barbearia' || inputs.scenario == 'all' }}
-        run: k6 run tools/load/scenarios/barbearia-load.js
+        run: k6 run ${{ steps.flags.outputs.extra }} tools/load/scenarios/barbearia-load.js
         env:
           BASE_URL: ${{ inputs.base_url }}
