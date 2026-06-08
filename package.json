@@ -16,7 +16,7 @@
     "branding:check": "node tools/branding/generate.mjs --dry-run"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.6.1",
+    "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@types/node": "^25.9.1",
     "husky": "^9.1.7",
